@@ -1,0 +1,43 @@
+SolarPowerLog
+
+ROADMAP 
+
+BRAIN STORMING
+--> at least two-fold software:
+  a) data acquisition and storage
+      aqui:
+        -> aqc. using interfaces
+        -> more than inverter should be supported
+      storage
+          -> storage in database, (sql csv, xml, whatever, file....)
+	    -> format should be flexible enough to support additional inverters as well as 
+	       ones that does not support all data or supply extra ones. (expect no minimal data set!) 
+	       --> defining some types of data, describing the property of the data entry 
+	         like, "flag", "plot"
+	  -> what to do with proposes non-standard features
+	  -> maybe secondary storage for more volatile datas like system state, error display....
+	  -> 
+	 
+  b) visualization 
+      -> generate graphs 
+	  -> up-to-now
+	  -> prognosen
+      -> display current state of the system
+      -> generate graphs (pictures, html, ....) with 
+	  -> statistics, 
+	  -> logbook (events)
+	  
+      
+  c) reporting
+      -> alerting on system problems (using mail, for example)
+      -> reporting statistics to mail (mailing)
+      (Mailing not considered for embedded pltforms)
+  
+-->  DESIGN CONSIDERATIONS
+  a) low-level code as portable as possible (plan to use microcontroller for the job)
+  b) aquisition and storage : daemon 
+  c) visualization: can be web application (php) or stand alone program
+  d) should share configuration files
+  
+CHANGE ME
+ a) Change logging to a logging library -- it is currently hardwired to cerr.

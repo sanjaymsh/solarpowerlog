@@ -11,7 +11,9 @@
 
 #include <iostream>
 
-Registry::Registry() {
+/** constructor for the registry. */
+Registry::Registry()
+{
 	loaded = false;
 	Config = NULL;
 
@@ -54,6 +56,70 @@ bool Registry::LoadConfig(std::string name)
 	return true;
 }
 
-Registry::~Registry() {
+/** Extract the settings-subset for a specific object, identified by section (like inverters) and name (like inverter_solarmax_1)
+ *
+ * ex:
+ *
+ * inverters = (
+ * 					{ name = "Inverter_1";
+ * 					  type = "Solarmax_XYZ";
+ * 					  driver = "Sputnik_TCP";
+ * 					  # (...)
+ * 					},
+ * 					{ name = "Inverter_2";
+ * 					  type = "Solarmax_XYZ";
+ * 					  driver = "Sputnik_TCP";
+ * 					  # (...)
+ * 					}
+ * 				);
+ *
+ * and  GetSettingsForObject("inverters", "Invertert_1") will return the Settings object
+ * for the group "inverters.[0]".
+ *
+ * Please note, that libconfig throws some exceptions: Especially, if the section is not found.
+ * This is not handled here, as the Factories should check if the configuratoin is complete on
+ * constructing them. (They also can add their own settings (default values)...
+ *
+ * [code]
+ *
+ *	libconfig::Setting &set = Registry::Instance().GetSettingsForObject("inverters", "Inverter_1");
+ *	libconfig::Setting &new = set.add("NewPropertyNotSet",libconfig::Setting::TypeString);
+ *	new = "New Default Setting";
+ *
+ * [/code]
+ *
+ * Snippet to retrieve Settings:
+ * [code]
+ * 		libconfig::Setting &set = Registry::Instance().GetSettingsForObject("inverters", "Inverter_1");
+ * [/code]
+ *
+ */
+libconfig::Setting & Registry::GetSettingsForObject(std::string section, std::string objname)
+{
+
+	libconfig::Setting &s = Config->lookup(section);
+
+	for ( int i = 0 ; i < s.getLength() ; i ++ ) {
+
+		std::string tmp =  s[i]["name"];
+		if ( tmp  == objname ) return s[i];
+	}
+
+	// note: we cannot deliver a object here ... we simply do not have one!
+	// As libconfig::SettingNotFoundException is private only, we also cannot
+	// throw here. So, as convention, we return the root of the configuration here....
+	// We "BUG" here, as it is the responsibility of the caller to ensure the
+	// objects existence.
+	// (Only Objects with a valid name should query their configuration)
+	std::cerr<<"BUG: " << __FILE__ << ":" << __LINE__
+		<< " --> Queried for unknown Object " << objname << " in section "
+		<< section << std::endl;
+
+	return Config->getRoot();
+}
+
+/** destructor */
+Registry::~Registry()
+{
 	// TODO Auto-generated destructor stub
 }

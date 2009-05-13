@@ -13,9 +13,13 @@
 #ifndef REGISTRY_H_
 #define REGISTRY_H_
 
+
 #include <utility>
 #include <string>
 #include <libconfig.h++>
+
+using namespace std;
+
 
 class Registry {
 public:

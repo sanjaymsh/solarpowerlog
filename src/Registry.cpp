@@ -11,6 +11,8 @@
 
 #include <iostream>
 
+using namespace std;
+
 /** constructor for the registry. */
 Registry::Registry()
 {

@@ -7,13 +7,23 @@
 
 #include "InverterBase.h"
 
-InverterBase::InverterBase( std::string name ) {
+using namespace std;
+
+IInverterBase::IInverterBase( std::string name ) {
 	// TODO Auto-generated constructor stub
 	this->name = name;
 
 
 }
 
-InverterBase::~InverterBase() {
+IInverterBase::~IInverterBase() {
 	// TODO Auto-generated destructor stub
 }
+
+
+std::string IInverterBase::GetName()
+{
+	return name;
+}
+
+

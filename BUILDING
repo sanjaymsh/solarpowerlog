@@ -1,0 +1,15 @@
+BUILDING THE PROJECT
+=======================
+
+currently it is programmed and build using a eclipse workspace.
+
+Plans are to move it to autoconf/configure....
+
+
+DEPENDENCIES
+================
+
+Dependency		Debian-Packages		Used for what?
+	
+libconfig++6	libconfig++6[-dev]	configfile parsing
+	

@@ -27,7 +27,7 @@ class ICapabilityHandler;
 /** Inverter Interface .... */
 // TODO: This class renamed, as it also fits for the "Filters" (Data source, data computing/enhancing, ...)
 // Inverters will be only a special interface, derived from this base class
-class IInverterBase, public IObserverObserver {
+class IInverterBase {
 public:
 
 	IInverterBase( std::string name = "unnamed" );

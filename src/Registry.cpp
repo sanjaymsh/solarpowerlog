@@ -123,5 +123,5 @@ libconfig::Setting & Registry::GetSettingsForObject(std::string section, std::st
 /** destructor */
 Registry::~Registry()
 {
-	// TODO Auto-generated destructor stub
+	if (Config) delete Config; Config = NULL;
 }

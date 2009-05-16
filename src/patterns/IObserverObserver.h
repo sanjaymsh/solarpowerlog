@@ -19,7 +19,7 @@ class IObserverSubject;
 class IObserverObserver {
 public:
 
-	IObserverObserver(IObserverSubject *subject);
+	IObserverObserver(IObserverSubject *subject = 0);
 
 	virtual ~IObserverObserver();
 

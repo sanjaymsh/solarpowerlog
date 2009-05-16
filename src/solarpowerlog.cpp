@@ -93,13 +93,6 @@ int main() {
 
 	if(error_detected) return(1);
 
-	/* ok, config has been loaded. So now factory the required objects. */
-
-	// factory -> erzeugt objekte, entscheidet welches.
-	// eine factory pro Basistyp, alos einen für den Inverter, einen für den Logger.
-	// die Factory bekommt die Namen und den Handler genannt, und entscheidet daraus
-	// was für ein Objekt er daraus erzeugen muss.
-
 
 
 

@@ -16,7 +16,7 @@ using namespace std;
 /** Constructor for the Observer (Observer Pattern)
  *
  * The Observer will auto-susbscribe to the Subject, if the
- * parameter is supplied. (But what should do a observer without an subjct?)
+ * parameter is supplied. (But what should do a observer without an subject?)
 */
 IObserverObserver::IObserverObserver(IObserverSubject *subject) {
 

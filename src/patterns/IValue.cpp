@@ -21,8 +21,6 @@ IValue::factory_types IValue::GetType(void) const
 	return type;
 }
 
-
-// TODO: factory has to set the type name in the new generated object....
 IValue *IValue::Factory(const factory_types newtype)
 {
 	IValue *tmp;

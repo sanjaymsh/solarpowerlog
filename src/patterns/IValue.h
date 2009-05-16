@@ -18,7 +18,7 @@
  *
  * TODO DOCUMENT ME!
  */
-class IValue : public IObserverSubject {
+class IValue {
 public:
 
 	enum factory_types

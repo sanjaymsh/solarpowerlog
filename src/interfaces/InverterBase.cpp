@@ -10,10 +10,7 @@
 using namespace std;
 
 IInverterBase::IInverterBase( std::string name ) {
-	// TODO Auto-generated constructor stub
 	this->name = name;
-
-
 }
 
 IInverterBase::~IInverterBase() {
@@ -21,7 +18,7 @@ IInverterBase::~IInverterBase() {
 }
 
 
-std::string IInverterBase::GetName()
+const std::string& IInverterBase::GetName(void) const
 {
 	return name;
 }

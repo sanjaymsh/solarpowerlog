@@ -25,10 +25,14 @@ class Registry {
 public:
 
 	static Registry& Instance() {
+		// TODO Make sure this is thread safe (might already be, depending on
+		// the instanciation time: When does C++ instanciate static Objects?)
 		static Registry Instance;
 		return Instance;
 	}
 
+	/* Shortcut to get the configuration.
+	 * Please note, that it must be loaded beforehand. */
 	static libconfig::Config* Configuration()
 	{
 		return Registry::Instance().Config;

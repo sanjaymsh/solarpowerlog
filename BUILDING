@@ -3,13 +3,23 @@ BUILDING THE PROJECT
 
 currently it is programmed and build using a eclipse workspace.
 
-Plans are to move it to autoconf/configure....
+Plans are to move it to autoconf/configure.... (PATCHES welcome)
 
 
 DEPENDENCIES
 ================
 
-Dependency		Debian-Packages		Used for what?
-	
-libconfig++6	libconfig++6[-dev]	configfile parsing
+[Note: Versions specify which version used for develooment. I it not meant as 
+minimal requirement: I could be that earlier versions also works.
+Unfortunatly, later versions can theoretically also break things]
+
+Dependency		Debian-Packages		Version 	Used for what?
+===============================================================================	
+libconfig++6	libconfig++6[-dev]	1.3.1-1		configfile parsing. 
+gnu common c++  libconfigcpp[-dev]	1.7.3-1		This library packages things 
+												for portalbe apps. 
+												Currently/planned used: 
+												- Mutex
+												- TCP/IP
+												 
 	

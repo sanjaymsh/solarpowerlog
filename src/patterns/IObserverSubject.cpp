@@ -35,6 +35,11 @@ void IObserverSubject::Notify(void)
 }
 
 
+unsigned int IObserverSubject::GetNumSubscribers(void)
+{
+	return listobservers.size();
+}
+
 IObserverSubject::IObserverSubject() {
 	// TODO Auto-generated constructor stub
 

@@ -9,7 +9,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
-#include "Registry.h"
+#include "configuration/Registry.h"
 
 using namespace std;
 

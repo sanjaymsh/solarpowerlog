@@ -29,6 +29,8 @@ public:
 
 	virtual void Notify(void);
 
+	virtual unsigned int GetNumSubscribers(void);
+
 protected:
 	IObserverSubject();
 

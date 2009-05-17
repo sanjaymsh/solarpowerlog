@@ -41,6 +41,7 @@
 
 class ICommand;
 class ICommandTarget;
+class CTimedWork;
 
 using namespace std;
 
@@ -61,11 +62,16 @@ using namespace std;
  *
 */
 class CWorkScheduler : protected ost::Mutex {
+
+	friend class CTimedWork;
+
 public:
 	CWorkScheduler();
 	virtual ~CWorkScheduler();
 
 	void ScheduleWork(ICommand *Command);
+
+	/** Schedule a work for later */
 	void ScheduleWork(ICommand *Commmand, struct timespec ts);
 
 	/** Call this method to do dispatch due work.
@@ -76,6 +82,12 @@ public:
 	bool DoWork(void);
 
 private:
+
+	list<ICommand*> CommandsDue;
+
+	list<CTimedWork*> SpawnedThreads;
+
+#if 0
 	struct timepec_compare
 	{
 		 bool operator()(const struct timespec t1, const struct timespec t2) const
@@ -87,9 +99,8 @@ private:
 		  };
 	};
 
-	list<ICommand*> CommandsDue;
-
 	multimap<struct timespec, ICommand*, timepec_compare> TimedCommands;
+#endif
 
 	/** get the next new command in the list.
 	 * (Thread safe)*/

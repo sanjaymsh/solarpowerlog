@@ -1,3 +1,5 @@
+
+
 /* ----------------------------------------------------------------------------
    solarpowerlog
    Copyright (C) 2009  Tobias Frost
@@ -30,6 +32,8 @@
  */
 
 #include "CWorkScheduler.h"
+#include "CMutexHelper.h"
+#include "patterns/ICommand.h"
 
 CWorkScheduler::CWorkScheduler() {
 	// TODO Auto-generated constructor stub
@@ -39,3 +43,38 @@ CWorkScheduler::CWorkScheduler() {
 CWorkScheduler::~CWorkScheduler() {
 	// TODO Auto-generated destructor stub
 }
+
+
+bool CWorkScheduler::DoWork(void)
+{
+	if ( CommandsDue.empty()) return false;
+	ICommand *cmd=getnextcmd();
+	cmd->execute();
+	delete cmd;
+
+	return true;
+}
+
+
+ICommand *CWorkScheduler::getnextcmd(void)
+{
+	// Obtain Mutex to make sure...
+	CMutexAutoLock CMutexHelper(this);
+	ICommand *cmd = CommandsDue.front();
+	CommandsDue.pop_front();
+	return cmd;
+}
+
+
+void CWorkScheduler::ScheduleWork(ICommand *Command)
+{
+	CMutexAutoLock h(this);
+	CommandsDue.push_back(Command);
+}
+
+void CWorkScheduler::ScheduleWork(ICommand *Commmand, struct timespec ts)
+{
+
+}
+
+

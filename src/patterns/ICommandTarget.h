@@ -46,7 +46,7 @@ public:
 	ICommandTarget();
 	virtual ~ICommandTarget();
 
-	virtual void ExecuteCommand(const ICommand *Command);
+	virtual void ExecuteCommand(const ICommand *Command) = 0;
 };
 
 #endif /* COMMANDTARGET_H_ */

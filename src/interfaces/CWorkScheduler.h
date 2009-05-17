@@ -34,12 +34,15 @@
 #define CWORKSCHEDULER_H_
 
 #include <time.h>
+#include <list>
+#include <map>
+
+#include <cc++/thread.h>
 
 class ICommand;
 class ICommandTarget;
 
 using namespace std;
-
 
 
 /** This class implements the work scheduler:
@@ -52,21 +55,45 @@ using namespace std;
  * call again at ....
  * (when they expect to do some work in some specific time
  *
- * \note for all actions, the Objects will be copied and therefore
- * this class takes ownership of the object.
+ * \warning for all actions, the Objects will be passed by reference. At this
+ * point of time, CWorkScheduler is owner of the object and will destroy it later,
+ * when used.
+ *
 */
-class CWorkScheduler {
+class CWorkScheduler : protected ost::Mutex {
 public:
 	CWorkScheduler();
 	virtual ~CWorkScheduler();
 
-	void ScheduleWork(ICommand Command);
-	void ScheduleWork(ICommand Commmand, struct timespec ts);
+	void ScheduleWork(ICommand *Command);
+	void ScheduleWork(ICommand *Commmand, struct timespec ts);
 
-
-	void DoWork(void);
+	/** Call this method to do dispatch due work.
+	 * Note: Returns after each piece of work has been done!
+	 *
+	 * returns true, if work has been done, false, if no work was available.
+	*/
+	bool DoWork(void);
 
 private:
+	struct timepec_compare
+	{
+		 bool operator()(const struct timespec t1, const struct timespec t2) const
+		  {
+			 if(t1.tv_sec < t2.tv_sec) return true;
+			 if(t1.tv_sec > t2.tv_sec) return false;
+			 if(t1.tv_nsec < t2.tv_nsec) return true;
+			 return false;
+		  };
+	};
+
+	list<ICommand*> CommandsDue;
+
+	multimap<struct timespec, ICommand*, timepec_compare> TimedCommands;
+
+	/** get the next new command in the list.
+	 * (Thread safe)*/
+	ICommand *getnextcmd(void);
 
 };
 

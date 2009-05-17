@@ -7,11 +7,11 @@
    Solarpowerlog is free software; However, it is dual-licenced
    as described in the file "COPYING".
 
-   For this file (CValue.h), the license terms are:
+   For this file (CCapability.cpp), the license terms are:
 
-   You can redistribute it and/or  modify it under the terms of the GNU Lesser
-   General Public License (LGPL) as published by the Free Software Foundation;
-   either version 3 of the License, or (at your option) any later version.
+   You can redistribute it and/or modify it under the terms of the GNU
+   General Public License as published by the Free Software Foundation; either
+   version 3 of the License, or (at your option) any later version.
 
    This programm is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -24,36 +24,23 @@
    ----------------------------------------------------------------------------
 */
 
-
-/** \file CValue.h
+/** \file CCapability.cpp
  *
- *  Created on: May 14, 2009
+ *  Created on: May 16, 2009
  *      Author: tobi
- *
- * Template-Class for the concrete Values.
- *
- * Note: The factory has to set IValue::type, as I don't know how to...
  */
 
+#include "CCapability.h"
 
-#ifndef CVALUEX_H_
-#define CVALUEX_H_
+using namespace std;
 
+CCapability::CCapability( const string& descr, IValue *val, IInverterBase *datasrc) {
 
-#include "IValue.h"
+	description = descr;
+	source = datasrc;
+	value = val;
+}
 
-template <class T>
-class CValue : public IValue {
-
-public:
-	CValue () { }
-
-	void Set( T value) {this->value = value;}
-	T Get (void) {return value;}
-
-private:
-	T value;
-
-};
-
-#endif /* CVALUEX_H_ */
+CCapability::~CCapability() {
+	// TODO Auto-generated destructor stub
+}

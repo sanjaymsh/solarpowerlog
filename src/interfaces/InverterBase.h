@@ -45,10 +45,6 @@ public:
 	const std::string& GetName(void) const;
 
 
-	// ############### COMMANDEE ###########################
-	void execute(void);
-
-	// ######### CAPABILITIES HANDLING ##########
 	/** returns a iterator of the Capabilties. The iterator is inizialized at the begin of the map.*/
 	virtual map<string, CCapability*>::iterator GetCapabilityIterator(void)
 	{

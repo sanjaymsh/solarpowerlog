@@ -7,7 +7,7 @@
    Solarpowerlog is free software; However, it is dual-licenced
    as described in the file "COPYING".
 
-   For this file (CValue.h), the license terms are:
+   For this file (CCapability.h), the license terms are:
 
    You can redistribute it and/or  modify it under the terms of the GNU Lesser
    General Public License (LGPL) as published by the Free Software Foundation;
@@ -24,36 +24,49 @@
    ----------------------------------------------------------------------------
 */
 
-
-/** \file CValue.h
+/** \file CCapability.h
  *
- *  Created on: May 14, 2009
+ *  Created on: May 16, 2009
  *      Author: tobi
- *
- * Template-Class for the concrete Values.
- *
- * Note: The factory has to set IValue::type, as I don't know how to...
  */
 
+#ifndef CCAPABILITY_H_
+#define CCAPABILITY_H_
 
-#ifndef CVALUEX_H_
-#define CVALUEX_H_
+#include <string>
+#include "patterns/IObserverSubject.h"
 
+class IInverterBase;
+class IValue;
 
-#include "IValue.h"
+using namespace std;
 
-template <class T>
-class CValue : public IValue {
-
+/** \fixme COMMENT ME
+ *
+ *
+ * TODO DOCUMENT ME!
+ */
+class CCapability : public IObserverSubject {
 public:
-	CValue () { }
+	CCapability( const string& descr,  IValue *val, IInverterBase *datasrc = 0);
+	virtual ~CCapability();
 
-	void Set( T value) {this->value = value;}
-	T Get (void) {return value;}
+	/* Capabilty itself */
 
-private:
-	T value;
+	/// Describing the capabilty
+	string description;
+
+	/// Where has this data originated. (back-link for the curious object)
+	/// Filters propagate this information.
+	IInverterBase *source;
+
+	/// Storing the associated value. Please note that this class does not know
+	/// anything about its type.
+	IValue *value;
+
+	/* Capability as a Subject: Everthing already set!*/
+
 
 };
 
-#endif /* CVALUEX_H_ */
+#endif /* CCAPABILITY_H_ */

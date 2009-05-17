@@ -1,3 +1,4 @@
+
 /* ----------------------------------------------------------------------------
    solarpowerlog
    Copyright (C) 2009  Tobias Frost
@@ -7,7 +8,7 @@
    Solarpowerlog is free software; However, it is dual-licenced
    as described in the file "COPYING".
 
-   For this file (CValue.h), the license terms are:
+   For this file (CWorkScheduler.h), the license terms are:
 
    You can redistribute it and/or  modify it under the terms of the GNU Lesser
    General Public License (LGPL) as published by the Free Software Foundation;
@@ -23,37 +24,50 @@
    <http://www.gnu.org/licenses/>.
    ----------------------------------------------------------------------------
 */
-
-
-/** \file CValue.h
+/** \file CWorkScheduler.h
  *
- *  Created on: May 14, 2009
+ *  Created on: May 17, 2009
  *      Author: tobi
- *
- * Template-Class for the concrete Values.
- *
- * Note: The factory has to set IValue::type, as I don't know how to...
  */
 
+#ifndef CWORKSCHEDULER_H_
+#define CWORKSCHEDULER_H_
 
-#ifndef CVALUEX_H_
-#define CVALUEX_H_
+#include <time.h>
+
+class ICommand;
+class ICommandTarget;
+
+using namespace std;
 
 
-#include "IValue.h"
 
-template <class T>
-class CValue : public IValue {
-
+/** This class implements the work scheduler:
+ *
+ * Objects derived from CommandTarget can schedule work to be done:
+ *
+ * call again later:
+ * (when they are not able to complete it immediatly)
+ *
+ * call again at ....
+ * (when they expect to do some work in some specific time
+ *
+ * \note for all actions, the Objects will be copied and therefore
+ * this class takes ownership of the object.
+*/
+class CWorkScheduler {
 public:
-	CValue () { }
+	CWorkScheduler();
+	virtual ~CWorkScheduler();
 
-	void Set( T value) {this->value = value;}
-	T Get (void) {return value;}
+	void ScheduleWork(ICommand Command);
+	void ScheduleWork(ICommand Commmand, struct timespec ts);
+
+
+	void DoWork(void);
 
 private:
-	T value;
 
 };
 
-#endif /* CVALUEX_H_ */
+#endif /* CWORKSCHEDULER_H_ */

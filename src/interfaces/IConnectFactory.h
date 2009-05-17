@@ -7,7 +7,7 @@
    Solarpowerlog is free software; However, it is dual-licenced
    as described in the file "COPYING".
 
-   For this file (CValue.h), the license terms are:
+   For this file (IConnectFactory.h), the license terms are:
 
    You can redistribute it and/or  modify it under the terms of the GNU Lesser
    General Public License (LGPL) as published by the Free Software Foundation;
@@ -24,36 +24,30 @@
    ----------------------------------------------------------------------------
 */
 
-
-/** \file CValue.h
+/** \file IConnectFactory.h
  *
- *  Created on: May 14, 2009
+ *  Created on: May 16, 2009
  *      Author: tobi
- *
- * Template-Class for the concrete Values.
- *
- * Note: The factory has to set IValue::type, as I don't know how to...
  */
 
+#ifndef CONNECTIONFACTORY_H_
+#define CONNECTIONFACTORY_H_
 
-#ifndef CVALUEX_H_
-#define CVALUEX_H_
+#include "IConnect.h"
 
-
-#include "IValue.h"
-
-template <class T>
-class CValue : public IValue {
-
+/** \fixme COMMENT ME
+ *
+ *
+ * TODO DOCUMENT ME!
+ */
+class IConnectFactory {
 public:
-	CValue () { }
+	static IConnect& Factory(std::string type);
 
-	void Set( T value) {this->value = value;}
-	T Get (void) {return value;}
-
-private:
-	T value;
-
+protected:
+	IConnectFactory() {};
+public:
+	virtual ~IConnectFactory() {};
 };
 
-#endif /* CVALUEX_H_ */
+#endif /* CONNECTIONFACTORY_H_ */

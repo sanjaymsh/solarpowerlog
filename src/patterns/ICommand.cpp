@@ -32,7 +32,7 @@
  */
 
 #include "patterns/ICommand.h"
-
+#include "patterns/ICommandTarget.h"
 
 /** Just the constructor taking all elements... **/
 ICommand::ICommand(int command, ICommandTarget *target, void *dat)

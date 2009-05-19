@@ -44,6 +44,8 @@
 #include <string>
 #include <libconfig.h++>
 
+class CWorkScheduler;
+
 using namespace std;
 
 
@@ -57,6 +59,10 @@ public:
 		return Instance;
 	}
 
+	static CWorkScheduler *GetMainScheduler(void) {
+		return Registry::Instance().mainscheduler;
+	}
+
 	/* Shortcut to get the configuration.
 	 * Please note, that it must be loaded beforehand. */
 	static libconfig::Config* Configuration()
@@ -68,6 +74,13 @@ public:
 
 	libconfig::Setting & GetSettingsForObject(std::string section, std::string objname);
 
+    void setMainScheduler(CWorkScheduler *mainscheduler)
+    {
+    	Registry::Instance().mainscheduler = mainscheduler;
+    }
+
+    CWorkScheduler *mainscheduler;
+
 protected:
 	Registry();
 	Registry (const Registry& other) {};
@@ -75,6 +88,8 @@ protected:
 
 private:
 	libconfig::Config *Config;
+
+
 
 	bool loaded;
 

@@ -1,3 +1,5 @@
+#if 1
+
 /* ----------------------------------------------------------------------------
    solarpowerlog
    Copyright (C) 2009  Tobias Frost
@@ -28,6 +30,10 @@
 #include <string>
 #include <iostream>
 #include "configuration/Registry.h"
+#include "interfaces/CWorkScheduler.h"
+#include "patterns/ICommand.h"
+#include "patterns/ICommandTarget.h"
+#include "interfaces/CTimedWork.h"
 
 using namespace std;
 
@@ -84,14 +90,18 @@ static const char *required_sections[] =
 
 int main() {
 
+
+
 	bool error_detected = false;
+
+	int i=0;
 
 	/** Loading configuration file */
 	cout << "Generating Registry" << endl;
 	// TODO avoid hardcoded filename. Get it from parameters.
 	if (! Registry::Instance().LoadConfig("solarpowerlog.conf"))	{
 		cerr << "Could not load configuration " << endl;
-		return 1;
+		_exit(1);
 	}
 
 	// Note: As a limitation of libconfig, one cannot create the configs
@@ -109,12 +119,62 @@ int main() {
 		}
 	}
 
-	if(error_detected) return(1);
+
+
+	if(error_detected) {
+		cerr << "Error detected" << endl ; _exit(1);
+	}
 
 
 
+	/** bootstraping the system */
+
+	/** 1st create the main scheduler. */
+
+	cout << ++i << endl;
+
+	Registry::Instance().setMainScheduler(new CWorkScheduler);
+	CWorkScheduler *dut = Registry::Instance().GetMainScheduler();
+
+	cout << ++i << endl;
+
+	/// Testing the scheduler
+	ICommandTarget *ct = new ICommandTarget();
+	cout << ++i << endl;
+
+	ICommand *c = new ICommand(0, ct, 0);
+
+	cout << ++i << endl;
+
+	struct timespec ts;
+	ts.tv_sec = 3;
+	ts.tv_nsec = 0;
 
 
+	dut->ScheduleWork(c,ts);
+	ts.tv_sec = 10;
+	ts.tv_nsec = 0;
 
+	c = new ICommand(1, ct, 0);
+
+	dut->ScheduleWork(c,ts);
+
+	ts.tv_sec =10;
+	ts.tv_nsec = 0;
+
+	c = new ICommand(2, ct, 0);
+
+	dut->ScheduleWork(c,ts);
+
+	sleep(15);cout << ++i << endl;
+
+	while (dut->DoWork());
+
+#if 0
+#endif
 	return 0;
 }
+
+#else
+
+#endif

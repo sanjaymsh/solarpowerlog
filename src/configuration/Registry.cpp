@@ -36,6 +36,7 @@
 #include "Registry.h"
 
 #include <iostream>
+#include "CWorkScheduler.h"
 
 using namespace std;
 
@@ -150,4 +151,5 @@ libconfig::Setting & Registry::GetSettingsForObject(std::string section, std::st
 Registry::~Registry()
 {
 	if (Config) delete Config; Config = NULL;
+	if (mainscheduler) delete mainscheduler;
 }

@@ -34,7 +34,9 @@
 #ifndef ICOMMAND_H_
 #define ICOMMAND_H_
 
-#include "patterns/ICommandTarget.h"
+// #include "patterns/ICommandTarget.h"
+
+class ICommandTarget;
 
 /** Encapsulates a command
  *

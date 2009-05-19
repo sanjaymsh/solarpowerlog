@@ -34,7 +34,13 @@
 #ifndef ICOMMANDTARGET_H_
 #define ICOMMANDTARGET_H_
 
-class ICommand;
+#include <iostream>
+
+#include <assert.h>
+
+#include <time.h>
+
+#include "ICommand.h"
 
 /** Interface for a command's target.
  *
@@ -46,7 +52,13 @@ public:
 	ICommandTarget();
 	virtual ~ICommandTarget();
 
-	virtual void ExecuteCommand(const ICommand *Command) = 0;
+	virtual void ExecuteCommand(const ICommand *Command) {
+		struct tm *local;
+		  time_t t;
+		 t = time(NULL);
+		local = localtime(&t);
+		std::cout << this << "cmd: " << Command->getCmd() << " " << __FILE__ << " " << __LINE__ << " " << asctime(local) << std::endl;
+	}
 };
 
 #endif /* COMMANDTARGET_H_ */

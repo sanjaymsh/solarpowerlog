@@ -106,7 +106,7 @@ bool Registry::LoadConfig(std::string name)
  * for the group "inverters.[0]".
  *
  * Please note, that libconfig throws some exceptions: Especially, if the section is not found.
- * This is not handled here, as the Factories should check if the configuratoin is complete on
+ * This is not handled here, as the Factories should check if the configuration is complete on
  * constructing them. (They also can add their own settings (default values)...
  *
  * [code]

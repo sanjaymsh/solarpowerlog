@@ -1,5 +1,3 @@
-#if 1
-
 /* ----------------------------------------------------------------------------
    solarpowerlog
    Copyright (C) 2009  Tobias Frost
@@ -34,6 +32,8 @@
 #include "patterns/ICommand.h"
 #include "patterns/ICommandTarget.h"
 #include "interfaces/CTimedWork.h"
+#include "interfaces/IInverterFactory.h"
+#include "interfaces/InverterFactoryFactory.h"
 
 using namespace std;
 
@@ -84,6 +84,7 @@ static const char *required_sections[] =
 {
 		"application",
 		"inverter",
+		"inverter.inverters",
 		"logger"
 };
 
@@ -93,8 +94,6 @@ int main() {
 
 
 	bool error_detected = false;
-
-	int i=0;
 
 	/** Loading configuration file */
 	cout << "Generating Registry" << endl;
@@ -108,73 +107,74 @@ int main() {
 	// structure.
 	// Therefore we check here for the basic required sections and abort,
 	// if one is not existing.
-	libconfig::Config *cfg = Registry::Configuration();
-	libconfig::Setting &rt = cfg->getRoot();
+	{
+		libconfig::Config *cfg = Registry::Configuration();
+		libconfig::Setting &rt = cfg->getRoot();
 
-	for ( unsigned int i = 0; i < sizeof(required_sections) / sizeof (char*) ; i++ ) {
-		if (! rt.exists(required_sections[i])) {
-			cerr << " Configuration Check: Required Section " <<
-				required_sections[i] << " missing" << endl;
-			error_detected = true;
+		for ( unsigned int i = 0; i < sizeof(required_sections) / sizeof (char*) ; i++ ) {
+			if (! rt.exists(required_sections[i])) {
+				cerr << " Configuration Check: Required Section " <<
+					required_sections[i] << " missing" << endl;
+				error_detected = true;
+			}
 		}
 	}
-
 
 
 	if(error_detected) {
 		cerr << "Error detected" << endl ; _exit(1);
 	}
 
-
-
 	/** bootstraping the system */
 
-	/** 1st create the main scheduler. */
-
-	cout << ++i << endl;
-
+	/** create the main scheduler. */
 	Registry::Instance().setMainScheduler(new CWorkScheduler);
-	CWorkScheduler *dut = Registry::Instance().GetMainScheduler();
 
-	cout << ++i << endl;
+	/** create the inverters via its factories. */
+	string section = "inverter.inverters";
+	libconfig::Setting &rt = Registry::Configuration()->lookup(section);;
+	DumpSettings(rt);
 
-	/// Testing the scheduler
-	ICommandTarget *ct = new ICommandTarget();
-	cout << ++i << endl;
+	cout <<  rt.getLength() << endl;
 
-	ICommand *c = new ICommand(0, ct, 0);
+		for ( int i = 0 ; i < rt.getLength() ; i ++ ) {
+			std::string name;
+			std::string manufactor;
+			std::string model;
 
-	cout << ++i << endl;
+			try {
+				name =  (const char *) rt[i]["name"];
+				manufactor =( const char *) rt[i]["manufactor"];
+				model =( const char *) rt[i]["model"];
+				cout << name <<" " << manufactor  << endl;
+			}
+			catch (libconfig::SettingNotFoundException e) {
+				cerr << "Configuration Error: Required Setting was not found in \"" << e.getPath() << '\"' << endl;
+				_exit(1);
+			}
 
-	struct timespec ts;
-	ts.tv_sec = 3;
-	ts.tv_nsec = 0;
+			IInverterFactory *factory =  InverterFactoryFactory::createInverterFactory(manufactor);
+			if(! factory) {
+				cerr << "Cannot create Inverter for manufactor \"" << manufactor << '\"' ;
+				cerr << " (Cannot create factory. Maybe mispelled manufactor?"<<endl;
+				_exit(1);
+			}
+			IInverterBase *inverter = factory->Factory(model);
+
+			if(! inverter)
+			{
+				cerr << "Cannot create Inverter model " << model << "for manufactor \"" << manufactor << '\"' ;
+				cerr << " (Cannot create factory. Maybe mispelled model?)"<<endl;
+				cerr << " The factory says, it supports the following models:" << endl;
+				cerr << factory->GetSupportedModels() << endl;
+				_exit(1);
+			}
+
+		//	Registry::Instance().RegisterInverter(inverter);
 
 
-	dut->ScheduleWork(c,ts);
-	ts.tv_sec = 10;
-	ts.tv_nsec = 0;
+		}
 
-	c = new ICommand(1, ct, 0);
 
-	dut->ScheduleWork(c,ts);
-
-	ts.tv_sec =10;
-	ts.tv_nsec = 0;
-
-	c = new ICommand(2, ct, 0);
-
-	dut->ScheduleWork(c,ts);
-
-	sleep(15);cout << ++i << endl;
-
-	while (dut->DoWork());
-
-#if 0
-#endif
 	return 0;
 }
-
-#else
-
-#endif

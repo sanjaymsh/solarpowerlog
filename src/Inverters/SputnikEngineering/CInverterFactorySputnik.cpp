@@ -1,0 +1,70 @@
+/* ----------------------------------------------------------------------------
+ solarpowerlog
+ Copyright (C) 2009  Tobias Frost
+
+ This file is part of solarpowerlog.
+
+ Solarpowerlog is free software; However, it is dual-licenced
+ as described in the file "COPYING".
+
+ For this file (CInverterFactorySputnik.cpp), the license terms are:
+
+ You can redistribute it and/or modify it under the terms of the GNU
+ General Public License as published by the Free Software Foundation; either
+ version 3 of the License, or (at your option) any later version.
+
+ This programm is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+
+ You should have received a copy of the GNU Library General Public
+ License along with this proramm; if not, see
+ <http://www.gnu.org/licenses/>.
+ ----------------------------------------------------------------------------
+ */
+
+/** \file CInverterFactorySputnik.cpp
+ *
+ *  Created on: May 20, 2009
+ *      Author: tobi
+ */
+
+#include "CInverterFactorySputnik.h"
+#include "CInverterSputnikSSeries.h"
+
+using namespace std;
+
+
+static const string supportedmodels =
+	"S-Series: \tModels 2000S, 3000S, 4200S, 6000S \n ";
+
+CInverterFactorySputnik::CInverterFactorySputnik() {
+
+
+// TODO Auto-generated constructor stub
+
+}
+
+/** Instanciates the right inverter class */
+IInverterBase *CInverterFactorySputnik::Factory(const string & type)
+{
+
+	if ( type == "S-Series" )
+	{
+		return new CInverterSputnikSSeries();
+	}
+
+	return NULL;
+
+
+}
+
+CInverterFactorySputnik::~CInverterFactorySputnik() {
+	// TODO Auto-generated destructor stub
+}
+
+const string & CInverterFactorySputnik::GetSupportedModels() const {
+
+	return supportedmodels;
+}

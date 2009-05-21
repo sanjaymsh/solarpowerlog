@@ -7,7 +7,7 @@
  Solarpowerlog is free software; However, it is dual-licenced
  as described in the file "COPYING".
 
- For this file (CInverterFactorySputnik.h), the license terms are:
+ For this file (CTimedWork.h), the license terms are:
 
  You can redistribute it and/or  modify it under the terms of the GNU Lesser
  General Public License (LGPL) as published by the Free Software Foundation;
@@ -24,35 +24,48 @@
  ----------------------------------------------------------------------------
  */
 
-/** \file CInverterFactorySputnik.h
+/** \file CTimedWork.h
  *
- *  Created on: May 20, 2009
+ *  Created on: May 18, 2009
  *      Author: tobi
  */
 
-#ifndef CINVERTERFACTORYSPUTNIK_H_
-#define CINVERTERFACTORYSPUTNIK_H_
+#ifndef CTIMEDWORK_H_
+#define CTIMEDWORK_H_
 
-/** \fixme COMMENT ME
+#include <cc++/thread.h>
+#include "patterns/ICommand.h"
+#include "CWorkScheduler.h"
+
+
+/** This class bundles a timed activity.
  *
- *
- * TODO DOCUMENT ME!
+ * Currently, activities are tasks, which when ending, will enque an immediatte action.
  */
-#include "IInverterFactory.h"
-
-using namespace std;
-
-class CInverterFactorySputnik: public IInverterFactory {
-
-	virtual IInverterBase * Factory(const string& type, const string& name,
-			const string & configurationpath);
-
-	virtual const string & GetSupportedModels() const;
-
-
+class CTimedWork : public  ost::Thread
+{
 public:
-	CInverterFactorySputnik();
-	virtual ~CInverterFactorySputnik();
+	/** Constructor: Takes the scheduler to inform, the command to execute and the time when.
+	 */
+	CTimedWork(CWorkScheduler *sch, ICommand *cmd, struct timespec ts);
+
+
+private:
+	CTimedWork() {};
+	/** holds the commmand */
+	ICommand *cmd;
+	/** holds the timespec */
+	struct timespec ts;
+	/** it is attached to this scheduler.
+	 * (The scheduler keeps books of its processes)*/
+	CWorkScheduler *sch;
+
+protected:
+	/// Called on thread termination (See commonc++ lib)
+	void final();
+
+	/// Called on execution of the thread. (See commonc++ lib)
+	void run();
 };
 
-#endif /* CINVERTERFACTORYSPUTNIK_H_ */
+#endif /* CTIMEDWORK_H_ */

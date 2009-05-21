@@ -7,7 +7,7 @@
  Solarpowerlog is free software; However, it is dual-licenced
  as described in the file "COPYING".
 
- For this file (CInverterFactorySputnik.cpp), the license terms are:
+ For this file (InverterFactoryFactory.cpp), the license terms are:
 
  You can redistribute it and/or modify it under the terms of the GNU
  General Public License as published by the Free Software Foundation; either
@@ -24,48 +24,32 @@
  ----------------------------------------------------------------------------
  */
 
-/** \file CInverterFactorySputnik.cpp
+/** \file InverterFactoryFactory.cpp
  *
- *  Created on: May 20, 2009
+ *  Created on: May 21, 2009
  *      Author: tobi
  */
 
-#include "CInverterFactorySputnik.h"
-#include "CInverterSputnikSSeries.h"
-
-using namespace std;
-
-
-static const string supportedmodels =
-	"S-Series: \tModels 2000S, 3000S, 4200S, 6000S \n ";
-
-CInverterFactorySputnik::CInverterFactorySputnik() {
+#include "InverterFactoryFactory.h"
+#include "IInverterFactory.h"
+#include "Inverters/SputnikEngineering/CInverterFactorySputnik.h"
 
 
-// TODO Auto-generated constructor stub
+InverterFactoryFactory::InverterFactoryFactory() {
+	// TODO Auto-generated constructor stub
 
 }
 
-/** Instanciates the right inverter class */
-IInverterBase *CInverterFactorySputnik::Factory(const string & type,
-		const string& name, const string & configurationpath)
+IInverterFactory *InverterFactoryFactory::createInverterFactory(const string& manufactor)
 {
 
-	if ( type == "S-Series" )
-	{
-		return new CInverterSputnikSSeries(name, configurationpath);
+	if (manufactor == "SPUTNIK_ENGINEERING") {
+		return new CInverterFactorySputnik;
 	}
 
 	return NULL;
-
-
 }
 
-CInverterFactorySputnik::~CInverterFactorySputnik() {
+InverterFactoryFactory::~InverterFactoryFactory() {
 	// TODO Auto-generated destructor stub
-}
-
-const string & CInverterFactorySputnik::GetSupportedModels() const {
-
-	return supportedmodels;
 }

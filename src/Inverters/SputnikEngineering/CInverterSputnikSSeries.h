@@ -4,12 +4,12 @@
 
  This file is part of solarpowerlog.
 
- Solarpowerlog is free software; However, it is dual-licenced 
+ Solarpowerlog is free software; However, it is dual-licenced
  as described in the file "COPYING".
 
  For this file (CInverterSputnikSSeries.h), the license terms are:
 
- You can redistribute it and/or  modify it under the terms of the GNU Lesser 
+ You can redistribute it and/or  modify it under the terms of the GNU Lesser
  General Public License (LGPL) as published by the Free Software Foundation;
  either version 3 of the License, or (at your option) any later version.
 
@@ -42,8 +42,12 @@
 
 class CInverterSputnikSSeries: public IInverterBase {
 public:
-	CInverterSputnikSSeries();
+	CInverterSputnikSSeries(const string & name, const string & configurationpath);
 	virtual ~CInverterSputnikSSeries();
+
+	virtual bool CheckConfig();
+
+
 };
 
 #endif /* CINVERTERSPUTNIKSSERIES_H_ */

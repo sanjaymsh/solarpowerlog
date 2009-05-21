@@ -7,7 +7,7 @@
  Solarpowerlog is free software; However, it is dual-licenced
  as described in the file "COPYING".
 
- For this file (CInverterFactorySputnik.h), the license terms are:
+ For this file (InverterFactoryFactory.h), the license terms are:
 
  You can redistribute it and/or  modify it under the terms of the GNU Lesser
  General Public License (LGPL) as published by the Free Software Foundation;
@@ -24,35 +24,35 @@
  ----------------------------------------------------------------------------
  */
 
-/** \file CInverterFactorySputnik.h
+/** \file InverterFactoryFactory.h
  *
- *  Created on: May 20, 2009
+ *  Created on: May 21, 2009
  *      Author: tobi
  */
 
-#ifndef CINVERTERFACTORYSPUTNIK_H_
-#define CINVERTERFACTORYSPUTNIK_H_
+#ifndef INVERTERFACTORYFACTORY_H_
+#define INVERTERFACTORYFACTORY_H_
+
+#include <string>
+
+class IInverterFactory;
+
+using namespace std;
 
 /** \fixme COMMENT ME
  *
  *
  * TODO DOCUMENT ME!
  */
-#include "IInverterFactory.h"
-
-using namespace std;
-
-class CInverterFactorySputnik: public IInverterFactory {
-
-	virtual IInverterBase * Factory(const string& type, const string& name,
-			const string & configurationpath);
-
-	virtual const string & GetSupportedModels() const;
-
-
+class InverterFactoryFactory {
 public:
-	CInverterFactorySputnik();
-	virtual ~CInverterFactorySputnik();
+
+	static IInverterFactory * createInverterFactory(const string& manufactor);
+
+private:
+	InverterFactoryFactory();
+public:
+	virtual ~InverterFactoryFactory();
 };
 
-#endif /* CINVERTERFACTORYSPUTNIK_H_ */
+#endif /* INVERTERFACTORYFACTORY_H_ */

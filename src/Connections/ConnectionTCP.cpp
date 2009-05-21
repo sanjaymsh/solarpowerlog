@@ -7,7 +7,7 @@
  Solarpowerlog is free software; However, it is dual-licenced
  as described in the file "COPYING".
 
- For this file (CInverterFactorySputnik.cpp), the license terms are:
+ For this file (ConnectionTCP.cpp), the license terms are:
 
  You can redistribute it and/or modify it under the terms of the GNU
  General Public License as published by the Free Software Foundation; either
@@ -24,48 +24,52 @@
  ----------------------------------------------------------------------------
  */
 
-/** \file CInverterFactorySputnik.cpp
+/** \file ConnectionTCP.cpp
  *
- *  Created on: May 20, 2009
+ *  Created on: May 21, 2009
  *      Author: tobi
  */
 
-#include "CInverterFactorySputnik.h"
-#include "CInverterSputnikSSeries.h"
+#include "ConnectionTCP.h"
+#include "interfaces/IConnect.h"
 
-using namespace std;
-
-
-static const string supportedmodels =
-	"S-Series: \tModels 2000S, 3000S, 4200S, 6000S \n ";
-
-CInverterFactorySputnik::CInverterFactorySputnik() {
-
-
-// TODO Auto-generated constructor stub
-
-}
-
-/** Instanciates the right inverter class */
-IInverterBase *CInverterFactorySputnik::Factory(const string & type,
-		const string& name, const string & configurationpath)
+ConnectionTCP::ConnectionTCP(string configurationname)
+: IConnect(configurationname)
 {
 
-	if ( type == "S-Series" )
-	{
-		return new CInverterSputnikSSeries(name, configurationpath);
-	}
-
-	return NULL;
-
-
+// TODO Auto-generated constructor stub
 }
 
-CInverterFactorySputnik::~CInverterFactorySputnik() {
+ConnectionTCP::~ConnectionTCP() {
 	// TODO Auto-generated destructor stub
 }
 
-const string & CInverterFactorySputnik::GetSupportedModels() const {
-
-	return supportedmodels;
+bool ConnectionTCP::Connect()
+{
 }
+
+bool ConnectionTCP::Disconnect()
+{
+}
+
+bool ConnectionTCP::Send(const char *tosend, int len)
+{
+}
+
+bool ConnectionTCP::Receive(string & wheretoplace, unsigned int maxsize)
+{
+}
+
+bool ConnectionTCP::Receive(char *wheretoplace, unsigned int maxsize, int *numreceived)
+{
+}
+
+
+
+
+
+
+
+
+
+

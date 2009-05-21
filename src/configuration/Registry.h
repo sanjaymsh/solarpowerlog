@@ -59,9 +59,7 @@ public:
 		return Instance;
 	}
 
-	static CWorkScheduler *GetMainScheduler(void) {
-		return Registry::Instance().mainscheduler;
-	}
+	// C O N F I G U R A T I O N
 
 	/* Shortcut to get the configuration.
 	 * Please note, that it must be loaded beforehand. */
@@ -74,11 +72,20 @@ public:
 
 	libconfig::Setting & GetSettingsForObject(std::string section, std::string objname);
 
+
+
+	// S C H E D U L E R
+
     void setMainScheduler(CWorkScheduler *mainscheduler)
     {
     	Registry::Instance().mainscheduler = mainscheduler;
     }
 
+	static CWorkScheduler *GetMainScheduler(void) {
+		return Registry::Instance().mainscheduler;
+	}
+
+private:
     CWorkScheduler *mainscheduler;
 
 protected:

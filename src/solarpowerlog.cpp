@@ -159,7 +159,7 @@ int main() {
 				cerr << " (Cannot create factory. Maybe mispelled manufactor?"<<endl;
 				_exit(1);
 			}
-			IInverterBase *inverter = factory->Factory(model);
+			IInverterBase *inverter = factory->Factory(model, name, rt.getPath());
 
 			if(! inverter)
 			{

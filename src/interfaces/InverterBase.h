@@ -23,15 +23,13 @@
 
 using namespace std;
 
-
-
 /** Inverter Interface .... */
 // TODO: This class renamed, as it also fits for the "Filters" (Data source, data computing/enhancing, ...)
 // Inverters will be only a special interface, derived from this base class
 class IInverterBase {
 public:
 
-	IInverterBase( std::string name = "unnamed" );
+	IInverterBase( const string &name, const string & configurationpath );
 	virtual ~IInverterBase();
 
 	// Class for handling the connectivity.
@@ -42,7 +40,7 @@ public:
 	IConnect *connection;
 
 	// ############### GETTERS AND SETTERS ##################
-	const std::string& GetName(void) const;
+	virtual const std::string& GetName(void) const;
 
 
 	/** returns a iterator of the Capabilties. The iterator is inizialized at the begin of the map.*/
@@ -68,10 +66,15 @@ public:
 			return it->second;
 	}
 
+	virtual bool CheckConfig() = 0;
 
-private:
+protected:
+	/** Configuration path as determined on start -- for easier fetching the config.*/
+	std::string configurationpath;
 	/** Inverter Name -- as in config */
 	std::string name;
+
+private:
 
 	// This maps contains all the Caps by the Inverter.
 	// Caps implements the Subject in the Observer-Pattern.

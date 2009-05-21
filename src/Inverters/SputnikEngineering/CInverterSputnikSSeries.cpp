@@ -4,12 +4,12 @@
 
  This file is part of solarpowerlog.
 
- Solarpowerlog is free software; However, it is dual-licenced 
+ Solarpowerlog is free software; However, it is dual-licenced
  as described in the file "COPYING".
 
  For this file (CInverterSputnikSSeries.cpp), the license terms are:
 
- You can redistribute it and/or modify it under the terms of the GNU  
+ You can redistribute it and/or modify it under the terms of the GNU
  General Public License as published by the Free Software Foundation; either
  version 3 of the License, or (at your option) any later version.
 
@@ -31,12 +31,46 @@
  */
 
 #include "CInverterSputnikSSeries.h"
+#include "Registry.h"
+#include <libconfig.h++>
+#include <iostream>
 
-CInverterSputnikSSeries::CInverterSputnikSSeries() {
-	// TODO Auto-generated constructor stub
+using namespace std;
 
+
+
+CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name, const string & configurationpath)
+: IInverterBase::IInverterBase(name, configurationpath)
+{
 }
 
 CInverterSputnikSSeries::~CInverterSputnikSSeries() {
 	// TODO Auto-generated destructor stub
 }
+
+bool CInverterSputnikSSeries::CheckConfig()
+{
+	string setting;
+
+	bool ret = true;
+	// Check, if we have enough informations to work on.
+	libconfig::Setting &set = Registry::Instance().GetSettingsForObject(configurationpath, name);
+
+	setting = "comms";
+	if (! set.exists(setting) || !set.getType() !=  libconfig::Setting::TypeString) {
+		cerr << "Setting " << setting << " in " << configurationpath << "."
+			<< name << " missing of wrong type (string)" << endl;
+		ret = false;
+	}
+
+	setting = "commadr";
+	if (! set.exists(setting) || !set.getType() !=  libconfig::Setting::TypeInt) {
+		cerr << "Setting " << setting << " in " << configurationpath << "."
+			<< name << " missing of wrong type (integer)" << endl;
+		ret = false;
+	}
+
+	return ret;
+}
+
+

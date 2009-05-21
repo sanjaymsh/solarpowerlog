@@ -36,8 +36,9 @@
 
 using namespace std;
 
-IInverterBase::IInverterBase( std::string name ) {
+IInverterBase::IInverterBase( const string& name, const string & configurationpath  ) {
 	this->name = name;
+	this->configurationpath = configurationpath;
 }
 
 IInverterBase::~IInverterBase() {

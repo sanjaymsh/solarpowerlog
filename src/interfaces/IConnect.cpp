@@ -37,7 +37,7 @@
 
 using namespace std;
 
-IConnect::IConnect(string configurationname) {
+IConnect::IConnect(const string& configurationname) {
 	ConfigurationPath = configurationname;
 }
 

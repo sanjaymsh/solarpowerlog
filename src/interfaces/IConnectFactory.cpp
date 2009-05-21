@@ -33,7 +33,9 @@
 
 #include "IConnectFactory.h"
 
-IConnect & IConnectFactory::Factory(std::string type)
+using namespace std;
+
+IConnect * IConnectFactory::Factory(const string& type)
 {
 }
 

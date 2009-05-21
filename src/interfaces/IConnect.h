@@ -46,7 +46,7 @@ using namespace std;
  */
 class IConnect {
 public:
-	IConnect(string configurationname);
+	IConnect(const string &configurationname);
 	virtual ~IConnect();
 
 	/// Connect to something
@@ -76,7 +76,9 @@ public:
 	/// (0 == nothing received)
 	virtual bool Receive(char *wheretoplace, unsigned int maxsize, int *numreceived) = 0;
 
-private:
+	virtual bool CheckConfig(void) = 0 ;
+
+protected:
 	string ConfigurationPath;
 
 };

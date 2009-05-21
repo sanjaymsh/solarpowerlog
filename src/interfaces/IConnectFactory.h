@@ -35,6 +35,8 @@
 
 #include "IConnect.h"
 
+using namespace std;
+
 /** \fixme COMMENT ME
  *
  *
@@ -42,7 +44,7 @@
  */
 class IConnectFactory {
 public:
-	static IConnect& Factory(std::string type);
+	static IConnect* Factory(const string& type);
 
 protected:
 	IConnectFactory() {};

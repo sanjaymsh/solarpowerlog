@@ -42,6 +42,7 @@ using namespace std;
 CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name, const string & configurationpath)
 : IInverterBase::IInverterBase(name, configurationpath)
 {
+
 }
 
 CInverterSputnikSSeries::~CInverterSputnikSSeries() {
@@ -51,6 +52,7 @@ CInverterSputnikSSeries::~CInverterSputnikSSeries() {
 bool CInverterSputnikSSeries::CheckConfig()
 {
 	string setting;
+	string str;
 
 	bool ret = true;
 	// Check, if we have enough informations to work on.
@@ -61,6 +63,11 @@ bool CInverterSputnikSSeries::CheckConfig()
 		cerr << "Setting " << setting << " in " << configurationpath << "."
 			<< name << " missing of wrong type (string)" << endl;
 		ret = false;
+	}
+
+	// Check config of the component, if already instanciated.
+	if (connection ) {
+		ret = connection->CheckConfig();
 	}
 
 	setting = "commadr";

@@ -44,12 +44,13 @@ using namespace std;
  */
 class IConnectFactory {
 public:
-	static IConnect* Factory(const string& type);
+	static IConnect* Factory(const string& type, const string &configurationpath);
 
 protected:
 	IConnectFactory() {};
 public:
 	virtual ~IConnectFactory() {};
+
 };
 
 #endif /* CONNECTIONFACTORY_H_ */

@@ -40,10 +40,10 @@
  */
 #include "IConnect.h"
 
-class ConnectionTCP: public IConnect {
+class CConnectTCP: public IConnect {
 public:
-	ConnectionTCP(string configurationname);
-	virtual ~ConnectionTCP();
+	CConnectTCP(const string & configurationname);
+	virtual ~CConnectTCP();
 
 	/// Connect to something
 	/// NOTE: Needed to be overriden! ALWAYS Open in a NON_BLOCK way, or implement a worker thread
@@ -65,6 +65,7 @@ public:
 	/// (0 == nothing received)
 	virtual bool Receive(char *wheretoplace, unsigned int maxsize, int *numreceived);
 
+	virtual bool CheckConfig(void) ;
 
 };
 

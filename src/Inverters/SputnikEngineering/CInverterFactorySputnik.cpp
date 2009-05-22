@@ -61,11 +61,13 @@ IInverterBase *CInverterFactorySputnik::Factory(const string & type,
 
 }
 
+
 CInverterFactorySputnik::~CInverterFactorySputnik() {
 	// TODO Auto-generated destructor stub
 }
 
+/** Return a string describing the available models for this factory.
+ * This should be inforamative for the user. */
 const string & CInverterFactorySputnik::GetSupportedModels() const {
-
 	return supportedmodels;
 }

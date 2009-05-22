@@ -30,39 +30,57 @@
  *      Author: tobi
  */
 
-#include "ConnectionTCP.h"
 #include "interfaces/IConnect.h"
+#include "Connections/CConnectTCP.h"
 
-ConnectionTCP::ConnectionTCP(string configurationname)
+#include "iostream"
+
+using namespace std;
+
+CConnectTCP::CConnectTCP(const string &configurationname)
 : IConnect(configurationname)
 {
 
 // TODO Auto-generated constructor stub
 }
 
-ConnectionTCP::~ConnectionTCP() {
+CConnectTCP::~CConnectTCP() {
 	// TODO Auto-generated destructor stub
 }
 
-bool ConnectionTCP::Connect()
+bool CConnectTCP::Connect()
 {
+	// TODO Implement me
 }
 
-bool ConnectionTCP::Disconnect()
+bool CConnectTCP::Disconnect()
 {
+	// TODO Implement me
 }
 
-bool ConnectionTCP::Send(const char *tosend, int len)
+bool CConnectTCP::Send(const char *tosend, int len)
 {
+	// TODO Implement me
 }
 
-bool ConnectionTCP::Receive(string & wheretoplace, unsigned int maxsize)
+bool CConnectTCP::Receive(string & wheretoplace, unsigned int maxsize)
 {
+	// TODO Implement me
 }
 
-bool ConnectionTCP::Receive(char *wheretoplace, unsigned int maxsize, int *numreceived)
+bool CConnectTCP::Receive(char *wheretoplace, unsigned int maxsize, int *numreceived)
 {
+	// TODO Implement me
 }
+
+bool CConnectTCP::CheckConfig(void)
+{
+	// TODO Implement me
+	cerr << __FUNCTION__ << ": Not implemented yet" << endl;
+	return false;
+}
+
+
 
 
 

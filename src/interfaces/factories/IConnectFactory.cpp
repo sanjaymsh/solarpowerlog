@@ -31,12 +31,25 @@
  *      Author: tobi
  */
 
-#include "IConnectFactory.h"
+#include "interfaces/factories/IConnectFactory.h"
+#include "Connections/CConnectDummy.h"
+#include "Connections/ConnectionTCP.h"
 
 using namespace std;
 
-IConnect * IConnectFactory::Factory(const string& type)
+IConnect * IConnectFactory::Factory(const string& type, const string &configurationpath)
 {
+	if(type == "TCP/IP") {
+		return new CConnectTCP(configurationpath);
+	}
+
+	// TODO Implement other methos as soon as available.
+
+
+	return new CConnectDummy(configurationpath);
 }
+
+
+
 
 

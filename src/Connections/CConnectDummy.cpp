@@ -38,9 +38,6 @@ using namespace std;
 CConnectDummy::CConnectDummy(const string &configurationname)
 : IConnect(configurationname)
 {
-	// TODO Auto-generated constructor stub
-	next: Connection-Factory mit leben füllen!
-	und Objekt erzeugen!
 }
 
 CConnectDummy::~CConnectDummy() {
@@ -49,7 +46,8 @@ CConnectDummy::~CConnectDummy() {
 
 bool CConnectDummy::CheckConfig(void)
 {
-	cerr << "In " << ConfigurationPath << " no valid connection method has been specified.";
+	cerr << "In " << ConfigurationPath << " no valid connection method has been specified."
+		 << endl;
 	return false;
 }
 

@@ -42,6 +42,10 @@ using namespace std;
 CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name, const string & configurationpath)
 : IInverterBase::IInverterBase(name, configurationpath)
 {
+	// TODO Auto-generated constructor stub
+	//next: Connection-Factory mit leben füllen!
+	// und Objekt erzeugen!
+	// dies kann eigentlich auch die Basisklasse machen.
 
 }
 

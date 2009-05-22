@@ -32,8 +32,8 @@
 #include "patterns/ICommand.h"
 #include "patterns/ICommandTarget.h"
 #include "interfaces/CTimedWork.h"
-#include "interfaces/IInverterFactory.h"
-#include "interfaces/InverterFactoryFactory.h"
+#include "interfaces/factories/IInverterFactory.h"
+#include "interfaces/factories/InverterFactoryFactory.h"
 
 using namespace std;
 

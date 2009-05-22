@@ -38,7 +38,8 @@
  *
  * TODO DOCUMENT ME!
  */
-#include "IInverterFactory.h"
+
+#include "interfaces/factories/IInverterFactory.h"
 
 using namespace std;
 

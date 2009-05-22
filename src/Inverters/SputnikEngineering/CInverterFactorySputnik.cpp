@@ -30,8 +30,8 @@
  *      Author: tobi
  */
 
-#include "CInverterFactorySputnik.h"
-#include "CInverterSputnikSSeries.h"
+#include "Inverters/SputnikEngineering/CInverterFactorySputnik.h"
+#include "Inverters/SputnikEngineering/CInverterSputnikSSeries.h"
 
 using namespace std;
 

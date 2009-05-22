@@ -30,15 +30,25 @@
  *  Created on: May 16, 2009
  *      Author: tobi
  */
+#include "configuration/Registry.h"
 
 #include "interfaces/factories/IConnectFactory.h"
 #include "Connections/CConnectDummy.h"
-#include "Connections/ConnectionTCP.h"
+#include "Connections/CConnectTCP.h"
+
+#include <libconfig.h++>
+
 
 using namespace std;
 
-IConnect * IConnectFactory::Factory(const string& type, const string &configurationpath)
+IConnect * IConnectFactory::Factory(const string &configurationpath)
 {
+
+	libconfig::Setting &set = Registry::Instance().GetSettingsForObject(configurationpath);
+	string type;
+
+	set.lookupValue("comms", type);
+
 	if(type == "TCP/IP") {
 		return new CConnectTCP(configurationpath);
 	}

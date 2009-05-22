@@ -44,7 +44,7 @@ using namespace std;
  */
 class IConnectFactory {
 public:
-	static IConnect* Factory(const string& type, const string &configurationpath);
+	static IConnect* Factory(const string &configurationpath);
 
 protected:
 	IConnectFactory() {};

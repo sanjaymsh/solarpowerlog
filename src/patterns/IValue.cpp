@@ -53,6 +53,11 @@ IValue *IValue::Factory(const factory_types newtype)
 
 	switch (newtype)
 	{
+
+	case bool_type:
+		tmp = new CValue<bool>;
+		break;
+
 	case int_type:
 		tmp = new CValue<int>;
 		break;
@@ -63,6 +68,7 @@ IValue *IValue::Factory(const factory_types newtype)
 
 	case string_type:
 		tmp = new CValue<std::string>;
+
 
 	break;
 	}

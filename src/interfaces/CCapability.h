@@ -66,7 +66,6 @@ public:
 
 	/* Capability as a Subject: Everthing already set!*/
 
-
 };
 
 #endif /* CCAPABILITY_H_ */

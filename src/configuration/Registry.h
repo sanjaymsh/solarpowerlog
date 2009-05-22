@@ -70,7 +70,7 @@ public:
 
 	bool LoadConfig(std::string name);
 
-	libconfig::Setting & GetSettingsForObject(std::string section, std::string objname);
+	libconfig::Setting & GetSettingsForObject(std::string section, std::string objname= "");
 
 
 

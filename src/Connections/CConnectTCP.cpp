@@ -77,7 +77,7 @@ bool CConnectTCP::CheckConfig(void)
 {
 	// TODO Implement me
 	cerr << __FUNCTION__ << ": Not implemented yet" << endl;
-	return false;
+	return true;
 }
 
 

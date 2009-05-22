@@ -34,6 +34,7 @@
 #include "interfaces/CTimedWork.h"
 #include "interfaces/factories/IInverterFactory.h"
 #include "interfaces/factories/InverterFactoryFactory.h"
+#include "interfaces/InverterBase.h"
 
 using namespace std;
 
@@ -133,7 +134,7 @@ int main() {
 	/** create the inverters via its factories. */
 	string section = "inverter.inverters";
 	libconfig::Setting &rt = Registry::Configuration()->lookup(section);;
-	DumpSettings(rt);
+	// DumpSettings(rt);
 
 	cout <<  rt.getLength() << endl;
 
@@ -159,7 +160,10 @@ int main() {
 				cerr << " (Cannot create factory. Maybe mispelled manufactor?"<<endl;
 				_exit(1);
 			}
-			IInverterBase *inverter = factory->Factory(model, name, rt.getPath());
+
+			cout << "path " << rt[i].getPath() <<endl;
+
+			IInverterBase *inverter = factory->Factory(model, name, rt[i].getPath());
 
 			if(! inverter)
 			{
@@ -170,8 +174,16 @@ int main() {
 				_exit(1);
 			}
 
+			if (! inverter->CheckConfig())
+			{
+				cerr << "Inverter model " << model << " for manufactor \"" << manufactor << '\"' << " reported configuration error" ;
+				_exit(1);
+			}
+
 		//	Registry::Instance().RegisterInverter(inverter);
 
+			// destroy the (used) factory.
+			delete factory;
 
 		}
 

@@ -30,23 +30,20 @@
  *      Author: tobi
  */
 
+#include "configuration/Registry.h"
+
 #include "CInverterSputnikSSeries.h"
-#include "Registry.h"
+
 #include <libconfig.h++>
 #include <iostream>
 
 using namespace std;
 
-
-
 CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name, const string & configurationpath)
 : IInverterBase::IInverterBase(name, configurationpath)
 {
-	// TODO Auto-generated constructor stub
-	//next: Connection-Factory mit leben füllen!
-	// und Objekt erzeugen!
-	// dies kann eigentlich auch die Basisklasse machen.
-
+	// Add the capabilites that this inverter has
+	// Note: The "must-have" ones are already instanciated by the base class constructor.
 }
 
 CInverterSputnikSSeries::~CInverterSputnikSSeries() {
@@ -60,10 +57,10 @@ bool CInverterSputnikSSeries::CheckConfig()
 
 	bool ret = true;
 	// Check, if we have enough informations to work on.
-	libconfig::Setting &set = Registry::Instance().GetSettingsForObject(configurationpath, name);
+	libconfig::Setting &set = Registry::Instance().GetSettingsForObject(configurationpath);
 
 	setting = "comms";
-	if (! set.exists(setting) || !set.getType() !=  libconfig::Setting::TypeString) {
+	if (! set.exists(setting) || !set.getType() ==  libconfig::Setting::TypeString) {
 		cerr << "Setting " << setting << " in " << configurationpath << "."
 			<< name << " missing of wrong type (string)" << endl;
 		ret = false;
@@ -75,7 +72,7 @@ bool CInverterSputnikSSeries::CheckConfig()
 	}
 
 	setting = "commadr";
-	if (! set.exists(setting) || !set.getType() !=  libconfig::Setting::TypeInt) {
+	if (! set.exists(setting) || !set.getType() ==  libconfig::Setting::TypeInt) {
 		cerr << "Setting " << setting << " in " << configurationpath << "."
 			<< name << " missing of wrong type (integer)" << endl;
 		ret = false;

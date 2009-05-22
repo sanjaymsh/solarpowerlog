@@ -57,8 +57,6 @@ IInverterBase *CInverterFactorySputnik::Factory(const string & type,
 	}
 
 	return NULL;
-
-
 }
 
 

@@ -32,17 +32,50 @@
  *      Author: tobi
  */
 
+#include <map>
+
 #include "InverterBase.h"
+#include "interfaces/factories/IConnectFactory.h"
+#include "interfaces/CCapability.h"
+
+#include "Inverters/Capabilites.h"
+#include "patterns/IValue.h"
 
 using namespace std;
 
 IInverterBase::IInverterBase( const string& name, const string & configurationpath  ) {
 	this->name = name;
 	this->configurationpath = configurationpath;
+	connection = IConnectFactory::Factory(configurationpath);
+
+	string s;
+	IValue *v;
+	CCapability *c;
+
+	// Add the "must have" capabilites.
+	s = CAPA_CAPAS_UPDATED_TYPE;
+	v = IValue::Factory( CAPA_CAPAS_UPDATED_TYPE );
+	c = new CCapability(s , v, this );
+	CapabilityMap.insert( pair<string,CCapability*>(s,c));
+
+	// Add the "must have" capabilites.
+	s = CAPA_CAPAS_REMOVEALL;
+	v = IValue::Factory( CAPA_CAPAS_REMOVEALL_TYPE );
+	c = new CCapability(s , v, this );
+	CapabilityMap.insert( pair<string,CCapability*>(s,c));
+
 }
 
 IInverterBase::~IInverterBase() {
-	// TODO Auto-generated destructor stub
+	if ( connection) delete connection;
+	connection = NULL;
+
+	// TODO auto destruct all elements in the capability map.
+	map<string, CCapability*>::iterator it = GetCapabilityIterator();
+	for ( ; it != GetCapabilityLastIterator() ; it++ )
+		    delete (*it).second;
+	CapabilityMap.clear();
+
 }
 
 

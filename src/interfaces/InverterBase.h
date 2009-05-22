@@ -32,12 +32,6 @@ public:
 	IInverterBase( const string &name, const string & configurationpath );
 	virtual ~IInverterBase();
 
-	// Class for handling the connectivity.
-	// Is a strategy design pattern interface. So different ways of connection can be handled by the same interface
-	// (In other words: Our inverter does not want to know, if it is RS485 or TCP/IP, or even, both.)
-	// NOTE: The Connection is to be made by a factory!
-	// NOTE2: Beware: Connections can die any time! Make sure to handle this.
-	IConnect *connection;
 
 	// ############### GETTERS AND SETTERS ##################
 	virtual const std::string& GetName(void) const;
@@ -60,6 +54,7 @@ public:
 
 	/** check for a specific capability and return the pointer to it
 	 * returns NULL if it is not registered. */
+	// TODO Move to c++ file
 	virtual CCapability *GetConcreteCapability(const string &identifier) {
 			map<string, CCapability*>::iterator it = CapabilityMap.find(identifier);
 			if(it == CapabilityMap.end() ) return 0;
@@ -74,6 +69,13 @@ protected:
 	/** Inverter Name -- as in config */
 	std::string name;
 
+	// Class for handling the connectivity.
+	// Is a strategy design pattern interface. So different ways of connection can be handled by the same interface
+	// (In other words: Our inverter does not want to know, if it is RS485 or TCP/IP, or even, both.)
+	// NOTE: The Connection is to be made by a factory!
+	// NOTE2: Beware: Connections can die any time! Make sure to handle this.
+	IConnect *connection;
+
 private:
 
 	// This maps contains all the Caps by the Inverter.
@@ -85,7 +87,6 @@ private:
 	// like also current readings and so on...
 
 	map<string, CCapability*> CapabilityMap;
-
 
 
 };

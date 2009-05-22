@@ -35,9 +35,6 @@
 #define ICAPABILITY_H_
 
 #include <string>
-#include "IObserverSubject.h"
-
-
 
 /** A Value is like aconcrete measurements, states, etc.
  *
@@ -50,6 +47,7 @@ public:
 
 	enum factory_types
 	{
+		bool_type,
 		int_type,
 		float_type,
 		string_type

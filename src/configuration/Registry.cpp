@@ -128,6 +128,8 @@ libconfig::Setting & Registry::GetSettingsForObject(std::string section, std::st
 
 	libconfig::Setting &s = Config->lookup(section);
 
+	if(objname == "" ) return s;
+
 	for ( int i = 0 ; i < s.getLength() ; i ++ ) {
 
 		std::string tmp =  s[i]["name"];

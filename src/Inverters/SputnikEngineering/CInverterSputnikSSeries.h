@@ -47,6 +47,10 @@ public:
 
 	virtual bool CheckConfig();
 
+private:
+	/* calculate the checksum for the telegramm stored in str.
+	 * note: */
+	unsigned int CalcChecksum(const char* str, int len);
 
 };
 

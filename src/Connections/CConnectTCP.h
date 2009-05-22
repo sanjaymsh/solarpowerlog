@@ -39,6 +39,10 @@
  * TODO DOCUMENT ME!
  */
 #include "IConnect.h"
+#include <cc++/socket.h>
+#include <cc++/address.h>
+
+using namespace std;
 
 class CConnectTCP: public IConnect {
 public:
@@ -54,18 +58,28 @@ public:
 
 	/// Send a array of characters (can be used as binary transport, too)
 	virtual bool Send(const char *tosend, int len);
+
+	virtual bool Send(const string& tosend);
 	/// Send a strin Standard implementation only wraps to above Send.
 	///
 	/// Receive a string. Do now get more than maxxsize (-1 == no limit)
 	/// NOTE:
-	virtual bool Receive(string &wheretoplace, unsigned int maxsize = -1);
+	virtual bool Receive(string &wheretoplace);
 
 	/// Receive a binary stream with maxsize as buffer size and place the actual number received
 	/// in the numreceived, which is negative on errors.#
 	/// (0 == nothing received)
-	virtual bool Receive(char *wheretoplace, unsigned int maxsize, int *numreceived);
 
 	virtual bool CheckConfig(void) ;
+
+private:
+	ost::TCPStream *stream;
+	ost::IPV4Host *host;
+
+	string strhost;
+	time_t timer;
+
+	void cleanupstream(void);
 
 };
 

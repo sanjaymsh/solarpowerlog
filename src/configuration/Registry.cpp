@@ -38,6 +38,8 @@
 #include <iostream>
 #include "CWorkScheduler.h"
 
+#include "interfaces/InverterBase.h"
+
 using namespace std;
 
 /** constructor for the registry. */
@@ -147,6 +149,22 @@ libconfig::Setting & Registry::GetSettingsForObject(std::string section, std::st
 		<< section << std::endl;
 
 	return Config->getRoot();
+}
+
+IInverterBase *Registry::GetInverter(const string & name) const
+{
+
+	list<IInverterBase*>::const_iterator iter;
+	for ( iter = inverters.begin(); iter != inverters.end(); iter++)	{
+		if ( (*iter)->GetName() == name ) return (*iter);
+	}
+
+	return 0;
+}
+
+void Registry::AddInverter(const IInverterBase *inverter)
+{
+	inverters.push_back((IInverterBase*)inverter);
 }
 
 /** destructor */

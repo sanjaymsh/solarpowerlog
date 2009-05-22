@@ -36,6 +36,11 @@
 #include "interfaces/factories/InverterFactoryFactory.h"
 #include "interfaces/InverterBase.h"
 
+#include <cc++/socket.h>
+#include <cc++/address.h>
+#include "Connections/CConnectTCP.h"
+
+
 using namespace std;
 
 
@@ -89,10 +94,38 @@ static const char *required_sections[] =
 		"logger"
 };
 
+void tc()
+{
+	ost::TCPStream *stream;
+	ost::IPV4Host *host;
+
+	struct tm *local;
+	  time_t t;
+	 t = time(NULL);
+	local = localtime(&t);
+	std::cout << asctime(local) << std::endl;
+
+	host = new ost::IPV4Host("192.168.0.99");
+	try
+	{
+		stream = new ost::TCPStream( *host,
+					(ost::tpport_t)1234,
+					true,
+					(timeout_t)3000 );
+	}
+	catch (...)
+	{
+		cerr << "BUG: It was instructed NOT to throw." << endl;
+	}
+
+	t = time(NULL);
+	local = localtime(&t);
+	std::cout << asctime(local) << std::endl;
+
+}
+
 
 int main() {
-
-
 
 	bool error_detected = false;
 
@@ -154,6 +187,13 @@ int main() {
 				_exit(1);
 			}
 
+			if (Registry::Instance().GetInverter(name))
+			{
+				cerr << "Inverter " << name << " declared more than once" << endl;
+				_exit(1);
+			}
+
+
 			IInverterFactory *factory =  InverterFactoryFactory::createInverterFactory(manufactor);
 			if(! factory) {
 				cerr << "Cannot create Inverter for manufactor \"" << manufactor << '\"' ;
@@ -176,17 +216,36 @@ int main() {
 
 			if (! inverter->CheckConfig())
 			{
-				cerr << "Inverter model " << model << " for manufactor \"" << manufactor << '\"' << " reported configuration error" ;
+				cerr << "Inverter " << name << " ( " << manufactor << ", " << model << ") reported configuration error" ;
 				_exit(1);
 			}
 
-		//	Registry::Instance().RegisterInverter(inverter);
+			inverter->connection->Connect();
+
+			char test[] = "Hallo Worlds \n";
+			string str ="Hallo string \n";
+
+			cout << test << endl;
+			if (!inverter->connection->Send(test,strlen(test) ))
+			{
+				cerr << "stream error" << endl;
+			}
+
+			cout << str << endl;
+
+			if (!inverter->connection->Send(str))
+			{
+				cerr << "stream error" << endl;
+			}
+
+			Registry::Instance().AddInverter(inverter);
+
+			sleep(2);
 
 			// destroy the (used) factory.
 			delete factory;
 
 		}
-
 
 	return 0;
 }

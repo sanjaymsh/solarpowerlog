@@ -40,11 +40,13 @@
 #define REGISTRY_H_
 
 
+#include <list>
 #include <utility>
 #include <string>
 #include <libconfig.h++>
 
 class CWorkScheduler;
+class IInverterBase;
 
 using namespace std;
 
@@ -72,7 +74,9 @@ public:
 
 	libconfig::Setting & GetSettingsForObject(std::string section, std::string objname= "");
 
+	IInverterBase* GetInverter(const string& name) const;
 
+	void AddInverter(const IInverterBase *inverter);
 
 	// S C H E D U L E R
 
@@ -96,9 +100,9 @@ protected:
 private:
 	libconfig::Config *Config;
 
-
-
 	bool loaded;
+
+    list<IInverterBase*> inverters;
 
 
 };

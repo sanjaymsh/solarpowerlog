@@ -69,12 +69,7 @@ public:
 
 	/// Receive a string. Do now get more than maxxsize (-1 == no limit)
 	/// NOTE:
-	virtual bool Receive(string &wheretoplace, unsigned int maxsize = -1) = 0;
-
-	/// Receive a binary stream with maxsize as buffer size and place the actual number received
-	/// in the numreceived, which is negative on errors.#
-	/// (0 == nothing received)
-	virtual bool Receive(char *wheretoplace, unsigned int maxsize, int *numreceived) = 0;
+	virtual bool Receive(string &wheretoplace) = 0;
 
 	virtual bool CheckConfig(void) = 0 ;
 

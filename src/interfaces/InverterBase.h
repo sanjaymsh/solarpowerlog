@@ -69,6 +69,7 @@ protected:
 	/** Inverter Name -- as in config */
 	std::string name;
 
+public:
 	// Class for handling the connectivity.
 	// Is a strategy design pattern interface. So different ways of connection can be handled by the same interface
 	// (In other words: Our inverter does not want to know, if it is RS485 or TCP/IP, or even, both.)

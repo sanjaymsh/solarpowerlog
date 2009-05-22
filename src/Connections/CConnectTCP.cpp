@@ -33,61 +33,124 @@
 #include "interfaces/IConnect.h"
 #include "Connections/CConnectTCP.h"
 
-#include "iostream"
+#include <iostream>
+#include <string>
+
+#include "configuration/Registry.h"
+#include <libconfig.h++>
+
 
 using namespace std;
 
 CConnectTCP::CConnectTCP(const string &configurationname)
 : IConnect(configurationname)
 {
-
-// TODO Auto-generated constructor stub
+	stream = NULL; host = NULL;
 }
 
 CConnectTCP::~CConnectTCP() {
-	// TODO Auto-generated destructor stub
+	cleanupstream();
 }
 
 bool CConnectTCP::Connect()
 {
-	// TODO Implement me
+
+	cleanupstream();
+
+	libconfig::Setting &set = Registry::Instance().GetSettingsForObject(ConfigurationPath);
+	int port;
+	long timeout;
+
+	set.lookupValue("tcpadr",strhost);
+	set.lookupValue("tcpport", port);
+	if (!set.lookupValue("tcptimeout", timeout)) timeout = 3000;
+	timer = timeout;
+
+	host = new ost::IPV4Host(strhost.c_str());
+	try {
+		stream = new ost::TCPStream( *host, port, 536, true, timeout );
+	}
+	catch (...)
+	{
+		cerr << "TCP/IP Connection Error to "<< strhost  << endl;
+		return false;
+	}
+
+	stream->setTimeout(timeout);
+
+	return stream->isConnected();
 }
 
 bool CConnectTCP::Disconnect()
 {
-	// TODO Implement me
+	cleanupstream();
+	return true;
 }
 
 bool CConnectTCP::Send(const char *tosend, int len)
 {
-	// TODO Implement me
+	// Note: This is not really good for binary data!
+	if ( ! stream->isConnected() || ! stream->isActive()) return false;
+
+	for(int i =0 ; i< len ; i++ ) (*stream)<<tosend[i];
+	return  (0 == stream->sync());
 }
 
-bool CConnectTCP::Receive(string & wheretoplace, unsigned int maxsize)
+bool CConnectTCP::Send(const string & tosend)
 {
-	// TODO Implement me
+	if ( ! stream->isConnected() || ! stream->isActive()) return false;
+
+	 (*stream) << tosend;
+	return  (0 == stream->sync());
 }
 
-bool CConnectTCP::Receive(char *wheretoplace, unsigned int maxsize, int *numreceived)
-{
-	// TODO Implement me
-}
 
-bool CConnectTCP::CheckConfig(void)
+bool CConnectTCP::Receive(string & wheretoplace)
 {
-	// TODO Implement me
-	cerr << __FUNCTION__ << ": Not implemented yet" << endl;
+	if ( ! stream->isConnected() || ! stream->isActive()) return false;
+	if ( stream->isPending(ost::Socket::pendingInput, this->timer)) return false;
+	try {
+		(*stream) >> wheretoplace;
+	}
+	catch (...)
+	{
+		return false;
+	}
 	return true;
 }
 
 
+bool CConnectTCP::CheckConfig(void)
+{
+	string setting;
+	bool ret = true;
 
+	libconfig::Setting &set = Registry::Instance().GetSettingsForObject(ConfigurationPath);
 
+	setting = "tcpadr";
+	if (! set.exists(setting) || !set.getType() ==  libconfig::Setting::TypeString) {
+		cerr << "Setting " << setting << " in " << ConfigurationPath
+			<< " missing or of wrong type (wanted a string)" << endl;
+		ret = false;
+	}
 
+	setting = "tcpport";
+	if (! set.exists(setting) || !set.getType() ==  libconfig::Setting::TypeInt) {
+		cerr << "Setting " << setting << " in " << ConfigurationPath
+			<< " missing or of wrong type (wanted a integer)" << endl;
+		ret = false;
+	}
 
+	return ret;
+}
 
+void CConnectTCP::cleanupstream(void)
+{
+	if (stream) {
+		if (stream->isConnected()) stream->disconnect();
+		delete stream; stream = NULL;
+	}
 
-
-
-
+	if (host) delete host;
+}
 

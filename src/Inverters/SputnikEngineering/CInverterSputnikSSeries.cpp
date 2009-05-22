@@ -62,7 +62,7 @@ bool CInverterSputnikSSeries::CheckConfig()
 	setting = "comms";
 	if (! set.exists(setting) || !set.getType() ==  libconfig::Setting::TypeString) {
 		cerr << "Setting " << setting << " in " << configurationpath << "."
-			<< name << " missing of wrong type (string)" << endl;
+			<< name << " missing or of wrong type (wanted a string)" << endl;
 		ret = false;
 	}
 
@@ -74,7 +74,7 @@ bool CInverterSputnikSSeries::CheckConfig()
 	setting = "commadr";
 	if (! set.exists(setting) || !set.getType() ==  libconfig::Setting::TypeInt) {
 		cerr << "Setting " << setting << " in " << configurationpath << "."
-			<< name << " missing of wrong type (integer)" << endl;
+			<< name << " missing or of wrong type (wanted a integer)" << endl;
 		ret = false;
 	}
 

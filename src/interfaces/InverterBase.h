@@ -20,13 +20,14 @@
 #include <map>
 #include "IConnect.h"
 #include "interfaces/CCapability.h"
+#include "patterns/ICommandTarget.h"
 
 using namespace std;
 
 /** Inverter Interface .... */
 // TODO: This class renamed, as it also fits for the "Filters" (Data source, data computing/enhancing, ...)
 // Inverters will be only a special interface, derived from this base class
-class IInverterBase {
+class IInverterBase : public ICommandTarget {
 public:
 
 	IInverterBase( const string &name, const string & configurationpath );
@@ -69,7 +70,6 @@ protected:
 	/** Inverter Name -- as in config */
 	std::string name;
 
-public:
 	// Class for handling the connectivity.
 	// Is a strategy design pattern interface. So different ways of connection can be handled by the same interface
 	// (In other words: Our inverter does not want to know, if it is RS485 or TCP/IP, or even, both.)

@@ -33,12 +33,16 @@
 #ifndef CINVERTERSPUTNIKSSERIES_H_
 #define CINVERTERSPUTNIKSSERIES_H_
 
+
 /** \fixme COMMENT ME
  *
  *
  * TODO DOCUMENT ME!
  */
 #include "InverterBase.h"
+#include "Inverters/BasicCommands.h"
+
+#include <queue>
 
 class CInverterSputnikSSeries: public IInverterBase {
 public:
@@ -47,11 +51,66 @@ public:
 
 	virtual bool CheckConfig();
 
-private:
+	virtual void ExecuteCommand(const ICommand *Command);
+
+protected:
 	/* calculate the checksum for the telegramm stored in str.
 	 * note: */
-	unsigned int CalcChecksum(const char* str, int len);
+	static unsigned int CalcChecksum(const char* str, int len);
+
+
+
+private:
+
+	/// Commands for the Workscheduler
+	enum Commands
+	{
+		CMD_INIT = 1000,
+		CMD_IDENTFY_WAIT,
+		CMD_POLL,
+		CMD_WAIT_RECEIVE,
+		CMD_DISCONNECTED,
+
+	};
+
+	// Dataports of the sputnik inverters.
+
+	enum Ports
+	{
+		QUERY = 100,
+		COMMAND = 200,
+		ALARM = 300, // told that the device reports errors on this ports.
+		INTERFACE = 1000
+	};
+
+
+	enum query {
+		TYP,
+		SWVER,
+		BUILDVER,
+		EC00,
+		EC01,
+		EC02,
+		EC03,
+		EC04,
+		EC05,
+		EC06,
+		EC07,
+		EC08,
+	};
+
+	void pushinverterquery(enum query q);
+
+	string assemblequerystring();
+
+	queue<enum query> cmdqueue;
+
+	/// Adress to use as "our" adress for communication
+	/// This can be set by the conffile and the parameter ownadr
+	/// defaults to 0xFB
+	/// unsigned int ownadr;
 
 };
+
 
 #endif /* CINVERTERSPUTNIKSSERIES_H_ */

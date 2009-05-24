@@ -52,13 +52,7 @@ public:
 	ICommandTarget();
 	virtual ~ICommandTarget();
 
-	virtual void ExecuteCommand(const ICommand *Command) {
-		struct tm *local;
-		  time_t t;
-		 t = time(NULL);
-		local = localtime(&t);
-		std::cout << this << "cmd: " << Command->getCmd() << " " << __FILE__ << " " << __LINE__ << " " << asctime(local) << std::endl;
-	}
+	virtual void ExecuteCommand(const ICommand *Command) = 0 ;
 };
 
 #endif /* COMMANDTARGET_H_ */

@@ -39,6 +39,7 @@
 #include <cc++/socket.h>
 #include <cc++/address.h>
 #include "Connections/CConnectTCP.h"
+#include "Inverters/SputnikEngineering/CInverterSputnikSSeries.h"
 
 
 using namespace std;
@@ -220,6 +221,7 @@ int main() {
 				_exit(1);
 			}
 
+#if 0
 			inverter->connection->Connect();
 
 			char test[] = "Hallo Worlds \n";
@@ -237,15 +239,22 @@ int main() {
 			{
 				cerr << "stream error" << endl;
 			}
-
+#endif
 			Registry::Instance().AddInverter(inverter);
-
-			sleep(2);
-
 			// destroy the (used) factory.
 			delete factory;
 
 		}
+
+
+		while ( true )
+		{
+			timespec ts = {0, 500};
+			nanosleep(&ts,0);
+			while (Registry::GetMainScheduler()->DoWork());
+		}
+
+
 
 	return 0;
 }

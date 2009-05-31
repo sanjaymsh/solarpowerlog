@@ -38,12 +38,14 @@
 #include <cc++/thread.h>
 #include "CTimedWork.h"
 
+#include "semaphore.h"
+
 using namespace std;
 using namespace ost;
 
 CWorkScheduler::CWorkScheduler() {
 	// TODO Auto-generated constructor stub
-
+	sem_init (&semaphore, 0, 0);
 }
 
 CWorkScheduler::~CWorkScheduler() {
@@ -63,9 +65,18 @@ CWorkScheduler::~CWorkScheduler() {
 }
 
 
-bool CWorkScheduler::DoWork(void)
+bool CWorkScheduler::DoWork(bool block)
 {
-	if ( CommandsDue.empty()) return false;
+	if (! block ) {
+		this->enterMutex();
+		if (CommandsDue.empty()) {
+			this->leaveMutex();
+			return false;
+		}
+		this->leaveMutex();
+	}
+
+	sem_wait(&semaphore);
 	ICommand *cmd=getnextcmd();
 	cmd->execute();
 	delete cmd;
@@ -88,6 +99,7 @@ void CWorkScheduler::ScheduleWork(ICommand *Command)
 {
 	CMutexAutoLock h(this);
 	CommandsDue.push_back(Command);
+	sem_post(&semaphore);
 }
 
 void CWorkScheduler::ScheduleWork(ICommand *Command, struct timespec ts)

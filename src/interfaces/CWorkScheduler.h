@@ -78,8 +78,11 @@ public:
 	 * Note: Returns after each piece of work has been done!
 	 *
 	 * returns true, if work has been done, false, if no work was available.
+	 *
+	 * \param block if false (default), it will return if there is no work, else it will
+	 * wait for work.
 	*/
-	bool DoWork(void);
+	bool DoWork(bool block=false);
 
 private:
 
@@ -105,6 +108,9 @@ private:
 	/** get the next new command in the list.
 	 * (Thread safe)*/
 	ICommand *getnextcmd(void);
+
+private:
+	sem_t semaphore;
 
 };
 

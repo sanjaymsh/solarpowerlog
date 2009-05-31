@@ -249,9 +249,12 @@ int main() {
 
 		while ( true )
 		{
-			timespec ts = {0, 500};
+			timespec ts = {1, 500UL*1000UL};
+			// cout << "sleeping " << endl;
 			nanosleep(&ts,0);
-			while (Registry::GetMainScheduler()->DoWork());
+			while (Registry::GetMainScheduler()->DoWork()) {
+				cout << '.' ;
+			}
 		}
 
 

@@ -55,7 +55,6 @@ public:
 	/// Tear down the connection.
 	virtual bool Disconnect();
 
-
 	/// Send a array of characters (can be used as binary transport, too)
 	virtual bool Send(const char *tosend, int len);
 
@@ -70,7 +69,9 @@ public:
 	/// in the numreceived, which is negative on errors.#
 	/// (0 == nothing received)
 
-	virtual bool CheckConfig(void) ;
+	virtual bool CheckConfig(void);
+
+	virtual bool IsConnected(void);
 
 private:
 	ost::TCPStream *stream;

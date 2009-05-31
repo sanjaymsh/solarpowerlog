@@ -65,6 +65,12 @@ public:
 	virtual bool CheckConfig() = 0;
 
 protected:
+
+	virtual void AddCapability(const string &id, CCapability* capa)	{
+		CapabilityMap.insert( pair<string,CCapability*>(id,capa));
+		cerr << "Added new Capability to " << name << ": " << id << endl;
+	}
+
 	/** Configuration path as determined on start -- for easier fetching the config.*/
 	std::string configurationpath;
 	/** Inverter Name -- as in config */

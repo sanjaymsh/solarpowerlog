@@ -33,7 +33,6 @@
 #ifndef CINVERTERSPUTNIKSSERIES_H_
 #define CINVERTERSPUTNIKSSERIES_H_
 
-
 /** \fixme COMMENT ME
  *
  *
@@ -59,7 +58,6 @@ protected:
 	static unsigned int CalcChecksum(const char* str, int len);
 
 
-
 private:
 
 	/// Commands for the Workscheduler
@@ -70,6 +68,7 @@ private:
 		CMD_POLL,
 		CMD_WAIT_RECEIVE,
 		CMD_DISCONNECTED,
+
 
 	};
 
@@ -83,10 +82,9 @@ private:
 		INTERFACE = 1000
 	};
 
-
 	enum query {
 		TYP,
-		SWVER,
+		SWV,
 		BUILDVER,
 		EC00,
 		EC01,
@@ -97,11 +95,62 @@ private:
 		EC06,
 		EC07,
 		EC08,
+		PAC,
+		KHR,
+		DYR,
+		DMT,
+		DDY,
+		KYR,
+		KMT,
+		KDY,
+		KT0,
+
+#if 0
+		/// these are for MaxMeteo and Maxcount -- not currently supported
+		/// as I neighter own the hardware not have need for it.
+		/// If you want these features, please remebmer, patches are welcome.
+		I1Y,
+		I1P,
+		I1S,
+		I1D,
+		I1T,
+		I2Y,
+		I2S,
+		I2D,
+		I2T,
+		PYR,
+		RDY,
+		RT0,
+		RAD,
+		TSZ,
+
+#endif
+		PIN,
+		TNP,
+		// ADR, // << nonsense, as we 'know' the adress.
+		PRL,
+		UDC,
+		UL1,
+		UL2,
+		UL3,
+		IDC,
+		IL1,
+		IL2,
+		IL3,
+		TKK,
+		TK2,
+		TK3,
+		TMI,
+		THR
 	};
 
 	void pushinverterquery(enum query q);
 
 	string assemblequerystring();
+
+	bool parsereceivedstring(const string& s);
+
+	bool parsetoken(string token);
 
 	queue<enum query> cmdqueue;
 
@@ -109,6 +158,46 @@ private:
 	/// This can be set by the conffile and the parameter ownadr
 	/// defaults to 0xFB
 	/// unsigned int ownadr;
+
+	void tokenizer(const char *delimiters,  const string& s , vector<string> &tokens);
+
+	// token handler
+	bool token_TYP(const vector<string> &tokens);
+	bool token_SWVER(const vector<string> &tokens);
+	bool token_BUILDVER(const vector<string> &tokens);
+	bool token_ECxx(const vector<string> &tokens);
+	bool token_PAC(const vector<string> &tokens);
+	bool token_KHR(const vector<string> &tokens);
+	bool token_DYR(const vector<string> &tokens);
+	bool token_DMT(const vector<string> &tokens);
+	bool token_DDY(const vector<string> &tokens);
+	bool token_KYR(const vector<string> &tokens);
+	bool token_KMT(const vector<string> &tokens);
+	bool token_KDY(const vector<string> &tokens);
+	bool token_KT0(const vector<string> &tokens);
+	bool token_PIN(const vector<string> &tokens);
+	bool token_TNP(const vector<string> &tokens);
+	bool token_PRL(const vector<string> &tokens);
+	bool token_UDC(const vector<string> &tokens);
+	bool token_UL1(const vector<string> &tokens);
+	bool token_UL2(const vector<string> &tokens);
+	bool token_UL3(const vector<string> &tokens);
+	bool token_IDC(const vector<string> &tokens);
+	bool token_IL1(const vector<string> &tokens);
+	bool token_IL2(const vector<string> &tokens);
+	bool token_IL3(const vector<string> &tokens);
+	bool token_TKK(const vector<string> &tokens);
+	bool token_TK2(const vector<string> &tokens);
+	bool token_TK3(const vector<string> &tokens);
+	bool token_TMI(const vector<string> &tokens);
+	bool token_THR(const vector<string> &tokens);
+
+
+
+	void create_versioncapa(void);
+	///  some internal infos we cache....
+	int swversion;
+	int swbuild;
 
 };
 

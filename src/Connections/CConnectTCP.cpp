@@ -89,8 +89,9 @@ bool CConnectTCP::Disconnect()
 
 bool CConnectTCP::Send(const char *tosend, int len)
 {
-	// Note: This is not really good for binary data!
-	if ( ! stream->isConnected() || ! stream->isActive()) return false;
+	// FIXME: This is not really good for binary data, but enough for now.
+
+	if ( ! IsConnected()) return false;
 
 	for(int i =0 ; i< len ; i++ ) (*stream)<<tosend[i];
 	return  (0 == stream->sync());
@@ -98,17 +99,16 @@ bool CConnectTCP::Send(const char *tosend, int len)
 
 bool CConnectTCP::Send(const string & tosend)
 {
-	if ( ! stream->isConnected() || ! stream->isActive()) return false;
+	if ( ! IsConnected()) return false;
 
 	 (*stream) << tosend;
 	return  (0 == stream->sync());
 }
 
-
 bool CConnectTCP::Receive(string & wheretoplace)
 {
-	if ( ! stream->isConnected() || ! stream->isActive()) return false;
-	if ( ! stream->isPending(ost::Socket::pendingInput, this->timer)) return false;
+	if ( ! IsConnected()) return false;
+	if ( ! stream->isPending(ost::Socket::pendingInput, 0)) return false;
 	try {
 		(*stream) >> wheretoplace;
 	}
@@ -119,6 +119,11 @@ bool CConnectTCP::Receive(string & wheretoplace)
 	return true;
 }
 
+bool CConnectTCP::IsConnected(void)
+{
+	if ( ! stream || ! stream->isConnected() || ! stream->isActive()) return false;
+	return true;
+}
 
 bool CConnectTCP::CheckConfig(void)
 {

@@ -68,7 +68,4 @@ protected:
 };
 
 
-
-
-
 #endif /* ICAPABILITY_H_ */

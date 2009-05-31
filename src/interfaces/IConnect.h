@@ -73,6 +73,12 @@ public:
 
 	virtual bool CheckConfig(void) = 0 ;
 
+	/// Check if we believe the connection is still active
+	/// Note: if the concrete implementation cannot tell,
+	/// it should always return true, as the default implementaion does.
+	/// (the inverter class has to do some kind of timeout-handling anyway)
+	virtual bool IsConnected(void) { return true; }
+
 protected:
 	string ConfigurationPath;
 

@@ -1,3 +1,4 @@
+#include "DataFilters/interfaces//IDataFilter.h"
 /* ----------------------------------------------------------------------------
  solarpowerlog
  Copyright (C) 2009  Tobias Frost
@@ -7,7 +8,7 @@
  Solarpowerlog is free software; However, it is dual-licenced
  as described in the file "COPYING".
 
- For this file (IObserverSubject.h), the license terms are:
+ For this file (IDataFilterFactory.h), the license terms are:
 
  You can redistribute it and/or  modify it under the terms of the GNU Lesser
  General Public License (LGPL) as published by the Free Software Foundation;
@@ -24,57 +25,29 @@
  ----------------------------------------------------------------------------
  */
 
-/** \file IObserverSubject.h
+/** \file IDataFilterFactory.h
  *
- *  Created on: May 12, 2009
+ *  Created on: Jun 1, 2009
  *      Author: tobi
  */
 
-#ifndef OBSERVERSUBJECT_H_
-#define OBSERVERSUBJECT_H_
-
-#include <list>
-
-using namespace std;
-
-class IObserverObserver;
+#ifndef IDATAFILTERFACTORY_H_
+#define IDATAFILTERFACTORY_H_
 
 /** \fixme COMMENT ME
  *
  *
  * TODO DOCUMENT ME!
  */
-class IObserverSubject
-{
+
+class IDataFilter;
+
+class IDataFilterFactory {
 public:
+	virtual IDataFilter* Factory(const string& type, const string &name, const string &configurationpath);
 
-	virtual ~IObserverSubject();
-
-	virtual void Subscribe( class IObserverObserver* observer );
-
-	virtual void UnSubscribe( class IObserverObserver* observer );
-
-	virtual void SetSubsubscription( class IObserverObserver* observer,
-		bool subscribe = true );
-
-	virtual bool CheckSubscription( class IObserverObserver *observer );
-
-	virtual void Notify( void );
-
-	virtual unsigned int GetNumSubscribers( void );
-
-protected:
-	IObserverSubject();
-
-private:
-	std::list<IObserverObserver*> listobservers;
-
+	IDataFilterFactory();
+	virtual ~IDataFilterFactory();
 };
 
-#endif /* OBSERVERSUBJECT_H_ */
-
-/*
- Infos on pattern
- See:
- http://www.cs.clemson.edu/~malloy/courses/patterns/observerCo.html
- */
+#endif /* IDATAFILTERFACTORY_H_ */

@@ -93,7 +93,7 @@
  * (if the associated value is false)
  *
  * THIS IS A MUST CAPABILITY -- EVERY INVERTER HAS THIS ONE. */
-#define CAPA_INVERTER_DATASTATE_NAME  "Data Validity"
+#define CAPA_INVERTER_DATASTATE  "Data Validity"
 #define CAPA_INVERTER_DATASTATE_TYPE  IValue::bool_type
 
 
@@ -115,7 +115,7 @@
  * This one is the "human readable" model of the Inverter.
  */
 
-#define CAPA_INVERTER_MODEL_NAME "Inverter Model"
+#define CAPA_INVERTER_MODEL "Inverter Model"
 #define CAPA_INVERTER_MODEL_TYPE IValue::string_type
 
 
@@ -130,7 +130,7 @@
  *
 */
 
-#define CAPA_INVERTER_FIRMWARE_NAME "Firmware Version"
+#define CAPA_INVERTER_FIRMWARE "Firmware Version"
 #define CAPA_INVERTER_FIRMWARE_TYPE IValue::string_type
 
 
@@ -143,7 +143,7 @@
  *
  * Recommended for every inverter, but still optional
 */
-#define CAPA_INVERTER_ACPOWER_TOTAL_NAME "Grid-Feeding-Power"
+#define CAPA_INVERTER_ACPOWER_TOTAL "Current Grid Feeding Power"
 #define CAPA_INVERTER_ACPOWER_TOTAL_TYPE IValue::float_type
 
 /** Power On Hours
@@ -154,7 +154,7 @@
  *
  * Optional.
 */
-#define CAPA_INVERTER_PON_HOURS_NAME "PowerOnHours"
+#define CAPA_INVERTER_PON_HOURS "Inverter Power On Hours"
 #define CAPA_INVERTER_PON_HOURS_TYPE IValue::float_type
 
 
@@ -167,7 +167,7 @@
  *
  * Optional.
 */
-#define CAPA_INVERTER_KWH_Y2D_NAME "Energy produced this year (kWh)"
+#define CAPA_INVERTER_KWH_Y2D "Energy produced this year (kWh)"
 #define CAPA_INVERTER_KWH_Y2D_TYPE IValue::float_type
 
 
@@ -179,7 +179,7 @@
  *
  * Optional.
 */
-#define CAPA_INVERTER_KWH_M2D_NAME "Energy produced this month (kWh)"
+#define CAPA_INVERTER_KWH_M2D "Energy produced this month (kWh)"
 #define CAPA_INVERTER_KWH_M2D_TYPE IValue::float_type
 
 /** Feeded Energy Today
@@ -190,7 +190,7 @@
  *
  * Optional.
 */
-#define CAPA_INVERTER_KWH_2D_NAME "Energy produced today (kWh)"
+#define CAPA_INVERTER_KWH_2D "Energy produced today (kWh)"
 #define CAPA_INVERTER_KWH_2D_TYPE IValue::float_type
 
 /** Feeded Energy Total
@@ -201,7 +201,7 @@
  *
  * Optional.
 */
-#define CAPA_INVERTER_KWH_TOTAL_NAME "Energy produced (kWh)"
+#define CAPA_INVERTER_KWH_TOTAL_NAME "Energy produced cumulated all time (kWh)"
 #define CAPA_INVERTER_KWH_TOTAL_TYPE IValue::float_type
 
 /** Installed Power
@@ -256,7 +256,7 @@
  * Optional.
  *
  * */
-#define CAPA_INVERTER_INPUT_DC_VOLTAGE_NAME "DC VOLTAGE IN (V)"
+#define CAPA_INVERTER_INPUT_DC_VOLTAGE_NAME "DC voltage in (V)"
 #define CAPA_INVERTER_INPUT_DC_VOLTAGE_TYPE IValue::float_type
 
 /** DC Input Current
@@ -268,7 +268,7 @@
  * Optional.
  *
  * */
-#define CAPA_INVERTER_INPUT_DC_CURRENT_NAME "DC CURRENT IN (A)"
+#define CAPA_INVERTER_INPUT_DC_CURRENT_NAME "DC current in (A)"
 #define CAPA_INVERTER_INPUT_DC_CURRENT_TYPE IValue::float_type
 
 
@@ -281,7 +281,7 @@
  * Optional.
  *
  * */
-#define CAPA_INVERTER_GRID_AC_VOLTAGE_NAME "AC GRID VOLTAGE (V)"
+#define CAPA_INVERTER_GRID_AC_VOLTAGE_NAME "AC grid voltage (V)"
 #define CAPA_INVERTER_GRID_AC_VOLTAGE_TYPE IValue::float_type
 
 /** AC Grid Current
@@ -293,7 +293,7 @@
  * Optional.
  *
  * */
-#define CAPA_INVERTER_GRID_AC_CURRENT_NAME "AC GRID CURRENT OUT (V)"
+#define CAPA_INVERTER_GRID_AC_CURRENT_NAME "AC grid feeding current (V)"
 #define CAPA_INVERTER_GRID_AC_CURRENT_TYPE IValue::float_type
 
 /** Inverter internal temperature
@@ -309,8 +309,90 @@
  * Optional.
  *
  * */
-#define CAPA_INVERTER_TEMPERATURE_NAME "INVERTER TEMPERATURE (°C)"
+#define CAPA_INVERTER_TEMPERATURE_NAME "Inverter Temperature (°C)"
 #define CAPA_INVERTER_TEMPERATURE_TYPE IValue::float_type
+
+/** Inverter Status Codes
+ *
+ */
+
+ /* value:
+
+ * 3
+ * 4	- perfect 	-- everything fine. Operating in MPP
+ * 6	- error		-- the inverter is inoperable.
+*/
+
+enum InverterStatusCodes
+{
+	/**  offline   -- the inverter is not responsing to queries (e.g night)
+	  That status will be set automatically by the Inverter-Class logic,
+	  if the capability has been registered and the connection is lost
+	  to the inverter.
+	*/
+	OFFLINE,
+
+	/** status unavailable -- whatever reason. Could be that we just don't
+	  know that status code
+	*/
+	STATUS_UNAVAILABLE,
+
+	/** warning -- a non-fatal situation, like "solar radiance too low" */
+	NOT_FEEDING_OK,
+
+	/** not feeding -- because some external event prevents feeding
+ 	 (like grid power loss, frequency too low....) */
+	NOT_FEEDING_EXTEVENT,
+
+	/**< error -- the inverter is inoperable, as it have deteced some error */
+	NOT_FEEDING_ERROR,
+
+	/** warning -- user action required or limited operation
+      (the inverter sensed a problem, but can operate, but maybe at a
+      lower power settings) */
+	FEEDING_WARNING,
+
+	/** operating -- basically green, but not in the optimun (yet) */
+	FEEDING,
+
+	/** perfect 	-- everything fine. Operating in MPP*/
+	FEEDING_MPP,
+
+	/** the inveter is feeding at its limit.
+	 * Note: If this is due a problem, use FEEDING_WARNING*/
+	FEEDING_MAXPOWER,
+};
+
+/** Inverter Overall status
+ *
+ * for the values, see the enum InverterStatusCodes.
+*/
+
+#define CAPA_INVERTER_STATUS_NAME "Inverter Overall Status (int)"
+#define CAPA_INVERTER_STATUS_TYPE IValue::int_type
+
+/** Inverter Overall status -- human readable version
+ *
+ * This contains the status of the inverter, but parsed for humans.
+ * This also should contain informations, why the inverter is in that state,
+ * if available.
+ *
+ * If available, one might give also the manufactor's statuscode
+ *
+ * Examples:
+ * NOT FEEDING -- Solar radiation insufficient
+ * NOT FEEDING -- Inverter Starting up
+ * WARNING -- FAN MALFUNCTION DETECTED. USER ATTENTION REQUIRED. LIMITED FEEDING!
+ * FEEDING -- Searching MPP
+ * FEEDING -- at MPP
+ * FEEDING -- MAXIMUM POWER
+ *
+*/
+
+#define CAPA_INVERTER_STATUS_READABLE_NAME "Inverter Overall Status"
+#define CAPA_INVERTER_STATUS_READABLE_TYPE IValue::string_type
+
+
 
 
 #endif /* CAPABILITES_H_ */

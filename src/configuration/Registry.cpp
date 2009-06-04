@@ -38,7 +38,7 @@
 #include <iostream>
 #include "CWorkScheduler.h"
 
-#include "interfaces/InverterBase.h"
+#include "Inverters/interfaces/InverterBase.h"
 
 using namespace std;
 

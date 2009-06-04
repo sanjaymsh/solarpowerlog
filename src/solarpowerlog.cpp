@@ -34,7 +34,7 @@
 #include "interfaces/CTimedWork.h"
 #include "interfaces/factories/IInverterFactory.h"
 #include "interfaces/factories/InverterFactoryFactory.h"
-#include "interfaces/InverterBase.h"
+#include "Inverters/interfaces/InverterBase.h"
 
 #include <cc++/socket.h>
 #include <cc++/address.h>
@@ -221,30 +221,13 @@ int main() {
 				_exit(1);
 			}
 
-#if 0
-			inverter->connection->Connect();
-
-			char test[] = "Hallo Worlds \n";
-			string str ="Hallo string \n";
-
-			cout << test << endl;
-			if (!inverter->connection->Send(test,strlen(test) ))
-			{
-				cerr << "stream error" << endl;
-			}
-
-			cout << str << endl;
-
-			if (!inverter->connection->Send(str))
-			{
-				cerr << "stream error" << endl;
-			}
-#endif
 			Registry::Instance().AddInverter(inverter);
 			// destroy the (used) factory.
 			delete factory;
 
 		}
+
+
 
 
 		while ( true )

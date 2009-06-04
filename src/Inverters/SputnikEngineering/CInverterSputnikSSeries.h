@@ -38,14 +38,15 @@
  *
  * TODO DOCUMENT ME!
  */
-#include "InverterBase.h"
+#include "Inverters/interfaces/InverterBase.h"
 #include "Inverters/BasicCommands.h"
 
 #include <queue>
 
 class CInverterSputnikSSeries: public IInverterBase {
 public:
-	CInverterSputnikSSeries(const string & name, const string & configurationpath);
+	CInverterSputnikSSeries(const string & name,
+			const string & configurationpath);
 	virtual ~CInverterSputnikSSeries();
 
 	virtual bool CheckConfig();
@@ -57,28 +58,21 @@ protected:
 	 * note: */
 	static unsigned int CalcChecksum(const char* str, int len);
 
-
 private:
 
 	/// Commands for the Workscheduler
-	enum Commands
-	{
+	enum Commands {
 		CMD_INIT = 1000,
 		CMD_IDENTFY_WAIT,
 		CMD_POLL,
 		CMD_WAIT_RECEIVE,
-		CMD_DISCONNECTED,
-
-
+		CMD_DISCONNECTED
 	};
 
 	// Dataports of the sputnik inverters.
 
-	enum Ports
-	{
-		QUERY = 100,
-		COMMAND = 200,
-		ALARM = 300, // told that the device reports errors on this ports.
+	enum Ports {
+		QUERY = 100, COMMAND = 200, ALARM = 300, // told that the device reports errors on this ports.
 		INTERFACE = 1000
 	};
 
@@ -141,7 +135,8 @@ private:
 		TK2,
 		TK3,
 		TMI,
-		THR
+		THR,
+		SYS
 	};
 
 	void pushinverterquery(enum query q);
@@ -159,7 +154,8 @@ private:
 	/// defaults to 0xFB
 	/// unsigned int ownadr;
 
-	void tokenizer(const char *delimiters,  const string& s , vector<string> &tokens);
+	void tokenizer(const char *delimiters, const string& s,
+			vector<string> &tokens);
 
 	// token handler
 	bool token_TYP(const vector<string> &tokens);
@@ -191,15 +187,15 @@ private:
 	bool token_TK3(const vector<string> &tokens);
 	bool token_TMI(const vector<string> &tokens);
 	bool token_THR(const vector<string> &tokens);
-
-
+	bool token_SYS(const vector<string> &tokens);
 
 	void create_versioncapa(void);
 	///  some internal infos we cache....
 	int swversion;
 	int swbuild;
 
-};
+	unsigned int laststatuscode;
 
+};
 
 #endif /* CINVERTERSPUTNIKSSERIES_H_ */

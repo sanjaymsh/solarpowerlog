@@ -32,8 +32,6 @@
  *  This files implements the Observer for the Observer Design Pattern.
  */
 
-
-
 #include "IObserverObserver.h"
 #include "IObserverSubject.h"
 

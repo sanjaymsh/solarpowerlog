@@ -7,7 +7,7 @@
  Solarpowerlog is free software; However, it is dual-licenced
  as described in the file "COPYING".
 
- For this file (IObserverSubject.h), the license terms are:
+ For this file (CDumpOutputFilter.h), the license terms are:
 
  You can redistribute it and/or  modify it under the terms of the GNU Lesser
  General Public License (LGPL) as published by the Free Software Foundation;
@@ -24,57 +24,57 @@
  ----------------------------------------------------------------------------
  */
 
-/** \file IObserverSubject.h
+/** \file CDumpOutputFilter.h
  *
- *  Created on: May 12, 2009
+ *  Created on: Jun 1, 2009
  *      Author: tobi
  */
 
-#ifndef OBSERVERSUBJECT_H_
-#define OBSERVERSUBJECT_H_
-
-#include <list>
-
-using namespace std;
-
-class IObserverObserver;
+#ifndef CDUMPOUTPUTFILTER_H_
+#define CDUMPOUTPUTFILTER_H_
 
 /** \fixme COMMENT ME
  *
  *
  * TODO DOCUMENT ME!
  */
-class IObserverSubject
+#include "DataFilters/interfaces/IDataFilter.h"
+#include "Inverters/interfaces/CNestedCapaIterator.h"
+
+class CDumpOutputFilter : public IDataFilter
 {
 public:
+		CDumpOutputFilter( const string &name,
+			const string & configurationpath );
+	virtual ~CDumpOutputFilter();
 
-	virtual ~IObserverSubject();
+	virtual bool CheckConfig();
 
-	virtual void Subscribe( class IObserverObserver* observer );
+	virtual void Update( const IObserverSubject *subject );
 
-	virtual void UnSubscribe( class IObserverObserver* observer );
+	virtual void ExecuteCommand( const ICommand *cmd );
 
-	virtual void SetSubsubscription( class IObserverObserver* observer,
-		bool subscribe = true );
+	virtual CCapability *GetConcreteCapability( const string &identifier );
 
-	virtual bool CheckSubscription( class IObserverObserver *observer );
-
-	virtual void Notify( void );
-
-	virtual unsigned int GetNumSubscribers( void );
-
-protected:
-	IObserverSubject();
+	virtual ICapaIterator* GetCapaNewIterator()
+	{
+		return new CNestedCapaIterator(this, base);
+	}
 
 private:
-	std::list<IObserverObserver*> listobservers;
 
+	void CheckOrUnSubscribe( bool subscribe = true );
+
+	void DoCyclicWork( void );
+
+	string DumpValue( IValue *value );
+
+	enum Commands
+	{
+		CMD_INIT, CMD_CYCLIC, CMD_UNSUBSCRIBE, CMD_ADDED_CAPAS
+	};
+
+	bool AddedCaps;
 };
 
-#endif /* OBSERVERSUBJECT_H_ */
-
-/*
- Infos on pattern
- See:
- http://www.cs.clemson.edu/~malloy/courses/patterns/observerCo.html
- */
+#endif /* CDUMPOUTPUTFILTER_H_ */

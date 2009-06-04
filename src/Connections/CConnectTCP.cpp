@@ -108,7 +108,9 @@ bool CConnectTCP::Send(const string & tosend)
 bool CConnectTCP::Receive(string & wheretoplace)
 {
 	if ( ! IsConnected()) return false;
-	if ( ! stream->isPending(ost::Socket::pendingInput, 0)) return false;
+	if ( ! stream->isPending(ost::Socket::pendingInput, 1)) return false;
+
+	stream->setTimeout(1);
 	try {
 		(*stream) >> wheretoplace;
 	}

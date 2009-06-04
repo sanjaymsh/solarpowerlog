@@ -7,7 +7,7 @@
  Solarpowerlog is free software; However, it is dual-licenced
  as described in the file "COPYING".
 
- For this file (IObserverSubject.h), the license terms are:
+ For this file (CNestedCapaIterator.h), the license terms are:
 
  You can redistribute it and/or  modify it under the terms of the GNU Lesser
  General Public License (LGPL) as published by the Free Software Foundation;
@@ -24,57 +24,37 @@
  ----------------------------------------------------------------------------
  */
 
-/** \file IObserverSubject.h
+/** \file CNestedCapaIterator.h
  *
- *  Created on: May 12, 2009
+ *  Created on: Jun 2, 2009
  *      Author: tobi
  */
 
-#ifndef OBSERVERSUBJECT_H_
-#define OBSERVERSUBJECT_H_
-
-#include <list>
-
-using namespace std;
-
-class IObserverObserver;
+#ifndef CNESTEDCAPAITERATOR_H_
+#define CNESTEDCAPAITERATOR_H_
 
 /** \fixme COMMENT ME
  *
  *
  * TODO DOCUMENT ME!
  */
-class IObserverSubject
+#include "Inverters/interfaces/ICapaIterator.h"
+
+class CNestedCapaIterator : public ICapaIterator
 {
 public:
+	CNestedCapaIterator(IInverterBase *b, IInverterBase *parent = NULL);
 
-	virtual ~IObserverSubject();
+	virtual bool HasNext();
 
-	virtual void Subscribe( class IObserverObserver* observer );
+	virtual pair<string,CCapability*> GetNext();
 
-	virtual void UnSubscribe( class IObserverObserver* observer );
-
-	virtual void SetSubsubscription( class IObserverObserver* observer,
-		bool subscribe = true );
-
-	virtual bool CheckSubscription( class IObserverObserver *observer );
-
-	virtual void Notify( void );
-
-	virtual unsigned int GetNumSubscribers( void );
-
-protected:
-	IObserverSubject();
+	virtual ~CNestedCapaIterator();
 
 private:
-	std::list<IObserverObserver*> listobservers;
+	IInverterBase *topmost;
 
 };
 
-#endif /* OBSERVERSUBJECT_H_ */
+#endif /* CNESTEDCAPAITERATOR_H_ */
 
-/*
- Infos on pattern
- See:
- http://www.cs.clemson.edu/~malloy/courses/patterns/observerCo.html
- */

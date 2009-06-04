@@ -51,9 +51,9 @@ public:
 	virtual ~IObserverObserver();
 
 	virtual void Update(const class IObserverSubject * subject) = 0;
-    IObserverSubject *getSubject() const;
+    virtual IObserverSubject *getSubject() const;
 
-    void setSubject(IObserverSubject *subject);
+    virtual void setSubject(IObserverSubject *subject);
 
 private:
 	IObserverSubject *subject;

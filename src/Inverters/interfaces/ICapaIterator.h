@@ -7,7 +7,7 @@
  Solarpowerlog is free software; However, it is dual-licenced
  as described in the file "COPYING".
 
- For this file (IObserverSubject.h), the license terms are:
+ For this file (ICapaIterator.h), the license terms are:
 
  You can redistribute it and/or  modify it under the terms of the GNU Lesser
  General Public License (LGPL) as published by the Free Software Foundation;
@@ -24,57 +24,62 @@
  ----------------------------------------------------------------------------
  */
 
-/** \file IObserverSubject.h
+/** \file ICapaIterator.h
  *
- *  Created on: May 12, 2009
+ *  Created on: Jun 2, 2009
  *      Author: tobi
  */
 
-#ifndef OBSERVERSUBJECT_H_
-#define OBSERVERSUBJECT_H_
+#ifndef ICAPAITERATOR_H_
+#define ICAPAITERATOR_H_
 
-#include <list>
+#include <string>
+#include <map>
+#include "Inverters/interfaces/InverterBase.h"
 
-using namespace std;
-
-class IObserverObserver;
+class CCapability;
 
 /** \fixme COMMENT ME
  *
  *
  * TODO DOCUMENT ME!
  */
-class IObserverSubject
+class ICapaIterator
 {
 public:
-
-	virtual ~IObserverSubject();
-
-	virtual void Subscribe( class IObserverObserver* observer );
-
-	virtual void UnSubscribe( class IObserverObserver* observer );
-
-	virtual void SetSubsubscription( class IObserverObserver* observer,
-		bool subscribe = true );
-
-	virtual bool CheckSubscription( class IObserverObserver *observer );
-
-	virtual void Notify( void );
-
-	virtual unsigned int GetNumSubscribers( void );
-
-protected:
-	IObserverSubject();
-
 private:
-	std::list<IObserverObserver*> listobservers;
+	IInverterBase *base;
+	map<string, CCapability*>::iterator it;
+protected:
+	IInverterBase *parent;
+public:
+	ICapaIterator( IInverterBase *b, IInverterBase *parent = 0 );
+
+	virtual ~ICapaIterator();
+
+	IInverterBase *GetBase();
+
+	virtual void SetBase( IInverterBase *b );
+
+	virtual bool HasNext();
+
+	virtual pair<string, CCapability*> GetNext();
+
+	virtual pair<string, CCapability*> GetElement();
+
+	// TODO Rename that meethod. It has nothing to do with "the parent element",
+	// but the "parent hierachy element", the one-level-deeper....
+	IInverterBase *getParent() const
+	{
+		return parent;
+	}
+
+	void setParent( IInverterBase *parent )
+	{
+		this->parent = parent;
+	}
 
 };
 
-#endif /* OBSERVERSUBJECT_H_ */
+#endif /* ICAPAITERATOR_H_ */
 
-/*
- Infos on pattern
- See:
- http://www.cs.clemson.edu/~malloy/courses/patterns/observerCo.html
- */

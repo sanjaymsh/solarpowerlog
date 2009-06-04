@@ -22,13 +22,19 @@
 #include "interfaces/CCapability.h"
 #include "patterns/ICommandTarget.h"
 
+class ICapaIterator;
+
 using namespace std;
+
 
 /** Inverter Interface .... */
 // TODO: This class renamed, as it also fits for the "Filters" (Data source, data computing/enhancing, ...)
 // Inverters will be only a special interface, derived from this base class
 class IInverterBase : public ICommandTarget {
+
 public:
+
+	friend class ICapaIterator;
 
 	IInverterBase( const string &name, const string & configurationpath );
 	virtual ~IInverterBase();
@@ -38,6 +44,7 @@ public:
 	virtual const std::string& GetName(void) const;
 
 
+protected:
 	/** returns a iterator of the Capabilties. The iterator is inizialized at the begin of the map.*/
 	virtual map<string, CCapability*>::iterator GetCapabilityIterator(void)
 	{
@@ -53,6 +60,7 @@ public:
 		return it;
 	}
 
+public:
 	/** check for a specific capability and return the pointer to it
 	 * returns NULL if it is not registered. */
 	// TODO Move to c++ file
@@ -61,6 +69,8 @@ public:
 			if(it == CapabilityMap.end() ) return 0;
 			return it->second;
 	}
+
+	virtual ICapaIterator* GetCapaNewIterator();
 
 	virtual bool CheckConfig() = 0;
 
@@ -94,8 +104,6 @@ private:
 	// like also current readings and so on...
 
 	map<string, CCapability*> CapabilityMap;
-
-
 };
 
 #endif /* INVERTERBASE_H_ */

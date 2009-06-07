@@ -48,6 +48,15 @@ protected:
 	/** returns a iterator of the Capabilties. The iterator is inizialized at the begin of the map.*/
 	virtual map<string, CCapability*>::iterator GetCapabilityIterator(void)
 	{
+		// Dumping the map.
+		map<string, CCapability*>::iterator it1 = CapabilityMap.begin();
+// TODO cleanup code (remove debug code)
+//		cerr << "DUMP Capabilites: " << this->GetName() <<  endl;
+//		for (int i=0; it1 != CapabilityMap.end(); it1++,i++)
+//		{
+//			cerr << i << " " << (*it1).first << endl;
+//		}
+
 		map<string, CCapability*>::iterator it = CapabilityMap.begin();
 		return it;
 	}

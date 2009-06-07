@@ -32,22 +32,32 @@
 
 #include "ICapaIterator.h"
 
-ICapaIterator::ICapaIterator(IInverterBase *b, IInverterBase *p)
+ICapaIterator::ICapaIterator( IInverterBase *b, IInverterBase *p )
 {
+	// TODO Cleanup Debug code cerr << " DEBUG: new ICapaInverter b=" << b->GetName();
+	//if (p)
+	//	cerr << " p=" << p->GetName();
+	// cerr << endl;
+
 	SetBase(b);
 	parent = p;
 }
 
-void ICapaIterator::SetBase(IInverterBase *b)
+void ICapaIterator::SetBase( IInverterBase *b )
 {
 	base = b;
 	it = base-> GetCapabilityIterator();
 }
 
-bool ICapaIterator::HasNext() {
-	if (it != base->GetCapabilityLastIterator())
+bool ICapaIterator::HasNext()
+{
+	if (it != base->GetCapabilityLastIterator()) {
+		//cerr << "DEBUG: Has Next on " << base->GetName() << " "
+		//	<< (*it).first << endl;
 		return true;
-	else return false;
+	} else {
+		return false;
+	}
 }
 
 IInverterBase *ICapaIterator::GetBase()
@@ -55,11 +65,15 @@ IInverterBase *ICapaIterator::GetBase()
 	return base;
 }
 
-pair<string,CCapability*> ICapaIterator::GetNext() {
+pair<string, CCapability*> ICapaIterator::GetNext()
+{
 
-	if ( it != base->GetCapabilityLastIterator() ) {
-		return *it++;
+	if (it != base->GetCapabilityLastIterator()) {
+		return *(it++);
 	}
+
+	cerr << "NOTHING TO RETURN: USE HasNext() PRIOR GETNEXT()" << endl;
+	return *it;
 }
 
 ICapaIterator::~ICapaIterator()
@@ -68,9 +82,9 @@ ICapaIterator::~ICapaIterator()
 	// TODO Auto-generated destructor stub
 }
 
-pair<string,CCapability*> ICapaIterator::GetElement()
+pair<string, CCapability*> ICapaIterator::GetElement()
 {
+	// cerr << "DEBUG: Get Element: Returning Element " << (*it).first << endl;
 	return *it;
 }
-
 

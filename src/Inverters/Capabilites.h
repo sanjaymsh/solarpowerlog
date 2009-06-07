@@ -83,7 +83,7 @@
  * \sa The pseudo cap "force unsubsribe" is related.
  *
  * THIS IS A MUST CAPABILITY -- EVERY INVERTER HAS THIS ONE.  */
-#define CAPA_CAPAS_REMOVEALL 		"CapabilityList Updated"
+#define CAPA_CAPAS_REMOVEALL 		"CapabilityList Please Unsubscribe"
 #define CAPA_CAPAS_REMOVEALL_TYPE 	IValue::bool_type
 
 

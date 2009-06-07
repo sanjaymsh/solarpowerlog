@@ -45,7 +45,7 @@
 
 CDumpOutputFilter::CDumpOutputFilter( const string &name,
 	const string & configurationpath ) :
-	IDataFilter(name, configurationpath)
+	IDataFilter(name, configurationpath), AddedCaps(0)
 {
 	string tmp;
 	libconfig::Setting &set = Registry::Instance().GetSettingsForObject(
@@ -53,7 +53,6 @@ CDumpOutputFilter::CDumpOutputFilter( const string &name,
 
 	// Get our data source (Observer)
 	string setting = "datasource";
-	// char *tmp;
 	if (set.lookupValue("datasource", tmp)) {
 		base = Registry::Instance().GetInverter(tmp);
 		if (base) {
@@ -112,7 +111,17 @@ bool CDumpOutputFilter::CheckConfig()
 			<< " missing or of wrong type (wanted a string)"
 			<< endl;
 		ret = false;
+	} else {
+		set.lookupValue(setting, str);
+		IInverterBase *i = Registry::Instance().GetInverter(str);
+		if (!i) {
+			cerr << "Setting " << setting << " in "
+				<< configurationpath << "." << name
+				<< ": Cannot find instance of Inverter with the name "
+				<< str << endl;
+		}
 	}
+
 	return ret;
 }
 
@@ -231,34 +240,48 @@ CCapability *CDumpOutputFilter::GetConcreteCapability(
 	const string & identifier )
 {
 	CCapability *c;
-	if ((c = IInverterBase::GetConcreteCapability(identifier)))
+	if ((c = IInverterBase::GetConcreteCapability(identifier))) {
+		// TODO cleanup debug code
+		// cout << "DEBUG: found " << identifier << " in " << GetName()
+		//	<< endl;
 		return c;
-	else
+	} else {
+		// TODO cleanup debug code
+		//cout << "DEBUG: searching " << identifier << " in base class "
+		//	<< base->GetName() << endl;
 		return base->GetConcreteCapability(identifier);
+	}
 }
 
-/// This simple Data-Dumper will just dump all over all capas it has.
+/// This simple Data-Dumper will just dump all info over all capas it has.
+/// It shows also how a filter can use the iterators to get all the capps of
+/// the parent filters.
 void CDumpOutputFilter::DoCyclicWork( void )
 {
+
+#if 0
 	cout << configurationpath << "." << name << " Own Capabilities:"
-		<< endl << endl;
+	<< endl << endl;
 	map<string, CCapability*>::iterator it = GetCapabilityIterator();
 	while (it != GetCapabilityLastIterator()) {
-		cout << (*it).first << ' ';
-		for (int i = (*it).first.length() + 1; i < 30; i++)
-			cout << '.';
+		cout << (*it).first << ' ' << flush;
+		for (int i = (*it).first.length() + 1; i < 60; i++)
+		cout << '.';
 		cout << DumpValue((*it).second->getValue()) << endl;
+		it++;
 	}
-
-	cout << configurationpath << "." << name << " Derived Capabilities:"
-		<< endl << endl;
+#endif
+	cout << endl << configurationpath << "." << name
+		<< " Known Capabilities:" << endl << endl;
 	ICapaIterator *cit = GetCapaNewIterator();
 	while (cit->HasNext()) {
 		pair<string, CCapability*> cappair = cit->GetNext();
-		cout << (cappair).first << ' ';
-		for (int i = (cappair).first.length() + 1; i < 30; i++)
+		cout << (cappair).first << ' ' << flush;
+		for (int i = (cappair).first.length() + 1; i < 60; i++)
 			cout << '.';
-		cout << DumpValue((*it).second->getValue()) << endl;
+		cout << DumpValue(cappair.second->getValue()) << " (Capa of: "
+			<< cappair.second->getSource()->GetName() << ")"
+			<< endl;
 	}
 
 	delete cit;
@@ -270,6 +293,7 @@ string CDumpOutputFilter::DumpValue( IValue *value )
 {
 	enum IValue::factory_types type = value->GetType();
 	string ret;
+	char buf[128];
 
 	switch (type) {
 	case IValue::bool_type:
@@ -278,11 +302,13 @@ string CDumpOutputFilter::DumpValue( IValue *value )
 		break;
 
 	case IValue::float_type:
-		ret = ((CValue<float>*) value) -> Get();
+		sprintf(buf, "%f", ((CValue<float>*) value)->Get());
+		ret = buf;
 		break;
 
 	case IValue::int_type:
-		ret = ((CValue<int>*) value) -> Get();
+		sprintf(buf, "%d", ((CValue<int>*) value)->Get());
+		ret = buf;
 		break;
 
 	case IValue::string_type:

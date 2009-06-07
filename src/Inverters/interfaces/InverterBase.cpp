@@ -32,6 +32,7 @@
  */
 
 #include <map>
+#include <assert.h>
 
 #include "InverterBase.h"
 #include "interfaces/factories/IConnectFactory.h"
@@ -50,22 +51,28 @@ IInverterBase::IInverterBase( const string& name,
 	this->name = name;
 	this->configurationpath = configurationpath;
 	connection = IConnectFactory::Factory(configurationpath);
+	pair<map<string, CCapability*>::iterator, bool> b;
 
 	string s;
 	IValue *v;
 	CCapability *c;
 
 	// Add the "must have" capabilites.
-	s = CAPA_CAPAS_UPDATED_TYPE;
+	s = CAPA_CAPAS_UPDATED;
 	v = IValue::Factory(CAPA_CAPAS_UPDATED_TYPE);
 	c = new CCapability(s, v, this);
-	CapabilityMap.insert(pair<string, CCapability*> (s, c));
+	b = CapabilityMap.insert(pair<string, CCapability*> (s, c));
+	assert( b.second );
 
 	// Add the "must have" capabilites.
 	s = CAPA_CAPAS_REMOVEALL;
 	v = IValue::Factory(CAPA_CAPAS_REMOVEALL_TYPE);
 	c = new CCapability(s, v, this);
-	CapabilityMap.insert(pair<string, CCapability*> (s, c));
+	b = CapabilityMap.insert(pair<string, CCapability*> (s, c));
+	assert( b.second );
+
+	// TODO remove debug code: next line
+	GetCapabilityIterator();
 
 }
 

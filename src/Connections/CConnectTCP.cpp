@@ -39,16 +39,17 @@
 #include "configuration/Registry.h"
 #include <libconfig.h++>
 
-
 using namespace std;
 
-CConnectTCP::CConnectTCP(const string &configurationname)
-: IConnect(configurationname)
+CConnectTCP::CConnectTCP( const string &configurationname ) :
+	IConnect(configurationname)
 {
-	stream = NULL; host = NULL;
+	stream = NULL;
+	host = NULL;
 }
 
-CConnectTCP::~CConnectTCP() {
+CConnectTCP::~CConnectTCP()
+{
 	cleanupstream();
 }
 
@@ -57,22 +58,22 @@ bool CConnectTCP::Connect()
 
 	cleanupstream();
 
-	libconfig::Setting &set = Registry::Instance().GetSettingsForObject(ConfigurationPath);
+	libconfig::Setting &set = Registry::Instance().GetSettingsForObject(
+		ConfigurationPath);
 	int port;
 	long timeout;
 
-	set.lookupValue("tcpadr",strhost);
+	set.lookupValue("tcpadr", strhost);
 	set.lookupValue("tcpport", port);
-	if (!set.lookupValue("tcptimeout", timeout)) timeout = 3000;
+	if (!set.lookupValue("tcptimeout", timeout))
+		timeout = 3000;
 	timer = timeout;
 
 	host = new ost::IPV4Host(strhost.c_str());
 	try {
-		stream = new ost::TCPStream( *host, port, 536, true, timeout );
-	}
-	catch (...)
-	{
-		cerr << "TCP/IP Connection Error to "<< strhost  << endl;
+		stream = new ost::TCPStream(*host, port, 536, true, timeout);
+	} catch (...) {
+		cerr << "TCP/IP Connection Error to " << strhost << endl;
 		return false;
 	}
 
@@ -87,77 +88,92 @@ bool CConnectTCP::Disconnect()
 	return true;
 }
 
-bool CConnectTCP::Send(const char *tosend, int len)
+bool CConnectTCP::Send( const char *tosend, int len )
 {
 	// FIXME: This is not really good for binary data, but enough for now.
 
-	if ( ! IsConnected()) return false;
+	if (!IsConnected())
+		return false;
 
-	for(int i =0 ; i< len ; i++ ) (*stream)<<tosend[i];
-	return  (0 == stream->sync());
+	for (int i = 0; i < len; i++)
+		(*stream) << tosend[i];
+	return (0 == stream->sync());
 }
 
-bool CConnectTCP::Send(const string & tosend)
+bool CConnectTCP::Send( const string & tosend )
 {
-	if ( ! IsConnected()) return false;
+	if (!IsConnected())
+		return false;
 
-	 (*stream) << tosend;
-	return  (0 == stream->sync());
+	stream->setTimeout(timer);
+	(*stream) << tosend;
+
+	return (0 == stream->sync());
 }
 
-bool CConnectTCP::Receive(string & wheretoplace)
+bool CConnectTCP::Receive( string & wheretoplace )
 {
-	if ( ! IsConnected()) return false;
-	if ( ! stream->isPending(ost::Socket::pendingInput, 1)) return false;
+	if (!IsConnected())
+		return false;
+	if (!stream->isPending(ost::Socket::pendingInput, 1))
+		return false;
 
 	stream->setTimeout(1);
 	try {
 		(*stream) >> wheretoplace;
-	}
-	catch (...)
-	{
+		stream->sync();
+	} catch (...) {
 		return false;
 	}
 	return true;
 }
 
-bool CConnectTCP::IsConnected(void)
+bool CConnectTCP::IsConnected( void )
 {
-	if ( ! stream || ! stream->isConnected() || ! stream->isActive()) return false;
+	if (!stream || !stream->isConnected() || !stream->isActive())
+		return false;
 	return true;
 }
 
-bool CConnectTCP::CheckConfig(void)
+bool CConnectTCP::CheckConfig( void )
 {
 	string setting;
 	bool ret = true;
 
-	libconfig::Setting &set = Registry::Instance().GetSettingsForObject(ConfigurationPath);
+	libconfig::Setting &set = Registry::Instance().GetSettingsForObject(
+		ConfigurationPath);
 
 	setting = "tcpadr";
-	if (! set.exists(setting) || !set.getType() ==  libconfig::Setting::TypeString) {
+	if (!set.exists(setting) || !set.getType()
+		== libconfig::Setting::TypeString) {
 		cerr << "Setting " << setting << " in " << ConfigurationPath
-			<< " missing or of wrong type (wanted a string)" << endl;
+			<< " missing or of wrong type (wanted a string)"
+			<< endl;
 		ret = false;
 	}
 
 	setting = "tcpport";
-	if (! set.exists(setting) || !set.getType() ==  libconfig::Setting::TypeInt) {
+	if (!set.exists(setting) || !set.getType()
+		== libconfig::Setting::TypeInt) {
 		cerr << "Setting " << setting << " in " << ConfigurationPath
-			<< " missing or of wrong type (wanted a integer)" << endl;
+			<< " missing or of wrong type (wanted a integer)"
+			<< endl;
 		ret = false;
 	}
 
 	return ret;
 }
 
-void CConnectTCP::cleanupstream(void)
+void CConnectTCP::cleanupstream( void )
 {
 	if (stream) {
-		if (stream->isConnected()) stream->disconnect();
-		delete stream; stream = NULL;
+		if (stream->isConnected())
+			stream->disconnect();
+		delete stream;
+		stream = NULL;
 	}
 
-	if (host) delete host;
+	if (host)
+		delete host;
 }
 

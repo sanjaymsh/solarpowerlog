@@ -52,11 +52,12 @@ CNestedCapaIterator::~CNestedCapaIterator()
 /// \warning do not use GetNext() without a HasNext()!
 bool CNestedCapaIterator::HasNext()
 {
+	CCapability *c;
 	pair<string, CCapability*> p;
 	if (ICapaIterator::HasNext()) {
 		p = GetElement();
 		// Check if we had to filter that one out.
-		if (p.second == (topmost->GetConcreteCapability(p.first))) {
+		if (p.second == (c = topmost->GetConcreteCapability(p.first))) {
 			// yes, not filtered.
 			return true;
 		} else {

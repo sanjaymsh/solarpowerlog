@@ -45,7 +45,7 @@ using namespace std;
 IObserverObserver::IObserverObserver(IObserverSubject *subject) {
 
 	/* auto-subscribe */
-	setSubject(subject);
+	if (subject != NULL) setSubject(subject);
 }
 
 /** The destructor will auto-unsubsribe before destroying the object. */

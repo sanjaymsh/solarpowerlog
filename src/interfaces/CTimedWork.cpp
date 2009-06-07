@@ -59,7 +59,7 @@ void CTimedWork::run() {
 	setCancel(ost::Thread::cancelImmediate);
 	while ( ts.tv_sec || ts.tv_nsec)
 	{
-#if 1
+#if 0
 		unsigned long t=0;
 		// just make sure that we won't overflow the timeout_t
 		// we play safe and dont go over 2^24
@@ -89,7 +89,7 @@ void CTimedWork::run() {
 		if ( 0 == nanosleep(&ts, &ts)) break;
 #endif
 	}
-	cout << "TIMEDWORK DONE " << endl;
+	// cout << "TIMEDWORK DONE " << endl;
 	sch->ScheduleWork(cmd);
 	exit();
 }

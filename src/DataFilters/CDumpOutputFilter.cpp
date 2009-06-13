@@ -306,7 +306,7 @@ void CDumpOutputFilter::DoCyclicWork( void )
 		cout << (cappair).first << ' ' << flush;
 		for (int i = (cappair).first.length() + 1; i < 60; i++)
 			cout << '.';
-		cout << DumpValue(cappair.second->getValue()) << " (Capa of: "
+		cout << " " << DumpValue(cappair.second->getValue()) << " (Capa of: "
 			<< cappair.second->getSource()->GetName() << ")"
 			<< endl;
 	}
@@ -329,7 +329,7 @@ string CDumpOutputFilter::DumpValue( IValue *value )
 		break;
 
 	case IValue::float_type:
-		sprintf(buf, "%f", ((CValue<float>*) value)->Get());
+		sprintf(buf, "%.2f", ((CValue<float>*) value)->Get());
 		ret = buf;
 		break;
 

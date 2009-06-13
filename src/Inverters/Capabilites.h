@@ -229,7 +229,7 @@
  * Optional.
  *
  * */
-#define CAPA_INVERTER_INSTALLEDPOWER_NAME "Installed solar power (kWp)"
+#define CAPA_INVERTER_INSTALLEDPOWER_NAME "Installed solar power (Watts-peak)"
 #define CAPA_INVERTER_INSTALLEDPOWER_TYPE IValue::float_type
 
 /** Current AC Power Frequency
@@ -305,7 +305,7 @@
  * Optional.
  *
  * */
-#define CAPA_INVERTER_GRID_AC_CURRENT_NAME "AC grid feeding current (V)"
+#define CAPA_INVERTER_GRID_AC_CURRENT_NAME "AC grid feeding current (A)"
 #define CAPA_INVERTER_GRID_AC_CURRENT_TYPE IValue::float_type
 
 /** Inverter internal temperature

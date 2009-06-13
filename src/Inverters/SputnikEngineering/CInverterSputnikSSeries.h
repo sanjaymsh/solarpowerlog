@@ -120,7 +120,7 @@ private:
 
 #endif
 		PIN,
-		TNP,
+		TNF,
 		// ADR, // << nonsense, as we 'know' the adress.
 		PRL,
 		UDC,
@@ -172,7 +172,7 @@ private:
 	bool token_KDY(const vector<string> &tokens);
 	bool token_KT0(const vector<string> &tokens);
 	bool token_PIN(const vector<string> &tokens);
-	bool token_TNP(const vector<string> &tokens);
+	bool token_TNF(const vector<string> &tokens);
 	bool token_PRL(const vector<string> &tokens);
 	bool token_UDC(const vector<string> &tokens);
 	bool token_UL1(const vector<string> &tokens);

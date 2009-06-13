@@ -287,7 +287,7 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 		pushinverterquery(TKK);
 		pushinverterquery(TMI);
 		pushinverterquery(THR);
-
+		pushinverterquery(TNF);
 		pushinverterquery(SYS);
 
 		commstring = assemblequerystring();
@@ -302,7 +302,7 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 		// pushinverterquery(EC07);
 		// pushinverterquery(EC08);
 
-		cout << " Sent:\t" << commstring << endl;
+		// cout << " Sent:\t" << commstring << endl;
 		connection->Send(commstring);
 
 		// wait for
@@ -391,11 +391,13 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 		pushinverterquery(TMI);
 		pushinverterquery(THR);
 		pushinverterquery(SYS);
+		pushinverterquery(TNF);
 
 		commstring = assemblequerystring();
 		if (commstring != "") {
-			if (connection->Send(commstring))
-				cerr << "sent " << commstring << endl;
+			if (connection->Send(commstring)) {
+				//  cerr << "sent " << commstring << endl;
+			}
 		}
 
 		cmd = new ICommand(CMD_WAIT_RECEIVE, this, 0);
@@ -698,14 +700,14 @@ string CInverterSputnikSSeries::assemblequerystring()
 			break;
 		}
 
-		case TNP:
+		case TNF:
 		{
 			if (currentport && currentport != QUERY) {
 				cont = false;
 				break;
 			}
 			currentport = QUERY;
-			nextcmd = "TNP";
+			nextcmd = "TNF";
 			// TODO check answer len
 			expectedanswerlen += 10;
 			break;
@@ -970,7 +972,7 @@ string CInverterSputnikSSeries::assemblequerystring()
 bool CInverterSputnikSSeries::parsereceivedstring( const string & s )
 {
 
-#if 1
+#if 0
 	cerr << "Received:\t" << s << endl;
 #endif
 
@@ -1141,8 +1143,8 @@ bool CInverterSputnikSSeries::parsetoken( string token )
 		return token_PIN(subtokens);
 	}
 
-	if (subtokens[0] == "TNP") {
-		return token_TNP(subtokens);
+	if (subtokens[0] == "TNF") {
+		return token_TNF(subtokens);
 	}
 	if (subtokens[0] == "PRL") {
 		return token_PRL(subtokens);
@@ -1701,7 +1703,7 @@ bool CInverterSputnikSSeries::token_PIN( const vector<string> & tokens )
 	return true;
 }
 
-bool CInverterSputnikSSeries::token_TNP( const vector<string> & tokens )
+bool CInverterSputnikSSeries::token_TNF( const vector<string> & tokens )
 {
 	// FIXME TODO Implement me!
 	// Unit us
@@ -1713,8 +1715,7 @@ bool CInverterSputnikSSeries::token_TNP( const vector<string> & tokens )
 	float f;
 	sscanf(tokens[1].c_str(), "%x", &raw);
 
-	f = (1.0 / raw) * 1.0E6;
-
+	f = raw / 100.0 ;
 	// lookup if we already know that informations.
 	CCapability *cap = GetConcreteCapability(
 		CAPA_INVERTER_NET_FREQUENCY_NAME);

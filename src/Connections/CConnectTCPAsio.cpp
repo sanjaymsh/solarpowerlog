@@ -90,15 +90,19 @@ bool CConnectTCPAsio::Connect()
 	// TODO Change to async connect.
 	while (iter != end) {
 		asio::ip::tcp::endpoint endpoint = *iter++;
-		std::cout << endpoint << std::endl;
+		std::cout << "Connecting to ..." << endpoint << std::flush;
 		sockt->connect(endpoint, ec);
 		if (!ec)
 			break;
 	}
 
-	if (ec)
+	if (ec) {
+		cerr << " failed" << endl;
 		return false;
 
+	}
+
+	cout << " succesful " << endl;
 	return true;
 
 }
@@ -135,7 +139,7 @@ bool CConnectTCPAsio::Receive( string & wheretoplace )
 	if (!recvd)
 		return false;
 
-	wheretoplace.assign(buf,recvd);
+	wheretoplace.assign(buf, recvd);
 	return true;
 }
 

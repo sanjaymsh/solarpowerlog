@@ -144,6 +144,20 @@ CInverterSputnikSSeries::CInverterSputnikSSeries( const string &name,
 	((CValue<bool>*) v)->Set(false);
 	c = new CCapability(s, v, this);
 	AddCapability(s, c);
+
+
+	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
+		configurationpath);
+	float interval;
+	if (!set.lookupValue("queryinterval",interval)) {
+		interval = 5.0;
+	}
+	s = CAPA_INVERTER_QUERYINTERVAL;
+	v = IValue::Factory(CAPA_INVERTER_QUERYINTERVAL_TYPE);
+	((CValue<float>*) v)->Set(interval);
+	c = new CCapability(s, v, this);
+	AddCapability(s, c);
+
 }
 
 CInverterSputnikSSeries::~CInverterSputnikSSeries()
@@ -158,7 +172,7 @@ bool CInverterSputnikSSeries::CheckConfig()
 
 	bool ret = true;
 	// Check, if we have enough informations to work on.
-	libconfig::Setting &set = Registry::Instance().GetSettingsForObject(
+	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
 		configurationpath);
 
 	setting = "comms";
@@ -174,6 +188,15 @@ bool CInverterSputnikSSeries::CheckConfig()
 	// Check config of the component, if already instanciated.
 	if (connection) {
 		ret = connection->CheckConfig();
+	}
+
+	setting = "queryinterval";
+	if (set.exists(setting) && !set.getType()
+		== libconfig::Setting::TypeFloat) {
+		cerr << "WARNING: Setting " << setting << " in "
+			<< configurationpath << "." << name
+			<< " of wrong type (wanted a float)." << endl;
+		ret = false;
 	}
 
 	setting = "commadr";
@@ -215,7 +238,7 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 {
 	static int errcnt = 0;
 
-	static string commstring = "";
+	string commstring = "";
 	string reccomm = "";
 
 	ICommand *cmd;
@@ -233,6 +256,12 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 			cerr << "offline: scheduling reconnection in "
 				<< ts.tv_sec << " seconds" << endl;
 			errcnt++;
+
+			CCapability *c = GetConcreteCapability(
+				CAPA_INVERTER_DATASTATE);
+			CValue<bool> *v = (CValue<bool> *) c->getValue();
+			v->Set(false);
+
 			break;
 		}
 
@@ -263,15 +292,15 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 
 		commstring = assemblequerystring();
 
-		//		pushinverterquery(EC00);
-		//		pushinverterquery(EC01);
-		//		pushinverterquery(EC02);
-		//		pushinverterquery(EC03);
-		//		pushinverterquery(EC04);
-		//		pushinverterquery(EC05);
-		//		pushinverterquery(EC06);
-		//		pushinverterquery(EC07);
-		//		pushinverterquery(EC08);
+		// pushinverterquery(EC00);
+		// pushinverterquery(EC01);
+		// pushinverterquery(EC02);
+		// pushinverterquery(EC03);
+		// pushinverterquery(EC04);
+		// pushinverterquery(EC05);
+		// pushinverterquery(EC06);
+		// pushinverterquery(EC07);
+		// pushinverterquery(EC08);
 
 		cout << " Sent:\t" << commstring << endl;
 		connection->Send(commstring);
@@ -288,6 +317,7 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 
 	case CMD_WAIT_RECEIVE:
 	case CMD_IDENTFY_WAIT:
+	{
 		if (!connection->IsConnected()) {
 			connection->Disconnect();
 
@@ -304,10 +334,8 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 		}
 
 		if (!connection->Receive(reccomm) || reccomm.empty()) {
-//			cerr << name
-//				<< " did not receive answer ... retrying ."
-//				<< endl;
-			cerr << "COM: " << reccomm << endl;
+			cerr << name << " did not receive answer ... retrying."
+				<< endl;
 			cmd = new ICommand(CMD_IDENTFY_WAIT, this, 0);
 			timespec ts;
 			ts.tv_sec = 0;
@@ -316,11 +344,10 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 			break;
 		}
 
-		// fire up the parser.
 		parsereceivedstring(reccomm);
 
 		// Check for remaining commands to execute in the init session.
-		// commstring = assemblequerystring();
+		commstring = assemblequerystring();
 		if (commstring != "") {
 			connection->Send(commstring);
 
@@ -336,13 +363,13 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 		}
 
 		cmd = new ICommand(CMD_POLL, this, 0);
-		// TODO change that fixed-wait time to the "estimated roundtrip algorithm"
-		// which will calculate the expected delay....
-		ts.tv_sec = 3;
-		ts.tv_nsec = 0;
+		CCapability *c=GetConcreteCapability(CAPA_INVERTER_QUERYINTERVAL);
+		CValue<float> *v = (CValue<float> *)c->getValue();
+		ts.tv_sec = v->Get();
+		ts.tv_nsec = (( v->Get() - ts.tv_sec) * 1e9);
 		Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
-
 		break;
+	}
 
 	case CMD_POLL:
 
@@ -356,7 +383,6 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 		pushinverterquery(KDY);
 		pushinverterquery(KT0);
 		pushinverterquery(PRL);
-
 		pushinverterquery(UDC);
 		pushinverterquery(IDC);
 		pushinverterquery(IL1);
@@ -366,9 +392,10 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 		pushinverterquery(THR);
 		pushinverterquery(SYS);
 
-		// commstring = assemblequerystring();
+		commstring = assemblequerystring();
 		if (commstring != "") {
-			if (connection->Send(commstring)) cerr<<"sent " <<commstring<<endl;
+			if (connection->Send(commstring))
+				cerr << "sent " << commstring << endl;
 		}
 
 		cmd = new ICommand(CMD_WAIT_RECEIVE, this, 0);
@@ -909,7 +936,7 @@ string CInverterSputnikSSeries::assemblequerystring()
 	unsigned int ownadr, commadr;
 
 	// Query settings needed and default all optional settings.
-	libconfig::Setting &set = Registry::Instance().GetSettingsForObject(
+	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
 		configurationpath);
 	string setting = "ownadr";
 	if (!set.lookupValue(setting, ownadr))
@@ -966,7 +993,7 @@ bool CInverterSputnikSSeries::parsereceivedstring( const string & s )
 	tokenizer(delimiters, s, tokens);
 
 #if 0
-	// Deubg: Ausgabe aller tokens:
+	// Deubg: Print all received tokens
 	{
 		vector<string>::iterator it;
 		for (i = 0, it = tokens.begin(); it != tokens.end() - 1; it++) {
@@ -994,7 +1021,7 @@ bool CInverterSputnikSSeries::parsereceivedstring( const string & s )
 	unsigned int ownadr, commadr;
 
 	// Query settings needed and default all optional settings.
-	libconfig::Setting &set = Registry::Instance().GetSettingsForObject(
+	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
 		configurationpath);
 	string setting = "ownadr";
 	if (!set.lookupValue(setting, ownadr))
@@ -1035,6 +1062,7 @@ bool CInverterSputnikSSeries::parsereceivedstring( const string & s )
 	// parsetoken should get a second argument to get the port infos.
 
 	// okay, done...
+
 	for (i = 4; i < tokens.size() - 1; i++) {
 		if (!parsetoken(tokens[i])) {
 			cout << "BUG: Parse Error at token " << tokens[i]
@@ -1044,7 +1072,7 @@ bool CInverterSputnikSSeries::parsereceivedstring( const string & s )
 		}
 	}
 
-	return false;
+	return true;
 }
 
 bool CInverterSputnikSSeries::parsetoken( string token )

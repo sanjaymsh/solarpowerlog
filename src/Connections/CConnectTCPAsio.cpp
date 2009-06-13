@@ -24,14 +24,14 @@
  ----------------------------------------------------------------------------
  */
 
-/** \file ConnectionTCP.cpp
+/** \file ConnectionTCPBoost.cpp
  *
  *  Created on: May 21, 2009
  *      Author: tobi
  */
 
 #include "interfaces/IConnect.h"
-#include "Connections/CConnectTCP.h"
+#include "Connections/CConnectTCPAsio.h"
 
 #include <iostream>
 #include <string>
@@ -39,108 +39,117 @@
 #include "configuration/Registry.h"
 #include <libconfig.h++>
 
+#include <asio.hpp>
+
 using namespace std;
 
-CConnectTCP::CConnectTCP( const string &configurationname ) :
+CConnectTCPAsio::CConnectTCPAsio( const string &configurationname ) :
 	IConnect(configurationname)
 {
-	stream = NULL;
-	host = NULL;
+	// Generate our own asio ioservoce
+	// TODO check if one central would do that too...
+	ioservice = new asio::io_service;
+	sockt = new asio::ip::tcp::socket(*ioservice);
+
 }
 
-CConnectTCP::~CConnectTCP()
+CConnectTCPAsio::~CConnectTCPAsio()
 {
 	cleanupstream();
+
+	if (sockt)
+		delete sockt;
+	if (ioservice)
+		delete ioservice;
+
 }
 
-bool CConnectTCP::Connect()
+bool CConnectTCPAsio::Connect()
 {
 
 	cleanupstream();
 
-	libconfig::Setting &set = Registry::Instance().GetSettingsForObject(
+	asio::error_code ec;
+
+	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
 		ConfigurationPath);
-	int port;
+
+	string strhost, port;
 	long timeout;
 
 	set.lookupValue("tcpadr", strhost);
 	set.lookupValue("tcpport", port);
 	if (!set.lookupValue("tcptimeout", timeout))
 		timeout = 3000;
-	timer = timeout;
 
-	host = new ost::IPV4Host(strhost.c_str());
-	try {
-		stream = new ost::TCPStream(*host, port, 536, true, timeout);
-	} catch (...) {
-		cerr << "TCP/IP Connection Error to " << strhost << endl;
-		return false;
+	asio::ip::tcp::resolver resolver(*ioservice);
+	asio::ip::tcp::resolver::query query(strhost.c_str(), "12345");
+	asio::ip::tcp::resolver::iterator iter = resolver.resolve(query);
+	asio::ip::tcp::resolver::iterator end; // End marker.
+
+	// TODO Change to async connect.
+	while (iter != end) {
+		asio::ip::tcp::endpoint endpoint = *iter++;
+		std::cout << endpoint << std::endl;
+		sockt->connect(endpoint, ec);
+		if (!ec)
+			break;
 	}
 
-	stream->setTimeout(timeout);
+	if (ec)
+		return false;
 
-	return stream->isConnected();
+	return true;
+
 }
 
-bool CConnectTCP::Disconnect()
+bool CConnectTCPAsio::Disconnect()
 {
 	cleanupstream();
 	return true;
 }
 
-bool CConnectTCP::Send( const char *tosend, unsigned int len )
+bool CConnectTCPAsio::Send( const char *tosend, unsigned int len )
 {
-	// FIXME: This is not really good for binary data, but enough for now.
-
-	if (!IsConnected())
-		return false;
-
-	for (int i = 0; i < len; i++)
-		(*stream) << tosend[i];
-	return (0 == stream->sync());
+	size_t written;
+	written = asio::write(*sockt, asio::buffer(tosend, len));
+	return (written == len);
 }
 
-bool CConnectTCP::Send( const string & tosend )
+bool CConnectTCPAsio::Send( const string & tosend )
 {
-	if (!IsConnected())
-		return false;
-
-	stream->setTimeout(timer);
-	(*stream) << tosend;
-
-	return (0 == stream->sync());
+	return Send(tosend.c_str(), tosend.length());
 }
 
-bool CConnectTCP::Receive( string & wheretoplace )
+bool CConnectTCPAsio::Receive( string & wheretoplace )
 {
-	if (!IsConnected())
-		return false;
-	if (!stream->isPending(ost::Socket::pendingInput, 1))
+	size_t avail = sockt->available();
+	size_t recvd;
+	if (!avail)
 		return false;
 
-	stream->setTimeout(1);
-	try {
-		(*stream) >> wheretoplace;
-		stream->sync();
-	} catch (...) {
+	char buf[avail + 1];
+	buf[avail] = 0;
+
+	recvd = sockt->read_some(asio::buffer(buf, avail));
+	if (!recvd)
 		return false;
-	}
+
+	wheretoplace.assign(buf,recvd);
 	return true;
 }
 
-bool CConnectTCP::IsConnected( void )
+bool CConnectTCPAsio::IsConnected( void )
 {
-	if (!stream || !stream->isConnected() || !stream->isActive())
-		return false;
-	return true;
+	return sockt->is_open();
 }
 
-bool CConnectTCP::CheckConfig( void )
+bool CConnectTCPAsio::CheckConfig( void )
 {
 	string setting;
 	bool ret = true;
 
-	libconfig::Setting &set = Registry::Instance().GetSettingsForObject(
+	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
 		ConfigurationPath);
 
 	setting = "tcpadr";
@@ -164,16 +173,9 @@ bool CConnectTCP::CheckConfig( void )
 	return ret;
 }
 
-void CConnectTCP::cleanupstream( void )
+void CConnectTCPAsio::cleanupstream( void )
 {
-	if (stream) {
-		if (stream->isConnected())
-			stream->disconnect();
-		delete stream;
-		stream = NULL;
-	}
-
-	if (host)
-		delete host;
+	if (sockt->is_open())
+		sockt->close();
 }
 

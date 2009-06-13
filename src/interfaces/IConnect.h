@@ -57,7 +57,7 @@ public:
 
 
 	/// Send a array of characters (can be used as binary transport, too)
-	virtual bool Send(const char *tosend, int len) = 0;
+	virtual bool Send(const char *tosend, unsigned int len) = 0;
 	/// Send a strin Standard implementation only wraps to above Send.
 	///
 	/// Override if needed.g (usually comms is "human readable")

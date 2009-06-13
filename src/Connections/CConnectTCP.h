@@ -56,7 +56,7 @@ public:
 	virtual bool Disconnect();
 
 	/// Send a array of characters (can be used as binary transport, too)
-	virtual bool Send(const char *tosend, int len);
+	virtual bool Send(const char *tosend, unsigned int len);
 
 	virtual bool Send(const string& tosend);
 	/// Send a strin Standard implementation only wraps to above Send.

@@ -32,11 +32,12 @@
  */
 #include "configuration/Registry.h"
 
-#include "interfaces/factories/IConnectFactory.h"
+#include "Connections/factories/IConnectFactory.h"
 #include "Connections/CConnectDummy.h"
 #include "Connections/CConnectTCP.h"
 
 #include <libconfig.h++>
+#include "Connections/CConnectTCPAsio.h"
 
 
 using namespace std;
@@ -49,9 +50,18 @@ IConnect * IConnectFactory::Factory(const string &configurationpath)
 
 	set.lookupValue("comms", type);
 
-	if(type == "TCP/IP") {
+	if(type == "COMMONCPP::TCP/IP") {
+		// this one was the first attempt..
+		// unfortnuatly this implementation did not work
+		// well.
+		// (see bug #532228 of the Debian BTS)
 		return new CConnectTCP(configurationpath);
 	}
+
+	if(type == "TCP/IP") {
+		return new CConnectTCPAsio(configurationpath);
+	}
+
 
 	// TODO Implement other methos as soon as available.
 

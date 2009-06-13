@@ -35,7 +35,7 @@
 #include <assert.h>
 
 #include "InverterBase.h"
-#include "interfaces/factories/IConnectFactory.h"
+#include "Connections/factories/IConnectFactory.h"
 #include "interfaces/CCapability.h"
 
 #include "Inverters/Capabilites.h"

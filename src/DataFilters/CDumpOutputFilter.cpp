@@ -43,16 +43,16 @@
 #include "Inverters/interfaces/ICapaIterator.h"
 #include "patterns/CValue.h"
 
+#include <cstdio>
+
 CDumpOutputFilter::CDumpOutputFilter( const string &name,
 	const string & configurationpath ) :
 	IDataFilter(name, configurationpath), AddedCaps(0)
 {
 	string tmp;
-	libconfig::Setting &set = Registry::Instance().GetSettingsForObject(
+	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
 		configurationpath);
 
-	// Get our data source (Observer)
-	string setting = "datasource";
 	if (set.lookupValue("datasource", tmp)) {
 		base = Registry::Instance().GetInverter(tmp);
 		if (base) {
@@ -80,6 +80,10 @@ CDumpOutputFilter::CDumpOutputFilter( const string &name,
 		Registry::GetMainScheduler()->ScheduleWork(cmd);
 
 	}
+
+	if (!set.lookupValue("clearscreen", clearscreen)) {
+		clearscreen = false;
+	}
 }
 
 CDumpOutputFilter::~CDumpOutputFilter()
@@ -100,7 +104,7 @@ bool CDumpOutputFilter::CheckConfig()
 	string str;
 	bool ret = true;
 
-	libconfig::Setting &set = Registry::Instance().GetSettingsForObject(
+	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
 		configurationpath);
 
 	setting = "datasource";
@@ -120,6 +124,15 @@ bool CDumpOutputFilter::CheckConfig()
 				<< ": Cannot find instance of Inverter with the name "
 				<< str << endl;
 		}
+	}
+
+	setting = "clearscreen";
+	if (set.exists(setting) && !set.getType()
+		== libconfig::Setting::TypeBoolean) {
+		cerr << "Setting " << setting << " in " << configurationpath
+			<< "." << name
+			<< " of wrong type (wanted true or false)" << endl;
+		ret = false;
 	}
 
 	return ret;
@@ -181,6 +194,15 @@ void CDumpOutputFilter::ExecuteCommand( const ICommand *cmd )
 	{
 		ICommand *cmd = new ICommand(CMD_CYCLIC, this, 0);
 		timespec ts = { 1, 0 };
+
+		CCapability *c = GetConcreteCapability(
+			CAPA_INVERTER_QUERYINTERVAL);
+		if (c && c->getValue()->GetType() == IValue::float_type) {
+			CValue<float> *v = (CValue<float> *) c->getValue();
+			ts.tv_sec = v->Get();
+			ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
+		}
+
 		Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
 		DoCyclicWork();
 		break;
@@ -271,6 +293,11 @@ void CDumpOutputFilter::DoCyclicWork( void )
 		it++;
 	}
 #endif
+
+	if (clearscreen) {
+		cout << "\033[2J" << "\033[1;1H";
+	}
+
 	cout << endl << configurationpath << "." << name
 		<< " Known Capabilities:" << endl << endl;
 	ICapaIterator *cit = GetCapaNewIterator();

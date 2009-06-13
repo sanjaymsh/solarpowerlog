@@ -75,6 +75,8 @@ private:
 	};
 
 	bool AddedCaps;
+
+	bool clearscreen;
 };
 
 #endif /* CDUMPOUTPUTFILTER_H_ */

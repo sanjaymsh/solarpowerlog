@@ -42,8 +42,9 @@
 #include "Inverters/SputnikEngineering/CInverterSputnikSSeries.h"
 #include "DataFilters/interfaces/factories/IDataFilterFactory.h"
 
-#include <cc++/socket.h>
-#include <cc++/address.h>
+#include <asio.hpp>
+
+#include <iostream>
 
 using namespace std;
 
@@ -54,10 +55,8 @@ using namespace std;
 
  Use with:
  [code]
- libconfig::Setting &set = Registry::Configuration()->getRoot();
- if (set.getName()) cout << set.getName(); else cout << "anonymous";
- cout << " has the Path \"" << set.getPath() << "\" and Type " <<
- set.getType() << " and has a Lenght of " <<  set.getLength() << endl;
+ libconfig::Setting &set = Registry::Configuration()->getRoot(); if (set.getName()) cout << set.getName(); else cout << "anonymous";
+ cout << " has the Path \"" << set.getPath() << "\" and Type " << set.getType() << " and has a Lenght of " <<  set.getLength() << endl;
 
  DumpSettings(set);
  [/code]
@@ -102,35 +101,55 @@ void DumpSettings( libconfig::Setting &set )
 static const char *required_sections[] = { "application", "inverter",
 	"inverter.inverters", "logger" };
 
-void tc()
-{
-	ost::TCPStream *stream;
-	ost::IPV4Host *host;
-
-	struct tm *local;
-	time_t t;
-	t = time(NULL);
-	local = localtime(&t);
-	std::cout << asctime(local) << std::endl;
-
-	host = new ost::IPV4Host("192.168.0.99");
-	try {
-		stream = new ost::TCPStream(*host, (ost::tpport_t) 1234, true,
-			(timeout_t) 3000);
-	} catch (...) {
-		cerr << "BUG: It was instructed NOT to throw." << endl;
-	}
-
-	t = time(NULL);
-	local = localtime(&t);
-	std::cout << asctime(local) << std::endl;
-
-}
-
 using namespace std;
+using namespace asio;
 
 int main()
 {
+#if 0
+	// getting asio known...
+	asio::io_service my_io_service;
+	asio::error_code ec,ec2;
+
+	asio::ip::tcp::resolver resolver(my_io_service);
+	asio::ip::tcp::socket socket(my_io_service);
+	asio::ip::tcp::resolver::query query("127.0.0.1", 12345);
+	asio::ip::tcp::resolver::iterator iter = resolver.resolve(query);
+	asio::ip::tcp::resolver::iterator end; // End marker.
+	while (iter != end) {
+		asio::ip::tcp::endpoint endpoint = *iter++;
+		std::cout << endpoint << std::endl;
+		ec2 = socket.connect(endpoint, ec);
+		if (ec) cerr << "ERROR "<< ec;
+	}
+
+
+
+	return 0;
+#endif
+
+#if 0
+	using boost::asio::ip::tcp;
+
+	boost::asio::io_service io_service;
+	tcp::resolver resolver(io_service);
+	tcp::resolver::query query("localhost", "12345");
+	tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
+	tcp::resolver::iterator end;
+
+	tcp::socket socket(io_service);
+	boost::system::error_code error = boost::asio::error::host_not_found;
+	while (error && endpoint_iterator != end) {
+		socket.close();
+		socket.connect(*endpoint_iterator++, error);
+	}
+	if (error)
+	throw boost::system::system_error(error);
+
+	socket.write_some("Test");
+
+	return 0;
+#endif
 
 	bool error_detected = false;
 

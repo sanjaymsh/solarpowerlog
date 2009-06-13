@@ -96,6 +96,18 @@
 #define CAPA_INVERTER_DATASTATE  "Data Validity"
 #define CAPA_INVERTER_DATASTATE_TYPE  IValue::bool_type
 
+/** How often are the datas queried
+ *
+ * How often are the datas queried, if done cyclic. Unit is seconds.
+ *
+ * Type: float
+ *
+ * optional
+ */
+#define CAPA_INVERTER_QUERYINTERVAL  "Data Query Intevaly"
+#define CAPA_INVERTER_QUERYINTERVAL_TYPE  IValue::float_type
+
+
 
 /** Basic informations for the user -- these informations are usually not
  * updated. But, as a exception to this, a inverter class might do runtime

@@ -7,7 +7,7 @@
  Solarpowerlog is free software; However, it is dual-licenced
  as described in the file "COPYING".
 
- For this file (CConnectDummy.h), the license terms are:
+ For this file (ConnectionTCP.h), the license terms are:
 
  You can redistribute it and/or  modify it under the terms of the GNU Lesser
  General Public License (LGPL) as published by the Free Software Foundation;
@@ -24,14 +24,14 @@
  ----------------------------------------------------------------------------
  */
 
-/** \file CConnectDummy.h
+/** \file ConnectionTCPAsio.h
  *
- *  Created on: May 22, 2009
+ *  Created on: May 21, 2009
  *      Author: tobi
  */
 
-#ifndef CCONNECTDUMMY_H_
-#define CCONNECTDUMMY_H_
+#ifndef CONNECTIONTCPASIO_H_
+#define CONNECTIONTCPASIO_H_
 
 /** \fixme COMMENT ME
  *
@@ -39,29 +39,51 @@
  * TODO DOCUMENT ME!
  */
 #include "IConnect.h"
+#include <sys/socket.h>
 
-class CConnectDummy: public IConnect {
+#include <asio.hpp>
+
+using namespace std;
+
+class CConnectTCPAsio : public IConnect
+{
 public:
-	CConnectDummy(const string &configurationname);
-	virtual ~CConnectDummy();
+	CConnectTCPAsio( const string & configurationname );
+	virtual ~CConnectTCPAsio();
 
 	/// Connect to something
 	/// NOTE: Needed to be overriden! ALWAYS Open in a NON_BLOCK way, or implement a worker thread
-	virtual bool Connect() {return false;};
+	virtual bool Connect();
 	/// Tear down the connection.
-	virtual bool Disconnect() {return false;};
-
+	virtual bool Disconnect();
 
 	/// Send a array of characters (can be used as binary transport, too)
-	virtual bool Send(const char *tosend, unsigned int len) { return false; };
+	virtual bool Send( const char *tosend, unsigned int len );
+
+	virtual bool Send( const string& tosend );
 	/// Send a strin Standard implementation only wraps to above Send.
 	///
 	/// Receive a string. Do now get more than maxxsize (-1 == no limit)
 	/// NOTE:
-	virtual bool Receive(string &wheretoplace) { return false; };
+	virtual bool Receive( string &wheretoplace );
 
-	virtual bool CheckConfig(void) ;
+	/// Receive a binary stream with maxsize as buffer size and place the actual number received
+	/// in the numreceived, which is negative on errors.#
+	/// (0 == nothing received)
+
+	virtual bool CheckConfig( void );
+
+	virtual bool IsConnected( void );
+
+private:
+	asio::io_service *ioservice;
+	asio::ip::tcp::socket *sockt;
+	asio::streambuf *data;
+
+	time_t timer;
+
+	void cleanupstream( void );
 
 };
 
-#endif /* CCONNECTDUMMY_H_ */
+#endif /* CONNECTIONTCP_H_ */

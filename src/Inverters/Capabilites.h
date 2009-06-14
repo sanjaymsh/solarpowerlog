@@ -104,7 +104,7 @@
  *
  * optional
  */
-#define CAPA_INVERTER_QUERYINTERVAL  "Data Query Intevaly"
+#define CAPA_INVERTER_QUERYINTERVAL  "Data Query Interval"
 #define CAPA_INVERTER_QUERYINTERVAL_TYPE  IValue::float_type
 
 
@@ -327,13 +327,6 @@
 /** Inverter Status Codes
  *
  */
-
- /* value:
-
- * 3
- * 4	- perfect 	-- everything fine. Operating in MPP
- * 6	- error		-- the inverter is inoperable.
-*/
 
 enum InverterStatusCodes
 {

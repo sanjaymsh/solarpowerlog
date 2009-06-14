@@ -32,13 +32,15 @@
 
 #include "CMutexHelper.h"
 
-#include <boost/thread/mutex.hpp>
+#include <cc++/thread.h>
 
-CMutexAutoLock::CMutexAutoLock(boost::mutex *mutex) {
+using namespace ost;
+
+CMutexAutoLock::CMutexAutoLock(class Mutex* mutex) {
 	this->mutex = mutex;
-	mutex->lock();
+	mutex->enterMutex();
 }
 
 CMutexAutoLock::~CMutexAutoLock() {
-	mutex->unlock();
+	mutex->leaveMutex();
 }

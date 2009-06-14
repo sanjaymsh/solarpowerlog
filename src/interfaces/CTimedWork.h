@@ -33,25 +33,56 @@
 #ifndef CTIMEDWORK_H_
 #define CTIMEDWORK_H_
 
-#include <cc++/thread.h>
 #include "patterns/ICommand.h"
 #include "CWorkScheduler.h"
+#include "boost/date_time/posix_time/posix_time.hpp"
 
+#include <boost/thread.hpp>
 
 /** This class bundles a timed activity.
  *
  * Currently, activities are tasks, which when ending, will enque an immediatte action.
  */
-class CTimedWork : public  ost::Thread
+class CTimedWork
 {
+
 public:
 	/** Constructor: Takes the scheduler to inform, the command to execute and the time when.
 	 */
-	CTimedWork(CWorkScheduler *sch, ICommand *cmd, struct timespec ts);
+	explicit CTimedWork( CWorkScheduler *sch );
 
+	virtual ~CTimedWork();
+
+	/// Thread entry point.
+	void run();
+
+	void ScheduleWork( ICommand *Command, struct timespec ts );
+
+	void RequestTermination( void );
 
 private:
-	CTimedWork() {};
+	CTimedWork()
+	{
+	}
+
+	void _main( void );
+
+#if 1
+	struct time_compare
+	{
+		bool operator()( const boost::posix_time::ptime t1,
+			const boost::posix_time::ptime t2 ) const
+		{
+			if (t1 > t2)
+				return false;
+			return true;
+		}
+		;
+	};
+
+	multimap<boost::posix_time::ptime, ICommand*, time_compare>
+		TimedCommands;
+#endif
 	/** holds the commmand */
 	ICommand *cmd;
 	/** holds the timespec */
@@ -60,12 +91,12 @@ private:
 	 * (The scheduler keeps books of its processes)*/
 	CWorkScheduler *sch;
 
-protected:
-	/// Called on thread termination (See commonc++ lib)
-	void final();
+	volatile bool terminate;
 
-	/// Called on execution of the thread. (See commonc++ lib)
-	void run();
+	boost::thread thread;
+
+	boost::mutex mut;
+
 };
 
 #endif /* CTIMEDWORK_H_ */

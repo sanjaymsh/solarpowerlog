@@ -35,9 +35,11 @@
 
 #include <time.h>
 #include <list>
-#include <map>
-#include <cc++/thread.h>
 
+#include <semaphore.h>
+#include <map>
+
+#include <boost/thread.hpp>
 
 class ICommand;
 class ICommandTarget;
@@ -61,7 +63,7 @@ using namespace std;
  * when used.
  *
 */
-class CWorkScheduler : protected ost::Mutex {
+class CWorkScheduler {
 
 	friend class CTimedWork;
 
@@ -86,9 +88,9 @@ public:
 
 private:
 
-	list<ICommand*> CommandsDue;
+	CTimedWork *timedwork;
 
-	list<CTimedWork*> SpawnedThreads;
+	list<ICommand*> CommandsDue;
 
 #if 0
 	struct timepec_compare
@@ -111,6 +113,9 @@ private:
 
 private:
 	sem_t semaphore;
+
+protected:
+	boost::mutex mut;
 
 };
 

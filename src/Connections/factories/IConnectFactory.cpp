@@ -34,7 +34,6 @@
 
 #include "Connections/factories/IConnectFactory.h"
 #include "Connections/CConnectDummy.h"
-#include "Connections/CConnectTCP.h"
 
 #include <libconfig.h++>
 #include "Connections/CConnectTCPAsio.h"
@@ -42,6 +41,12 @@
 
 using namespace std;
 
+/** Facortry for generation of connection methods.
+ * Give it the configurationpath, and out of the config, it will
+ * generate the right class.
+ *
+ * If the class is not known, it will return a dummy connection class.
+ * So you can also create inverters or derived classes without commms. */
 IConnect * IConnectFactory::Factory(const string &configurationpath)
 {
 
@@ -50,21 +55,9 @@ IConnect * IConnectFactory::Factory(const string &configurationpath)
 
 	set.lookupValue("comms", type);
 
-	if(type == "COMMONCPP::TCP/IP") {
-		// this one was the first attempt..
-		// unfortnuatly this implementation did not work
-		// well.
-		// (see bug #532228 of the Debian BTS)
-		return new CConnectTCP(configurationpath);
-	}
-
 	if(type == "TCP/IP") {
 		return new CConnectTCPAsio(configurationpath);
 	}
-
-
-	// TODO Implement other methos as soon as available.
-
 
 	return new CConnectDummy(configurationpath);
 }

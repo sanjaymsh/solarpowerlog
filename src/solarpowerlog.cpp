@@ -27,24 +27,18 @@
 #include <vector>
 #include <string>
 #include <iostream>
+// #include <asio.hpp>
+
 #include "configuration/Registry.h"
 #include "interfaces/CWorkScheduler.h"
 #include "patterns/ICommand.h"
 #include "patterns/ICommandTarget.h"
-#include "interfaces/CTimedWork.h"
+
 #include "interfaces/factories/IInverterFactory.h"
 #include "interfaces/factories/InverterFactoryFactory.h"
 #include "Inverters/interfaces/InverterBase.h"
 
-#include <cc++/socket.h>
-#include <cc++/address.h>
-#include "Connections/CConnectTCP.h"
-#include "Inverters/SputnikEngineering/CInverterSputnikSSeries.h"
 #include "DataFilters/interfaces/factories/IDataFilterFactory.h"
-
-#include <asio.hpp>
-
-#include <iostream>
 
 using namespace std;
 
@@ -101,55 +95,10 @@ void DumpSettings( libconfig::Setting &set )
 static const char *required_sections[] = { "application", "inverter",
 	"inverter.inverters", "logger" };
 
-using namespace std;
-using namespace asio;
+
 
 int main()
 {
-#if 0
-	// getting asio known...
-	asio::io_service my_io_service;
-	asio::error_code ec,ec2;
-
-	asio::ip::tcp::resolver resolver(my_io_service);
-	asio::ip::tcp::socket socket(my_io_service);
-	asio::ip::tcp::resolver::query query("127.0.0.1", 12345);
-	asio::ip::tcp::resolver::iterator iter = resolver.resolve(query);
-	asio::ip::tcp::resolver::iterator end; // End marker.
-	while (iter != end) {
-		asio::ip::tcp::endpoint endpoint = *iter++;
-		std::cout << endpoint << std::endl;
-		ec2 = socket.connect(endpoint, ec);
-		if (ec) cerr << "ERROR "<< ec;
-	}
-
-
-
-	return 0;
-#endif
-
-#if 0
-	using boost::asio::ip::tcp;
-
-	boost::asio::io_service io_service;
-	tcp::resolver resolver(io_service);
-	tcp::resolver::query query("localhost", "12345");
-	tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
-	tcp::resolver::iterator end;
-
-	tcp::socket socket(io_service);
-	boost::system::error_code error = boost::asio::error::host_not_found;
-	while (error && endpoint_iterator != end) {
-		socket.close();
-		socket.connect(*endpoint_iterator++, error);
-	}
-	if (error)
-	throw boost::system::system_error(error);
-
-	socket.write_some("Test");
-
-	return 0;
-#endif
 
 	bool error_detected = false;
 

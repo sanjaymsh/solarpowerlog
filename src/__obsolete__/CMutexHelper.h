@@ -33,7 +33,9 @@
 #ifndef CMUTEXHELPER_H_
 #define CMUTEXHELPER_H_
 
-#include <boost/thread/mutex.hpp>
+#include <cc++/thread.h>
+
+using namespace ost;
 
 /** Mutex Wrapper for the GNU Common C++ Library
  *
@@ -50,11 +52,11 @@
 class CMutexAutoLock {
 public:
 
-	CMutexAutoLock(boost::mutex * mutex);
+	CMutexAutoLock(class Mutex* mutex);
 	virtual ~CMutexAutoLock();
 
 private:
-	boost::mutex *mutex;
+	class Mutex *mutex;
 
 };
 

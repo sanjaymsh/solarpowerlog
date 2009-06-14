@@ -145,11 +145,10 @@ CInverterSputnikSSeries::CInverterSputnikSSeries( const string &name,
 	c = new CCapability(s, v, this);
 	AddCapability(s, c);
 
-
 	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
 		configurationpath);
 	float interval;
-	if (!set.lookupValue("queryinterval",interval)) {
+	if (!set.lookupValue("queryinterval", interval)) {
 		interval = 5.0;
 	}
 	s = CAPA_INVERTER_QUERYINTERVAL;
@@ -245,6 +244,28 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 
 	switch ((Commands) Command->getCmd()) {
 
+	case CMD_DISCONNECTED:
+	{
+		// Timeout on reception
+		// we assume that we are now disconnected.
+		// so lets schedule a reconnection.
+		// TODO this time should be configurable.
+		connection->Disconnect();
+		errcnt = 0;
+
+		// Tell everyone that all data is now invalid.
+		CCapability *c = GetConcreteCapability(CAPA_INVERTER_DATASTATE);
+		CValue<bool> *v = (CValue<bool> *) c->getValue();
+		v->Set(false);
+
+		cmd = new ICommand(CMD_INIT, this, 0);
+		timespec ts;
+		ts.tv_sec = 15;
+		ts.tv_nsec = 0;
+		Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
+		break;
+	}
+
 	case CMD_INIT:
 
 		if (!connection->Connect()) {
@@ -255,7 +276,6 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 			Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
 			cerr << "offline: scheduling reconnection in "
 				<< ts.tv_sec << " seconds" << endl;
-			errcnt++;
 
 			CCapability *c = GetConcreteCapability(
 				CAPA_INVERTER_DATASTATE);
@@ -319,31 +339,31 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 	case CMD_IDENTFY_WAIT:
 	{
 		if (!connection->IsConnected()) {
-			connection->Disconnect();
-
-			cmd = new ICommand(CMD_INIT, this, 0);
-			timespec ts;
-			ts.tv_sec = 3;
-			ts.tv_nsec = 0;
-			Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
-			cerr << name
-				<< " is offline: scheduling reconnection in "
-				<< ts.tv_sec << "seconds" << endl;
-			errcnt++;
+			cmd = new ICommand(CMD_DISCONNECTED, this, 0);
+			Registry::GetMainScheduler()->ScheduleWork(cmd);
 			break;
 		}
 
 		if (!connection->Receive(reccomm) || reccomm.empty()) {
 			cerr << name << " did not receive answer ... retrying."
 				<< endl;
-			cmd = new ICommand(CMD_IDENTFY_WAIT, this, 0);
-			timespec ts;
-			ts.tv_sec = 0;
-			ts.tv_nsec = 300UL * 1000UL * 1000UL;
-			Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
+
+			// TODO move errcnt-limit to configuration
+			if (errcnt++ > 15) {
+				cmd = new ICommand(CMD_DISCONNECTED, this, 0);
+				Registry::GetMainScheduler()->ScheduleWork(cmd);
+			} else {
+				cmd = new ICommand(CMD_IDENTFY_WAIT, this, 0);
+				timespec ts;
+				ts.tv_sec = 0;
+				ts.tv_nsec = 300UL * 1000UL * 1000UL;
+				Registry::GetMainScheduler()->ScheduleWork(cmd,
+					ts);
+			}
 			break;
 		}
 
+		errcnt = 0;
 		parsereceivedstring(reccomm);
 
 		// Check for remaining commands to execute in the init session.
@@ -360,13 +380,19 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 			ts.tv_nsec = 300UL * 1000UL * 1000UL;
 			Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
 			break;
+		} else {
+			CCapability *c = GetConcreteCapability(
+				CAPA_INVERTER_DATASTATE);
+			CValue<bool> *v = (CValue<bool> *) c->getValue();
+			v->Set(true);
 		}
 
 		cmd = new ICommand(CMD_POLL, this, 0);
-		CCapability *c=GetConcreteCapability(CAPA_INVERTER_QUERYINTERVAL);
-		CValue<float> *v = (CValue<float> *)c->getValue();
+		CCapability *c = GetConcreteCapability(
+			CAPA_INVERTER_QUERYINTERVAL);
+		CValue<float> *v = (CValue<float> *) c->getValue();
 		ts.tv_sec = v->Get();
-		ts.tv_nsec = (( v->Get() - ts.tv_sec) * 1e9);
+		ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
 		Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
 		break;
 	}
@@ -396,6 +422,7 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 		commstring = assemblequerystring();
 		if (commstring != "") {
 			if (connection->Send(commstring)) {
+				// Error handling is done by timeout and/or by CMD_WAIT_RECEIVE
 				//  cerr << "sent " << commstring << endl;
 			}
 		}
@@ -1715,7 +1742,7 @@ bool CInverterSputnikSSeries::token_TNF( const vector<string> & tokens )
 	float f;
 	sscanf(tokens[1].c_str(), "%x", &raw);
 
-	f = raw / 100.0 ;
+	f = raw / 100.0;
 	// lookup if we already know that informations.
 	CCapability *cap = GetConcreteCapability(
 		CAPA_INVERTER_NET_FREQUENCY_NAME);

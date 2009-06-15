@@ -30,7 +30,7 @@
  *      Author: tobi
  */
 
-#include "IDataFilterFactory.h"
+#include "DataFilters/interfaces/factories/IDataFilterFactory.h"
 #include "DataFilters/CDumpOutputFilter.h"
 
 IDataFilterFactory::IDataFilterFactory() {

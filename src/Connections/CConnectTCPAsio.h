@@ -38,10 +38,10 @@
  *
  * TODO DOCUMENT ME!
  */
-#include "IConnect.h"
-#include <sys/socket.h>
 
-#include <asio.hpp>
+#include <boost/asio.hpp>
+
+#include "interfaces/IConnect.h"
 
 using namespace std;
 
@@ -76,9 +76,9 @@ public:
 	virtual bool IsConnected( void );
 
 private:
-	asio::io_service *ioservice;
-	asio::ip::tcp::socket *sockt;
-	asio::streambuf *data;
+	boost::asio::io_service *ioservice;
+	boost::asio::ip::tcp::socket *sockt;
+	boost::asio::streambuf *data;
 
 	time_t timer;
 

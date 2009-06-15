@@ -698,7 +698,7 @@ string CInverterSputnikSSeries::assemblequerystring()
 				break;
 			}
 			currentport = QUERY;
-			nextcmd = "DMT";
+			nextcmd = "KDY";
 			expectedanswerlen += 10;
 			break;
 		}

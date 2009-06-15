@@ -34,14 +34,14 @@
 #include <map>
 #include <assert.h>
 
-#include "InverterBase.h"
+#include "Inverters/interfaces/InverterBase.h"
 #include "Connections/factories/IConnectFactory.h"
 #include "interfaces/CCapability.h"
 
 #include "Inverters/Capabilites.h"
 #include "patterns/IValue.h"
 
-#include "ICapaIterator.h"
+#include "Inverters/interfaces/ICapaIterator.h"
 
 using namespace std;
 

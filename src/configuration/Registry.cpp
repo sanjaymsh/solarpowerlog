@@ -32,12 +32,10 @@
  *
  *
  */
-
-#include "Registry.h"
-
 #include <iostream>
-#include "CWorkScheduler.h"
 
+#include "configuration/Registry.h"
+#include "interfaces/CWorkScheduler.h"
 #include "Inverters/interfaces/InverterBase.h"
 
 using namespace std;

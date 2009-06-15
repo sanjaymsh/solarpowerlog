@@ -18,7 +18,8 @@
 
 #include <string>
 #include <map>
-#include "IConnect.h"
+
+#include "interfaces/IConnect.h"
 #include "interfaces/CCapability.h"
 #include "patterns/ICommandTarget.h"
 

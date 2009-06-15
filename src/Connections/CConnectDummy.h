@@ -38,7 +38,7 @@
  *
  * TODO DOCUMENT ME!
  */
-#include "IConnect.h"
+#include "interfaces/IConnect.h"
 
 class CConnectDummy: public IConnect {
 public:

@@ -50,8 +50,8 @@
  *
  * TODO DOCUMENT ME!
  */
-#include "IObserverObserver.h"
-#include "IObserverSubject.h"
+#include "patterns/IObserverObserver.h"
+#include "patterns/IObserverSubject.h"
 #include "Inverters/interfaces/InverterBase.h"
 #include "patterns/ICommand.h"
 

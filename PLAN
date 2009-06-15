@@ -34,10 +34,9 @@ BRAIN STORMING
       (Mailing not considered for embedded pltforms)
   
 -->  DESIGN CONSIDERATIONS
-  a) low-level code as portable as possible (plan to use microcontroller for the job)
-  b) aquisition and storage : daemon 
-  c) visualization: can be web application (php) or stand alone program
-  d) should share configuration files
+  a) aquisition and storage : daemon 
+  b) visualization: can be web application (php) or stand alone program
+  c) should share configuration files
   
 CHANGE ME
  a) Change logging to a logging library -- it is currently hardwired to cerr.

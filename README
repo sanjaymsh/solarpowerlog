@@ -1,11 +1,260 @@
-README
-=========
+WHAT IS SOLARPOWERLOG?
+======================
 
-Solarpowerlog is currently in planning / construction phase.
+The program's purpose is to track and log data from photo-voltaic inverters,
+collect power data and store them. Also a purpose is to provide an interface
+to extract these data, allowing applications like web site stats of the system. 
 
-Some of the basic design is "designed" but basically, the code does currently
-*nothing*, even if it already could do....
+Currently, solarpowerlog is working with the Sputnik Solarmax inverter, but the
+framework is planned to support any kind of inverters and even other
+energy generation systems.
 
-Stay tuned!
+Solarpowerlog, even if already doing something, is still under heavy development
 
- 
+HELP WANTED
+===========
+
+Any idea? Some programming skills? Missin a feature? Lots of spare time?
+You're at the right place! Please consider bringing your dreams to reality and contribute 
+them. Don't forget, this is open source.
+
+Especially this fields needs support: 
+- Support for other inverters that the sputnik ones (to test the code, you have to own them)
+- Programming for some tools making use of the data.
+- Documentation (manuals, code documentation, examples, ....)
+- and bug crushing.
+
+
+BUILDING
+========
+
+To build solarpowerlog, just use the usual
+./configure
+make
+
+for a guide, please see the file INSTALL.
+
+
+CONFIGURATION FILE 
+==================
+
+solarpowerlog reads at startup the file solarpowerlog.conf
+
+Here's an example how it can looks like The format is the one from libconfig++, see 
+http://config-plus.sourceforge.net/ for documentation of the format.
+
+The example below currently shows all the available options for the time 
+being. 
+
+The example also shows, how 3 inverters and 3 data filters interact:
+A Inverter is always the datasource, and by its name, it exports the date
+too alĺ interesting "loggers": 
+Inverter_1 sends it data to SimpleDumper_1
+Inverter_2 sends it data to SimpleDumper_2
+Inverter_3 sends it data to SimpleDumper_3
+
+
+================================ snip =====================
+# This is a sample configuation file for solarpowerlog.
+#
+# Please note, the file is parsed by libconfig.
+
+
+application:
+{
+	# how often query the informations from the inveters
+	# the value specified the time between queries in seconds.
+	# should be a  float. 
+	pollinginterval = 5.0;
+	
+	
+};
+
+inverter :
+{
+	 inverters = ( 
+  		{ # (REQUIRED) Name of the Inverter (Will be used as reference in the programm)
+  		  name   = "Inverter_1";
+  		  
+  		  # (REQUIRED) "Human Readable Description of the fine piece of hardware. Not interpreted by this software"
+  		  description = "A Inverter inverting";
+  		  
+  		  # (REQUIRED) Selects the family of the inverters.
+  		  # (In SW-Speak: Specifies the family of factory to generate. The generated factory will instanciate the correct model class
+  		  # specified by "model" 
+  		  manufactor =  "SPUTNIK_ENGINEERING";
+  		  
+          # (REQUIRED) Which model we about to talk too
+          # Your choice is "S-Series" (currently)  
+          model ="S-Series";
+          
+          # (REQUIRED BY SPUTNIK, S-Series)
+          # mode of comm 
+          #		"TCP/IP",          Ethernet 
+          #	(planned:	"RS485,            RS485  ) 
+          #	(planned: 	"RS485overTCPIP"   Daisy-Chained modules with one over ethernet, the others chained to the rs485 output.)
+          comms =  "TCP/IP";		
+      
+      	  # TCP/IP options. Address and Port.
+      	  # Port can also be a so-called "well-known-port" named as string. Example: "http"
+          tcpadr =  "192.168.0.201";
+            
+          tcpport = 12345;
+          # optional: Wait maximum this time to connect to the inverter.
+          # default: 3 seconds (value: 3000)
+          # Note: Currently blocks the logger until timeout or connection! 
+          # NOTE: FEATURE CURRENTLY NOT IMPLEMENTED!  
+          tcptimeout = 3000;
+          
+          # Communication address of the inverter (as set in the menu of the inverter)
+          commadr = 1;
+          # Adress to use as "our" adress for communication
+		  # defaults to 0xFB
+          ownadr = 0xfb;
+          
+          # How often should the inverter be queried
+          # The value specifies how long the class will *wait* 
+          # after one query has been answered.
+          # The value can be a float.  
+          # This value is optional and defaults to 5 seconds
+          queryinterval=5;
+		},
+		{
+		  name   = "Inverter_2";
+  		  
+  		  # (REQUIRED) "Human Readable Description of the fine piece of hardware. Not interpreted by this software"
+  		  description = "A Inverter inverting";
+  		  
+  		  # (REQUIRED) Selects the family of the inverters.
+  		  # (In SW-Speak: Specifies the family of factory to generate. The generated factory will instanciate the correct model class
+  		  # specified by "model" 
+  		  manufactor =  "SPUTNIK_ENGINEERING";
+  		  
+          # (REQUIRED) Which model we about to talk too
+          # Your choice is "S-Series" (currently)  
+          model ="S-Series";
+          
+          # (REQUIRED BY SPUTNIK, S-Series)
+          # mode of comm (planned: 
+          #		"TCP/IP",          Ethernet 
+          #		"RS485,            RS485   
+          #		"RS485overTCPIP"   Daisy-Chained modules with one over ethernet, the others chained to the rs485 output.
+          comms =  "TCP/IP";		
+      
+      	  # TCP/IP options. Address and Port.
+      	  # Port can also be a so-called "well-known-port" named as string. Example: "http"
+          tcpadr =  "192.168.0.202";
+            
+          tcpport = 12345;
+          # optional: Wait maximum this time to connect to the inverter.
+          # default: 3 seconds (value: 3000)
+          # Note: Currently blocks the logger until timeout or connection! 
+          # NOTE: FEATURE CURRENTLY NOT IMPLEMENTED!  
+          tcptimeout = 3000;
+          
+          # Communication address of the inverter (as set in the menu of the inverter)
+          commadr = 2;
+          # Adress to use as "our" adress for communication
+		  # defaults to 0xFB
+          ownadr = 0xfb;
+          
+          # How often should the inverter be queried
+          # The value specifies how long the class will *wait* 
+          # after one query has been answered.
+          # The value can be a float.  
+          # This value is optional and defaults to 5 seconds
+          queryinterval=5;
+		},
+		{
+		  name   = "Inverter_3";
+  		  
+  		  # (REQUIRED) "Human Readable Description of the fine piece of hardware. Not interpreted by this software"
+  		  description = "A Inverter inverting";
+  		  
+  		  # (REQUIRED) Selects the family of the inverters.
+  		  # (In SW-Speak: Specifies the family of factory to generate. The generated factory will instanciate the correct model class
+  		  # specified by "model" 
+  		  manufactor =  "SPUTNIK_ENGINEERING";
+  		  
+          # (REQUIRED) Which model we about to talk too
+          # Your choice is "S-Series" (currently)  
+          model ="S-Series";
+          
+          # (REQUIRED BY SPUTNIK, S-Series)
+          # mode of comm (planned: 
+          #		"TCP/IP",          Ethernet 
+          #		"RS485,            RS485   
+          #		"RS485overTCPIP"   Daisy-Chained modules with one over ethernet, the others chained to the rs485 output.
+          comms =  "TCP/IP";		
+      
+      	  # TCP/IP options. Address and Port.
+      	  # Port can also be a so-called "well-known-port" named as string. Example: "http"
+          tcpadr =  "192.168.0.203";
+            
+          tcpport = 12345;
+          # optional: Wait maximum this time to connect to the inverter.
+          # default: 3 seconds (value: 3000)
+          # Note: Currently blocks the logger until timeout or connection! 
+          # NOTE: FEATURE CURRENTLY NOT IMPLEMENTED!  
+          tcptimeout = 3000;
+          
+          # Communication address of the inverter (as set in the menu of the inverter)
+          commadr = 1;
+          # Adress to use as "our" adress for communication
+		  # defaults to 0xFB
+          ownadr = 0xfb;
+          
+          # How often should the inverter be queried
+          # The value specifies how long the class will *wait* 
+          # after one query has been answered.
+          # The value can be a float.  
+          # This value is optional and defaults to 5 seconds
+          queryinterval=5;
+		}
+     );
+};
+
+
+logger:
+{
+	loggers = (
+		{ 
+			# This dumper is known as (required)
+			name = "Simple Dumper 1";
+			# It is of type 
+			type = "DumbDumper";
+			# And gets its data from
+			datasource = "Inverter_1";
+			# Yes, it should clean the screen before dumping
+			# (optional, defaults to false (off)
+			# use true to enable it. 
+			clearscreen = true;
+		},
+		{ 
+			# This dumper is known as (required)
+			name = "Simple Dumper 2";
+			# It is of type 
+			type = "DumbDumper";
+			# And gets its data from
+			datasource = "Inverter_2";
+			# Yes, it should clean the screen before dumping
+			# (optional, defaults to false (off)
+			# use true to enable it. 
+			clearscreen = false;
+		},
+		{ 
+			# This dumper is known as (required)
+			name = "Simple Dumper 3";
+			# It is of type 
+			type = "DumbDumper";
+			# And gets its data from
+			datasource = "Inverter_3";
+			# Yes, it should clean the screen before dumping
+			# (optional, defaults to false (off)
+			# use true to enable it. 
+			clearscreen = false;
+		}
+		);
+};
+
+############################################# snip ääääääääääääääääääääääääääää

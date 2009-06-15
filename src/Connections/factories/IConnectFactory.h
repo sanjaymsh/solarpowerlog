@@ -33,7 +33,7 @@
 #ifndef CONNECTIONFACTORY_H_
 #define CONNECTIONFACTORY_H_
 
-#include "IConnect.h"
+#include "interfaces/IConnect.h"
 
 using namespace std;
 

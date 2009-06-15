@@ -39,18 +39,21 @@
 #include "configuration/Registry.h"
 #include <libconfig.h++>
 
-#include <asio.hpp>
+#include <boost/asio.hpp>
 
 using namespace std;
+
+using namespace boost::asio;
+using namespace boost;
+
 
 CConnectTCPAsio::CConnectTCPAsio( const string &configurationname ) :
 	IConnect(configurationname)
 {
 	// Generate our own asio ioservoce
 	// TODO check if one central would do that too...
-	ioservice = new asio::io_service;
-	sockt = new asio::ip::tcp::socket(*ioservice);
-
+	ioservice = new io_service;
+	sockt = new ip::tcp::socket(*ioservice);
 }
 
 CConnectTCPAsio::~CConnectTCPAsio()
@@ -69,7 +72,7 @@ bool CConnectTCPAsio::Connect()
 
 	cleanupstream();
 
-	asio::error_code ec;
+	boost::system::error_code ec;
 
 	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
 		ConfigurationPath);
@@ -82,14 +85,14 @@ bool CConnectTCPAsio::Connect()
 	if (!set.lookupValue("tcptimeout", timeout))
 		timeout = 3000;
 
-	asio::ip::tcp::resolver resolver(*ioservice);
-	asio::ip::tcp::resolver::query query(strhost.c_str(), "12345");
-	asio::ip::tcp::resolver::iterator iter = resolver.resolve(query);
-	asio::ip::tcp::resolver::iterator end; // End marker.
+	ip::tcp::resolver resolver(*ioservice);
+	ip::tcp::resolver::query query(strhost.c_str(), "12345");
+	ip::tcp::resolver::iterator iter = resolver.resolve(query);
+	ip::tcp::resolver::iterator end; // End marker.
 
 	// TODO Change to async connect.
 	while (iter != end) {
-		asio::ip::tcp::endpoint endpoint = *iter++;
+		ip::tcp::endpoint endpoint = *iter++;
 		std::cout << "Connecting to ..." << endpoint << std::flush;
 		sockt->connect(endpoint, ec);
 		if (!ec)

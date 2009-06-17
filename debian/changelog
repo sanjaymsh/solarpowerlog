@@ -1,0 +1,5 @@
+solarpowerlog (0.01-1) unstable; urgency=low
+
+  * Initial release, packed up for debian 
+
+ -- Tobias Frost <tobi@coldtobi.de>  Tue, 16 Jun 2009 21:07:45 +0200

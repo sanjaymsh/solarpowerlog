@@ -27,7 +27,9 @@
 #include <vector>
 #include <string>
 #include <iostream>
-// #include <asio.hpp>
+#include <iterator>
+
+#include <boost/program_options.hpp>
 
 #include "configuration/Registry.h"
 #include "interfaces/CWorkScheduler.h"
@@ -42,8 +44,13 @@
 
 using namespace std;
 
-// Debug Code dumpster....
+using namespace boost::program_options;
 
+/** this array of string specifies which sections int the config file must be present.
+ * The programm will abort if any of these is missing.
+ */
+static const char *required_sections[] = { "application", "inverter",
+	"inverter.inverters", "logger", "logger.loggers" };
 
 /** Just dump the read config to cout.... (without values, as for these one must know the type  forehand )
 
@@ -92,21 +99,41 @@ void DumpSettings( libconfig::Setting &set )
 	}
 }
 
-static const char *required_sections[] = { "application", "inverter",
-	"inverter.inverters", "logger" };
-
-
-
-int main()
+int main( int ac, char* av[] )
 {
-
 	bool error_detected = false;
+	string configfile = "solarpowerlog.conf";
+	int loglevel = 0;
+	int debug_level = 0;
 
+	options_description desc("Programm Options");
+	desc.add_options()
+	("help", "this message")
+	("conf,c", value<string> (&configfile), "specify configuration file")
+//	("debug,d", value<int> (&loglevel), "debug level (currently unused)")
+//	("foreground,f", value<int> (&debug_level),
+//		"do not daemonize, stay in foreground. (currently unused)")
+	;
+
+	variables_map vm;
+	try {
+		store(parse_command_line(ac, av, desc), vm);
+		notify(vm);
+	} catch (exception e) {
+		cerr << desc << "\n";
+		return 1;
+
+	}
+
+	if (vm.count("help")) {
+		cout << desc << "\n";
+		return 0;
+	}
 	/** Loading configuration file */
 	cout << "Generating Registry" << endl;
 	// TODO avoid hardcoded filename. Get it from parameters.
-	if (!Registry::Instance().LoadConfig("solarpowerlog.conf")) {
-		cerr << "Could not load configuration " << endl;
+	if (!Registry::Instance().LoadConfig(configfile)) {
+		cerr << "Could not load configuration " << configfile << endl;
 		_exit(1);
 	}
 

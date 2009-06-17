@@ -1,0 +1,3 @@
+#!/bin/sh
+# generate everything for the autotools...
+autoheader -B src &&  aclocal && autoconf && automake --add-missing  

@@ -39,6 +39,9 @@
 #ifndef REGISTRY_H_
 #define REGISTRY_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <list>
 #include <utility>

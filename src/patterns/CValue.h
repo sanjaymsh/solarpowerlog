@@ -37,6 +37,10 @@
 #ifndef CVALUEX_H_
 #define CVALUEX_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "IValue.h"
 
 template<class T>

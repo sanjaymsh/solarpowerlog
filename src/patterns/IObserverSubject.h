@@ -33,6 +33,10 @@
 #ifndef OBSERVERSUBJECT_H_
 #define OBSERVERSUBJECT_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <list>
 
 using namespace std;

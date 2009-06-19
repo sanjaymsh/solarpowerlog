@@ -33,6 +33,10 @@
 #ifndef INVERTERFACTORYFACTORY_H_
 #define INVERTERFACTORYFACTORY_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <string>
 
 class IInverterFactory;

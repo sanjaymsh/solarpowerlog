@@ -32,6 +32,10 @@
  *  This files implements the Observer for the Observer Design Pattern.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "IObserverObserver.h"
 #include "IObserverSubject.h"
 

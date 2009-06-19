@@ -34,12 +34,15 @@
 //	  it will locally "rename" the capability for the following filters and displays.
 // --> The phases will be transformed to new data source, like a virtual inverter.
 
-
 /** \file CInverterSputnikSSeries.cpp
  *
  *  Created on: May 21, 2009
  *      Author: tobi
  */
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "configuration/Registry.h"
 

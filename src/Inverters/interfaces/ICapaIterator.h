@@ -33,6 +33,11 @@
 #ifndef ICAPAITERATOR_H_
 #define ICAPAITERATOR_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+
 #include <string>
 #include <map>
 #include "Inverters/interfaces/InverterBase.h"

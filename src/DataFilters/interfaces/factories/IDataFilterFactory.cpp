@@ -30,6 +30,10 @@
  *      Author: tobi
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "DataFilters/interfaces/factories/IDataFilterFactory.h"
 #include "DataFilters/CDumpOutputFilter.h"
 

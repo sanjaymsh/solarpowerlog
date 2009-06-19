@@ -41,6 +41,9 @@
 #ifndef CAPABILITES_H_
 #define CAPABILITES_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 /** The Capabilites list has been updated.
  * This "pseudo" capabilites can be used to tell observers, that the

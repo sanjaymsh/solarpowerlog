@@ -30,6 +30,11 @@
  *  Created on: May 16, 2009
  *      Author: tobi
  */
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "configuration/Registry.h"
 
 #include "Connections/factories/IConnectFactory.h"

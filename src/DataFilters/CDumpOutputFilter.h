@@ -33,6 +33,10 @@
 #ifndef CDUMPOUTPUTFILTER_H_
 #define CDUMPOUTPUTFILTER_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 /** \fixme COMMENT ME
  *
  *

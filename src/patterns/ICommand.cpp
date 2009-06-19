@@ -31,6 +31,10 @@
  *      Author: tobi
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "patterns/ICommand.h"
 #include "patterns/ICommandTarget.h"
 

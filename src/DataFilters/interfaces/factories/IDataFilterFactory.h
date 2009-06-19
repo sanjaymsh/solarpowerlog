@@ -34,7 +34,11 @@
 #ifndef IDATAFILTERFACTORY_H_
 #define IDATAFILTERFACTORY_H_
 
-/** \fixme COMMENT ME
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+/*fixme COMMENT ME
  *
  *
  * TODO DOCUMENT ME!

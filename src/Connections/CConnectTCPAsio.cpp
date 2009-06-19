@@ -39,7 +39,7 @@
 #include "configuration/Registry.h"
 #include <libconfig.h++>
 
-#include <boost/asio.hpp>
+//#include <boost/asio/socket_base.hpp>
 
 using namespace std;
 

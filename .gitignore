@@ -1,0 +1,6 @@
+Debug/
+.cproject
+.deps/
+.project
+.settings/
+Makefile.in

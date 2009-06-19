@@ -33,6 +33,10 @@
 #include "CConnectDummy.h"
 #include <iostream>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 using namespace std;
 
 CConnectDummy::CConnectDummy(const string &configurationname)

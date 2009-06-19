@@ -16,6 +16,10 @@
 #ifndef INVERTERBASE_H_
 #define INVERTERBASE_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <string>
 #include <map>
 

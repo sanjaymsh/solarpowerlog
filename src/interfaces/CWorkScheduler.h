@@ -33,6 +33,10 @@
 #ifndef CWORKSCHEDULER_H_
 #define CWORKSCHEDULER_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <time.h>
 #include <list>
 

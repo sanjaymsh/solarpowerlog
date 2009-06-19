@@ -34,6 +34,10 @@
 #ifndef ICAPABILITY_H_
 #define ICAPABILITY_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <string>
 
 /** A Value is like aconcrete measurements, states, etc.

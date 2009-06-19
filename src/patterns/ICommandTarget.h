@@ -34,6 +34,10 @@
 #ifndef ICOMMANDTARGET_H_
 #define ICOMMANDTARGET_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <iostream>
 
 #include <assert.h>

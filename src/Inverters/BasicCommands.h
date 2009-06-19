@@ -1,6 +1,10 @@
 #ifndef _BASIC_COMMANDS_H
 #define _BASIC_COMMANDS_H
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 enum BasicCommands {
 
 	/// reserverd for transport algorithms which can send events

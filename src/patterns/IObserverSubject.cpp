@@ -32,6 +32,10 @@
  *   This file implements the Subject of the Observer Design Pattern
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "IObserverSubject.h"
 #include "IObserverObserver.h"
 #include <list>

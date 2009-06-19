@@ -33,6 +33,10 @@
 #ifndef CTIMEDWORK_H_
 #define CTIMEDWORK_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "patterns/ICommand.h"
 #include "CWorkScheduler.h"
 #include "boost/date_time/posix_time/posix_time.hpp"

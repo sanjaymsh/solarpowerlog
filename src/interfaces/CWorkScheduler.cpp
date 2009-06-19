@@ -29,7 +29,11 @@
  *  Created on: May 17, 2009
  *      Author: tobi
  */
-// #include <boost/interprocess/sync/interprocess_mutex.hpp>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <boost/exception.hpp>
 #include <boost/bind.hpp>
 

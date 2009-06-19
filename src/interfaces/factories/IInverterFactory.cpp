@@ -4,12 +4,12 @@
 
  This file is part of solarpowerlog.
 
- Solarpowerlog is free software; However, it is dual-licenced 
+ Solarpowerlog is free software; However, it is dual-licenced
  as described in the file "COPYING".
 
  For this file (IInverterFactory.cpp), the license terms are:
 
- You can redistribute it and/or modify it under the terms of the GNU  
+ You can redistribute it and/or modify it under the terms of the GNU
  General Public License as published by the Free Software Foundation; either
  version 3 of the License, or (at your option) any later version.
 
@@ -31,6 +31,10 @@
  */
 
 #include "IInverterFactory.h"
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 IInverterFactory::IInverterFactory() {
 	// TODO Auto-generated constructor stub

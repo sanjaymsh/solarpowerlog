@@ -33,6 +33,10 @@
 #ifndef CNESTEDCAPAITERATOR_H_
 #define CNESTEDCAPAITERATOR_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 /** \fixme COMMENT ME
  *
  *

@@ -33,6 +33,10 @@
 #ifndef CONNECTIONFACTORY_H_
 #define CONNECTIONFACTORY_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "interfaces/IConnect.h"
 
 using namespace std;

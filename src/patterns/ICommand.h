@@ -34,6 +34,10 @@
 #ifndef ICOMMAND_H_
 #define ICOMMAND_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 // #include "patterns/ICommandTarget.h"
 
 class ICommandTarget;

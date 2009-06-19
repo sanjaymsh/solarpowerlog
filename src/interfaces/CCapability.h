@@ -33,6 +33,10 @@
 #ifndef CCAPABILITY_H_
 #define CCAPABILITY_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <string>
 #include "patterns/IObserverSubject.h"
 

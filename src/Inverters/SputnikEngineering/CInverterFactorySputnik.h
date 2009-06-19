@@ -39,6 +39,10 @@
  * TODO DOCUMENT ME!
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "interfaces/factories/IInverterFactory.h"
 
 using namespace std;

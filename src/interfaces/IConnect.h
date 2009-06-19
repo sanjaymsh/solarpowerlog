@@ -34,6 +34,10 @@
 #ifndef ICONNECT_H_
 #define ICONNECT_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <string>
 
 using namespace std;

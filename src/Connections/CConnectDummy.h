@@ -33,6 +33,10 @@
 #ifndef CCONNECTDUMMY_H_
 #define CCONNECTDUMMY_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 /** \fixme COMMENT ME
  *
  *

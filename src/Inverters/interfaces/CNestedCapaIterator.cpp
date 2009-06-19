@@ -30,6 +30,10 @@
  *      Author: tobi
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "Inverters/interfaces/CNestedCapaIterator.h"
 
 CNestedCapaIterator::CNestedCapaIterator( IInverterBase *b,

@@ -30,6 +30,10 @@
  *      Author: tobi
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "InverterFactoryFactory.h"
 #include "IInverterFactory.h"
 #include "Inverters/SputnikEngineering/CInverterFactorySputnik.h"

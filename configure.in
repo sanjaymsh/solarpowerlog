@@ -6,6 +6,8 @@ AC_PREREQ(2.59)
 # use own directory for the autotools stuff
 AC_CONFIG_AUX_DIR(config)
 
+CPPFLAGS="-Wall -Wextra"
+
 # we want this header to be created. 
 AC_CONFIG_HEADERS(src/config.h)
 
@@ -60,6 +62,8 @@ AC_CHECK_HEADER([boost/asio/version.hpp], ,[AC_MSG_ERROR("boost::asio header not
 
 
 ### Checks for header files.
+AC_CHECK_HEADER([w32-api.h],
+ [AC_DEFINE([HAVE_WIN32_API], [1], [Windows API]) ])
 
 ### Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL

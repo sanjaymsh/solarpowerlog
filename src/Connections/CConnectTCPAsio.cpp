@@ -32,6 +32,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
+#include "porting.h"
 #endif
 
 #include "interfaces/IConnect.h"
@@ -43,13 +44,14 @@
 #include "configuration/Registry.h"
 #include <libconfig.h++>
 
-//#include <boost/asio/socket_base.hpp>
+#include <boost/asio/write.hpp>
+#include <boost/asio/io_service.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/streambuf.hpp>
 
 using namespace std;
-
 using namespace boost::asio;
 using namespace boost;
-
 
 CConnectTCPAsio::CConnectTCPAsio( const string &configurationname ) :
 	IConnect(configurationname)

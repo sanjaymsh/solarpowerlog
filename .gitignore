@@ -4,3 +4,10 @@ Debug/
 .project
 .settings/
 Makefile.in
+config.log
+config.status
+src/Makefile
+Makefile
+src/config.h
+src/stamp-h1
+autom4te.cache/*

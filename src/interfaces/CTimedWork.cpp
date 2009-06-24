@@ -48,6 +48,7 @@
 CTimedWork::CTimedWork( CWorkScheduler *sch )
 {
 	this->sch = sch;
+	terminate = false;
 }
 
 CTimedWork::~CTimedWork()

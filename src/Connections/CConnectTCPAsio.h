@@ -35,6 +35,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
+#include "porting.h"
 #endif
 
 /** \fixme COMMENT ME
@@ -43,17 +44,8 @@
  * TODO DOCUMENT ME!
  */
 
-#include <boost/asio/write.hpp>
-#include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/streambuf.hpp>
-
-#include <boost/asio/version.hpp>
-#include <boost/asio/windows/basic_handle.hpp>
-#include <boost/asio/windows/basic_random_access_handle.hpp>
-#include <boost/asio/windows/basic_stream_handle.hpp>
-#include <boost/asio/windows/overlapped_ptr.hpp>
-#include <boost/asio/windows/random_access_handle.hpp>
 
 #include "interfaces/IConnect.h"
 

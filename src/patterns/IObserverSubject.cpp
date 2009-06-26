@@ -76,7 +76,7 @@ bool IObserverSubject::CheckSubscription( class IObserverObserver *observer )
 	return false;
 }
 
-void IObserverSubject::SetSubsubscription( class IObserverObserver *observer,
+void IObserverSubject::SetSubscription( class IObserverObserver *observer,
 	bool subscribe )
 {
 	if (subscribe)

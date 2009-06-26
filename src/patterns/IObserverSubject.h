@@ -58,7 +58,7 @@ public:
 
 	virtual void UnSubscribe( class IObserverObserver* observer );
 
-	virtual void SetSubsubscription( class IObserverObserver* observer,
+	virtual void SetSubscription( class IObserverObserver* observer,
 		bool subscribe = true );
 
 	virtual bool CheckSubscription( class IObserverObserver *observer );

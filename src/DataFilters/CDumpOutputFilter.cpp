@@ -238,27 +238,27 @@ void CDumpOutputFilter::CheckOrUnSubscribe( bool subscribe )
 	CCapability *cap = base->GetConcreteCapability(
 		CAPA_INVERTER_MANUFACTOR_NAME);
 	if (cap && !cap->CheckSubscription(this))
-		cap->SetSubsubscription(this, subscribe);
+		cap->SetSubscription(this, subscribe);
 
 	cap = base->GetConcreteCapability(CAPA_INVERTER_MODEL);
 	if (cap && !cap->CheckSubscription(this))
-		cap->SetSubsubscription(this, subscribe);
+		cap->SetSubscription(this, subscribe);
 
 	cap = base->GetConcreteCapability(CAPA_INVERTER_ACPOWER_TOTAL);
 	if (cap && !cap->CheckSubscription(this))
-		cap->SetSubsubscription(this, subscribe);
+		cap->SetSubscription(this, subscribe);
 
 	cap = base->GetConcreteCapability(CAPA_INVERTER_KWH_Y2D);
 	if (cap && !cap->CheckSubscription(this))
-		cap->SetSubsubscription(this, subscribe);
+		cap->SetSubscription(this, subscribe);
 
 	cap = base->GetConcreteCapability(CAPA_INVERTER_KWH_M2D);
 	if (cap && !cap->CheckSubscription(this))
-		cap->SetSubsubscription(this, subscribe);
+		cap->SetSubscription(this, subscribe);
 
 	cap = base->GetConcreteCapability(CAPA_INVERTER_KWH_M2D);
 	if (cap && !cap->CheckSubscription(this))
-		cap->SetSubsubscription(this, subscribe);
+		cap->SetSubscription(this, subscribe);
 }
 
 // Check if we've overriden the capability and return our or the parents one.

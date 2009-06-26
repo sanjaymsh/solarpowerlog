@@ -1,0 +1,36 @@
+WINDOWS USERS
+
+INSTALL
+=======
+
+currently, solarpowerlog needs no install. It can be run directly.
+
+
+However, it needs two libaries:
+
+Libconfig 1.3.2  (cygconfig+8.dll)
+
+Libconfig is distributed under the terms of the GNU Lesser General Public License. You can download the (unmodified) 
+sources from (which the library was built) from my site at http://frost.de/files/libconfig-1.3.2.tar.gz.
+The file is distributed in this file. It just have to be in the same directory as the programm. 
+
+Cygwin cygwin1.dll 
+
+Cygwin is also an Open Source Project, located at http://www.cygwin.com/
+Please download the setup.exe from their site and execute it. Installing it with the default options
+will install the library.
+
+
+RUNNING
+========
+
+solarpowerlog is a console programm. There is not GUI.
+On startup, it will read a "solarpowerlog.conf" to retrieve its settings. 
+
+Configuration details are the same as for the Linux version. So please see README for details.
+(Note: Open the file in "wordpad" to get the right line breaks.)
+
+
+Have Fun!
+
+coldtobi

@@ -24,6 +24,53 @@
  ----------------------------------------------------------------------------
  */
 
+/**
+ * \file solarpowerlog.cpp
+ *
+ * \mainpage
+ * <h1> Welcome to solarpowerlog's developer documentation. </h1>
+ *
+ * This documentation purpose is to understand the internals and conecpts used,
+ * so that the software can easily be enhanced.
+ *
+ * However, the best way to understand the programm is jumping into cold water:
+ * Fire up your debugger and look how the programm executes.
+ *
+ * \sa \ref mainBasicConcepts "Basic Concepts"
+ *
+ *
+ * \page mainBasicConcepts Basic Concepts
+ *
+ * To get an overview how solarpowerlog is designed, lets take a look at some
+ * basic concepts.
+ *
+ * \section mbcinterfaces "Code against interfaces, not implementations"
+ *
+ * All base classes are designed as interfaces. This allows loosly coupled
+ * objects and also allows to easier code reuse.
+ *
+ * For example, the connection classes are defined through IConnect. When using
+ * IConnects, the inverter simply does not need to know which is its
+ * communication method, it will just use the interface and will be fine.
+ *
+ * \section mbcfactories Design Pattern: Factories
+ *
+ * Usually object generation is done by factories. The Factories gets an
+ * identifier (usually a string) and return the created object.
+ *
+ * Factories allows that new specializations of interfaces can be added to
+ * the programm without the need to change any of the other classes.
+ *
+ * For example, if you add a fancy bluetooth class, you just create a IConnect
+ * based CConnectionBluetooth, implement it and add its id-string to the
+ * IConnectFactory.
+ * Now, all the inverters can instanciate (via their comms settings) a
+ * CConnectionBluetooth without knowing actually knowing the details.
+ *
+ * TODO write more
+ *
+ * */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -168,9 +215,6 @@ int main( int ac, char* av[] )
 
 	/** bootstraping the system */
 
-	/** create the main scheduler. */
-	Registry::Instance().setMainScheduler(new CWorkScheduler);
-
 	/** create the inverters via its factories. */
 	{
 		string section = "inverter.inverters";
@@ -251,7 +295,7 @@ int main( int ac, char* av[] )
 
 	{
 		IDataFilterFactory factory;
-		/** create the inverters via its factories. */
+		/** create the data filters via its factories. */
 
 		string section = "logger.loggers";
 		libconfig::Setting & rt = Registry::Configuration()->lookup(
@@ -282,13 +326,11 @@ int main( int ac, char* av[] )
 			}
 
 			// TODO Also check for duplicate DataFilters.
-#if 0
 			if (Registry::Instance().GetInverter(name)) {
-				cerr << "Inverter " << name
+				cerr << "CONFIG ERROR: Inverter or Logger Nameclash: " << name
 				<< " declared more than once" << endl;
 				_exit(1);
 			}
-#endif
 
 			IDataFilter *filter = factory.Factory(type, name,
 				rt[i].getPath());
@@ -309,6 +351,8 @@ int main( int ac, char* av[] )
 					<< previousfilter << endl;
 				_exit(1);
 			}
+
+			Registry::Instance().AddInverter(filter);
 
 			// Filter is ready.
 

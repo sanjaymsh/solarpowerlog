@@ -302,6 +302,8 @@ void CDumpOutputFilter::DoCyclicWork( void )
 		cout << "\033[2J" << "\033[1;1H";
 	}
 
+#warning FIXME does not check if source of the capabiltiy is NULL!
+
 	cout << endl << configurationpath << "." << name
 		<< " Known Capabilities:" << endl << endl;
 	ICapaIterator *cit = GetCapaNewIterator();

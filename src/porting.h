@@ -52,5 +52,12 @@
 #define __USE_W32_SOCKETS 1
 #endif
 
+/** declare explicit if not understood by compiler */
+#ifndef HAVE_EXPLICIT
+#define explict
+#endif
+
+
+
 
 #endif /* PORTING_H_ */

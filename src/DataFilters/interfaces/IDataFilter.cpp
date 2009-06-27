@@ -25,10 +25,9 @@
  */
 
 /** \file IDataFilter.cpp
- *
- *  Created on: Jun 1, 2009
- *      Author: tobi
- */
+ *  \date Jun 1, 2009
+ *  \author Tobias Frost (coldtobi)
+*/
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

@@ -1914,7 +1914,6 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 
 
-
 CPPFLAGS="-Wall -Wextra"
 
 # we want this header to be created.
@@ -6945,7 +6944,6 @@ fi
 
 
 
-echo ----> $ac_cv_header_w32api_wtypes_h
 if test "x$ac_cv_header_w32api_wtypes_h" = "xyes"; then
   { $as_echo "$as_me:$LINENO: result: WIN32 API detected. " >&5
 $as_echo "WIN32 API detected. " >&6; }

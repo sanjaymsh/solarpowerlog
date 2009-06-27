@@ -27,8 +27,8 @@
 
 /** \file IDataFilterFactory.h
  *
- *  Created on: Jun 1, 2009
- *      Author: tobi
+ *  \date Jun 1, 2009
+ *  \author Tobias Frost (coldtobi)
  */
 
 #ifndef IDATAFILTERFACTORY_H_
@@ -38,20 +38,19 @@
 #include "config.h"
 #endif
 
-/*fixme COMMENT ME
- *
- *
- * TODO DOCUMENT ME!
- */
-
 class IDataFilter;
 
-class IDataFilterFactory {
+/** Factory for Data-Filters
+ *
+ *\ingroup factories
+ */
+class IDataFilterFactory
+{
 public:
-	virtual IDataFilter* Factory(const string& type, const string &name, const string &configurationpath);
+	virtual IDataFilter* Factory( const string &configurationpath );
 
-	IDataFilterFactory();
-	virtual ~IDataFilterFactory();
+	IDataFilterFactory() {};
+	virtual ~IDataFilterFactory() {};
 };
 
 #endif /* IDATAFILTERFACTORY_H_ */

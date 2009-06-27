@@ -1,15 +1,38 @@
-/*
- * InverterBase.h
+/* ----------------------------------------------------------------------------
+   solarpowerlog
+   Copyright (C) 2009  Tobias Frost
+
+   This file is part of solarpowerlog.
+
+   Solarpowerlog is free software; However, it is dual-licenced
+   as described in the file "COPYING".
+
+   For this file (IValue.h), the license terms are:
+
+   You can redistribute it and/or  modify it under the terms of the GNU Lesser
+   General Public License (LGPL) as published by the Free Software Foundation;
+   either version 3 of the License, or (at your option) any later version.
+
+   This programm is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Library General Public
+   License along with this proramm; if not, see
+   <http://www.gnu.org/licenses/>.
+   ----------------------------------------------------------------------------
+*/
+
+/** \file InverterBase.h
  *
- * Base-Class for all Inverters to be supported.
+ *  \date   May 9, 2009
+ *  \author Tobias Frost
  *
- *  Created on: May 9, 2009
- *      Author: Tobias Frost
+ * This is the interface for inverters.
  *
+ * \page IInverterBase IInverter: Data-Flow
  *
- *  By the way, if you are wondering if I've got Pattern fever:
- *  I'm currently reading on design patterns and, of course,
- *  need to try them out.
  */
 
 
@@ -38,14 +61,11 @@ using namespace std;
 class IInverterBase : public ICommandTarget {
 
 public:
-
 	friend class ICapaIterator;
 
 	IInverterBase( const string &name, const string & configurationpath );
 	virtual ~IInverterBase();
 
-
-	// ############### GETTERS AND SETTERS ##################
 	virtual const std::string& GetName(void) const;
 
 
@@ -54,7 +74,7 @@ protected:
 	virtual map<string, CCapability*>::iterator GetCapabilityIterator(void)
 	{
 		// Dumping the map.
-		map<string, CCapability*>::iterator it1 = CapabilityMap.begin();
+//		map<string, CCapability*>::iterator it1 = CapabilityMap.begin();
 // TODO cleanup code (remove debug code)
 //		cerr << "DUMP Capabilites: " << this->GetName() <<  endl;
 //		for (int i=0; it1 != CapabilityMap.end(); it1++,i++)
@@ -102,14 +122,14 @@ protected:
 
 	// Class for handling the connectivity.
 	// Is a strategy design pattern interface. So different ways of connection can be handled by the same interface
-	// (In other words: Our inverter does not want to know, if it is RS485 or TCP/IP, or even, both.)
+	// (In other words: Our inverter does need nor want to know, if it is RS485 or TCP/IP, or even, both.)
 	// NOTE: The Connection is to be made by a factory!
 	// NOTE2: Beware: Connections can die any time! Make sure to handle this.
 	IConnect *connection;
 
 private:
 
-	// This maps contains all the Caps by the Inverter.
+	/ This maps contains all the Caps by the Inverter.
 	// Caps implements the Subject in the Observer-Pattern.
 	// This keeps all informed!
 	// Class for handling capabilities.

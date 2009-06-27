@@ -48,24 +48,17 @@ using namespace std;
 /** constructor for the registry. */
 Registry::Registry()
 {
-	loaded = false;
+	config_loaded = false;
 	Config = NULL;
 
+	this->mainscheduler = new CWorkScheduler;
 }
 
-/** (re)load configuration file
- *
- * Just brings it in memory... The old one will be deleted.
- *
- * \param [in] name Filename to load
- *
- * \returns false on error, true on success.
- */
 bool Registry::LoadConfig( std::string name )
 {
 	if (Config)
 		delete Config;
-	loaded = false;
+	config_loaded = false;
 	Config = new libconfig::Config;
 	try {
 		Config->readFile(name.c_str());
@@ -84,49 +77,11 @@ bool Registry::LoadConfig( std::string name )
 
 	// Be more sloppy on datatypes -> automatically convert if possible.
 	Config->setAutoConvert(true);
-	loaded = true;
+	config_loaded = true;
 
 	return true;
 }
 
-/** Extract the settings-subset for a specific object, identified by section (like inverters) and name (like inverter_solarmax_1)
- *
- * ex:
- *
- * inverters = (
- * 					{ name = "Inverter_1";
- * 					  type = "Solarmax_XYZ";
- * 					  driver = "Sputnik_TCP";
- * 					  # (...)
- * 					},
- * 					{ name = "Inverter_2";
- * 					  type = "Solarmax_XYZ";
- * 					  driver = "Sputnik_TCP";
- * 					  # (...)
- * 					}
- * 				);
- *
- * and  GetSettingsForObject("inverters", "Invertert_1") will return the Settings object
- * for the group "inverters.[0]".
- *
- * Please note, that libconfig throws some exceptions: Especially, if the section is not found.
- * This is not handled here, as the Factories should check if the configuration is complete on
- * constructing them. (They also can add their own settings (default values)...
- *
- * [code]
- *
- *	libconfig::Setting &set = Registry::Instance().GetSettingsForObject("inverters", "Inverter_1");
- *	libconfig::Setting &new = set.add("NewPropertyNotSet",libconfig::Setting::TypeString);
- *	new = "New Default Setting";
- *
- * [/code]
- *
- * Snippet to retrieve Settings:
- * [code]
- * 		libconfig::Setting &set = Registry::Instance().GetSettingsForObject("inverters", "Inverter_1");
- * [/code]
- *
- */
 libconfig::Setting & Registry::GetSettingsForObject( std::string section,
 	std::string objname )
 {
@@ -152,6 +107,8 @@ libconfig::Setting & Registry::GetSettingsForObject( std::string section,
 	std::cerr << "BUG: " << __FILE__ << ":" << __LINE__
 		<< " --> Queried for unknown Object " << objname
 		<< " in section " << section << std::endl;
+
+	assert(false);
 
 	return Config->getRoot();
 }

@@ -74,10 +74,6 @@ IInverterBase::IInverterBase( const string& name,
 	c = new CCapability(s, v, this);
 	b = CapabilityMap.insert(pair<string, CCapability*> (s, c));
 	assert( b.second );
-
-	// TODO remove debug code: next line
-	GetCapabilityIterator();
-
 }
 
 IInverterBase::~IInverterBase()

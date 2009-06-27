@@ -27,9 +27,9 @@
 
 /** \file IValue.h
  *
- *  Created on: May 13, 2009
- *      Author: tobi
- */
+ *  \date May 13, 2009
+ *   \Author: Tobias Frost (coldtobi)
+*/
 
 #ifndef ICAPABILITY_H_
 #define ICAPABILITY_H_
@@ -40,25 +40,33 @@
 
 #include <string>
 
-/** A Value is like aconcrete measurements, states, etc.
+/** IValue is the interface to abitrary value storage.
  *
- * What it makes tricky is. that they might need different data types for storage.
+ * It is supposed to be derived, and the derived class is reponsible for
+ * type-correct storage.
  *
- * TODO DOCUMENT ME!
+ * In this interface, also the factory is embedded to create the concrete
+ * values.
+ *
+ * \ingroup factories
  */
 class IValue {
 public:
 
+	/** This enumeration specifies the type of the storage.
+	 * It can be used as parameter for the factory. */
 	enum factory_types
 	{
-		bool_type,
-		int_type,
-		float_type,
-		string_type
+		bool_type, ///< boolean storage
+		int_type,  ///< integer (signed)
+		float_type, ///< float storage
+		string_type ///< string type
 	};
 
+	/** Factory method to generate desired concrete Value */
 	static IValue* Factory(const factory_types typedescriptor);
 
+	/** Interface method to check the type of the value */
 	virtual factory_types GetType(void) const;
 
 protected:

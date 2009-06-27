@@ -65,7 +65,6 @@ AC_CHECK_HEADER([boost/asio/version.hpp], ,[AC_MSG_ERROR("boost::asio header not
 AC_CHECK_HEADER([w32api/wtypes.h],
  [AC_DEFINE([HAVE_WIN32_API], [1], [Windows API]) ])
 
-echo ----> $ac_cv_header_w32api_wtypes_h
 if test "x$ac_cv_header_w32api_wtypes_h" = "xyes"; then
   AC_MSG_RESULT([WIN32 API detected. ])
   WIN32_LIBS="-lws2_32"

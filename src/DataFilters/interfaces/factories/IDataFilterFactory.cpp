@@ -26,9 +26,9 @@
 
 /** \file IDataFilterFactory.cpp
  *
- *  Created on: Jun 1, 2009
- *      Author: tobi
- */
+ *  \date Jun 1, 2009
+ *  \author Tobias Frost (coldtobi)
+*/
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -37,21 +37,21 @@
 #include "DataFilters/interfaces/factories/IDataFilterFactory.h"
 #include "DataFilters/CDumpOutputFilter.h"
 
-IDataFilterFactory::IDataFilterFactory() {
-	// TODO Auto-generated constructor stub
+#include "configuration/Registry.h"
 
-}
-
-IDataFilter *IDataFilterFactory::Factory(const string & type, const string& name, const string & configurationpath)
+IDataFilter *IDataFilterFactory::Factory(const string & configurationpath)
 {
+
+	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
+		configurationpath);
+	string type, name;
+
+	set.lookupValue("type", type);
+	set.lookupValue("name", name);
+
 	if (type == "DumbDumper") {
 		return new CDumpOutputFilter(name, configurationpath);
 	}
 
 	return NULL;
-
-}
-
-IDataFilterFactory::~IDataFilterFactory() {
-	// TODO Auto-generated destructor stub
 }

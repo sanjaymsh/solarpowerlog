@@ -44,6 +44,7 @@
 
 #include "Inverters/Capabilites.h"
 #include "patterns/IValue.h"
+#include "patterns/CValue.h"
 
 #include "Inverters/interfaces/ICapaIterator.h"
 
@@ -58,21 +59,24 @@ IInverterBase::IInverterBase( const string& name,
 	pair<map<string, CCapability*>::iterator, bool> b;
 
 	string s;
-	IValue *v;
 	CCapability *c;
 
 	// Add the "must have" capabilites.
-	s = CAPA_CAPAS_UPDATED;
-	v = IValue::Factory(CAPA_CAPAS_UPDATED_TYPE);
-	c = new CCapability(s, v, this);
-	b = CapabilityMap.insert(pair<string, CCapability*> (s, c));
+	c = new CCapability(CAPA_CAPAS_UPDATED, CAPA_CAPAS_UPDATED_TYPE, this);
+	b = CapabilityMap.insert(pair<string, CCapability*> (
+		CAPA_CAPAS_UPDATED, c));
 	assert( b.second );
 
-	// Add the "must have" capabilites.
-	s = CAPA_CAPAS_REMOVEALL;
-	v = IValue::Factory(CAPA_CAPAS_REMOVEALL_TYPE);
-	c = new CCapability(s, v, this);
-	b = CapabilityMap.insert(pair<string, CCapability*> (s, c));
+	c = new CCapability(CAPA_CAPAS_REMOVEALL, CAPA_CAPAS_REMOVEALL_TYPE,
+		this);
+	b = CapabilityMap.insert(pair<string, CCapability*> (
+		CAPA_CAPAS_REMOVEALL, c));
+	assert( b.second );
+
+	c = new CCapability(CAPA_INVERTER_DATASTATE,
+		CAPA_INVERTER_DATASTATE_TYPE, this);
+	b = CapabilityMap.insert(pair<string, CCapability*> (
+		CAPA_INVERTER_DATASTATE, c));
 	assert( b.second );
 }
 
@@ -100,3 +104,33 @@ ICapaIterator *IInverterBase::GetCapaNewIterator()
 	return new ICapaIterator(this);
 }
 
+/** returns a iterator of the Capabilties. The iterator is inizialized at the begin of the map.*/
+map<string, CCapability*>::iterator IInverterBase::GetCapabilityIterator()
+{
+	map<string, CCapability*>::iterator it = CapabilityMap.begin();
+	return it;
+}
+
+/** return a iterator of the Capabilites. The iterator is placed at the end of the map
+ * This allows a end-of-list check */
+map<string, CCapability*>::iterator IInverterBase::GetCapabilityLastIterator()
+{
+	map<string, CCapability*>::iterator it = CapabilityMap.end();
+	return it;
+}
+
+CCapability *IInverterBase::GetConcreteCapability( const string &identifier )
+{
+	map<string, CCapability*>::iterator it = CapabilityMap.find(identifier);
+	if (it == CapabilityMap.end())
+		return 0;
+	return it->second;
+}
+
+
+void IInverterBase::AddCapability( const string &id, CCapability* capa )
+{
+	CapabilityMap.insert(pair<string, CCapability*> (id, capa));
+	cerr << "Added new Capability to " << name << ": " << id
+		<< endl;
+}

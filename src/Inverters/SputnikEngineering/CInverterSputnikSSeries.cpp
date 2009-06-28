@@ -142,12 +142,6 @@ CInverterSputnikSSeries::CInverterSputnikSSeries( const string &name,
 	ICommand *cmd = new ICommand(CMD_INIT, this, 0);
 	Registry::GetMainScheduler()->ScheduleWork(cmd);
 
-	s = CAPA_INVERTER_DATASTATE;
-	v = IValue::Factory(CAPA_INVERTER_DATASTATE_TYPE);
-	((CValue<bool>*) v)->Set(false);
-	c = new CCapability(s, v, this);
-	AddCapability(s, c);
-
 	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
 		configurationpath);
 	float interval;

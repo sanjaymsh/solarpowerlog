@@ -44,7 +44,6 @@ using namespace std;
 CCapability::CCapability( const string& descr, IValue *val,
 	IInverterBase *datasrc )
 {
-
 	description = descr;
 	source = datasrc;
 	value = val;

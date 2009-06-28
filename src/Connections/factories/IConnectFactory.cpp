@@ -53,10 +53,10 @@ using namespace std;
  * So you can also create inverters or derived classes without commms. */
 IConnect * IConnectFactory::Factory( const string &configurationpath )
 {
+	string type = "";
 
 	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
 		configurationpath);
-	string type;
 
 	set.lookupValue("comms", type);
 

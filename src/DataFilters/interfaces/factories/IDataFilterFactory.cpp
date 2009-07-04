@@ -38,20 +38,22 @@
 #include "DataFilters/CDumpOutputFilter.h"
 
 #include "configuration/Registry.h"
+#include "configuration/CConfigHelper.h"
+
 
 IDataFilter *IDataFilterFactory::Factory(const string & configurationpath)
 {
 
-	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
-		configurationpath);
 	string type, name;
+	CConfigHelper cfghlp(configurationpath);
 
-	set.lookupValue("type", type);
-	set.lookupValue("name", name);
+	cfghlp.GetConfig("type", type);
+	cfghlp.GetConfig("name",name);
 
 	if (type == "DumbDumper") {
 		return new CDumpOutputFilter(name, configurationpath);
 	}
+
 
 	return NULL;
 }

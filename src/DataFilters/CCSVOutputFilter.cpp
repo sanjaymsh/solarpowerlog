@@ -31,19 +31,19 @@
  */
 #include <assert.h>
 
-
 #include "configuration/Registry.h"
 #include "interfaces/CWorkScheduler.h"
+
+#include <libconfig.h>
 
 #include "Inverters/Capabilites.h"
 #include "patterns/CValue.h"
 
 #include "CCSVOutputFilter.h"
 
-
 CCSVOutputFilter::CCSVOutputFilter( const string & name,
-	const string & configurationpath )
-: IDataFilter(name, configurationpath)
+	const string & configurationpath ) :
+	IDataFilter(name, configurationpath)
 {
 	// Schedule the initialization and subscriptions later...
 	ICommand *cmd = new ICommand(CMD_INIT, this, 0);
@@ -51,24 +51,70 @@ CCSVOutputFilter::CCSVOutputFilter( const string & name,
 
 }
 
-
 CCSVOutputFilter::~CCSVOutputFilter()
 {
-// TODO Auto-generated destructor stub
+	// TODO Auto-generated destructor stub
 }
 
 bool CCSVOutputFilter::CheckConfig()
 {
+	string setting;
+	string str;
+	bool ret = true;
 
-	// not yet fit.
-	return false;
+#if 0
+	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
+		configurationpath);
+
+	setting = "datasource";
+	if (!set.exists(setting) || !set.getType()
+		== libconfig::Setting::TypeString) {
+		cerr << "Setting " << setting << " in " << configurationpath
+			<< "." << name
+			<< " missing or of wrong type (wanted a string)"
+			<< endl;
+		ret = false;
+	} else {
+		set.lookupValue(setting, str);
+		IInverterBase *i = Registry::Instance().GetInverter(str);
+		if (!i) {
+			cerr << "Setting " << setting << " in "
+				<< configurationpath << "." << name
+				<< ": Cannot find instance of Inverter with the name "
+				<< str << endl;
+		}
+	}
+
+	setting = "logfile";
+	if (!set.exists(setting) || !set.getType()
+		== libconfig::Setting::TypeString) {
+		cerr << "Setting " << setting << " in " << configurationpath
+			<< "." << name
+			<< " of wrong type (wanted true or false)" << endl;
+		ret = false;
+	}
+
+	setting = "data2log";
+	if (!set.exists(setting)) {
+		cerr << "Setting " << setting << " in " << configurationpath
+			<< "." << name << " missing " << endl;
+		ret = false;
+	} else {
+
+
+
+	}
+
+	return ret;
+#endif
+
 }
 
-void CCSVOutputFilter::Update(const IObserverSubject *subject)
+void CCSVOutputFilter::Update( const IObserverSubject *subject )
 {
 }
 
-void CCSVOutputFilter::ExecuteCommand(const ICommand *cmd)
+void CCSVOutputFilter::ExecuteCommand( const ICommand *cmd )
 {
 	switch (cmd->getCmd()) {
 
@@ -84,17 +130,8 @@ void CCSVOutputFilter::ExecuteCommand(const ICommand *cmd)
 			ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
 		}
 
-
-
 		break;
-
-
 
 	}
 }
-
-
-
-
-
 

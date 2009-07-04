@@ -45,6 +45,7 @@
 #endif
 
 #include "configuration/Registry.h"
+#include "configuration/CConfigHelper.h"
 
 #include "CInverterSputnikSSeries.h"
 
@@ -52,11 +53,15 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+
 #include "patterns/ICommand.h"
+
 #include "interfaces/CWorkScheduler.h"
 
 #include "Inverters/Capabilites.h"
 #include "patterns/CValue.h"
+
+using namespace libconfig;
 
 static struct
 {
@@ -142,14 +147,9 @@ CInverterSputnikSSeries::CInverterSputnikSSeries( const string &name,
 	ICommand *cmd = new ICommand(CMD_INIT, this, 0);
 	Registry::GetMainScheduler()->ScheduleWork(cmd);
 
-	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
-		configurationpath);
+	CConfigHelper cfghlp(configurationpath);
 	float interval;
-	if (!set.lookupValue("queryinterval", interval)) {
-		interval = 5.0;
-	}
-	s = CAPA_INVERTER_QUERYINTERVAL;
-	v = IValue::Factory(CAPA_INVERTER_QUERYINTERVAL_TYPE);
+	cfghlp.GetConfig("queryinterval", interval, 5.0f);
 	((CValue<float>*) v)->Set(interval);
 	c = new CCapability(s, v, this);
 	AddCapability(s, c);
@@ -166,46 +166,22 @@ bool CInverterSputnikSSeries::CheckConfig()
 	string setting;
 	string str;
 
-	bool ret = true;
-	// Check, if we have enough informations to work on.
-	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
-		configurationpath);
+	bool fail = false;
 
-	setting = "comms";
-	if (!set.exists(setting) || !set.getType()
-		== libconfig::Setting::TypeString) {
-		cerr << "Setting " << setting << " in " << configurationpath
-			<< "." << name
-			<< " missing or of wrong type (wanted a string)"
-			<< endl;
-		ret = false;
-	}
+	CConfigHelper hlp(configurationpath);
+	fail |= (true != hlp.CheckConfig("comms", Setting::TypeString));
+	// Note: Queryinterval is optional. But CConfigHelper is prepared
+	// (the extra true!)
+	fail |= (true != hlp.CheckConfig("queryinterval", Setting::TypeFloat,
+		true));
+	fail |= (true != hlp.CheckConfig("commadr", Setting::TypeInt));
 
 	// Check config of the component, if already instanciated.
 	if (connection) {
-		ret = connection->CheckConfig();
+		fail |= (true != connection->CheckConfig());
 	}
 
-	setting = "queryinterval";
-	if (set.exists(setting) && !set.getType()
-		== libconfig::Setting::TypeFloat) {
-		cerr << "WARNING: Setting " << setting << " in "
-			<< configurationpath << "." << name
-			<< " of wrong type (wanted a float)." << endl;
-		ret = false;
-	}
-
-	setting = "commadr";
-	if (!set.exists(setting) || !set.getType()
-		== libconfig::Setting::TypeInt) {
-		cerr << "Setting " << setting << " in " << configurationpath
-			<< "." << name
-			<< " missing or of wrong type (wanted a integer)"
-			<< endl;
-		ret = false;
-	}
-
-	return ret;
+	return !fail;
 }
 
 /** Calculate the telegram checksum and return it.
@@ -962,15 +938,9 @@ string CInverterSputnikSSeries::assemblequerystring()
 	unsigned int ownadr, commadr;
 
 	// Query settings needed and default all optional settings.
-	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
-		configurationpath);
-	string setting = "ownadr";
-	if (!set.lookupValue(setting, ownadr))
-		ownadr = 0xFB;
-
-	setting = "commadr";
-	if (!set.lookupValue(setting, commadr))
-		commadr = 0x01;
+	CConfigHelper cfghlp(configurationpath);
+	cfghlp.GetConfig("ownadr",ownadr, 0xFBu);
+	cfghlp.GetConfig("commadr",commadr, 0x01u);
 
 	sprintf(formatbuffer, "%X:", currentport);
 	len = strlen(formatbuffer) + querystring.length() + 10 + 6;
@@ -1045,17 +1015,10 @@ bool CInverterSputnikSSeries::parsereceivedstring( const string & s )
 	}
 
 	unsigned int ownadr, commadr;
-
 	// Query settings needed and default all optional settings.
-	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
-		configurationpath);
-	string setting = "ownadr";
-	if (!set.lookupValue(setting, ownadr))
-		ownadr = 0xFB;
-
-	setting = "commadr";
-	if (!set.lookupValue(setting, commadr))
-		commadr = 0x01;
+	CConfigHelper cfghlp(configurationpath);
+	cfghlp.GetConfig("ownadr",ownadr, 0xFBu);
+	cfghlp.GetConfig("commadr",commadr, 0x01u);
 
 	if (tmp != commadr) {
 		cerr << "not for us: Wrong Sender " << endl;

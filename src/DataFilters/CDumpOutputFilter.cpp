@@ -39,6 +39,7 @@
 #include "CDumpOutputFilter.h"
 #include "DataFilters/interfaces/IDataFilter.h"
 #include "configuration/Registry.h"
+#include "configuration/CConfigHelper.h"
 
 #include "Inverters/Capabilites.h"
 #include "patterns/ICommand.h"
@@ -49,45 +50,16 @@
 
 #include <cstdio>
 
+using namespace libconfig;
+
 CDumpOutputFilter::CDumpOutputFilter( const string &name,
 	const string & configurationpath ) :
 	IDataFilter(name, configurationpath), AddedCaps(0)
 {
-	string tmp;
-	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
-		configurationpath);
+	// Schedule the initialization and subscriptions later...
+	ICommand *cmd = new ICommand(CMD_INIT, this, 0);
+	Registry::GetMainScheduler()->ScheduleWork(cmd);
 
-	if (set.lookupValue("datasource", tmp)) {
-		base = Registry::Instance().GetInverter(tmp);
-		if (base) {
-			CCapability *cap = base->GetConcreteCapability(
-				CAPA_CAPAS_UPDATED);
-			assert(cap); // this is required to have....
-			cap->Subscribe(this);
-
-			cap = base->GetConcreteCapability(CAPA_CAPAS_REMOVEALL);
-			assert(cap);
-			cap->Subscribe(this);
-
-			cap = base->GetConcreteCapability(
-				CAPA_INVERTER_DATASTATE);
-			assert(cap);
-			cap->Subscribe(this);
-		} else {
-			cerr
-				<< "Warning: Could not find data source to connect. Filter: "
-				<< configurationpath << "." << name << endl;
-		}
-
-		// Schedule the initialization and subscriptions later...
-		ICommand *cmd = new ICommand(CMD_INIT, this, 0);
-		Registry::GetMainScheduler()->ScheduleWork(cmd);
-
-	}
-
-	if (!set.lookupValue("clearscreen", clearscreen)) {
-		clearscreen = false;
-	}
 }
 
 CDumpOutputFilter::~CDumpOutputFilter()
@@ -106,40 +78,23 @@ bool CDumpOutputFilter::CheckConfig()
 {
 	string setting;
 	string str;
-	bool ret = true;
+	bool fail = false;
 
-	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
-		configurationpath);
+	CConfigHelper hlp(configurationpath);
+	fail |= !hlp.CheckConfig("datasource", Setting::TypeString);
+	fail |= !hlp.CheckConfig("clearscreen", Setting::TypeBoolean,
+		true);
 
-	setting = "datasource";
-	if (!set.exists(setting) || !set.getType()
-		== libconfig::Setting::TypeString) {
+	hlp.GetConfig("datasource", str, (std::string) "");
+	IInverterBase *i = Registry::Instance().GetInverter(str);
+	if (!i) {
 		cerr << "Setting " << setting << " in " << configurationpath
 			<< "." << name
-			<< " missing or of wrong type (wanted a string)"
-			<< endl;
-		ret = false;
-	} else {
-		set.lookupValue(setting, str);
-		IInverterBase *i = Registry::Instance().GetInverter(str);
-		if (!i) {
-			cerr << "Setting " << setting << " in "
-				<< configurationpath << "." << name
-				<< ": Cannot find instance of Inverter with the name "
-				<< str << endl;
-		}
+			<< ": Cannot find instance of Inverter with the name "
+			<< str << endl;
+		fail = true;
 	}
-
-	setting = "clearscreen";
-	if (set.exists(setting) && !set.getType()
-		== libconfig::Setting::TypeBoolean) {
-		cerr << "Setting " << setting << " in " << configurationpath
-			<< "." << name
-			<< " of wrong type (wanted true or false)" << endl;
-		ret = false;
-	}
-
-	return ret;
+	return !fail;
 }
 
 void CDumpOutputFilter::Update( const IObserverSubject *subject )
@@ -192,8 +147,40 @@ void CDumpOutputFilter::ExecuteCommand( const ICommand *cmd )
 
 	switch (cmd->getCmd()) {
 	case CMD_INIT:
+	{
+		string tmp;
+		CConfigHelper cfghlp(configurationpath);
+
+		cfghlp.GetConfig("clearscreen", this->clearscreen);
+
+		if (cfghlp.GetConfig("datasource", tmp)) {
+			base = Registry::Instance().GetInverter(tmp);
+			if (base) {
+				CCapability *cap = base->GetConcreteCapability(
+					CAPA_CAPAS_UPDATED);
+				assert(cap); // this is required to have....
+				cap->Subscribe(this);
+
+				cap = base->GetConcreteCapability(
+					CAPA_CAPAS_REMOVEALL);
+				assert(cap);
+				cap->Subscribe(this);
+
+				cap = base->GetConcreteCapability(
+					CAPA_INVERTER_DATASTATE);
+				assert(cap);
+				cap->Subscribe(this);
+			} else {
+				cerr
+					<< "Warning: Could not find data source to connect. Filter: "
+					<< configurationpath << "." << name
+					<< endl;
+			}
+		}
+
 		CheckOrUnSubscribe(true);
 		// falling through
+	}
 	case CMD_CYCLIC:
 	{
 		ICommand *cmd = new ICommand(CMD_CYCLIC, this, 0);
@@ -261,7 +248,6 @@ void CDumpOutputFilter::CheckOrUnSubscribe( bool subscribe )
 		cap->SetSubscription(this, subscribe);
 }
 
-
 /// This simple Data-Dumper will just dump all info over all capas it has.
 /// It shows also how a filter can use the iterators to get all the capps of
 /// the parent filters.
@@ -295,7 +281,8 @@ void CDumpOutputFilter::DoCyclicWork( void )
 		cout << (cappair).first << ' ' << flush;
 		for (int i = (cappair).first.length() + 1; i < 60; i++)
 			cout << '.';
-		cout << " " << DumpValue(cappair.second->getValue()) << " (Capa of: "
+		cout << " " << DumpValue(cappair.second->getValue())
+			<< " (Capa of: "
 			<< cappair.second->getSource()->GetName() << ")"
 			<< endl;
 	}

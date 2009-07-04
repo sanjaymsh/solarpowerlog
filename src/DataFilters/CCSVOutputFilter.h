@@ -159,9 +159,10 @@
 
 /** This logger writes the data to a CSV File
  *
-
  *
- * TODO DOCUMENT ME!
+ *
+ * Please see \ref DLCSV_Description for configuration, etc.
+ *
  */
 #include "DataFilters/interfaces/IDataFilter.h"
 

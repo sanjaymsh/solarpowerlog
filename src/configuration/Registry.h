@@ -28,7 +28,6 @@
  * \file Registry.h
  *
  * \page The class Registry: Configuration, Scheduler and Object Database
- * \ingroup Concepts
  *
  *  \date Created on: May 9, 2009
  *  \author Tobias Frost (coldtobi)
@@ -55,83 +54,7 @@
  * the live easier, as we do not need to care which configuration items a object
  * requires: It knows best.)
  *
- * \section LibConfigRetrieving Retrieving Configurations
- *
- * As stated, solarpowerlog will instanciate objects with the informations found
- * in the configuration file.
- *
- * When creating the objects, the objects will also passes informations how
- * to access their informations. This is the configuration-path. For example
- * it may be "inverter.inverters.[0]", (but the object does not need to
- * understand what the meaning of the string is)
- *
- * This path can be directly used to retrieve the configuration. Also, this path
- * is validated (the object needs not to check for validity)
- *
- * A object should not access configuration elements prior checking for existance
- * and type correctness. Else be prepared to handle exceptions thrown by
- * libconfig.
- *
- * \note the object classes which can be configured have a function,
- * CheckConfig() called after object generation. The programm will terminate
- * if the configuration check fails.
- * If accessing the config during constructiion, you have to handle this
- * manually (or call checkconfig yourself).
- *
- * Here are some snippets which shows how to access the configurations:
- *
- * Sample "Check Config" snippet:
- * \code
- *
- *	// get settings object.
- *  	libconfig::Setting & set = Registry::Instance().GetSettingsForObject
- *  		(configurationpath);
- *
- *	// we want the setting "datsource"
- *	setting = "datasource";
- *	if (!set.exists(setting) || !set.getType()
- *		== libconfig::Setting::TypeString) {
- *		cerr << "Setting " << setting << " in " << configurationpath
- *			<< "." << name
- *			<< " missing or of wrong type (wanted a string)"
- *			<< endl;
- *		ret = false;
- *	} else {
- *		// setting exists and is of proper type
- *	}
- * \endcode
- *
- * Sample "Retrieve Configuration" snippet
- * \code
- * 	// note, this sample assunmes, that its config has been already checked
- * 	// for existance and type correctness (CheckConfig())
- * 	// get config object.
- *	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
- *		ConfigurationPath);
- *
- *	// local storage for the data
- *	string strhost, port;
- *	long timeout;
- *
- *	// looking up and storing
- *	set.lookupValue("tcpadr", strhost);
- *	set.lookupValue("tcpport", port);
- *
- *	// this shows how to handle an "optional" value: Check for existance
- *	// and if not, set a default value
- *	if (!set.lookupValue("tcptimeout", timeout))
- *		timeout = 3000;
- * \endcode
- *
- * \note it is planned to make it possible to "reload" configuration during
- * during runtime. But this will require some refactoring existing code,
- * so currently it is legal to cache configuration values.
- *
- * \sa Registry
- *
- * TODO enhance description.
- *
- * \section Registry The Object Register
+ * \section Registry Registry: The Object Register
  *
  * \sa Registry
  *
@@ -204,6 +127,8 @@ class Registry : boost::noncopyable
 {
 public:
 
+	friend class CConfigHelper;
+
 	/** return the static, global object of the registry. */
 	static Registry& Instance()
 	{
@@ -274,6 +199,7 @@ public:
 	 * \warning This function is not intended to check if a setting exists!
 	 */
 
+private:
 	/** lookup a specific setting.
 	 *
 	 * \param section Configurationpath of the object.
@@ -286,7 +212,7 @@ public:
 
 	libconfig::Setting & GetSettingsForObject( std::string section,
 		std::string objname = "" );
-
+public:
 	/** search for an inverter/logger object with the object name
 	 *
 	 * \param name of the object

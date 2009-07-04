@@ -42,7 +42,7 @@
 #include <string>
 
 #include "configuration/Registry.h"
-#include <libconfig.h++>
+#include "configuration/CConfigHelper.h"
 
 #include <boost/asio/write.hpp>
 #include <boost/asio/io_service.hpp>
@@ -52,6 +52,7 @@
 using namespace std;
 using namespace boost::asio;
 using namespace boost;
+using namespace libconfig;
 
 CConnectTCPAsio::CConnectTCPAsio( const string &configurationname ) :
 	IConnect(configurationname)
@@ -75,24 +76,19 @@ CConnectTCPAsio::~CConnectTCPAsio()
 
 bool CConnectTCPAsio::Connect()
 {
+	string strhost, port;
+	unsigned long timeout;
+
+	CConfigHelper cfghelper(ConfigurationPath);
+	cfghelper.GetConfig("tcpadr", strhost);
+	cfghelper.GetConfig("tcpport", port);
+	cfghelper.GetConfig("tcptimeout", timeout, 3000UL);
 
 	cleanupstream();
-
 	boost::system::error_code ec;
 
-	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
-		ConfigurationPath);
-
-	string strhost, port;
-	long timeout;
-
-	set.lookupValue("tcpadr", strhost);
-	set.lookupValue("tcpport", port);
-	if (!set.lookupValue("tcptimeout", timeout))
-		timeout = 3000;
-
 	ip::tcp::resolver resolver(*ioservice);
-	ip::tcp::resolver::query query(strhost.c_str(), "12345");
+	ip::tcp::resolver::query query(strhost.c_str(), port);
 	ip::tcp::resolver::iterator iter = resolver.resolve(query);
 	ip::tcp::resolver::iterator end; // End marker.
 
@@ -160,30 +156,17 @@ bool CConnectTCPAsio::IsConnected( void )
 bool CConnectTCPAsio::CheckConfig( void )
 {
 	string setting;
-	bool ret = true;
+	bool fail = false;
 
-	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
-		ConfigurationPath);
+	CConfigHelper cfghelper(ConfigurationPath);
+	fail |= !cfghelper.CheckConfig("tcpadr",
+		libconfig::Setting::TypeString);
+	fail |= !cfghelper.CheckConfig("tcpport",
+		libconfig::Setting::TypeString);
+	fail |= !cfghelper.CheckConfig("tcptimeout",
+		libconfig::Setting::TypeInt, false);
 
-	setting = "tcpadr";
-	if (!set.exists(setting) || !set.getType()
-		== libconfig::Setting::TypeString) {
-		cerr << "Setting " << setting << " in " << ConfigurationPath
-			<< " missing or of wrong type (wanted a string)"
-			<< endl;
-		ret = false;
-	}
-
-	setting = "tcpport";
-	if (!set.exists(setting) || !set.getType()
-		== libconfig::Setting::TypeInt) {
-		cerr << "Setting " << setting << " in " << ConfigurationPath
-			<< " missing or of wrong type (wanted a integer)"
-			<< endl;
-		ret = false;
-	}
-
-	return ret;
+	return !fail;
 }
 
 void CConnectTCPAsio::cleanupstream( void )

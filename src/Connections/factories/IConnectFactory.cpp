@@ -36,7 +36,7 @@
 #endif
 
 #include "configuration/Registry.h"
-
+#include "configuration/CConfigHelper.h"
 #include "Connections/factories/IConnectFactory.h"
 #include "Connections/CConnectDummy.h"
 
@@ -54,11 +54,8 @@ using namespace std;
 IConnect * IConnectFactory::Factory( const string &configurationpath )
 {
 	string type = "";
-
-	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
-		configurationpath);
-
-	set.lookupValue("comms", type);
+	CConfigHelper cfghelper(configurationpath);
+	cfghelper.GetConfig("comms",type);
 
 	if (type == "TCP/IP") {
 		return new CConnectTCPAsio(configurationpath);

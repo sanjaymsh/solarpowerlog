@@ -24,6 +24,9 @@
  ----------------------------------------------------------------------------
  */
 
+
+/** \defgroup Inverters Description and Configration of Inverter Models */
+
 /** \file InverterBase.h
  *
  *  \date   May 9, 2009
@@ -32,6 +35,7 @@
  * This is the interface for inverters.
  *
  * \page IInverterBase IInverterBase: Interface for Inverters
+ * \ingroup Concepts
  *
  * IIinverterBase is the interface which should be used for all inverters.
  * It is also the base class for all DataFilters, (IDataFilter), as they
@@ -89,18 +93,22 @@
  *
  * \sa #IInverterBase::connection
  *
- * \section IIBCapabilites Capabilites
+ * \section IIBCapabilites How Capabilites transport datas
  *
  * As described \ref CapaConcept "here", Capabilies store abstraced measurement
- * values as well as some meta-datas controling the Capabilites itself.
+ * values as well as some meta-datas controlling the Capabilites itself.
  *
- * Capabilites are always created at the data-source. The Datasource links them
- * into its Capability-map. By this, it offers the data to the data-sinks, the
- * DataFilters or Loggers. The Loggers which are connected to the Inverter, can
- * Subscribe to the information and then will get informed when the data has
- * been updated.
+ * Simplified, the values are generated at the inverter's object and passed
+ * down to Datafilters (or loggers).
  *
- * Datafilters can also be chained. With this chaning, abitrary data
+ * \image html FilterSequence.png "Capabilitiy passed through two filters (simplified)"
+ *
+ * The data is passed along the Filters using the Observer Design pattern
+ * inheritated by the capability: Upon updating it, the Inverter calls the
+ * Notify function and the DataFilter gets notified.
+ *
+ * As illustrated,
+ * Datafilters can also be chained. With this abitrary data
  * manipulations can be achieved: The datafilter can calculate additional data
  * sets (example: Efficiency out of Pin and Pout), or do some other arithmetics
  * on them (mean value...)
@@ -108,6 +116,12 @@
  * Datafilters can also be parallel to e.g enable parallel serving of data to
  * different logging systems: One would log to disk, the other servin a web
  * page.
+ *
+ * By the way, the Inverter manages a list of capablities in the map
+ * (IInverterBase::CapabilityMap). (The map is organized in pairs of
+ * <string,CCapability*> containing the description of the Capability and a
+ * pointer to the Capability.) However, there is an API to access the Capability
+ * in IInverteBase and an enhanced one in IDataFilter.
  *
  * ( \todo More details are planned to appear on the IDataFilter description.)
  *
@@ -144,7 +158,6 @@
 		c = new CCapability(s, v, this);
 		AddCapability(s, c);
 
-		// TODO: Check if we schould derefer (using a scheduled work) this.
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
 		cap->Notify();
 	}
@@ -175,7 +188,7 @@
  * some Work in a specific amount of time, please see the \ref PageCWorkSchedule
  * "WorkScheduler overview" Page.
  *
- * \todo which is not yet written,
+ * \todo that Workscheduler-Page is not yet written,
  *
  *
  *

@@ -28,8 +28,9 @@
  *
  *  \date Created on: May 16, 2009
  *  \author Tobias Frost (coldtobi)
- *
- * \page CapaConcept "The Capabilites Concept"
+*/
+
+/** \page CapaConcept "The Capabilites Concept"
  *
  * This gives an introduction how capabilites works and whats their purpose is.
  * For details, please also see the relevant interfaces, mostly CCapability and
@@ -107,6 +108,7 @@
  *
  *
 */
+
 
 #ifndef CCAPABILITY_H_
 #define CCAPABILITY_H_

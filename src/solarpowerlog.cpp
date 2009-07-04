@@ -24,6 +24,11 @@
  ----------------------------------------------------------------------------
  */
 
+/** \defgroup Concepts Developer: Basic Concepts
+ *
+ * This section describes some basics concepts used in deveoping the software.
+ */
+
 /**
  * \file solarpowerlog.cpp
  *
@@ -37,7 +42,6 @@
  * Fire up your debugger and look how the programm executes.
  *
  * \sa \ref mainBasicConcepts "Basic Concepts"
- *
  *
  * \page mainBasicConcepts Basic Concepts
  *

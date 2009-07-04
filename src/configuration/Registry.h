@@ -28,6 +28,7 @@
  * \file Registry.h
  *
  * \page The class Registry: Configuration, Scheduler and Object Database
+ * \ingroup Concepts
  *
  *  \date Created on: May 9, 2009
  *  \author Tobias Frost (coldtobi)

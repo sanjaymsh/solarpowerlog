@@ -27,14 +27,38 @@
 /** \file IDataFilter.cpp
  *  \date Jun 1, 2009
  *  \author Tobias Frost (coldtobi)
-*/
+ */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include "IDataFilter.h"
+#include "DataFilters/interfaces/IDataFilter.h"
+#include "Inverters/interfaces/CNestedCapaIterator.h"
 
-IDataFilter::~IDataFilter() {
+IDataFilter::~IDataFilter()
+{
 	// TODO Auto-generated destructor stub
 }
+
+ICapaIterator *IDataFilter::GetCapaNewIterator()
+{
+	return new CNestedCapaIterator(this, base);
+}
+
+CCapability *IDataFilter::GetConcreteCapability( const string & identifier )
+{
+	CCapability *c;
+	if ((c = IInverterBase::GetConcreteCapability(identifier))) {
+		// TODO cleanup debug code
+		// cout << "DEBUG: found " << identifier << " in " << GetName()
+		//	<< endl;
+		return c;
+	} else {
+		// TODO cleanup debug code
+		//cout << "DEBUG: searching " << identifier << " in base class "
+		//	<< base->GetName() << endl;
+		return base->GetConcreteCapability(identifier);
+	}
+}
+

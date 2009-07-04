@@ -29,13 +29,26 @@
  *  Created on: Jun 29, 2009
  *      Author: tobi
  */
+#include <assert.h>
+
+
+#include "configuration/Registry.h"
+#include "interfaces/CWorkScheduler.h"
+
+#include "Inverters/Capabilites.h"
+#include "patterns/CValue.h"
 
 #include "CCSVOutputFilter.h"
+
 
 CCSVOutputFilter::CCSVOutputFilter( const string & name,
 	const string & configurationpath )
 : IDataFilter(name, configurationpath)
 {
+	// Schedule the initialization and subscriptions later...
+	ICommand *cmd = new ICommand(CMD_INIT, this, 0);
+	Registry::GetMainScheduler()->ScheduleWork(cmd);
+
 }
 
 
@@ -46,11 +59,41 @@ CCSVOutputFilter::~CCSVOutputFilter()
 
 bool CCSVOutputFilter::CheckConfig()
 {
+
+	// not yet fit.
+	return false;
 }
 
 void CCSVOutputFilter::Update(const IObserverSubject *subject)
 {
 }
+
+void CCSVOutputFilter::ExecuteCommand(const ICommand *cmd)
+{
+	switch (cmd->getCmd()) {
+
+	case CMD_INIT:
+		ICommand *cmd = new ICommand(CMD_CYCLIC, this, 0);
+		timespec ts = { 15, 0 };
+
+		CCapability *c = GetConcreteCapability(
+			CAPA_INVERTER_QUERYINTERVAL);
+		if (c && c->getValue()->GetType() == IValue::float_type) {
+			CValue<float> *v = (CValue<float> *) c->getValue();
+			ts.tv_sec = v->Get();
+			ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
+		}
+
+
+
+		break;
+
+
+
+	}
+}
+
+
 
 
 

@@ -197,7 +197,7 @@ void CDumpOutputFilter::ExecuteCommand( const ICommand *cmd )
 	case CMD_CYCLIC:
 	{
 		ICommand *cmd = new ICommand(CMD_CYCLIC, this, 0);
-		timespec ts = { 1, 0 };
+		timespec ts = { 5, 0 };
 
 		CCapability *c = GetConcreteCapability(
 			CAPA_INVERTER_QUERYINTERVAL);
@@ -261,23 +261,6 @@ void CDumpOutputFilter::CheckOrUnSubscribe( bool subscribe )
 		cap->SetSubscription(this, subscribe);
 }
 
-// Check if we've overriden the capability and return our or the parents one.
-CCapability *CDumpOutputFilter::GetConcreteCapability(
-	const string & identifier )
-{
-	CCapability *c;
-	if ((c = IInverterBase::GetConcreteCapability(identifier))) {
-		// TODO cleanup debug code
-		// cout << "DEBUG: found " << identifier << " in " << GetName()
-		//	<< endl;
-		return c;
-	} else {
-		// TODO cleanup debug code
-		//cout << "DEBUG: searching " << identifier << " in base class "
-		//	<< base->GetName() << endl;
-		return base->GetConcreteCapability(identifier);
-	}
-}
 
 /// This simple Data-Dumper will just dump all info over all capas it has.
 /// It shows also how a filter can use the iterators to get all the capps of

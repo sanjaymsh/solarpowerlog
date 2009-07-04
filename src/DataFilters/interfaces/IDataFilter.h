@@ -24,6 +24,17 @@
  ----------------------------------------------------------------------------
  */
 
+
+/** \defgroup DataFilter Loggers and DataFilters: Description and Configuration
+ *
+ * This page documents the available loggers / datafilters.
+ *
+ * \ref CVSDataLogger
+ *
+ * \ref CDumpOutputFilter
+ *
+ * */
+
 /** \file IDataFilter.h
  *
  *  Created on: Jun 1, 2009
@@ -49,7 +60,16 @@
 #include "config.h"
 #endif
 
-/** \fixme COMMENT ME
+/** \file IDatafilter.h
+ *
+ * A Datafilter is a processor for inverter datas, or a logger which will sinks
+ * the data to some file or database, ....
+ *
+ * For details describing how inverters, capabilites and datafilter work
+ * together, please see \ref IInverterBase "this page".
+ *
+ *
+ *
  *
  *
  * TODO DOCUMENT ME!
@@ -59,27 +79,47 @@
 #include "Inverters/interfaces/InverterBase.h"
 #include "patterns/ICommand.h"
 
-class IDataFilter:
-	public IObserverObserver,
+class IDataFilter : public IObserverObserver ,
 	public IInverterBase // The inverter, though the capabilites, also provides the
-	// interface for being a subject (observer pattern)
+// interface for being a subject (observer pattern)
 {
 public:
-	IDataFilter(const string &name, const string & configurationpath)
-		: IInverterBase(name, configurationpath)
-	{ };
+	IDataFilter( const string &name, const string & configurationpath ) :
+		IInverterBase(name, configurationpath)
+	{ }
+
 	virtual ~IDataFilter();
 
-	// Filter needs not to use the CommandQueue facility, so defaulting to
-	// doing nothing
-	virtual void ExecuteCommand( const ICommand *cmd) {};
+	/** Filters need not to use the CommandQueue facility, so defaulting to
+	 * doing nothing
+	 * */
+	virtual void ExecuteCommand( const ICommand *cmd )
+	{ }
 
 	// Just a reminder: You need to override that.
 	virtual bool CheckConfig() = 0;
 
 	// Just another reminder. Update is called by the subject,
 	// when new data arrives. So you defintly want to override this.
-	virtual void Update(const IObserverSubject *subject) = 0;
+	virtual void Update( const IObserverSubject *subject ) = 0;
+
+	/** When iterating over all the Capabilities, also transparently iterate
+	 * over all parent objects as well. See INestedCapaIterator for details.
+	 *
+	 * \returns A "nested" CapaIterator, (CNestetCapaIterator), which
+	 *  traverses thourh all layers.
+	*/
+	virtual ICapaIterator* GetCapaNewIterator();
+
+	/** Check if the current DataFilter has the capability, if not ask its
+	 * parent.
+	 *
+	 * Overriden from IInverterbase, this function checks first its own
+	 * list and then asks its parent for the Capability
+	 *
+	 * \param identifier Capability to be looked for.
+	 *  */
+	virtual CCapability *GetConcreteCapability( const string &identifier );
 
 protected:
 	/// Inverter to connect to. Can also be a another DataFilter
@@ -91,8 +131,5 @@ protected:
 	IInverterBase *base;
 
 };
-
-
-
 
 #endif /* IDATAFILTER_H_ */

@@ -44,12 +44,14 @@ using namespace std;
 
 void IObserverSubject::Subscribe( class IObserverObserver *observer )
 {
-	listobservers.push_back(observer);
+	if (!CheckSubscription(observer))
+		listobservers.push_back(observer);
 }
 
 void IObserverSubject::UnSubscribe( class IObserverObserver *observer )
 {
-	listobservers.remove(observer);
+	if (CheckSubscription(observer))
+		listobservers.remove(observer);
 }
 
 void IObserverSubject::Notify( void )

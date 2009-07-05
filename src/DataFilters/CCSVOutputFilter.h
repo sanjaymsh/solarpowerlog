@@ -39,6 +39,16 @@
  * The data to be logged can be selected by specifing the identifiers or by
  * all data.
  *
+ * Solarpowerlog honors the RFC 4180. However, some feature, like the "log all"
+ * feature causes that for example the number of columns changes during runtime.
+ * (However, patches will be accepted to fix this: For example, on a new feature,
+ * one could just reparse the file and add the missing datas.
+ *
+ * Unavailable datas will be set to empty value.
+ *
+ * To increase the use of the logfile, a (ISO 8601)-like timestamp
+ * will be inserted as the first column.
+ *
  * \section DLCSV_Configuration Configuration
  *
  * As every logger, the CSV Logger is configured using the Loggers Section.
@@ -111,7 +121,8 @@
  * This logger has the facility to start a new logfile at
  * midnight (only if the inverter is offline).
  * Solarpowerlog will, if rotate is enabled, create a new logfile.
- * To avoid name clashes, it will add the current date to the filename.
+ * To avoid name clashes, it will add the current date
+ * (ISO 8601: YYYY-MM-DD ) to the filename.
  * To specify *where* the name should be placed, use "%s".
  * If %s is not given, it will be appended *at the end* of the filename ,
  * so must likely after the suffix.
@@ -120,6 +131,7 @@
  * 	logfile="Inverter_1_%s.csv"
  * \endcode
  * will create a logfile like "Inverter_1_2009-07-04.csv"
+ *
  *
  * \todo TODO Allow logfile name, date feature, to specify by month, day, etc....
  *
@@ -157,6 +169,12 @@
 #ifndef CCSVOUTPUTFILTER_H_
 #define CCSVOUTPUTFILTER_H_
 
+#include <fstream>
+#include <list>
+
+#include "DataFilters/interfaces/IDataFilter.h"
+
+
 /** This logger writes the data to a CSV File
  *
  *
@@ -164,7 +182,7 @@
  * Please see \ref DLCSV_Description for configuration, etc.
  *
  */
-#include "DataFilters/interfaces/IDataFilter.h"
+
 
 class CCSVOutputFilter : public IDataFilter
 {
@@ -182,10 +200,49 @@ public:
 
 
 private:
+
+	IInverterBase *oursource;
+	fstream file;
+
+	/** Do the initialization of the module
+	 *
+	 * - subscribe to basic Capabilities
+	 * - open logfile (and create filename)
+	 * - schedule rotation of the filename at 00:00:05
+	 * - schedule cyclic working
+	 *
+	 * Also will do the rotating of the logfile*/
+	virtual void DoINITCmd (const ICommand *);
+
+	/** does the actual work:
+	 *
+	 * - maintain the list of columns to be written
+	 * (the Capa map is sorted, but we need to make sure that
+	 * we won't switch columns)
+	 * - write the heade if necessary
+	 * - check for data validty.
+	 *  */
+	virtual void DoCYCLICmd(const ICommand *);
+
 	enum Commands
 	{
-		CMD_INIT, CMD_CYCLIC, CMD_UNSUBSCRIBE, CMD_ADDED_CAPAS
+		CMD_INIT,
+		CMD_CYCLIC,
+		CMD_UNSUBSCRIBE,
+		CMD_ADDED_CAPAS,
+		CMD_ROTATE ///<Rotate logfile
 	};
+
+
+	/** has the header been outputted to the file */
+	bool headerwritten;
+
+	bool datavalid;
+
+	/** list of Capabilities in the CSV */
+	list<string> CSVCapas;
+
+
 
 };
 

@@ -30,24 +30,51 @@
  *      Author: tobi
  */
 #include <assert.h>
+#include <fstream>
+#include <iostream>
+#include <iomanip>
+#include <cstdio>
+#include <memory>
+
+#include <boost/date_time/gregorian/gregorian.hpp>
+#include "boost/date_time/local_time/local_time.hpp"
 
 #include "configuration/Registry.h"
+#include "configuration/CConfigHelper.h"
 #include "interfaces/CWorkScheduler.h"
-
-#include <libconfig.h>
 
 #include "Inverters/Capabilites.h"
 #include "patterns/CValue.h"
 
 #include "CCSVOutputFilter.h"
 
+#include "Inverters/interfaces/ICapaIterator.h"
+
+using namespace libconfig;
+using namespace boost::gregorian;
+
 CCSVOutputFilter::CCSVOutputFilter( const string & name,
 	const string & configurationpath ) :
 	IDataFilter(name, configurationpath)
 {
+	headerwritten = false;
+
 	// Schedule the initialization and subscriptions later...
 	ICommand *cmd = new ICommand(CMD_INIT, this, 0);
 	Registry::GetMainScheduler()->ScheduleWork(cmd);
+
+	// We do not anything on these capabilities, so we remove our list.
+	// any cascaded filter will automatically use the parents one...
+	CCapability *c = IInverterBase::GetConcreteCapability(
+		CAPA_INVERTER_DATASTATE);
+	CapabilityMap.erase(CAPA_INVERTER_DATASTATE);
+	delete c;
+
+	// Also we wont fiddle with the caps requiring our listeners to unsubscribe.
+	// They also should get that info from our base.
+	c = IInverterBase::GetConcreteCapability(CAPA_CAPAS_REMOVEALL);
+	CapabilityMap.erase(CAPA_CAPAS_REMOVEALL);
+	delete c;
 
 }
 
@@ -60,58 +87,72 @@ bool CCSVOutputFilter::CheckConfig()
 {
 	string setting;
 	string str;
-	bool ret = true;
 
-#if 0
-	libconfig::Setting & set = Registry::Instance().GetSettingsForObject(
-		configurationpath);
+	bool fail = false;
 
-	setting = "datasource";
-	if (!set.exists(setting) || !set.getType()
-		== libconfig::Setting::TypeString) {
-		cerr << "Setting " << setting << " in " << configurationpath
-			<< "." << name
-			<< " missing or of wrong type (wanted a string)"
-			<< endl;
-		ret = false;
-	} else {
-		set.lookupValue(setting, str);
-		IInverterBase *i = Registry::Instance().GetInverter(str);
-		if (!i) {
-			cerr << "Setting " << setting << " in "
-				<< configurationpath << "." << name
-				<< ": Cannot find instance of Inverter with the name "
-				<< str << endl;
+	CConfigHelper hlp(configurationpath);
+	fail |= !hlp.CheckConfig("datasource", Setting::TypeString);
+	fail |= !hlp.CheckConfig("clearscreen", Setting::TypeBoolean, true);
+	fail |= !hlp.CheckConfig("logfile", Setting::TypeString);
+
+	if (hlp.CheckConfig("data2log", Setting::TypeString, false, false)) {
+		hlp.GetConfig("data2log", setting);
+		if (setting != "all") {
+			cerr
+				<< "Configuration Error: data2log must be \"all\" or of Type Array."
+				<< endl;
+			fail = true;
 		}
+	} else if (!hlp.CheckConfig("data2log", Setting::TypeArray)) {
+		fail = true;
 	}
 
-	setting = "logfile";
-	if (!set.exists(setting) || !set.getType()
-		== libconfig::Setting::TypeString) {
+	// FIXME: This will not work, if the inverter / logger is instanciated later.
+	// in the config file. This is not nice and can be avoided.
+	// (check during CMD_INIT)
+	hlp.GetConfig("datasource", str);
+	IInverterBase *i = Registry::Instance().GetInverter(str);
+	if (!i) {
 		cerr << "Setting " << setting << " in " << configurationpath
 			<< "." << name
-			<< " of wrong type (wanted true or false)" << endl;
-		ret = false;
+			<< ": Cannot find instance of Inverter with the name "
+			<< str << endl;
+		fail = true;
 	}
 
-	setting = "data2log";
-	if (!set.exists(setting)) {
-		cerr << "Setting " << setting << " in " << configurationpath
-			<< "." << name << " missing " << endl;
-		ret = false;
-	} else {
-
-
-
-	}
-
-	return ret;
-#endif
-
+	return !fail;
 }
 
 void CCSVOutputFilter::Update( const IObserverSubject *subject )
 {
+	assert (subject);
+	CCapability *c, *cap = (CCapability *) subject;
+
+	// Datastate changed.
+	if (cap->getDescription() == CAPA_INVERTER_DATASTATE) {
+		this->datavalid = ((CValue<bool> *) cap->getValue()) ->Get();
+		return;
+	}
+
+	// Unsubscribe plea
+	if (cap->getDescription() == CAPA_CAPAS_REMOVEALL) {
+		auto_ptr<ICapaIterator>  it(base->GetCapaNewIterator());
+		while (it->HasNext()) {
+			pair<string, CCapability*> cappair = it->GetNext();
+			cap = (cappair).second;
+			cap->UnSubscribe(this);
+		}
+		return;
+	}
+
+	// propagate "caps updated"
+	if (cap->getDescription() == CAPA_CAPAS_UPDATED) {
+		c = GetConcreteCapability(CAPA_CAPAS_UPDATED);
+		*(CValue<bool> *)c->getValue() = *(CValue<bool> *)cap->getValue();
+		cap->Notify();
+		return;
+	}
+
 }
 
 void CCSVOutputFilter::ExecuteCommand( const ICommand *cmd )
@@ -119,19 +160,127 @@ void CCSVOutputFilter::ExecuteCommand( const ICommand *cmd )
 	switch (cmd->getCmd()) {
 
 	case CMD_INIT:
-		ICommand *cmd = new ICommand(CMD_CYCLIC, this, 0);
-		timespec ts = { 15, 0 };
+		DoINITCmd(cmd);
+		break;
 
-		CCapability *c = GetConcreteCapability(
-			CAPA_INVERTER_QUERYINTERVAL);
-		if (c && c->getValue()->GetType() == IValue::float_type) {
-			CValue<float> *v = (CValue<float> *) c->getValue();
-			ts.tv_sec = v->Get();
-			ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
-		}
+	case CMD_CYCLIC:
+		DoCYCLICmd(cmd);
 
+	case CMD_ROTATE:
+		DoINITCmd(cmd);
 		break;
 
 	}
+}
+
+void CCSVOutputFilter::DoINITCmd( const ICommand * )
+{
+	// Do init
+	string tmp;
+	CConfigHelper cfghlp(configurationpath);
+	// Config is already checked (exists, type ok)
+	cfghlp.GetConfig("datasource", tmp);
+
+	base = Registry::Instance().GetInverter(tmp);
+	if (base) {
+		CCapability *cap = base->GetConcreteCapability(
+			CAPA_CAPAS_UPDATED);
+		assert(cap); // this is required to have....
+		if (!cap->CheckSubscription(this))
+			cap->Subscribe(this);
+
+		cap = base->GetConcreteCapability(CAPA_CAPAS_REMOVEALL);
+		assert(cap);
+		if (!cap->CheckSubscription(this))
+			cap->Subscribe(this);
+
+		cap = base->GetConcreteCapability(CAPA_INVERTER_DATASTATE);
+		assert(cap);
+		if (!cap->CheckSubscription(this))
+			cap->Subscribe(this);
+	} else {
+		cerr
+			<< "ERROR: Could not find data source to connect. Filter: "
+			<< configurationpath << "." << name << endl;
+		abort();
+	}
+
+	// Try to open the file
+	if (file.is_open()) {
+		file.close();
+	}
+
+	cfghlp.GetConfig("logfile", tmp);
+	bool rotate;
+	cfghlp.GetConfig("rotate", rotate, false);
+	if (rotate) {
+		date today(day_clock::local_day());
+		//note: the %s will be removed, so +10 is enough.
+		char buf[tmp.size() + 10];
+		int year = today.year();
+		int month = today.month();
+		int day = today.day();
+
+		snprintf(buf, sizeof(buf) - 1, "%s%04d-%02d-%02d%s",
+			tmp.substr(0, tmp.find("%s")).c_str(), year, day,
+			month,
+			tmp.substr(tmp.find("%s") + 2, string::npos).c_str());
+
+		tmp = buf;
+	}
+
+	// Open the file. We use binary mode, as we want end the line ourself (LF+CR)
+	// leaned on RFC4180
+	file.open(tmp.c_str(), fstream::out | fstream::in | fstream::app
+		| fstream::binary);
+
+	if (file.fail()) {
+		cerr << "WARNING: Failed to open file! Logger " << name
+			<< " will not work. " << endl;
+		file.close();
+	}
+
+	headerwritten = false;
+
+	// Set a timer to some seconds after midnight, to enforce rotating
+	boost::posix_time::ptime n =
+		boost::posix_time::second_clock::local_time();
+
+	date d = n.date() + days(1);
+	boost::posix_time::ptime tomorrow(d);
+	boost::posix_time::time_duration remaining = tomorrow - n;
+
+	struct timespec ts;
+	ts.tv_sec = remaining.hours() * 3600UL + remaining.minutes() * 60
+		+ remaining.seconds() + 2;
+	ts.tv_nsec = 0;
+	ICommand *ncmd = new ICommand(CMD_ROTATE, this, 0);
+	Registry::GetMainScheduler()->ScheduleWork(ncmd, ts);
+
+	// Set cyclic timer to the query interval.
+	ncmd = new ICommand(CMD_CYCLIC, this, 0);
+	ts.tv_sec = 5;
+	ts.tv_nsec = 0;
+
+	CCapability *c = GetConcreteCapability(CAPA_INVERTER_QUERYINTERVAL);
+	if (c && c->getValue()->GetType() == IValue::float_type) {
+		CValue<float> *v = (CValue<float> *) c->getValue();
+		ts.tv_sec = v->Get();
+		ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
+	} else {
+		cerr << "INFO: The associated inverter does not specify the "
+			"queryinterval. Defaulting to 5 seconds";
+	}
+
+	Registry::GetMainScheduler()->ScheduleWork(ncmd, ts);
+}
+
+void CCSVOutputFilter::DoCYCLICmd( const ICommand * )
+{
+	/** check for data validty. */
+	CCapability *c;
+
+	c = base->GetConcreteCapability(CAPA_INVERTER_DATASTATE);
+
 }
 

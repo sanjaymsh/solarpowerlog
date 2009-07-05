@@ -60,12 +60,17 @@ CDumpOutputFilter::CDumpOutputFilter( const string &name,
 	ICommand *cmd = new ICommand(CMD_INIT, this, 0);
 	Registry::GetMainScheduler()->ScheduleWork(cmd);
 
+	CCapability *c = IInverterBase::GetConcreteCapability(
+		CAPA_INVERTER_DATASTATE);
+	CapabilityMap.erase(CAPA_INVERTER_DATASTATE);
+	delete c;
+
 }
 
 CDumpOutputFilter::~CDumpOutputFilter()
 {
 	if (base) {
-		ICapaIterator *it = base->GetCapaNewIterator();
+		auto_ptr<ICapaIterator> it(base->GetCapaNewIterator());
 		pair<string, CCapability*> pair;
 		while (it->HasNext()) {
 			pair = it->GetNext();
@@ -82,8 +87,7 @@ bool CDumpOutputFilter::CheckConfig()
 
 	CConfigHelper hlp(configurationpath);
 	fail |= !hlp.CheckConfig("datasource", Setting::TypeString);
-	fail |= !hlp.CheckConfig("clearscreen", Setting::TypeBoolean,
-		true);
+	fail |= !hlp.CheckConfig("clearscreen", Setting::TypeBoolean, true);
 
 	hlp.GetConfig("datasource", str, (std::string) "");
 	IInverterBase *i = Registry::Instance().GetInverter(str);
@@ -224,27 +228,27 @@ void CDumpOutputFilter::CheckOrUnSubscribe( bool subscribe )
 
 	CCapability *cap = base->GetConcreteCapability(
 		CAPA_INVERTER_MANUFACTOR_NAME);
-	if (cap && !cap->CheckSubscription(this))
+	if (cap)
 		cap->SetSubscription(this, subscribe);
 
 	cap = base->GetConcreteCapability(CAPA_INVERTER_MODEL);
-	if (cap && !cap->CheckSubscription(this))
+	if (cap)
 		cap->SetSubscription(this, subscribe);
 
 	cap = base->GetConcreteCapability(CAPA_INVERTER_ACPOWER_TOTAL);
-	if (cap && !cap->CheckSubscription(this))
+	if (cap)
 		cap->SetSubscription(this, subscribe);
 
 	cap = base->GetConcreteCapability(CAPA_INVERTER_KWH_Y2D);
-	if (cap && !cap->CheckSubscription(this))
+	if (cap)
 		cap->SetSubscription(this, subscribe);
 
 	cap = base->GetConcreteCapability(CAPA_INVERTER_KWH_M2D);
-	if (cap && !cap->CheckSubscription(this))
+	if (cap)
 		cap->SetSubscription(this, subscribe);
 
 	cap = base->GetConcreteCapability(CAPA_INVERTER_KWH_M2D);
-	if (cap && !cap->CheckSubscription(this))
+	if (cap)
 		cap->SetSubscription(this, subscribe);
 }
 

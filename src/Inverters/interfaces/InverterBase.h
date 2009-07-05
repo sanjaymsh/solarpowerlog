@@ -231,8 +231,13 @@ public:
 	// TODO Move to c++ file
 	virtual CCapability *GetConcreteCapability( const string &identifier );
 
+	/// Get a Iterator over all Capability.
+	/// Filters may overload it to provide a CCapaNestedIterator.
+	/// \warning you are responsible deleting the iterator! Use auto_ptr !
 	virtual ICapaIterator* GetCapaNewIterator();
 
+	/// Check Configuration
+	/// \returns false on error, true on success.
 	virtual bool CheckConfig() = 0;
 
 protected:
@@ -260,7 +265,7 @@ protected:
 	// NOTE2: Beware: Connections can die any time! Make sure to handle this.
 	IConnect *connection;
 
-private:
+protected:
 
 	// This maps contains all the Caps by the Inverter.
 	// Caps implements the Subject in the Observer-Pattern.

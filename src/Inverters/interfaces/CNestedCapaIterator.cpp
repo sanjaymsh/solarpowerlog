@@ -34,6 +34,8 @@
 #include "config.h"
 #endif
 
+#include <memory>
+
 #include "Inverters/interfaces/CNestedCapaIterator.h"
 
 CNestedCapaIterator::CNestedCapaIterator( IInverterBase *b,
@@ -78,9 +80,8 @@ bool CNestedCapaIterator::HasNext()
 		// Set the parent as new base, and ask the parent for its parent
 		// via getting the informations in its iterator.
 		this->SetBase(parent);
-		ICapaIterator *p = parent->GetCapaNewIterator();
+		auto_ptr<ICapaIterator> p(parent->GetCapaNewIterator());
 		this->setParent(p->getParent());
-		delete p;
 	} else {
 		return false;
 	}

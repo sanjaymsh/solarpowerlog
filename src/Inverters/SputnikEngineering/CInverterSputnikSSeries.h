@@ -198,6 +198,9 @@ private:
 	int swversion;
 	int swbuild;
 
+	unsigned int commadr;
+	unsigned int ownadr;
+
 	unsigned int laststatuscode;
 
 };

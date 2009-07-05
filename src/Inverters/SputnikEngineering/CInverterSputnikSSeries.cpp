@@ -105,11 +105,11 @@ static struct
 		{ 20003, NOT_FEEDING_OK, "Inverter Starting up" },
 		{ 20004, FEEDING_MPP, "Feeding on MPP" },
 
-		{ 20006, FEEDING_MAXPOWER, "Feeding. Inverter at power limit." },
+		{ 20006, FEEDING_MAXPOWER, "Feeding. Inverter at power limit" },
 		{ 20008, FEEDING, "Feeding" },
 
 		{ 20115, NOT_FEEDING_EXTEVENT, "Off-grid" },
-		{ 20116, NOT_FEEDING_EXTEVENT, "Grid Frequency too high limit" },
+		{ 20116, NOT_FEEDING_EXTEVENT, "Grid Frequency too high" },
 		{ 20117, NOT_FEEDING_EXTEVENT, "Grid Frequency too low" },
 
 		{
@@ -125,6 +125,8 @@ CInverterSputnikSSeries::CInverterSputnikSSeries( const string &name,
 {
 
 	swversion = swbuild = 0;
+	ownadr = 0xfb;
+	commadr = 0x01;
 	laststatuscode = (unsigned int) -1;
 
 	// Add the capabilites that this inverter has
@@ -150,6 +152,13 @@ CInverterSputnikSSeries::CInverterSputnikSSeries( const string &name,
 	CConfigHelper cfghlp(configurationpath);
 	float interval;
 	cfghlp.GetConfig("queryinterval", interval, 5.0f);
+
+	// Query settings needed and default all optional settings.
+	cfghlp.GetConfig("ownadr", ownadr, 0xFBu);
+	cfghlp.GetConfig("commadr", commadr, 0x01u);
+
+	s = CAPA_INVERTER_QUERYINTERVAL;
+	v = IValue::Factory(CAPA_INVERTER_QUERYINTERVAL_TYPE);
 	((CValue<float>*) v)->Set(interval);
 	c = new CCapability(s, v, this);
 	AddCapability(s, c);
@@ -935,13 +944,6 @@ string CInverterSputnikSSeries::assemblequerystring()
 		}
 	} while (cont && !cmdqueue.empty());
 
-	unsigned int ownadr, commadr;
-
-	// Query settings needed and default all optional settings.
-	CConfigHelper cfghlp(configurationpath);
-	cfghlp.GetConfig("ownadr",ownadr, 0xFBu);
-	cfghlp.GetConfig("commadr",commadr, 0x01u);
-
 	sprintf(formatbuffer, "%X:", currentport);
 	len = strlen(formatbuffer) + querystring.length() + 10 + 6;
 
@@ -966,14 +968,14 @@ string CInverterSputnikSSeries::assemblequerystring()
 bool CInverterSputnikSSeries::parsereceivedstring( const string & s )
 {
 
-#if 0
-	cerr << "Received:\t" << s << endl;
-#endif
-
 	unsigned int i;
 	// check for basic constraints...
 	if (s[0] != '{' || s[s.length() - 1] != '}')
 		return false;
+
+#if 0
+	cerr << "Received:\t" << s << endl;
+#endif
 
 	// tokenizer (taken from
 	// http://oopweb.com/CPP/Documents/CPPHOWTO/Volume/C++Programming-HOWTO-7.html
@@ -993,7 +995,8 @@ bool CInverterSputnikSSeries::parsereceivedstring( const string & s )
 	{
 		vector<string>::iterator it;
 		for (i = 0, it = tokens.begin(); it != tokens.end() - 1; it++) {
-			cerr << i++ << ": " << (*it) << "\tlen: " << (*it).length() << endl;
+			cerr << i++ << ": " << (*it) << "\tlen: "
+				<< (*it).length() << endl;
 		}
 	}
 #endif
@@ -1014,12 +1017,6 @@ bool CInverterSputnikSSeries::parsereceivedstring( const string & s )
 		return false;
 	}
 
-	unsigned int ownadr, commadr;
-	// Query settings needed and default all optional settings.
-	CConfigHelper cfghlp(configurationpath);
-	cfghlp.GetConfig("ownadr",ownadr, 0xFBu);
-	cfghlp.GetConfig("commadr",commadr, 0x01u);
-
 	if (tmp != commadr) {
 		cerr << "not for us: Wrong Sender " << endl;
 		// TODO : Here's a right place to tell the communication interface that
@@ -1034,6 +1031,8 @@ bool CInverterSputnikSSeries::parsereceivedstring( const string & s )
 
 	if (tmp != ownadr) {
 		cerr << "not for us: Wrong receiver " << endl;
+		cout << tokens[0].c_str() << endl << tokens[1].c_str() << ":"
+			<< tmp << " != " << ownadr << endl;
 		return false;
 	}
 
@@ -1200,7 +1199,7 @@ void CInverterSputnikSSeries::tokenizer( const char *delimiters,
 	unsigned int i;
 
 	string::size_type lastPos = 0;
-	string::size_type pos;
+	string::size_type pos = 0;
 
 	i = 0;
 	// Skip tokens at the start of the string
@@ -1211,8 +1210,11 @@ void CInverterSputnikSSeries::tokenizer( const char *delimiters,
 		}
 	} while (++i < strlen(delimiters));
 
-	// get the first substring by finding the "second" delimieter
+	pos = lastPos;
+
+	// get the first substring by finding the "second" delimiter
 	i = lastPos;
+
 	do {
 		unsigned int tmp;
 		tmp = s.find_first_of(delimiters[i], lastPos);
@@ -1223,8 +1225,9 @@ void CInverterSputnikSSeries::tokenizer( const char *delimiters,
 	while (s.length() > pos && s.length() > lastPos) {
 		unsigned int tmp, tmp2;
 
-		// Add it to the vector.
-		tokens.push_back(s.substr(lastPos, pos - lastPos));
+		if (pos - lastPos) {
+			tokens.push_back(s.substr(lastPos, pos - lastPos));
+		}
 		lastPos = pos;
 
 		// Skip delimiters.

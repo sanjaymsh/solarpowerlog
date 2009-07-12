@@ -212,7 +212,7 @@ private:
 	 * - schedule cyclic working
 	 *
 	 * Also will do the rotating of the logfile*/
-	virtual void DoINITCmd (const ICommand *);
+	void DoINITCmd (const ICommand *);
 
 	/** does the actual work:
 	 *
@@ -222,14 +222,12 @@ private:
 	 * - write the heade if necessary
 	 * - check for data validty.
 	 *  */
-	virtual void DoCYCLICmd(const ICommand *);
+	void DoCYCLICmd(const ICommand *);
 
 	enum Commands
 	{
 		CMD_INIT,
 		CMD_CYCLIC,
-		CMD_UNSUBSCRIBE,
-		CMD_ADDED_CAPAS,
 		CMD_ROTATE ///<Rotate logfile
 	};
 
@@ -237,10 +235,34 @@ private:
 	/** has the header been outputted to the file */
 	bool headerwritten;
 
+	/** is the data supplied by the inverter valid?*/
 	bool datavalid;
+
+	/** are there some updated capas? */
+	bool capsupdated;
 
 	/** list of Capabilities in the CSV */
 	list<string> CSVCapas;
+
+
+	// Helpers to shrink some functions...
+	/** Check if any capas are now available which were not before
+	 * (but should be tracked)
+	 *
+	 * The function will be called whenever the Capa-Updated event
+	 * is set via this->Update()
+	 *
+	 * \return true, if a new Capability was detected and a new CSV Header
+	 * should be generated. Otherwise false.
+	 * */
+	bool CMDCyclic_CheckCapas(void);
+
+	/**  search the CSVCapas for a named capa
+	 *
+	 * \returns true, if in list, else false. */
+	bool search_list(const string id) const;
+
+
 
 
 

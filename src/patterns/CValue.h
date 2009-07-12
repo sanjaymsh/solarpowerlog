@@ -43,6 +43,10 @@
 
 #include "IValue.h"
 
+#include <iostream>
+#include <sstream>
+
+
 template<class T>
 class CValue : public IValue
 {
@@ -70,6 +74,12 @@ public:
 	virtual void operator=(const CValue<T> &val )
 	{
 		value = val.Get();
+	}
+
+	virtual operator std::string() const {
+		 std::stringstream ss;
+		 ss << value;
+		 return ss.str();
 	}
 
 private:

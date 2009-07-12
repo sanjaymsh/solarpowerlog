@@ -69,6 +69,9 @@ public:
 	/** Interface method to check the type of the value */
 	virtual factory_types GetType(void) const;
 
+	/** Inteface method for easier transfer to strings. */
+	virtual operator std::string() const = 0;
+
 protected:
 	IValue();
 public:

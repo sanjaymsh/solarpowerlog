@@ -132,9 +132,6 @@ CInverterSputnikSSeries::CInverterSputnikSSeries( const string &name,
 	// Add the capabilites that this inverter has
 	// Note: The "must-have" ones CAPA_CAPAS_REMOVEALL and CAPA_CAPAS_UPDATED are already instanciated by the base class constructor.
 	// Note2: You also can add capabilites as soon you know them (runtime detection)
-	// Note3: The Capability "CAPA_INVERTER_DATASTATE" needs to be added manually,
-	// as the InverterBase is also used for DataFilters as a base-class, and therefore
-	// it needs not be duplicated in every datafilter.
 
 	string s;
 	IValue *v;
@@ -239,6 +236,7 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 		CCapability *c = GetConcreteCapability(CAPA_INVERTER_DATASTATE);
 		CValue<bool> *v = (CValue<bool> *) c->getValue();
 		v->Set(false);
+		c->Notify();
 
 		cmd = new ICommand(CMD_INIT, this, 0);
 		timespec ts;
@@ -263,7 +261,7 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 				CAPA_INVERTER_DATASTATE);
 			CValue<bool> *v = (CValue<bool> *) c->getValue();
 			v->Set(false);
-
+			c->Notify();
 			break;
 		}
 
@@ -367,6 +365,7 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 				CAPA_INVERTER_DATASTATE);
 			CValue<bool> *v = (CValue<bool> *) c->getValue();
 			v->Set(true);
+			c->Notify();
 		}
 
 		cmd = new ICommand(CMD_POLL, this, 0);

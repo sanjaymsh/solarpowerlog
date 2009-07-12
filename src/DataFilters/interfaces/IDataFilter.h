@@ -93,7 +93,7 @@ public:
 	/** Filters need not to use the CommandQueue facility, so defaulting to
 	 * doing nothing
 	 * */
-	virtual void ExecuteCommand( const ICommand *cmd )
+	virtual void ExecuteCommand( const ICommand *)
 	{ }
 
 	// Just a reminder: You need to override that.

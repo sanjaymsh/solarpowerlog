@@ -36,6 +36,7 @@
 
 #include "DataFilters/interfaces/factories/IDataFilterFactory.h"
 #include "DataFilters/CDumpOutputFilter.h"
+#include "DataFilters/CCSVOutputFilter.h"
 
 #include "configuration/Registry.h"
 #include "configuration/CConfigHelper.h"
@@ -54,6 +55,9 @@ IDataFilter *IDataFilterFactory::Factory(const string & configurationpath)
 		return new CDumpOutputFilter(name, configurationpath);
 	}
 
+	if (type == "CVSWriter") {
+		return new CCSVOutputFilter(name, configurationpath);
+	}
 
 	return NULL;
 }

@@ -59,18 +59,22 @@ IValue *IValue::Factory( const factory_types newtype )
 
 	case bool_type:
 		tmp = new CValue<bool> ;
+		((CValue<bool>*) tmp) ->Set(false);
 		break;
 
 	case int_type:
 		tmp = new CValue<int> ;
+		((CValue<int>*) tmp) ->Set(0);
 		break;
 
 	case float_type:
-		tmp = new CValue<double> ;
+		tmp = new CValue<float> ;
+		((CValue<float>*) tmp) ->Set(0.0);
 		break;
 
 	case string_type:
 		tmp = new CValue<std::string> ;
+		((CValue<std::string>*) tmp)->Set("");
 		break;
 
 	default:
@@ -87,7 +91,6 @@ IValue *IValue::Factory( const factory_types newtype )
 
 	tmp->type = newtype;
 	return tmp;
-
 }
 
 IValue::~IValue()

@@ -1,35 +1,34 @@
 /* ----------------------------------------------------------------------------
-   solarpowerlog
-   Copyright (C) 2009  Tobias Frost
+ solarpowerlog
+ Copyright (C) 2009  Tobias Frost
 
-   This file is part of solarpowerlog.
+ This file is part of solarpowerlog.
 
-   Solarpowerlog is free software; However, it is dual-licenced
-   as described in the file "COPYING".
+ Solarpowerlog is free software; However, it is dual-licenced
+ as described in the file "COPYING".
 
-   For this file (IValue.h), the license terms are:
+ For this file (IValue.h), the license terms are:
 
-   You can redistribute it and/or  modify it under the terms of the GNU Lesser
-   General Public License (LGPL) as published by the Free Software Foundation;
-   either version 3 of the License, or (at your option) any later version.
+ You can redistribute it and/or  modify it under the terms of the GNU Lesser
+ General Public License (LGPL) as published by the Free Software Foundation;
+ either version 3 of the License, or (at your option) any later version.
 
-   This programm is distributed in the hope that it will be useful, but
-   WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Lesser General Public License for more details.
+ This programm is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
 
-   You should have received a copy of the GNU Library General Public
-   License along with this proramm; if not, see
-   <http://www.gnu.org/licenses/>.
-   ----------------------------------------------------------------------------
-*/
-
+ You should have received a copy of the GNU Library General Public
+ License along with this proramm; if not, see
+ <http://www.gnu.org/licenses/>.
+ ----------------------------------------------------------------------------
+ */
 
 /** \file IValue.h
  *
  *  \date May 13, 2009
  *   \Author: Tobias Frost (coldtobi)
-*/
+ */
 
 #ifndef ICAPABILITY_H_
 #define ICAPABILITY_H_
@@ -50,7 +49,8 @@
  *
  * \ingroup factories
  */
-class IValue {
+class IValue
+{
 public:
 
 	/** This enumeration specifies the type of the storage.
@@ -58,19 +58,23 @@ public:
 	enum factory_types
 	{
 		bool_type, ///< boolean storage
-		int_type,  ///< integer (signed)
+		int_type, ///< integer (signed)
 		float_type, ///< float storage
-		string_type ///< string type
+		string_type
+	///< string type
 	};
 
 	/** Factory method to generate desired concrete Value */
-	static IValue* Factory(const factory_types typedescriptor);
+	static IValue* Factory( const factory_types typedescriptor );
 
 	/** Interface method to check the type of the value */
-	virtual factory_types GetType(void) const;
+	virtual factory_types GetType( void ) const;
 
+	// virtual std::string string GetValueAsString();
+
+public:
 	/** Inteface method for easier transfer to strings. */
-	virtual operator std::string() const = 0;
+	virtual operator std::string() = 0;
 
 protected:
 	IValue();
@@ -81,6 +85,5 @@ protected:
 	factory_types type;
 
 };
-
 
 #endif /* ICAPABILITY_H_ */

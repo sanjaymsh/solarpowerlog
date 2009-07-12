@@ -28,7 +28,7 @@
  *
  *  \date Jul 4, 2009
  *  \author Tobias Frost (coldtobi)
-*/
+ */
 
 /** \page Config_new Handling the Configuration
  *
@@ -84,7 +84,7 @@
  *  as gcc would make a "double" and interval would be "float".
  *  This is also true for intergers: int != unsigned int!
  *
-*/
+ */
 
 #ifndef CCONFIGHELPER_H_
 #define CCONFIGHELPER_H_
@@ -134,14 +134,14 @@ public:
 	}
 
 	template<class T>
-	bool GetConfig( char const *setting, T &store, const T defvalue ) {
-		string s= setting;
+	bool GetConfig( char const *setting, T &store, const T defvalue )
+	{
+		string s = setting;
 		return GetConfig(s, store, defvalue);
 	}
 
-
 	template<class T>
-	bool GetConfig( string const &setting, T &store)
+	bool GetConfig( const string &setting, T &store )
 	{
 		libconfig::Setting & set
 			= Registry::Instance().GetSettingsForObject(cfgpath);
@@ -153,10 +153,75 @@ public:
 	}
 
 	template<class T>
-	bool GetConfig( char const *setting, T &store) {
-		string s= setting;
+	bool GetConfig( char const *setting, T &store )
+	{
+		string s = setting;
 		return GetConfig(s, store);
 	}
+
+	/** Get the configuration for an array entry, identified by a index.
+	 *
+	 * See Libconfig's docs for how the arrays working.
+	 *
+	 * With this helper, you can simply query the array by its index.
+	 *
+	 *
+	 * \param [in] setting Setting-id
+	 * \param [in] index Index of the array
+	 * \param [out] store place where config is placed.
+	 *
+	 * \return true on success, false if not an array, wrong type or index
+	 * not existant.
+	 *
+	 */
+	template<class T>
+	bool GetConfigArray( const string& setting, int index, T &store )
+	{
+		libconfig::Setting & set
+			= Registry::Instance().GetSettingsForObject(cfgpath);
+
+		try {
+			store = set[setting][index];
+			return true;
+		} catch (libconfig::SettingNotFoundException e) {
+			return false;
+		} catch (libconfig::SettingTypeException e) {
+			// TODO: Assert here?
+			return false;
+		}
+	}
+
+	/** Get the configuration for an array entry, identified by a index.
+	 * (string specalization)
+	 *
+	 * See Libconfig's docs for how the arrays working.
+	 *
+	 * With this helper, you can simply query the array by its index.
+	 *
+	 * \param [in] setting Setting-id
+	 * \param [in] index Index of the array
+	 * \param [out] store place where config is placed.
+	 *
+	 * \return true on success, false if not an array, wrong type or index
+	 * not existant.
+	 *
+	 */
+	bool GetConfigArray( const string& setting, int index, string &store )
+	{
+		libconfig::Setting & set
+			= Registry::Instance().GetSettingsForObject(cfgpath);
+
+		try {
+			store = (const char *) set[setting][index];
+			return true;
+		} catch (libconfig::SettingNotFoundException e) {
+			return false;
+		} catch (libconfig::SettingTypeException e) {
+			// TODO: Assert here?
+			return false;
+		}
+	}
+
 
 private:
 	string cfgpath;

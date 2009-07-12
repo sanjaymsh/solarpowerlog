@@ -50,6 +50,7 @@
 
 #include "Inverters/interfaces/ICapaIterator.h"
 
+using namespace std;
 using namespace libconfig;
 using namespace boost::gregorian;
 
@@ -132,6 +133,7 @@ void CCSVOutputFilter::Update( const IObserverSubject *subject )
 	// Datastate changed.
 	if (cap->getDescription() == CAPA_INVERTER_DATASTATE) {
 		this->datavalid = ((CValue<bool> *) cap->getValue()) ->Get();
+		cerr << "DATA STATE: " << datavalid << endl;
 		return;
 	}
 
@@ -152,7 +154,7 @@ void CCSVOutputFilter::Update( const IObserverSubject *subject )
 		c = GetConcreteCapability(CAPA_CAPAS_UPDATED);
 		*(CValue<bool> *) c->getValue()
 			= *(CValue<bool> *) cap->getValue();
-		cap->Notify();
+		c->Notify();
 		capsupdated = true;
 		return;
 	}
@@ -187,8 +189,10 @@ void CCSVOutputFilter::ExecuteCommand( const ICommand *cmd )
 		}
 
 		Registry::GetMainScheduler()->ScheduleWork(ncmd, ts);
-		break;
+
 	}
+		break;
+
 	case CMD_CYCLIC:
 	{
 		DoCYCLICmd(cmd);
@@ -205,14 +209,12 @@ void CCSVOutputFilter::ExecuteCommand( const ICommand *cmd )
 			CValue<float> *v = (CValue<float> *) c->getValue();
 			ts.tv_sec = v->Get();
 			ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
-		} else {
-			cerr
-				<< "INFO: The associated inverter does not specify the "
-					"queryinterval. Defaulting to 5 seconds";
 		}
 
 		Registry::GetMainScheduler()->ScheduleWork(ncmd, ts);
+
 	}
+		break;
 
 	case CMD_ROTATE:
 		DoINITCmd(cmd);
@@ -290,7 +292,7 @@ void CCSVOutputFilter::DoINITCmd( const ICommand * )
 
 	headerwritten = false;
 
-	// Set a timer to some seconds after midnight, to enforce rotating
+	// Set a timer to some seconds after midnight, to enforce rotating with correct date
 	boost::posix_time::ptime n =
 		boost::posix_time::second_clock::local_time();
 
@@ -300,7 +302,7 @@ void CCSVOutputFilter::DoINITCmd( const ICommand * )
 
 	struct timespec ts;
 	ts.tv_sec = remaining.hours() * 3600UL + remaining.minutes() * 60
-		+ remaining.seconds() + 2;
+		+ remaining.seconds() + 10;
 	ts.tv_nsec = 0;
 	ICommand *ncmd = new ICommand(CMD_ROTATE, this, 0);
 	Registry::GetMainScheduler()->ScheduleWork(ncmd, ts);
@@ -315,7 +317,7 @@ void CCSVOutputFilter::DoCYCLICmd( const ICommand * )
 	}
 
 	/* check if CSV-Header needs to be re-emitted.*/
-	if (capsupdated) {
+	if (capsupdated || !headerwritten) {
 		capsupdated = false;
 		if (CMDCyclic_CheckCapas()) {
 			headerwritten = false;
@@ -334,13 +336,14 @@ void CCSVOutputFilter::DoCYCLICmd( const ICommand * )
 		for (it = CSVCapas.begin(); it != CSVCapas.end(); it++) {
 			if (!first) {
 				file << ",";
-
+			} else {
+				file << "Timestamp ,";
 			}
 			first = false;
 			file << '\"' << *(it) << '\"';
 		}
 		// CSV after RFC 4180 requires CR LF
-		file << 0x0d << 0x0a;
+		file << (char) 0x0d << (char) 0x0a;
 		headerwritten = true;
 	}
 
@@ -350,14 +353,44 @@ void CCSVOutputFilter::DoCYCLICmd( const ICommand * )
 	boost::posix_time::ptime n =
 		boost::posix_time::second_clock::local_time();
 
-	file << '\"' << to_simple_string(n) << "\"";
+	file << to_simple_string(n);
 
 	list<string>::const_iterator it;
-	bool first = true;
+	CCapability *c;
+	IValue *v;
 	for (it = CSVCapas.begin(); it != CSVCapas.end(); it++) {
-		file << ",";
-#error hier gehts weiter -- wert ausgeben.
+		file << " , ";
+		c = base->GetConcreteCapability(*it);
+		if (c) {
+			v = c->getValue();
+			string tmp = (string) *v;
+
+			if (string::npos != tmp.find('"')) {
+				string t2 = tmp;
+				size_t t;
+				while (string::npos != (t=t2.find('"'))) {
+					tmp = t2.substr(0, t );
+					tmp += '"';
+					t2 = t2.substr(t, string::npos);
+				}
+				tmp += t2;
+			}
+
+			if (string::npos != tmp.find(',') || string::npos
+				!= tmp.find("\x0d\x0a")) {
+				file << " \"" << tmp << "\" ";
+			} else {
+				file << tmp;
+			}
+
+		} else {
+			file << ' ';
+		}
 	}
+	file << (char) 0x0d << (char) 0x0a;
+
+	// TODO REMOVE DEBUG CODE (flushing for debugging)
+	file << flush;
 
 }
 
@@ -373,18 +406,31 @@ bool CCSVOutputFilter::CMDCyclic_CheckCapas( void )
 		store_all = true;
 	}
 
-	if (store_all)
-		return false;
-
-	int i = 0;
-	while (!cfghlp.GetConfigArray("data2log", i++, tmp)) {
-		if (search_list(tmp)) {
-			continue;
+	if (!store_all) {
+		int i = 0;
+		while (!cfghlp.GetConfigArray("data2log", i++, tmp)) {
+			if (search_list(tmp)) {
+				continue;
+			}
+			CSVCapas.push_back(tmp);
+			ret = true;
 		}
-		CSVCapas.push_back(tmp);
-		ret = true;
+
+		return ret;
 	}
 
+	/** check for new capabilites not already in the list.
+	 * Add the new ones to the end of the list. */
+	auto_ptr<ICapaIterator> it(base->GetCapaNewIterator());
+	pair<string, CCapability*> pair;
+	while (it->HasNext()) {
+		pair = it->GetNext();
+		if (search_list(pair.first)) {
+			continue;
+		}
+		CSVCapas.push_back(pair.first);
+		ret = true;
+	}
 	return ret;
 
 }

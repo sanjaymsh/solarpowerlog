@@ -221,6 +221,20 @@ class IInverterBase : public ICommandTarget
 public:
 	friend class ICapaIterator;
 
+	/** Constructor for the Inverter Interface.
+	 * The baseclass does this already for their concrete Implementations:
+	 * 	- Create the connection (out of config, if not needed a dummy
+	 * 	  will be created
+	 * 	- Create the "must have" Capabilites
+	 * 		- CAPA_CAPAS_UPDATED
+	 * 		- CAPA_CAPAS_REMOVEALL
+	 * 		- CAPA_INVERTER_DATASTATE
+	 * 	  \note: DataFilters might want to delete one or more of them
+	 *        (out of their instance!), if they are sure that they don't
+	 *        need them. For example, a DataFilter has usually no influence
+	 *        over Data-Validty. If it deletes his Capability, its client
+	 *        will automatically get the one of the inverter)
+	*/
 	IInverterBase( const string &name, const string & configurationpath );
 	virtual ~IInverterBase();
 

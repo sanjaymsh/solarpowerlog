@@ -132,8 +132,7 @@ void CCSVOutputFilter::Update( const IObserverSubject *subject )
 
 	// Datastate changed.
 	if (cap->getDescription() == CAPA_INVERTER_DATASTATE) {
-		this->datavalid = ((CValue<bool> *) cap->getValue()) ->Get();
-		cerr << "DATA STATE: " << datavalid << endl;
+		this->datavalid = ((CValue<bool> *) cap->getValue())->Get();
 		return;
 	}
 
@@ -272,8 +271,8 @@ void CCSVOutputFilter::DoINITCmd( const ICommand * )
 		int day = today.day();
 
 		snprintf(buf, sizeof(buf) - 1, "%s%04d-%02d-%02d%s",
-			tmp.substr(0, tmp.find("%s")).c_str(), year, day,
-			month,
+			tmp.substr(0, tmp.find("%s")).c_str(), year, month,
+			day,
 			tmp.substr(tmp.find("%s") + 2, string::npos).c_str());
 
 		tmp = buf;
@@ -368,8 +367,8 @@ void CCSVOutputFilter::DoCYCLICmd( const ICommand * )
 			if (string::npos != tmp.find('"')) {
 				string t2 = tmp;
 				size_t t;
-				while (string::npos != (t=t2.find('"'))) {
-					tmp = t2.substr(0, t );
+				while (string::npos != (t = t2.find('"'))) {
+					tmp = t2.substr(0, t);
 					tmp += '"';
 					t2 = t2.substr(t, string::npos);
 				}

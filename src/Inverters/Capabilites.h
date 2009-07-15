@@ -232,7 +232,7 @@
  * Optional.
  *
  * */
-#define CAPA_INVERTER_INSTALLEDPOWER_NAME "Installed solar power (Watts-peak)"
+#define CAPA_INVERTER_INSTALLEDPOWER_NAME "Installed solar power (Wp)"
 #define CAPA_INVERTER_INSTALLEDPOWER_TYPE IValue::float_type
 
 /** Current AC Power Frequency
@@ -324,7 +324,7 @@
  * Optional.
  *
  * */
-#define CAPA_INVERTER_TEMPERATURE_NAME "Inverter Temperature (°C)"
+#define CAPA_INVERTER_TEMPERATURE_NAME "Inverter Temperature (C)"
 #define CAPA_INVERTER_TEMPERATURE_TYPE IValue::float_type
 
 /** Inverter Status Codes

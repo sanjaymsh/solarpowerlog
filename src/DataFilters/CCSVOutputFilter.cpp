@@ -407,7 +407,7 @@ bool CCSVOutputFilter::CMDCyclic_CheckCapas( void )
 
 	if (!store_all) {
 		int i = 0;
-		while (!cfghlp.GetConfigArray("data2log", i++, tmp)) {
+		while (cfghlp.GetConfigArray("data2log", i++, tmp)) {
 			if (search_list(tmp)) {
 				continue;
 			}

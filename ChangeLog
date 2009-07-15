@@ -1,5 +1,8 @@
-solarpowerlog (trunk)
+solarpowerlog (0.10) unstable; urgency=low
 
+  * New Feature: CVSOutputFilter -- writes data to a CVS file
+  * New Feature: Config-File can be specified with command line option. 
+  * Many Fixes / Enhancements:
   * autotools: boost detection was broken 
   * avoiding dependency from boost::asio to boost::regex 
   * new depedency on boost::progamm_options, used to parse program options
@@ -15,9 +18,8 @@ solarpowerlog (trunk)
   * Fixes a bug ("debug leftover") in the TCP (ASIO) class.
   * Another bug in the tokenizer -- strangly did not show under eclipse,
     but under "make" made executeables... 
-  
 
- -- Tobias Frost <tobi@coldtobi.de> 
+ -- Tobias Frost <tobi@coldtobi.de>  Wed Jul 15 22:53:04 CEST 2009
 
 solarpowerlog (0.01) unstable; urgency=low
 

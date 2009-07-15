@@ -19,10 +19,10 @@ solarpowerlog (0.10) unstable; urgency=low
   * Another bug in the tokenizer -- strangly did not show under eclipse,
     but under "make" made executeables... 
 
- -- Tobias Frost <tobi@coldtobi.de>  Wed Jul 15 22:53:04 CEST 2009
+ -- Tobias Frost <tobi@coldtobi.de>  Wed, 15 Jul 2009 23:13:00 +0200
 
 solarpowerlog (0.01) unstable; urgency=low
 
   * The first release!
 
- -- Tobias Frost <tobi@coldtobi.de>  Mon Jun 15 22:29:35 CEST 2009
+ -- Tobias Frost <tobi@coldtobi.de>  Mon, 15 Jun 2009 22:29:35 +0200

@@ -1,0 +1,7 @@
+News in Version 0.10
+
+- New Output-Filter: Now the CVSOutputFilter can store the date to a CSV-File, 
+which can be used in many other applications. 
+- New: Command-Line-Switches: Use solarpowelog -c <file> to specify your configuration
+file.
+

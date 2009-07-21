@@ -57,12 +57,12 @@ public:
 
 
 	/// Send a array of characters (can be used as binary transport, too)
-	virtual bool Send(const char *tosend, unsigned int len) { return false; };
+	virtual bool Send(const char */*tosend*/ , unsigned int /*len*/) { return false; };
 	/// Send a strin Standard implementation only wraps to above Send.
 	///
 	/// Receive a string. Do now get more than maxxsize (-1 == no limit)
 	/// NOTE:
-	virtual bool Receive(string &wheretoplace) { return false; };
+	virtual bool Receive(string &/*wheretoplace*/) { return false; };
 
 	virtual bool CheckConfig(void) ;
 

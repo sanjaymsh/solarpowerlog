@@ -117,10 +117,11 @@ public:
 	bool CheckConfig( const string &setting, libconfig::Setting::Type type,
 		bool optional = false, bool printerr = true );
 
+	template<class T>
+
 	/** Retrieves a configuration or set the config with a default value.
 	 *
 	 * \returns false, if the default value has been used. */
-	template<class T>
 	bool GetConfig( string const &setting, T &store, T defvalue )
 	{
 		libconfig::Setting & set

@@ -259,6 +259,7 @@ void CDumpOutputFilter::DoCyclicWork( void )
 {
 
 #if 0
+	// shows how to browser through our caps.
 	cout << configurationpath << "." << name << " Own Capabilities:"
 	<< endl << endl;
 	map<string, CCapability*>::iterator it = GetCapabilityIterator();
@@ -275,11 +276,9 @@ void CDumpOutputFilter::DoCyclicWork( void )
 		cout << "\033[2J" << "\033[1;1H";
 	}
 
-#warning FIXME does not check if source of the capabiltiy is NULL!
-
 	cout << endl << configurationpath << "." << name
 		<< " Known Capabilities:" << endl << endl;
-	ICapaIterator *cit = GetCapaNewIterator();
+	auto_ptr<ICapaIterator> cit(GetCapaNewIterator());
 	while (cit->HasNext()) {
 		pair<string, CCapability*> cappair = cit->GetNext();
 		cout << (cappair).first << ' ' << flush;
@@ -290,10 +289,7 @@ void CDumpOutputFilter::DoCyclicWork( void )
 			<< cappair.second->getSource()->GetName() << ")"
 			<< endl;
 	}
-
-	delete cit;
 	cout << endl;
-
 }
 
 string CDumpOutputFilter::DumpValue( IValue *value )

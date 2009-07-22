@@ -63,12 +63,10 @@ void ILogger::Setup( const string & name, const string & configuration,
 	CConfigHelper hlp(configuration);
 	hlp.GetConfig("dbglevel", level);
 
-	cout << "Effective debug level " << level << endl;
-
 	logger->setLevel(log4cxx::Level::toLevel(level));
 	currentloggerlevel_ = logger->getLevel()->toInt();
-	LOG4CXX_DEBUG(logger, "logger for " << configuration << "."
-		<< name << "created.");
+	LOG4CXX_DEBUG(logger, "Logger for " << configuration << "."
+		<< name << " created.");
 }
 
 ILogger::~ILogger()

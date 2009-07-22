@@ -81,7 +81,10 @@
 #include <string>
 #include <iostream>
 #include <iterator>
-
+#include <log4cxx/logger.h>
+#include <log4cxx/basicconfigurator.h>
+#include <log4cxx/propertyconfigurator.h>
+#include <log4cxx/xml/domconfigurator.h>
 #include <boost/program_options.hpp>
 
 #include "configuration/Registry.h"
@@ -94,9 +97,9 @@
 #include "Inverters/interfaces/InverterBase.h"
 
 #include "DataFilters/interfaces/factories/IDataFilterFactory.h"
+#include "configuration/CConfigHelper.h"
 
 using namespace std;
-
 using namespace boost::program_options;
 
 /** this array of string specifies which sections int the config file must be present.
@@ -156,8 +159,6 @@ int main( int ac, char* av[] )
 {
 	bool error_detected = false;
 	string configfile = "solarpowerlog.conf";
-	int loglevel = 0;
-	int debug_level = 0;
 
 	options_description desc("Programm Options");
 	desc.add_options()("help", "this message")("conf,c", value<string> (
@@ -181,8 +182,7 @@ int main( int ac, char* av[] )
 		cout << desc << "\n";
 		return 0;
 	}
-	/** Loading configuration file */
-	cout << "Generating Registry" << endl;
+	/* Loading configuration file */
 	// TODO avoid hardcoded filename. Get it from parameters.
 	if (!Registry::Instance().LoadConfig(configfile)) {
 		cerr << "Could not load configuration " << configfile << endl;
@@ -214,17 +214,45 @@ int main( int ac, char* av[] )
 		_exit(1);
 	}
 
+	// Activate Logging framework
+	{
+		using namespace log4cxx;
+		string tmp;
+		LoggerPtr l = Logger::getRootLogger();
+
+		CConfigHelper global("application");
+		global.GetConfig("dbglevel", tmp, (std::string) "ERROR");
+		l->setLevel(Level::toLevel(tmp));
+
+		try {
+			// Choose your poison .. aem .. config file format
+			if (global.GetConfig("logconfig", tmp)) {
+				if (tmp.substr(tmp.length() - 4, string::npos)
+					== ".xml") {
+					xml::DOMConfigurator::configure(tmp);
+				} else {
+					PropertyConfigurator::configure(tmp);
+				}
+
+			} else {
+				BasicConfigurator::configure();
+			}
+		} catch (...) {
+			cerr << "WARNING: Could not configure logging." << endl;
+		}
+
+		LOG4CXX_INFO(l,"Logging set up.");
+	}
+
 	/** bootstraping the system */
+	LOG4CXX_DEBUG(log4cxx::Logger::getRootLogger(),
+		"Instanciating Inverter objects");
 
 	/** create the inverters via its factories. */
 	{
 		string section = "inverter.inverters";
 		libconfig::Setting &rt = Registry::Configuration()->lookup(
 			section);
-
-		// DumpSettings(rt);
-
-		cout << rt.getLength() << endl;
 
 		for (int i = 0; i < rt.getLength(); i++) {
 			std::string name;
@@ -235,17 +263,19 @@ int main( int ac, char* av[] )
 				name = (const char *) rt[i]["name"];
 				manufactor = (const char *) rt[i]["manufactor"];
 				model = (const char *) rt[i]["model"];
-				cout << name << " " << manufactor << endl;
+				LOG4CXX_DEBUG(log4cxx::Logger::getRootLogger(),
+					name << " " << manufactor );
 			} catch (libconfig::SettingNotFoundException e) {
-				cerr
-					<< "Configuration Error: Required Setting was not found in \""
-					<< e.getPath() << '\"' << endl;
+				LOG4CXX_FATAL(log4cxx::Logger::getRootLogger(),
+					"Configuration Error: Required Setting was not found in \""
+					<< e.getPath() << '\"');
 				_exit(1);
 			}
 
 			if (Registry::Instance().GetInverter(name)) {
-				cerr << "Inverter " << name
-					<< " declared more than once" << endl;
+				LOG4CXX_FATAL(log4cxx::Logger::getRootLogger(),
+					"Inverter " << name
+					<< " declared more than once");
 				_exit(1);
 			}
 
@@ -253,38 +283,31 @@ int main( int ac, char* av[] )
 				InverterFactoryFactory::createInverterFactory(
 					manufactor);
 			if (!factory) {
-				cerr
-					<< "Cannot create Inverter for manufactor \""
-					<< manufactor << '\"';
-				cerr
-					<< " (Cannot create factory. Maybe mispelled manufactor?"
-					<< endl;
+				LOG4CXX_FATAL(log4cxx::Logger::getRootLogger(),
+					"Unknown inverter manufactor \""
+					<< manufactor << '\"');
 				_exit(1);
 			}
-
-			cout << "path " << rt[i].getPath() << endl;
 
 			IInverterBase *inverter = factory->Factory(model, name,
 				rt[i].getPath());
 
 			if (!inverter) {
-				cerr << "Cannot create Inverter model "
+				LOG4CXX_FATAL(log4cxx::Logger::getRootLogger(),
+					"Cannot create Inverter model "
 					<< model << "for manufactor \""
-					<< manufactor << '\"';
-				cerr
-					<< " (Cannot create factory. Maybe mispelled model?)"
-					<< endl;
-				cerr
-					<< " The factory says, it supports the following models:"
-					<< endl;
-				cerr << factory->GetSupportedModels() << endl;
+					<< manufactor << '\"');
+				LOG4CXX_FATAL(log4cxx::Logger::getRootLogger(),
+					"Supported models are: "
+					<< factory->GetSupportedModels());
 				_exit(1);
 			}
 
 			if (!inverter->CheckConfig()) {
-				cerr << "Inverter " << name << " ( "
+				LOG4CXX_FATAL(log4cxx::Logger::getRootLogger(),
+					"Inverter " << name << " ( "
 					<< manufactor << ", " << model
-					<< ") reported configuration error";
+					<< ") reported configuration error");
 				_exit(1);
 			}
 
@@ -293,6 +316,10 @@ int main( int ac, char* av[] )
 			delete factory;
 		}
 	}
+
+	LOG4CXX_DEBUG(log4cxx::Logger::getRootLogger(),
+		"Instanciating DataFilter objects");
+
 
 	{
 		IDataFilterFactory factory;
@@ -313,44 +340,44 @@ int main( int ac, char* av[] )
 					= (const char *) rt[i]["datasource"];
 				type = (const char *) rt[i]["type"];
 
-				cout << "DEBUG: Datafilter " << name << " ("
+				LOG4CXX_DEBUG(log4cxx::Logger::getRootLogger(),
+					"DEBUG: Datafilter " << name << " ("
 					<< type << ") connects to "
-					<< previousfilter << endl;
-				cout << "Config-path " << rt[i].getPath()
-					<< endl;
+					<< previousfilter <<
+					" with Config-path " << rt[i].getPath());
 
 			} catch (libconfig::SettingNotFoundException e) {
-				cerr
-					<< "Configuration Error: Required Setting was not found in \""
-					<< e.getPath() << '\"' << endl;
+				LOG4CXX_FATAL(log4cxx::Logger::getRootLogger(),
+					"Configuration Error: Required Setting was not found in \""
+					<< e.getPath() << '\"' );
 				_exit(1);
 			}
 
 			// TODO Also check for duplicate DataFilters.
 			if (Registry::Instance().GetInverter(name)) {
-				cerr
-					<< "CONFIG ERROR: Inverter or Logger Nameclash: "
+				LOG4CXX_FATAL(log4cxx::Logger::getRootLogger(),
+					"CONFIG ERROR: Inverter or Logger Nameclash: "
 					<< name << " declared more than once"
-					<< endl;
+				);
 				_exit(1);
 			}
 
 			IDataFilter *filter = factory.Factory(rt[i].getPath());
 
 			if (!filter) {
-				cerr << "Couldn't create DataFilter " << name
+				LOG4CXX_FATAL(log4cxx::Logger::getRootLogger(),
+					"Couldn't create DataFilter " << name
 					<< "(" << type << ") connecting to "
-					<< previousfilter << endl;
-				cout << "Config-path " << rt[i].getPath()
-					<< endl;
+					<< previousfilter << " Config-path " << rt[i].getPath()
+				);
 				_exit(1);
 			}
 
 			if (!filter->CheckConfig()) {
-
-				cerr << "DataFilter " << name << "(" << type
-					<< ") reporting config error"
-					<< previousfilter << endl;
+				LOG4CXX_FATAL(log4cxx::Logger::getRootLogger(),
+				"DataFilter " << name << "(" << type
+					<< ") reported config error"
+					<< previousfilter );
 				_exit(1);
 			}
 
@@ -361,6 +388,10 @@ int main( int ac, char* av[] )
 			// TODO Register to registry.
 		}
 	}
+
+	LOG4CXX_DEBUG(log4cxx::Logger::getRootLogger(),
+		"Entering main loop");
+
 
 	while (true) {
 		// cerr << "." << flush;

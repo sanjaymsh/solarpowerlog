@@ -12,7 +12,7 @@ interfaces/CTimedWork.cpp interfaces/IConnect.cpp \
 DataFilters/interfaces/factories/IDataFilterFactory.cpp \
 DataFilters/interfaces/IDataFilter.cpp DataFilters/CDumpOutputFilter.cpp \
 DataFilters/CCSVOutputFilter.cpp \
-configuration/Registry.cpp Connections/CConnectDummy.cpp \
+configuration/Registry.cpp configuration/ILogger.cpp Connections/CConnectDummy.cpp \
 Connections/factories/IConnectFactory.cpp Connections/CConnectTCPAsio.cpp \
 solarpowerlog.cpp Inverters/SputnikEngineering/CInverterFactorySputnik.cpp \
 Inverters/SputnikEngineering/CInverterSputnikSSeries.cpp \
@@ -22,7 +22,7 @@ patterns/ICommandTarget.cpp patterns/IValue.cpp patterns/ICommand.cpp \
 patterns/IObserverObserver.cpp patterns/IObserverSubject.cpp \
 configuration/CConfigHelper.cpp 
 
-solarpowerlog_CPPFLAGS = $(CONFIG_CFLAGS)
-solarpowerlog_LDADD = $(CONFIG_LIBS) $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB) $(BOOST_DATE_TIME_LIB) $(BOOST_SYSTEM_LIB) $(BOOST_ASIO_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(WIN32_LIBS)
+solarpowerlog_CPPFLAGS = $(CONFIG_CFLAGS) $(LOG4CXX_CFLAGS)
+solarpowerlog_LDADD = $(CONFIG_LIBS) $(LOG4CXX_LIBS) $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB) $(BOOST_DATE_TIME_LIB) $(BOOST_SYSTEM_LIB) $(BOOST_ASIO_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(WIN32_LIBS)
 
 LIBS = $(DEPS_LIBS)

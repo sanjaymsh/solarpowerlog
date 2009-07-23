@@ -51,8 +51,12 @@
 using namespace std;
 
 IInverterBase::IInverterBase( const string& name,
-	const string & configurationpath )
+	const string & configurationpath, const string& role )
 {
+
+	// Setup the logger
+	logger.Setup(name,configurationpath, role);
+
 	this->name = name;
 	this->configurationpath = configurationpath;
 	connection = IConnectFactory::Factory(configurationpath);
@@ -78,6 +82,7 @@ IInverterBase::IInverterBase( const string& name,
 	b = CapabilityMap.insert(pair<string, CCapability*> (
 		CAPA_INVERTER_DATASTATE, c));
 	assert( b.second );
+
 }
 
 IInverterBase::~IInverterBase()

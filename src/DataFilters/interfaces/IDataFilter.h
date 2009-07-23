@@ -85,7 +85,7 @@ class IDataFilter : public IObserverObserver ,
 {
 public:
 	IDataFilter( const string &name, const string & configurationpath ) :
-		IInverterBase(name, configurationpath)
+		IInverterBase(name, configurationpath, "datafilter")
 	{ }
 
 	virtual ~IDataFilter();

@@ -115,13 +115,13 @@ static struct
 		{
 			-1,
 			STATUS_UNAVAILABLE,
-			"Unknown Statuscode -- PLEASE FILE A BUG WITH AS MUCH INFOS YOU CAN FIND OUT -- BEST, READ THE DISPLAY OF THE INVERTER." }, };
+			"Unknown Statuscode -- PLEASE FILE A BUG WITH AS MUCH INFOS AS YOU CAN FIND OUT -- BEST, READ THE DISPLAY OF THE INVERTER." }, };
 
 using namespace std;
 
 CInverterSputnikSSeries::CInverterSputnikSSeries( const string &name,
 	const string & configurationpath ) :
-	IInverterBase::IInverterBase(name, configurationpath)
+	IInverterBase::IInverterBase(name, configurationpath, "inverter")
 {
 
 	swversion = swbuild = 0;
@@ -257,6 +257,8 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 			cerr << "offline: scheduling reconnection in "
 				<< ts.tv_sec << " seconds" << endl;
 
+			/* Inform all Data-Filters that the data should be
+			 * suspected. */
 			CCapability *c = GetConcreteCapability(
 				CAPA_INVERTER_DATASTATE);
 			CValue<bool> *v = (CValue<bool> *) c->getValue();
@@ -403,6 +405,11 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 		commstring = assemblequerystring();
 		if (commstring != "") {
 			if (connection->Send(commstring)) {
+				// Error while sending: Reset connection.
+				connection->Disconnect();
+				cmd = new ICommand(CMD_DISCONNECTED, this, 0);
+				Registry::GetMainScheduler()->ScheduleWork(cmd);
+				break;
 				// Error handling is done by timeout and/or by CMD_WAIT_RECEIVE
 				//  cerr << "sent " << commstring << endl;
 			}

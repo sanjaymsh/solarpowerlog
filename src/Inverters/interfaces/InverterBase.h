@@ -24,7 +24,6 @@
  ----------------------------------------------------------------------------
  */
 
-
 /** \defgroup Inverters Description and Configration of Inverter Models */
 
 /** \file InverterBase.h
@@ -144,36 +143,38 @@
  * * \endcode
  *
  * <b> Update a Capability's Value, create if not existance. Check for type </b>
-   \code
- 	CCapability *cap =
- 		GetConcreteCapability(CAPA_INVERTER_TEMPERATURE_NAME);
-
-	if (!cap) {
-		string s;
-		IValue *v;
-		CCapability *c;
-		s = CAPA_INVERTER_TEMPERATURE_NAME;
-		v = IValue::Factory(CAPA_INVERTER_TEMPERATURE_TYPE);
-		((CValue<float>*) v)->Set(f);
-		c = new CCapability(s, v, this);
-		AddCapability(s, c);
-
-		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
-		cap->Notify();
-	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_TEMPERATURE_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
-
-		if (val -> Get() != f) {
-			val->Set(f);
-			cap->Notify();
-		}
-	} else {
-		cerr << "BUG: " << CAPA_INVERTER_TEMPERATURE_NAME
-			<< " not a float ";
-	}
- \endcode
+ *\code
+ *
+ * CCapability *cap = GetConcreteCapability(CAPA_INVERTER_TEMPERATURE_NAME);
+ *
+ * if (!cap) {
+ *	string s;
+ *	IValue *v;
+ *	CCapability *c;
+ *	s = CAPA_INVERTER_TEMPERATURE_NAME;
+ *	v = IValue::Factory(CAPA_INVERTER_TEMPERATURE_TYPE);
+ *	((CValue<float>*) v)->Set(f);
+ *	c = new CCapability(s, v, this);
+ *	AddCapability(s, c);
+ *
+ *	cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
+ *	cap->Notify();
+ * }
+ *
+ * // Capa already in the list. Check if we need to update it.
+ * else if (cap->getValue()->GetType() == CAPA_INVERTER_TEMPERATURE_TYPE) {
+ * 	CValue<float> *val = (CValue<float>*) cap->getValue();
+ *
+ *	if (val -> Get() != f) {
+ *		val->Set(f);
+ *		cap->Notify();
+ *	}
+ * } else {
+ *	cerr << "BUG: " << CAPA_INVERTER_TEMPERATURE_NAME*
+ *	<< " not a float ";
+ * }
+ *
+ * \endcode
  *
  *
  * \section IIBWorkScheduler "Work Scheduler"
@@ -207,6 +208,7 @@
 #include "interfaces/IConnect.h"
 #include "interfaces/CCapability.h"
 #include "patterns/ICommandTarget.h"
+#include "configuration/ILogger.h"
 
 class ICapaIterator;
 
@@ -234,8 +236,9 @@ public:
 	 *        need them. For example, a DataFilter has usually no influence
 	 *        over Data-Validty. If it deletes his Capability, its client
 	 *        will automatically get the one of the inverter)
-	*/
-	IInverterBase( const string &name, const string & configurationpath );
+	 */
+	IInverterBase( const string &name, const string & configurationpath,
+		const string & role );
 	virtual ~IInverterBase();
 
 	virtual const std::string& GetName( void ) const;
@@ -290,6 +293,9 @@ protected:
 	// like also current readings and so on...
 
 	map<string, CCapability*> CapabilityMap;
+
+	/// The Logger Class for Debugging, Error reporting etc...
+	ILogger logger;
 };
 
 #endif /* INVERTERBASE_H_ */

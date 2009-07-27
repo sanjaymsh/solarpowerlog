@@ -239,8 +239,10 @@ public:
 	 */
 	IInverterBase( const string &name, const string & configurationpath,
 		const string & role );
+
 	virtual ~IInverterBase();
 
+	/** Getter for the name property. (Inverter Name equals to the one given in the config) */
 	virtual const std::string& GetName( void ) const;
 
 	/** check for a specific capability and return the pointer to it
@@ -259,6 +261,7 @@ public:
 
 protected:
 
+	/// Add a Capability for the inverter.
 	virtual void AddCapability( const string &id, CCapability* capa );
 
 	/** returns a iterator of the Capabilties. The iterator is inizialized at the begin of the map.*/

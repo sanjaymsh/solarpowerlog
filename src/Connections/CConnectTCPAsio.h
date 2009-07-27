@@ -57,11 +57,17 @@ public:
 	CConnectTCPAsio( const string & configurationname );
 	virtual ~CConnectTCPAsio();
 
+
 	/// Connect to something
 	/// NOTE: Needed to be overriden! ALWAYS Open in a NON_BLOCK way, or implement a worker thread
 	virtual bool Connect();
 	/// Tear down the connection.
 	virtual bool Disconnect();
+
+	/// Setup the Logger
+	virtual void SetupLogger(const string& parentlogger, const string & ="") {
+		IConnect::SetupLogger(parentlogger, "Comms_TCP_ASIO");
+	}
 
 	/// Send a array of characters (can be used as binary transport, too)
 	virtual bool Send( const char *tosend, unsigned int len );

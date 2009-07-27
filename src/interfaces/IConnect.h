@@ -40,17 +40,32 @@
 
 #include <string>
 
+#include "configuration/ILogger.h"
+
 using namespace std;
 
 
-/** \fixme COMMENT ME
+/** Inteface for all communication classes
  *
+ * This Interface is the API for all concrete comm methods.
+ * The class is abstract, so it cannot be instanciated by itself.
  *
- * TODO DOCUMENT ME!
- */
+ * Anyway, it is intended, that the class is only created by the IConnectFactory.
+ *
+*/
 class IConnect {
 public:
+	/// Constructor.
+	///
+	/// The constructor gets the configuration path to be used to extract
+	/// its configuration.
+	///
 	IConnect(const string &configurationname);
+
+	/// Setp the Logger.
+	virtual void SetupLogger(const string& parentlogger, const string &spec = "Comms");
+
+	/// Desctructor
 	virtual ~IConnect();
 
 	/// Connect to something
@@ -59,22 +74,31 @@ public:
 	/// Tear down the connection.
 	virtual bool Disconnect() = 0;
 
-
 	/// Send a array of characters (can be used as binary transport, too)
-	virtual bool Send(const char *tosend, unsigned int len) = 0;
-	/// Send a strin Standard implementation only wraps to above Send.
 	///
-	/// Override if needed.g (usually comms is "human readable")
+	/// \warning not all classes might understand binary transport. Check
+	/// the concrete implmentation for details!
+	/// \param tosend what to send
+	/// \param len how many bytes
+	/// \returns true on success, false on error.
+	virtual bool Send(const char *tosend, unsigned int len) = 0;
+
+	/// Send a string
+	/// \note Standard implementation only wraps to above Send-binray.
+	///
+	/// \param tosend std::string to send
+	/// \returns true on success, false on error.
+	/// Override for better performance!
 	virtual bool Send(const string& tosend) {
-		// Standard implementation only wraps to above Send.
-		// Override if needed.
 		return Send(tosend.c_str(),tosend.length());
 	}
 
 	/// Receive a string. Do now get more than maxxsize (-1 == no limit)
-	/// NOTE:
+	///
 	virtual bool Receive(string &wheretoplace) = 0;
 
+	/// Check the configuration for validty. Retrurn false on config errors.
+	/// (programm will abort then!)
 	virtual bool CheckConfig(void) = 0 ;
 
 	/// Check if we believe the connection is still active
@@ -84,7 +108,13 @@ public:
 	virtual bool IsConnected(void) { return true; }
 
 protected:
+	/// Storage for the Configuration Path to extract settings.
 	string ConfigurationPath;
+
+	/// Associated logger.
+	/// \note: By default, it will attached to the root logger. If unwanted,
+	/// use the SetupLogger call. (As IInverterBase derived classes do)
+	ILogger logger;
 
 };
 

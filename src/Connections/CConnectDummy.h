@@ -37,10 +37,9 @@
 #include "config.h"
 #endif
 
-/** \fixme COMMENT ME
- *
- *
- * TODO DOCUMENT ME!
+/** This is a dummy connection class which only fills the gap if
+ * - the instanciator does not need comms  but the
+ * base class wants a instance. (e.g datafilters)
  */
 #include "interfaces/IConnect.h"
 

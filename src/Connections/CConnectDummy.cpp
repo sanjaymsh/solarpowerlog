@@ -50,8 +50,6 @@ CConnectDummy::~CConnectDummy() {
 
 bool CConnectDummy::CheckConfig(void)
 {
-	cerr << "In " << ConfigurationPath << " no valid connection method has been specified."
-		 << endl;
 	return false;
 }
 

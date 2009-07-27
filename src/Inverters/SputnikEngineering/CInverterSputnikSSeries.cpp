@@ -61,6 +61,8 @@
 #include "Inverters/Capabilites.h"
 #include "patterns/CValue.h"
 
+#include "configuration/ILogger.h"
+
 using namespace libconfig;
 
 static struct
@@ -160,6 +162,14 @@ CInverterSputnikSSeries::CInverterSputnikSSeries( const string &name,
 	c = new CCapability(s, v, this);
 	AddCapability(s, c);
 
+	LOG_DEBUG(logger,"Inverter configuration:");
+	LOG_DEBUG(logger,"class CInverterSputnikSSeries ");
+	LOG_DEBUG(logger,"Query Interval: "<< interval);
+	LOG_DEBUG(logger,"Ownadr: " << ownadr << " Commadr: " << commadr);
+	cfghlp.GetConfig("comms", s, (string) "unset");
+ 	LOG_DEBUG(logger,"Communication: " << s);
+	LOG_DEBUG(logger,"*****");
+
 }
 
 CInverterSputnikSSeries::~CInverterSputnikSSeries()
@@ -176,8 +186,8 @@ bool CInverterSputnikSSeries::CheckConfig()
 
 	CConfigHelper hlp(configurationpath);
 	fail |= (true != hlp.CheckConfig("comms", Setting::TypeString));
-	// Note: Queryinterval is optional. But CConfigHelper is prepared
-	// (the extra true!)
+	// Note: Queryinterval is optional. But CConfigHelper handle also opt.
+	// parameters and checks for type.
 	fail |= (true != hlp.CheckConfig("queryinterval", Setting::TypeFloat,
 		true));
 	fail |= (true != hlp.CheckConfig("commadr", Setting::TypeInt));
@@ -187,12 +197,13 @@ bool CInverterSputnikSSeries::CheckConfig()
 		fail |= (true != connection->CheckConfig());
 	}
 
+	LOG_TRACE(logger, "Check Configuration result:" << !fail);
 	return !fail;
 }
 
 /** Calculate the telegram checksum and return it.
  *
- *  The sputnik protects it telegrams with a checksum.
+ * The sputnik protects it telegrams with a checksum.
  * The checksum is a sum of all bytes of a telegram,
  * starting after the { and ending at the | just before
  * the checksum.
@@ -206,7 +217,6 @@ unsigned int CInverterSputnikSSeries::CalcChecksum( const char *str, int len )
 	str++;
 	do {
 		chksum += *str++;
-		// cout << chksum << " " << len << endl;
 	} while (--len);
 
 	return chksum;
@@ -225,6 +235,8 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 
 	case CMD_DISCONNECTED:
 	{
+		LOG_TRACE(logger, "new state: disconnected");
+
 		// Timeout on reception
 		// we assume that we are now disconnected.
 		// so lets schedule a reconnection.
@@ -248,14 +260,17 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 
 	case CMD_INIT:
 
+		LOG_TRACE(logger, "new state: init");
+
 		if (!connection->Connect()) {
 			cmd = new ICommand(CMD_INIT, this, 0);
 			timespec ts;
 			ts.tv_sec = 15;
 			ts.tv_nsec = 0;
 			Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
-			cerr << "offline: scheduling reconnection in "
-				<< ts.tv_sec << " seconds" << endl;
+
+			LOG_INFO(logger, "offline: scheduling reconnection in "
+				<< ts.tv_sec << " seconds");
 
 			/* Inform all Data-Filters that the data should be
 			 * suspected. */
@@ -304,7 +319,7 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 		// pushinverterquery(EC07);
 		// pushinverterquery(EC08);
 
-		// cout << " Sent:\t" << commstring << endl;
+		LOG_TRACE(logger, "Sending: " << commstring);
 		connection->Send(commstring);
 
 		// wait for
@@ -320,6 +335,8 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 	case CMD_WAIT_RECEIVE:
 	case CMD_IDENTFY_WAIT:
 	{
+		LOG_TRACE(logger, "new state: CMD_WAIT_RECEIVE / CMD_IDENTFY_WAIT ");
+
 		if (!connection->IsConnected()) {
 			cmd = new ICommand(CMD_DISCONNECTED, this, 0);
 			Registry::GetMainScheduler()->ScheduleWork(cmd);
@@ -327,11 +344,12 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 		}
 
 		if (!connection->Receive(reccomm) || reccomm.empty()) {
-			cerr << name << " did not receive answer ... retrying."
-				<< endl;
+
+			LOG_DEBUG(logger,"Did not receive answer " << errcnt << " ... retrying.");
 
 			// TODO move errcnt-limit to configuration
-			if (errcnt++ > 15) {
+			if (errcnt++ > 10) {
+				LOG_DEBUG(logger,"Did not receive answer. Reconnecting.");
 				cmd = new ICommand(CMD_DISCONNECTED, this, 0);
 				Registry::GetMainScheduler()->ScheduleWork(cmd);
 			} else {
@@ -346,11 +364,14 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 		}
 
 		errcnt = 0;
+		LOG_TRACE(logger, "Received :" << reccomm);
 		parsereceivedstring(reccomm);
 
 		// Check for remaining commands to execute in the init session.
 		commstring = assemblequerystring();
 		if (commstring != "") {
+
+			LOG_TRACE(logger, "Sending: " << commstring);
 			connection->Send(commstring);
 
 			// wait for
@@ -382,6 +403,8 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 
 	case CMD_POLL:
 
+		LOG_TRACE(logger, "new state: CMD_WAIT_RECEIVE / CMD_IDENTFY_WAIT ");
+
 		pushinverterquery(PAC);
 		pushinverterquery(KHR);
 		pushinverterquery(PIN);
@@ -404,20 +427,17 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 
 		commstring = assemblequerystring();
 		if (commstring != "") {
+			LOG_TRACE(logger, "Sending: " << commstring);
 			if (connection->Send(commstring)) {
-				// Error while sending: Reset connection.
+				LOG_DEBUG(logger,"Error while sending: Reseting connection.");
 				connection->Disconnect();
 				cmd = new ICommand(CMD_DISCONNECTED, this, 0);
 				Registry::GetMainScheduler()->ScheduleWork(cmd);
 				break;
-				// Error handling is done by timeout and/or by CMD_WAIT_RECEIVE
-				//  cerr << "sent " << commstring << endl;
 			}
 		}
 
 		cmd = new ICommand(CMD_WAIT_RECEIVE, this, 0);
-		// TODO change that fixed-wait time to the "estimated roundtrip algorithm"
-		// which will calculate the expected delay....
 		ts.tv_sec = 0;
 		ts.tv_nsec = 300UL * 1000UL * 1000UL;
 		Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
@@ -425,7 +445,6 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 	}
 }
 
-// Add a inverter-query into the queue for later quering...
 void CInverterSputnikSSeries::pushinverterquery( enum query q )
 {
 	cmdqueue.push(q);
@@ -433,8 +452,10 @@ void CInverterSputnikSSeries::pushinverterquery( enum query q )
 
 string CInverterSputnikSSeries::assemblequerystring()
 {
-	if (cmdqueue.empty())
+	if (cmdqueue.empty()) {
+		LOG_TRACE(logger, "assemblequerystring: empty task lisk.");
 		return "";
+	}
 
 	int len = 0;
 	int expectedanswerlen = 0;
@@ -964,10 +985,6 @@ string CInverterSputnikSSeries::assemblequerystring()
 		querystring.length()));
 
 	querystring += formatbuffer;
-
-	// feedback for debugging
-	// TODO REMOVE DEBUG CODE cout << "generated:" << endl << querystring << endl;
-
 	return querystring;
 }
 
@@ -975,13 +992,10 @@ bool CInverterSputnikSSeries::parsereceivedstring( const string & s )
 {
 
 	unsigned int i;
+
 	// check for basic constraints...
 	if (s[0] != '{' || s[s.length() - 1] != '}')
 		return false;
-
-#if 0
-	cerr << "Received:\t" << s << endl;
-#endif
 
 	// tokenizer (taken from
 	// http://oopweb.com/CPP/Documents/CPPHOWTO/Volume/C++Programming-HOWTO-7.html
@@ -996,59 +1010,57 @@ bool CInverterSputnikSSeries::parsereceivedstring( const string & s )
 	char delimiters[] = "{;|:}";
 	tokenizer(delimiters, s, tokens);
 
-#if 0
-	// Deubg: Print all received tokens
-	{
+	// Debug: Print all received tokens
+#if defined DEBUG_TOKENIZER
+	if (logger.IsEnabled(ILogger::TRACE)) {
+		std::stringstream ss;
 		vector<string>::iterator it;
 		for (i = 0, it = tokens.begin(); it != tokens.end() - 1; it++) {
-			cerr << i++ << ": " << (*it) << "\tlen: "
-				<< (*it).length() << endl;
+			ss << i++ << ": " << (*it) << "\tlen: "
+			<< (*it).length() << endl;
 		}
+		LOG_TRACE(logger,ss);
 	}
 #endif
 
 	unsigned int tmp;
 	if (1 != sscanf(tokens.back().c_str(), "%x", &tmp)) {
-		cerr << " could not parse checksum " << endl;
+		LOG_DEBUG(logger, "could not parse checksum ");
 		return false;
 	}
 
 	if (tmp != CalcChecksum(s.c_str(), s.length() - 6)) {
-		cerr << " Checksum error on received telegram" << endl;
-		// return false;
+		LOG_DEBUG(logger, "Checksum error on received telegram");
+		return false;
 	}
 
 	if (1 != sscanf(tokens[0].c_str(), "%x", &tmp)) {
-		cerr << " could not parse from address " << endl;
+		LOG_DEBUG(logger, " could not parse from address");
 		return false;
 	}
 
 	if (tmp != commadr) {
-		cerr << "not for us: Wrong Sender " << endl;
-		// TODO : Here's a right place to tell the communication interface that
-		// this telegram is not for our instance.
+		LOG_DEBUG(logger, "not for us: Wrong Sender");
 		return false;
 	}
 
 	if (1 != sscanf(tokens[1].c_str(), "%x", &tmp)) {
-		cerr << " could not parse to-address " << endl;
+		LOG_DEBUG(logger, "could not parse to-address");
 		return false;
 	}
 
 	if (tmp != ownadr) {
-		cerr << "not for us: Wrong receiver " << endl;
-		cout << tokens[0].c_str() << endl << tokens[1].c_str() << ":"
-			<< tmp << " != " << ownadr << endl;
+		LOG_DEBUG(logger, "not for us: Wrong receiver");
 		return false;
 	}
 
 	if (1 != sscanf(tokens[2].c_str(), "%x", &tmp)) {
-		cerr << " could not parse telegram length " << endl;
+		LOG_DEBUG(logger, "could not parse telegram length");
 		return false;
 	}
 
 	if (tmp != s.length()) {
-		cerr << " wrong telegram length " << endl;
+		LOG_DEBUG(logger, "wrong telegram length ");
 		return false;
 	}
 
@@ -1059,10 +1071,10 @@ bool CInverterSputnikSSeries::parsereceivedstring( const string & s )
 
 	for (i = 4; i < tokens.size() - 1; i++) {
 		if (!parsetoken(tokens[i])) {
-			cout << "BUG: Parse Error at token " << tokens[i]
-				<< ". Received: " << s << endl
-				<< "If the token is unkown or you subject a bug, please report it giving the  token ans received string"
-				<< endl;
+			LOG_DEBUG(logger,
+				"BUG: Parse Error at token " << tokens[i]
+				<< ". Received: " << s << "If the token is unkown or you subject a bug, please report it giving the  token ans received string"
+			);
 		}
 	}
 
@@ -1281,9 +1293,8 @@ bool CInverterSputnikSSeries::token_TYP( const vector<string> & tokens )
 	} while (model_lookup[++i].typ != (unsigned int) -1);
 
 	if (model_lookup[i].typ == (unsigned int) -1) {
-		cerr << "Identified a " << model_lookup[i].description << endl;
-		cerr << "Received TYP was " << tokens[0] << "=" << tokens[1]
-			<< endl;
+		LOG_WARN(logger, "Identified a " << model_lookup[i].description);
+		LOG_WARN(logger, "Received TYP was " << tokens[0] << "=" << tokens[1]);
 	}
 
 	// lookup if we already know that informations.
@@ -1307,14 +1318,16 @@ bool CInverterSputnikSSeries::token_TYP( const vector<string> & tokens )
 	else if (cap->getValue()->GetType() == CAPA_INVERTER_MODEL_TYPE) {
 		CValue<string> *val = (CValue<string>*) cap->getValue();
 		if (model_lookup[i].description != val->Get()) {
-			cerr << "WARNING: Updating inverter type from "
+
+			LOG_DEBUG(logger, "WEIRD: Updating inverter type from "
 				<< val->Get() << " to "
-				<< model_lookup[i].description << endl;
+				<< model_lookup[i].description);
+
 			val->Set(model_lookup[i].description);
 			cap->Notify();
 		}
 	} else {
-		cerr << "BUG: " << CAPA_INVERTER_MODEL << " not a string ";
+		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_MODEL << " not a string ");
 	}
 
 	return true;
@@ -1408,8 +1421,8 @@ bool CInverterSputnikSSeries::token_PAC( const vector<string> & tokens )
 			cap->Notify();
 		}
 	} else {
-		cerr << "BUG: " << CAPA_INVERTER_ACPOWER_TOTAL
-			<< " not a float ";
+		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_ACPOWER_TOTAL
+			<< " not a float ");
 	}
 
 	return true;
@@ -1452,7 +1465,7 @@ bool CInverterSputnikSSeries::token_KHR( const vector<string> & tokens )
 			cap->Notify();
 		}
 	} else {
-		cerr << "BUG: " << CAPA_INVERTER_PON_HOURS << " not a float ";
+		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_PON_HOURS << " not a float ");
 	}
 
 	return true;
@@ -1514,7 +1527,7 @@ bool CInverterSputnikSSeries::token_KYR( const vector<string> & tokens )
 			cap->Notify();
 		}
 	} else {
-		cerr << "BUG: " << CAPA_INVERTER_KWH_Y2D << " not a float ";
+		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_Y2D << " not a float ");
 	}
 
 	return true;
@@ -1558,7 +1571,7 @@ bool CInverterSputnikSSeries::token_KMT( const vector<string> & tokens )
 			cap->Notify();
 		}
 	} else {
-		cerr << "BUG: " << CAPA_INVERTER_KWH_M2D << " not a float ";
+		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_M2D << " not a float ");
 	}
 
 	return true;
@@ -1601,7 +1614,7 @@ bool CInverterSputnikSSeries::token_KDY( const vector<string> & tokens )
 			cap->Notify();
 		}
 	} else {
-		cerr << "BUG: " << CAPA_INVERTER_KWH_2D << " not a float ";
+		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_2D << " not a float ");
 	}
 
 	return true;
@@ -1646,8 +1659,8 @@ bool CInverterSputnikSSeries::token_KT0( const vector<string> & tokens )
 			cap->Notify();
 		}
 	} else {
-		cerr << "BUG: " << CAPA_INVERTER_KWH_TOTAL_NAME
-			<< " not a float ";
+		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_TOTAL_NAME
+			<< " not a float ");
 	}
 
 	return true;
@@ -1692,8 +1705,8 @@ bool CInverterSputnikSSeries::token_PIN( const vector<string> & tokens )
 			cap->Notify();
 		}
 	} else {
-		cerr << "BUG: " << CAPA_INVERTER_INSTALLEDPOWER_NAME
-			<< " not a float ";
+		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_INSTALLEDPOWER_NAME
+			<< " not a float ");
 	}
 
 	return true;
@@ -1739,8 +1752,8 @@ bool CInverterSputnikSSeries::token_TNF( const vector<string> & tokens )
 			cap->Notify();
 		}
 	} else {
-		cerr << "BUG: " << CAPA_INVERTER_NET_FREQUENCY_NAME
-			<< " not a float ";
+		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_NET_FREQUENCY_NAME
+			<< " not a float ");
 	}
 
 	return true;
@@ -1783,8 +1796,8 @@ bool CInverterSputnikSSeries::token_PRL( const vector<string> & tokens )
 			cap->Notify();
 		}
 	} else {
-		cerr << "BUG: " << CAPA_INVERTER_RELPOWER_NAME
-			<< " not a float ";
+		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_RELPOWER_NAME
+			<< " not a float ");
 	}
 
 	return true;
@@ -1833,8 +1846,8 @@ bool CInverterSputnikSSeries::token_UDC( const vector<string> & tokens )
 			cap->Notify();
 		}
 	} else {
-		cerr << "BUG: " << CAPA_INVERTER_INPUT_DC_VOLTAGE_NAME
-			<< " not a float ";
+		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_INPUT_DC_VOLTAGE_NAME
+			<< " not a float ");
 	}
 
 	return true;
@@ -1878,8 +1891,8 @@ bool CInverterSputnikSSeries::token_UL1( const vector<string> & tokens )
 			cap->Notify();
 		}
 	} else {
-		cerr << "BUG: " << CAPA_INVERTER_GRID_AC_VOLTAGE_NAME
-			<< " not a float ";
+		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_GRID_AC_VOLTAGE_NAME
+			<< " not a float");
 	}
 
 	return true;
@@ -1937,8 +1950,8 @@ bool CInverterSputnikSSeries::token_IDC( const vector<string> & tokens )
 			cap->Notify();
 		}
 	} else {
-		cerr << "BUG: " << CAPA_INVERTER_INPUT_DC_CURRENT_NAME
-			<< " not a float ";
+		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_INPUT_DC_CURRENT_NAME
+			<< " not a float");
 	}
 
 	return true;
@@ -1983,8 +1996,8 @@ bool CInverterSputnikSSeries::token_IL1( const vector<string> & tokens )
 			cap->Notify();
 		}
 	} else {
-		cerr << "BUG: " << CAPA_INVERTER_GRID_AC_CURRENT_NAME
-			<< " not a float ";
+		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_GRID_AC_CURRENT_NAME
+			<< " not a float");
 	}
 
 	return true;
@@ -2040,8 +2053,8 @@ bool CInverterSputnikSSeries::token_TKK( const vector<string> & tokens )
 			cap->Notify();
 		}
 	} else {
-		cerr << "BUG: " << CAPA_INVERTER_TEMPERATURE_NAME
-			<< " not a float ";
+		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_TEMPERATURE_NAME
+			<< " not a float");
 	}
 
 	return true;
@@ -2082,9 +2095,9 @@ bool CInverterSputnikSSeries::token_SYS( const vector<string> &tokens )
 		return false;
 
 	if (tokens[2] != "0") {
-		cerr << "Received an unkown SYS resonse. Please file a bug"
+		LOG_INFO(logger, "Received an unkown SYS response. Please file a bug"
 			<< " along with the following: " << tokens[0] << ","
-			<< tokens[1] << "," << tokens[2] << endl;
+			<< tokens[1] << "," << tokens[2]);
 	}
 
 	unsigned int code;
@@ -2100,13 +2113,13 @@ bool CInverterSputnikSSeries::token_SYS( const vector<string> &tokens )
 
 	if (laststatuscode != (unsigned int) -1 && statuscodes[i].code
 		== (unsigned int) -1) {
-		cerr << "SYS reported an (too us) unknown status code of "
+		LOG_INFO(logger, "SYS reported an (too us) unknown status code of "
 			<< tokens[0] << "=" << tokens[1] << "," << tokens[2]
-			<< endl;
-		cerr
-			<< " PLEASE file a with all informations you have, for example,"
+		);
+		LOG_INFO (logger,
+			" PLEASE file a with all informations you have, for example,"
 			<< " reading the display of the inverter and of course the infors given above."
-			<< endl;
+		);
 	}
 
 	laststatuscode = statuscodes[i].code;
@@ -2133,7 +2146,7 @@ bool CInverterSputnikSSeries::token_SYS( const vector<string> &tokens )
 			cap->Notify();
 		}
 	} else {
-		cerr << "BUG: " << CAPA_INVERTER_STATUS_NAME << " not a int ";
+		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_STATUS_NAME << " not a int");
 	}
 
 	// now also do the same with the string.
@@ -2159,8 +2172,8 @@ bool CInverterSputnikSSeries::token_SYS( const vector<string> &tokens )
 			cap->Notify();
 		}
 	} else {
-		cerr << "BUG: " << CAPA_INVERTER_STATUS_READABLE_NAME
-			<< " not a string ";
+		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_STATUS_READABLE_NAME
+			<< " not a string ");
 	}
 
 	return true;

@@ -37,16 +37,17 @@
 #include "config.h"
 #endif
 
-/** \fixme COMMENT ME
- *
- *
- * TODO DOCUMENT ME!
- */
+
 #include "Inverters/interfaces/InverterBase.h"
 #include "Inverters/BasicCommands.h"
 
 #include <queue>
 
+/** \fixme Implements the Inverter Interface for the Sputnik S Series
+  *
+  * The Sputnik S-Series are an inverter family by Sputnik Engineering
+  * Please see the manufactor's homepage for details.
+ */
 class CInverterSputnikSSeries: public IInverterBase {
 public:
 	CInverterSputnikSSeries(const string & name,
@@ -55,11 +56,11 @@ public:
 
 	virtual bool CheckConfig();
 
+	/** implements the ICommandTarget interface */
 	virtual void ExecuteCommand(const ICommand *Command);
 
 protected:
-	/* calculate the checksum for the telegramm stored in str.
-	 * note: */
+	/** calculate the checksum for the telegramm stored in str */
 	static unsigned int CalcChecksum(const char* str, int len);
 
 private:
@@ -73,13 +74,13 @@ private:
 		CMD_DISCONNECTED
 	};
 
-	// Dataports of the sputnik inverters.
-
+	/// Dataports of the sputnik inverters.
 	enum Ports {
 		QUERY = 100, COMMAND = 200, ALARM = 300, // told that the device reports errors on this ports.
 		INTERFACE = 1000
 	};
 
+	/// known queries
 	enum query {
 		TYP,
 		SWV,
@@ -106,7 +107,7 @@ private:
 #if 0
 		/// these are for MaxMeteo and Maxcount -- not currently supported
 		/// as I neighter own the hardware not have need for it.
-		/// If you want these features, please remebmer, patches are welcome.
+		/// If you want these features, please remember, patches are welcome.
 		I1Y,
 		I1P,
 		I1S,
@@ -143,25 +144,33 @@ private:
 		SYS
 	};
 
+	/// Add a inverter-query into the queue for later quering...
 	void pushinverterquery(enum query q);
 
+	/// Build up the communication string
+	///
+	/// \returns the string created, or "" if nothing to do.
 	string assemblequerystring();
 
+	/// parse the answer of the inverter.
 	bool parsereceivedstring(const string& s);
 
+	/// helper for parsereceivedstring()
 	bool parsetoken(string token);
 
+	/// FIFO for commands to be transmitted.
 	queue<enum query> cmdqueue;
 
 	/// Adress to use as "our" adress for communication
 	/// This can be set by the conffile and the parameter ownadr
 	/// defaults to 0xFB
 	/// unsigned int ownadr;
-
 	void tokenizer(const char *delimiters, const string& s,
 			vector<string> &tokens);
 
-	// token handler
+	// token handlers
+	// they all will take its tokens and do whatever required, usually
+	// updating Capabilities.
 	bool token_TYP(const vector<string> &tokens);
 	bool token_SWVER(const vector<string> &tokens);
 	bool token_BUILDVER(const vector<string> &tokens);
@@ -193,16 +202,21 @@ private:
 	bool token_THR(const vector<string> &tokens);
 	bool token_SYS(const vector<string> &tokens);
 
+	// a helper, as this is shared by two token parsers.
 	void create_versioncapa(void);
+
+
 	///  some internal infos we cache....
 	int swversion;
 	int swbuild;
 
+	/// cache for inverters comm adr.
 	unsigned int commadr;
+	/// cache for own adr
 	unsigned int ownadr;
 
+	/// helper to detect status code changes.
 	unsigned int laststatuscode;
-
 };
 
 #endif /* CINVERTERSPUTNIKSSERIES_H_ */

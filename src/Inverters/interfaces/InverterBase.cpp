@@ -60,6 +60,8 @@ IInverterBase::IInverterBase( const string& name,
 	this->name = name;
 	this->configurationpath = configurationpath;
 	connection = IConnectFactory::Factory(configurationpath);
+	connection->SetupLogger(logger.getLoggername());
+
 	pair<map<string, CCapability*>::iterator, bool> b;
 
 	string s;
@@ -132,10 +134,8 @@ CCapability *IInverterBase::GetConcreteCapability( const string &identifier )
 	return it->second;
 }
 
-
 void IInverterBase::AddCapability( const string &id, CCapability* capa )
 {
 	CapabilityMap.insert(pair<string, CCapability*> (id, capa));
-	cerr << "Added new Capability to " << name << ": " << id
-		<< endl;
+	LOG_DEBUG(logger, "Added new Capability to " << name << ": " << id);
 }

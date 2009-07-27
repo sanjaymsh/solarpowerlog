@@ -28,6 +28,31 @@
  *
  *  Created on: Jul 20, 2009
  *      Author: tobi
+ *
+ *  \section LoggingLevels Loggging Levels
+ *
+ *  Here some guideline to choose the right logging level to keep consistent
+ *  throughout the program.
+ *
+ *  - TRACE: Very verbatim (debug purpose) infos, like protocol, telegramms,
+ *    low level data .... This level should be used to gather every information
+ *    that might be needed to debug problems... Milestones during execution
+ *    also counts to this. The goal is to find out whats happening if debugging
+ *    some rare problems.
+ *  - DEBUG: "Regular" Debug infos, like tracepoints, unusual program flow
+ *    detection, etc. Detected problems that are likely a programming problem....
+ *  - INFO: Verbatim informations targeted to the user, showing details of
+ *    the program flow, but not too much details.
+ *    (showing when talking to a inverter, ...)
+ *  - WARN:  This level indicates a minor problems, caused by external events.
+ *    Usually some functions might be temporary not available.
+ *  - ERROR: The program cannot function under this circumstances. The feature
+ *    imposed will not be available until the reason is fixed and the programm
+ *    restarted.
+ *    The program can usually continue to execute, but with the limitations.
+ *  - FATAL: The program detected a problem which makes it impossible to
+ *    continue. The program will usually call abort() after FATAL.
+ *
  */
 
 #ifndef ILOGGER_H_
@@ -37,6 +62,69 @@
 #include <ostream>
 
 #include <log4cxx/logger.h>
+
+#define LOG_FATAL(logger, message)  do \
+	{\
+		if (logger.IsEnabled(ILogger::FATAL)) { \
+			std::stringstream ss;\
+			ss << message;\
+			logger << ss;\
+		}\
+	} while(0)
+
+#define LOG_ERROR(logger, message)  do \
+	{\
+		if (logger.IsEnabled(ILogger::ERROR)) { \
+			std::stringstream ss;\
+			ss << message;\
+			logger << ss;\
+		}\
+	} while(0)
+
+#define LOG_WARN(logger, message)   do \
+	{\
+		if (logger.IsEnabled(ILogger::WARN)) { \
+			std::stringstream ss;\
+			ss << message;\
+			logger << ss;\
+		}\
+	} while(0)
+
+#define LOG_INFO(logger, message)   do \
+	{\
+		if (logger.IsEnabled(ILogger::INFO)) { \
+			std::stringstream ss;\
+			ss << message;\
+			logger << ss;\
+		}\
+	} while(0)
+
+#define LOG_DEBUG(logger, message)   do \
+	{\
+		if (logger.IsEnabled(ILogger::DEBUG)) { \
+			std::stringstream ss;\
+			ss << message;\
+			logger << ss;\
+		}\
+	} while(0)
+
+#define LOG_TRACE(logger, message)   do \
+	{\
+		if (logger.IsEnabled(ILogger::TRACE)) { \
+			std::stringstream ss;\
+			ss << message;\
+			logger << ss;\
+		}\
+	} while(0)
+
+#define LOG_ALL(logger, message)   do \
+	{\
+		if (logger.IsEnabled(ILogger::ALL)) { \
+			std::stringstream ss;\
+			ss << message;\
+			logger << ss;\
+		}\
+	} while(0)
 
 /** Interface for logging services
  *
@@ -53,7 +141,7 @@
  * The class is intended to use a composition or by inheritance.
  *
  */
-class ILogger : public std::ostream
+class ILogger /*: public std::ostream*/
 {
 public:
 	enum level
@@ -63,14 +151,41 @@ public:
 		ERROR = log4cxx::Level::ERROR_INT,
 		WARN = log4cxx::Level::WARN_INT,
 		INFO = log4cxx::Level::INFO_INT,
-		DEBUG = log4cxx::Level::DEBUG_INT
+		DEBUG = log4cxx::Level::DEBUG_INT,
+		TRACE = log4cxx::Level::TRACE_INT,
+		ALL = log4cxx::Level::ALL_INT
 	};
 
+	/** Configure the logger with a name (to identify) ,
+	 * the configuration string (for retrieving logger config)
+	 * and a section (under what hierarchy to place the logger)
+	 *
+	 * \param name of the logger
+	 * \param configurationpath where to retrieve the config
+	 * \param sectin where to place the logger
+	 *
+	 */
 	void Setup( const std::string &name, const std::string &configuration,
 		const std::string& section );
 
-	ILogger( ) {};
+	/** Adding a logger in a lower hierarchy level (below a parent object)
+	 * by just specifing the parent.
+	 *
+	 * This logger will inheritate all settings by its parent, or, the XML
+	 * file might configure it.
+	 * */
+	void Setup( const std::string &parent,
+		const std::string &specialization );
+
+	/** the default constructor set up logging with the root logger. */
+	ILogger();
+
 	virtual ~ILogger();
+
+	std::string getLoggername() const
+	{
+		return loggername_;
+	}
 
 	/** Check if a logging statement would go through and
 	 * if so setup logging level.
@@ -80,9 +195,9 @@ public:
 	 *
 	 * Example:
 	 * \code
-	 * if (logger->LogIsEnabled(FATAL)) logger << "Fatal Error occured" <<endl;
+	 * if (logger->IsEnabled(FATAL)) logger << "Fatal Error occured" <<endl;
 	 * \endcode*/
-	inline bool LogIsEnabled( int loglevel )
+	inline bool IsEnabled( int loglevel )
 	{
 		if (loglevel >= currentloggerlevel_) {
 			currentlevel = loglevel;
@@ -96,19 +211,33 @@ public:
 		currentlevel = loglevel;
 	}
 
-	inline void Log(int loglevel, std::string log) {
-		if (LogIsEnabled(loglevel)) *this << log;
+	inline void Log( int loglevel, std::string log )
+	{
+		if (IsEnabled(loglevel))
+			loggerptr_->log(log4cxx::Level::toLevel(loglevel),log);
 	}
 
-	std::ostream & operator <<( std::ostream &os )
+
+#if 1
+	std::string & operator <<( std::string &os )
 	{
 		if (currentlevel >= currentloggerlevel_) {
-			log4cxx::helpers::MessageBuffer oss_;
 			loggerptr_->forcedLog(log4cxx::Level::toLevel(
-				currentlevel), oss_.str(oss_ << os));
+				currentlevel), os);
 		}
 		return os;
 	}
+
+	std::stringstream & operator <<( std::stringstream &os )
+	{
+		if (currentlevel >= currentloggerlevel_) {
+			std::string s = os.str();
+			loggerptr_->forcedLog(log4cxx::Level::toLevel(
+				currentlevel), s);
+		}
+		return os;
+	}
+#endif
 
 private:
 	std::string config_;

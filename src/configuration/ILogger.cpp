@@ -38,24 +38,36 @@
 
 using namespace std;
 
+
+ILogger::ILogger()
+{
+	// if not overridden by setup, always log to the root logger.
+	loggerptr_ = log4cxx::Logger::getRootLogger();
+}
+
+void ILogger::Setup( const std::string & parent,
+	const std::string & specialization )
+{
+	loggername_ = parent + "." + specialization;
+	log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger(loggername_));
+	loggerptr_ = logger;
+
+}
+
 void ILogger::Setup( const string & name, const string & configuration,
 	const string& section )
 {
-	if (loggerptr_) {
-		LOG4CXX_DEBUG(loggerptr_, "BUG: Logger" << section << '.' <<
-			name << " already instanciated!");
-		return;
-	}
-
 	string level;
-	// name_ = name;
 	config_ = configuration;
-	// section_ = section;
 
 	loggername_ = section + "." + name;
 
 	log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger(loggername_));
 	loggerptr_ = logger;
+
+#warning missing: if XML configuring is choosen, the XML can override the \
+	settings here. But this code will still take priority.
+
 
 	CConfigHelper global("application");
 	global.GetConfig("dbglevel", level, (std::string) "ERROR");

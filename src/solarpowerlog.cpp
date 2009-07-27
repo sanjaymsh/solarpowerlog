@@ -341,7 +341,7 @@ int main( int ac, char* av[] )
 				type = (const char *) rt[i]["type"];
 
 				LOG4CXX_DEBUG(log4cxx::Logger::getRootLogger(),
-					"DEBUG: Datafilter " << name << " ("
+					"Datafilter " << name << " ("
 					<< type << ") connects to "
 					<< previousfilter <<
 					" with Config-path " << rt[i].getPath());

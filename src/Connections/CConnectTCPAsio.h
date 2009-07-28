@@ -38,11 +38,6 @@
 #include "porting.h"
 #endif
 
-/** \fixme COMMENT ME
- *
- *
- * TODO DOCUMENT ME!
- */
 
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/streambuf.hpp>
@@ -51,6 +46,12 @@
 
 using namespace std;
 
+/** This class implements a method to connect to TCP/IP via the boost ASIO
+ * library.
+ *
+ * For the interface documentation, please see IConnect.
+ *
+ */
 class CConnectTCPAsio : public IConnect
 {
 public:
@@ -61,6 +62,7 @@ public:
 	/// Connect to something
 	/// NOTE: Needed to be overriden! ALWAYS Open in a NON_BLOCK way, or implement a worker thread
 	virtual bool Connect();
+
 	/// Tear down the connection.
 	virtual bool Disconnect();
 
@@ -73,18 +75,19 @@ public:
 	virtual bool Send( const char *tosend, unsigned int len );
 
 	virtual bool Send( const string& tosend );
-	/// Send a strin Standard implementation only wraps to above Send.
+
+	/// Send a string Standard implementation only wraps to above Send.
 	///
 	/// Receive a string. Do now get more than maxxsize (-1 == no limit)
 	/// NOTE:
 	virtual bool Receive( string &wheretoplace );
 
-	/// Receive a binary stream with maxsize as buffer size and place the actual number received
-	/// in the numreceived, which is negative on errors.#
-	/// (0 == nothing received)
-
+	/// Check configuration for missing options
+	/// return false on error
 	virtual bool CheckConfig( void );
 
+	/// Is the connection up?
+	/// return true if yes, false if not. Use true if you don't know.
 	virtual bool IsConnected( void );
 
 private:

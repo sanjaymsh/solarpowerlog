@@ -428,7 +428,7 @@ void CInverterSputnikSSeries::ExecuteCommand( const ICommand *Command )
 		commstring = assemblequerystring();
 		if (commstring != "") {
 			LOG_TRACE(logger, "Sending: " << commstring);
-			if (connection->Send(commstring)) {
+			if (!connection->Send(commstring)) {
 				LOG_DEBUG(logger,"Error while sending: Reseting connection.");
 				connection->Disconnect();
 				cmd = new ICommand(CMD_DISCONNECTED, this, 0);

@@ -95,19 +95,22 @@ bool CConnectTCPAsio::Connect()
 	// TODO Change to async connect.
 	while (iter != end) {
 		ip::tcp::endpoint endpoint = *iter++;
-		std::cout << "Connecting to ..." << endpoint << std::flush;
+		LOG_DEBUG(logger, "Connecting to " << endpoint );
 		sockt->connect(endpoint, ec);
 		if (!ec)
 			break;
 	}
 
+	cfghelper.GetConfig("name", strhost);
+
 	if (ec) {
-		cerr << " failed" << endl;
+
+		LOG_DEBUG(logger, "Connection to " << strhost << " failed" );
 		return false;
 
 	}
 
-	cout << " succesful " << endl;
+	LOG_DEBUG(logger, "Connected to " << strhost );
 	return true;
 
 }

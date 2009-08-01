@@ -101,9 +101,7 @@ bool CCSVOutputFilter::CheckConfig()
 	if (hlp.CheckConfig("data2log", Setting::TypeString, false, false)) {
 		hlp.GetConfig("data2log", setting);
 		if (setting != "all") {
-			cerr
-				<< "Configuration Error: data2log must be \"all\" or of Type Array."
-				<< endl;
+			LOG_ERROR(logger, "Configuration Error: data2log must be \"all\" or of Type Array.");
 			fail = true;
 		}
 	} else if (!hlp.CheckConfig("data2log", Setting::TypeArray)) {
@@ -116,10 +114,11 @@ bool CCSVOutputFilter::CheckConfig()
 	hlp.GetConfig("datasource", str);
 	IInverterBase *i = Registry::Instance().GetInverter(str);
 	if (!i) {
-		cerr << "Setting " << setting << " in " << configurationpath
+		LOG_ERROR(logger,
+			"Setting " << setting << " in " << configurationpath
 			<< "." << name
 			<< ": Cannot find instance of Inverter with the name "
-			<< str << endl;
+			<< str);
 		fail = true;
 	}
 	return !fail;
@@ -182,9 +181,9 @@ void CCSVOutputFilter::ExecuteCommand( const ICommand *cmd )
 			ts.tv_sec = v->Get();
 			ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
 		} else {
-			cerr
-				<< "INFO: The associated inverter does not specify the "
-					"queryinterval. Defaulting to 5 seconds";
+			LOG_INFO(logger,
+				"INFO: The associated inverter does not specify the "
+				"queryinterval. Defaulting to 5 seconds");
 		}
 
 		Registry::GetMainScheduler()->ScheduleWork(ncmd, ts);
@@ -248,9 +247,8 @@ void CCSVOutputFilter::DoINITCmd( const ICommand * )
 		if (!cap->CheckSubscription(this))
 			cap->Subscribe(this);
 	} else {
-		cerr
-			<< "ERROR: Could not find data source to connect. Filter: "
-			<< configurationpath << "." << name << endl;
+		LOG_ERROR(logger, "Could not find data source to connect. Filter: "
+			<< configurationpath << "." << name );
 		abort();
 	}
 
@@ -284,8 +282,8 @@ void CCSVOutputFilter::DoINITCmd( const ICommand * )
 		| fstream::binary);
 
 	if (file.fail()) {
-		cerr << "WARNING: Failed to open file! Logger " << name
-			<< " will not work. " << endl;
+		LOG_WARN(logger,"Failed to open file! Logger " << name
+			<< " will not work. " );
 		file.close();
 	}
 

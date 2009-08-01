@@ -103,12 +103,15 @@
 #include "config.h"
 #endif
 
+#include <assert.h>
 #include <list>
 #include <utility>
 #include <string>
 #include <libconfig.h++>
 
 #include <boost/noncopyable.hpp>
+
+#include "configuration/ILogger.h"
 
 class CWorkScheduler;
 class IInverterBase;
@@ -143,10 +146,14 @@ public:
 	 * Please note, that it must be config_loaded beforehand.
 	 * (but if coding for solarpowerlog, this will be done early
 	 * in the startup phase, so one can expect a valid object here. */
-	static libconfig::Config* Configuration()
+	inline static libconfig::Config* Configuration()
 	{
 		return Registry::Instance().Config;
 	}
+
+	inline static ILogger & GetMainLogger(void) {
+		return Registry::Instance().l;
+	};
 
 	 /** (re)load configuration file
 	 *
@@ -158,7 +165,9 @@ public:
 	 */
 	bool LoadConfig( std::string name );
 
-	/** Extract the settings-subset for a specific object,
+	/* NOTE: This is obsolete! Use an Object of CConfigHelper to extract config!
+	 *
+	 *  Extract the settings-subset for a specific object,
 	 * identified by section (like inverters) and name (like inverter_solarmax_1)
 	 *
 	 * ex:
@@ -234,6 +243,8 @@ public:
 		return Registry::Instance().mainscheduler;
 	}
 
+
+
 private:
 	CWorkScheduler *mainscheduler;
 
@@ -249,6 +260,8 @@ private:
 	// TODO generalize this interface, as we might also store
 	// other types of objects here.
 	list<IInverterBase*> inverters;
+
+	ILogger l;
 
 };
 

@@ -35,6 +35,7 @@
 #endif
 
 #include "ICapaIterator.h"
+#include "configuration/Registry.h"
 
 ICapaIterator::ICapaIterator( IInverterBase *b, IInverterBase *p )
 {
@@ -76,7 +77,9 @@ pair<string, CCapability*> ICapaIterator::GetNext()
 		return *(it++);
 	}
 
-	cerr << "NOTHING TO RETURN: USE HasNext() PRIOR GETNEXT()" << endl;
+	LOG_DEBUG(Registry::GetMainLogger(),
+		"BUG: NOTHING TO RETURN: USE HasNext() PRIOR GETNEXT()");
+	assert(false);
 	return *it;
 }
 

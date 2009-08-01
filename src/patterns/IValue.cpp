@@ -53,7 +53,7 @@ IValue::factory_types IValue::GetType( void ) const
 
 IValue *IValue::Factory( const factory_types newtype )
 {
-	IValue *tmp;
+	IValue *tmp = NULL;
 
 	switch (newtype) {
 
@@ -78,14 +78,15 @@ IValue *IValue::Factory( const factory_types newtype )
 		break;
 
 	default:
+
+		//std::cerr << "BUG: " << __FILE__ << ":" << __LINE__
+		//	<< " --> Queried for unknown CValue type " << newtype
+		//	<< std::endl;
 		assert(false);
 		break;
 	}
 
 	if (!tmp) {
-		std::cerr << "BUG: " << __FILE__ << ":" << __LINE__
-			<< " --> Queried for unknown CValue type " << newtype
-			<< std::endl;
 		return NULL;
 	}
 
@@ -95,5 +96,4 @@ IValue *IValue::Factory( const factory_types newtype )
 
 IValue::~IValue()
 {
-	// TODO Auto-generated destructor stub
 }

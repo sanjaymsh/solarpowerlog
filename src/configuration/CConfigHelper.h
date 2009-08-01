@@ -223,7 +223,6 @@ public:
 		}
 	}
 
-
 private:
 	string cfgpath;
 

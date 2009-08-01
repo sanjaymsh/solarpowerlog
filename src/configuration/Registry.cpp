@@ -52,6 +52,7 @@ Registry::Registry()
 	Config = NULL;
 
 	this->mainscheduler = new CWorkScheduler;
+
 }
 
 bool Registry::LoadConfig( std::string name )
@@ -85,6 +86,8 @@ bool Registry::LoadConfig( std::string name )
 libconfig::Setting & Registry::GetSettingsForObject( std::string section,
 	std::string objname )
 {
+
+	assert(Config);
 
 	libconfig::Setting &s = Config->lookup(section);
 
@@ -127,6 +130,7 @@ IInverterBase *Registry::GetInverter( const string & name ) const
 
 void Registry::AddInverter( const IInverterBase *inverter )
 {
+	assert (inverter);
 	inverters.push_back((IInverterBase*) inverter);
 }
 

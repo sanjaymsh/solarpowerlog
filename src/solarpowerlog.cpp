@@ -220,6 +220,7 @@ int main( int ac, char* av[] )
 		string tmp;
 		LoggerPtr l = Logger::getRootLogger();
 
+
 		CConfigHelper global("application");
 		global.GetConfig("dbglevel", tmp, (std::string) "ERROR");
 		l->setLevel(Level::toLevel(tmp));

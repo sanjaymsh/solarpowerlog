@@ -1069,16 +1069,18 @@ bool CInverterSputnikSSeries::parsereceivedstring( const string & s )
 
 	// okay, done...
 
+	bool ret = true;
 	for (i = 4; i < tokens.size() - 1; i++) {
 		if (!parsetoken(tokens[i])) {
 			LOG_DEBUG(logger,
 				"BUG: Parse Error at token " << tokens[i]
 				<< ". Received: " << s << "If the token is unkown or you subject a bug, please report it giving the  token ans received string"
 			);
+			ret = false;
 		}
 	}
 
-	return true;
+	return ret;
 }
 
 bool CInverterSputnikSSeries::parsetoken( string token )

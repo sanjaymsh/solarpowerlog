@@ -133,9 +133,13 @@
 
 #else
 
-#define LOG_FATAL(logger, message)
+#define LOG_FATAL(logger, message) do { \
+	cerr << message << endl;\
+} while(0)
 
-#define LOG_ERROR(logger, message)
+#define LOG_ERROR(logger, message) do { \
+	cerr << message << endl;\
+} while(0)
 
 #define LOG_WARN(logger, message)
 

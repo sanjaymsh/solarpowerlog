@@ -30,14 +30,16 @@
  *      Author: tobi
  */
 
-#include "ILogger.h"
+#include "config.h"
 
-#include <log4cxx/logger.h>
+#include "configuration/ILogger.h"
+
+#ifdef HAVE_LIBLOG4CXX
+
 #include "configuration/CConfigHelper.h"
 #include <iostream>
 
 using namespace std;
-
 
 ILogger::ILogger()
 {
@@ -65,9 +67,8 @@ void ILogger::Setup( const string & name, const string & configuration,
 	log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger(loggername_));
 	loggerptr_ = logger;
 
-#warning missing: if XML configuring is choosen, the XML can override the \
+#warning missing: if XML configuring is choosen, the XML should be able to override the \
 	settings here. But this code will still take priority.
-
 
 	CConfigHelper global("application");
 	global.GetConfig("dbglevel", level, (std::string) "ERROR");
@@ -85,3 +86,5 @@ ILogger::~ILogger()
 {
 	// TODO Auto-generated destructor stub
 }
+
+#endif

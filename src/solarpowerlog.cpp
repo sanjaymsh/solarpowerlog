@@ -81,10 +81,16 @@
 #include <string>
 #include <iostream>
 #include <iterator>
+
+#if defined HAVE_LIBLOG4CXX
 #include <log4cxx/logger.h>
 #include <log4cxx/basicconfigurator.h>
 #include <log4cxx/propertyconfigurator.h>
 #include <log4cxx/xml/domconfigurator.h>
+#endif
+
+#include "configuration/ILogger.h"
+
 #include <boost/program_options.hpp>
 
 #include "configuration/Registry.h"
@@ -214,6 +220,8 @@ int main( int ac, char* av[] )
 		_exit(1);
 	}
 
+
+#if defined HAVE_LIBLOG4CXX
 	// Activate Logging framework
 	{
 		using namespace log4cxx;
@@ -244,9 +252,12 @@ int main( int ac, char* av[] )
 
 		LOG4CXX_INFO(l,"Logging set up.");
 	}
+#endif
+
+	ILogger mainlogger;
 
 	/** bootstraping the system */
-	LOG4CXX_DEBUG(log4cxx::Logger::getRootLogger(),
+	LOG_DEBUG(mainlogger,
 		"Instanciating Inverter objects");
 
 	/** create the inverters via its factories. */
@@ -264,18 +275,17 @@ int main( int ac, char* av[] )
 				name = (const char *) rt[i]["name"];
 				manufactor = (const char *) rt[i]["manufactor"];
 				model = (const char *) rt[i]["model"];
-				LOG4CXX_DEBUG(log4cxx::Logger::getRootLogger(),
+				LOG_DEBUG(mainlogger,
 					name << " " << manufactor );
 			} catch (libconfig::SettingNotFoundException e) {
-				LOG4CXX_FATAL(log4cxx::Logger::getRootLogger(),
+				LOG_FATAL(mainlogger,
 					"Configuration Error: Required Setting was not found in \""
 					<< e.getPath() << '\"');
 				_exit(1);
 			}
 
 			if (Registry::Instance().GetInverter(name)) {
-				LOG4CXX_FATAL(log4cxx::Logger::getRootLogger(),
-					"Inverter " << name
+				LOG_FATAL(mainlogger, "Inverter " << name
 					<< " declared more than once");
 				_exit(1);
 			}
@@ -284,7 +294,7 @@ int main( int ac, char* av[] )
 				InverterFactoryFactory::createInverterFactory(
 					manufactor);
 			if (!factory) {
-				LOG4CXX_FATAL(log4cxx::Logger::getRootLogger(),
+				LOG_FATAL(mainlogger,
 					"Unknown inverter manufactor \""
 					<< manufactor << '\"');
 				_exit(1);
@@ -294,18 +304,19 @@ int main( int ac, char* av[] )
 				rt[i].getPath());
 
 			if (!inverter) {
-				LOG4CXX_FATAL(log4cxx::Logger::getRootLogger(),
+				LOG_FATAL(mainlogger,
 					"Cannot create Inverter model "
 					<< model << "for manufactor \""
 					<< manufactor << '\"');
-				LOG4CXX_FATAL(log4cxx::Logger::getRootLogger(),
+
+				LOG_FATAL(mainlogger,
 					"Supported models are: "
 					<< factory->GetSupportedModels());
 				_exit(1);
 			}
 
 			if (!inverter->CheckConfig()) {
-				LOG4CXX_FATAL(log4cxx::Logger::getRootLogger(),
+				LOG_FATAL(mainlogger,
 					"Inverter " << name << " ( "
 					<< manufactor << ", " << model
 					<< ") reported configuration error");
@@ -318,9 +329,7 @@ int main( int ac, char* av[] )
 		}
 	}
 
-	LOG4CXX_DEBUG(log4cxx::Logger::getRootLogger(),
-		"Instanciating DataFilter objects");
-
+	LOG_DEBUG(mainlogger, "Instanciating DataFilter objects");
 
 	{
 		IDataFilterFactory factory;
@@ -341,14 +350,14 @@ int main( int ac, char* av[] )
 					= (const char *) rt[i]["datasource"];
 				type = (const char *) rt[i]["type"];
 
-				LOG4CXX_DEBUG(log4cxx::Logger::getRootLogger(),
+				LOG_DEBUG(mainlogger,
 					"Datafilter " << name << " ("
 					<< type << ") connects to "
 					<< previousfilter <<
 					" with Config-path " << rt[i].getPath());
 
 			} catch (libconfig::SettingNotFoundException e) {
-				LOG4CXX_FATAL(log4cxx::Logger::getRootLogger(),
+				LOG_FATAL(mainlogger,
 					"Configuration Error: Required Setting was not found in \""
 					<< e.getPath() << '\"' );
 				_exit(1);
@@ -356,7 +365,7 @@ int main( int ac, char* av[] )
 
 			// TODO Also check for duplicate DataFilters.
 			if (Registry::Instance().GetInverter(name)) {
-				LOG4CXX_FATAL(log4cxx::Logger::getRootLogger(),
+				LOG_FATAL(mainlogger,
 					"CONFIG ERROR: Inverter or Logger Nameclash: "
 					<< name << " declared more than once"
 				);
@@ -366,7 +375,7 @@ int main( int ac, char* av[] )
 			IDataFilter *filter = factory.Factory(rt[i].getPath());
 
 			if (!filter) {
-				LOG4CXX_FATAL(log4cxx::Logger::getRootLogger(),
+				LOG_FATAL(mainlogger,
 					"Couldn't create DataFilter " << name
 					<< "(" << type << ") connecting to "
 					<< previousfilter << " Config-path " << rt[i].getPath()
@@ -375,7 +384,7 @@ int main( int ac, char* av[] )
 			}
 
 			if (!filter->CheckConfig()) {
-				LOG4CXX_FATAL(log4cxx::Logger::getRootLogger(),
+				LOG_FATAL(mainlogger,
 				"DataFilter " << name << "(" << type
 					<< ") reported config error"
 					<< previousfilter );
@@ -390,8 +399,7 @@ int main( int ac, char* av[] )
 		}
 	}
 
-	LOG4CXX_DEBUG(log4cxx::Logger::getRootLogger(),
-		"Entering main loop");
+	LOG_DEBUG(mainlogger, "Entering main loop");
 
 
 	while (true) {

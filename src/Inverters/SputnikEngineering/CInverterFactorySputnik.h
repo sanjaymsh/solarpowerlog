@@ -34,12 +34,11 @@
 #define CINVERTERFACTORYSPUTNIK_H_
 
 
-
-/** \fixme COMMENT ME
+/** \fixme Factory for the Sputnik inverters
  *
+ * Creates the object handling the inverters for the manufactor sputnik.
  *
- * TODO DOCUMENT ME!
- */
+*/
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -51,13 +50,13 @@
 
 using namespace std;
 
+/** Factory class for sputnik inverters. */
 class CInverterFactorySputnik: public IInverterFactory {
 
 	virtual IInverterBase * Factory(const string& type, const string& name,
 			const string & configurationpath);
 
 	virtual const string & GetSupportedModels() const;
-
 
 public:
 	CInverterFactorySputnik();

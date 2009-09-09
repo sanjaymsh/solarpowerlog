@@ -42,28 +42,22 @@ using namespace std;
 #if defined HAVE_INV_SPUTNIK
 
 static const string supportedmodels =
-	"S-Series: \tModels 2000S, 3000S, 4200S, 6000S \n ";
+		"S-Series: \tModels 2000S, 3000S, 4200S, 6000S \n ";
 
 CInverterFactorySputnik::CInverterFactorySputnik() {
-
-
-// TODO Auto-generated constructor stub
-
+	// TODO Auto-generated constructor stub
 }
 
 /** Instanciates the right inverter class */
 IInverterBase *CInverterFactorySputnik::Factory(const string & type,
-		const string& name, const string & configurationpath)
-{
+		const string& name, const string & configurationpath) {
 
-	if ( type == "S-Series" )
-	{
+	if (type == "S-Series") {
 		return new CInverterSputnikSSeries(name, configurationpath);
 	}
 
 	return NULL;
 }
-
 
 CInverterFactorySputnik::~CInverterFactorySputnik() {
 	// TODO Auto-generated destructor stub

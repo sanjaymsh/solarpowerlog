@@ -47,7 +47,7 @@
 
 #if defined HAVE_INV_SPUTNIK
 
-#include "interfaces/factories/IInverterFactory.h"
+#include "Inverters/factories/IInverterFactory.h"
 
 using namespace std;
 

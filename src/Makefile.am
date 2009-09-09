@@ -6,8 +6,8 @@ AM_CXXFLAGS = $(BOOST_CPPFLAGS)
 bin_PROGRAMS = solarpowerlog
 
 solarpowerlog_SOURCES = interfaces/CCapability.cpp interfaces/CMutexHelper.cpp \
-interfaces/factories/InverterFactoryFactory.cpp \
-interfaces/factories/IInverterFactory.cpp interfaces/CWorkScheduler.cpp \
+Inverters/factories/InverterFactoryFactory.cpp \
+Inverters/factories/IInverterFactory.cpp interfaces/CWorkScheduler.cpp \
 interfaces/CTimedWork.cpp interfaces/IConnect.cpp \
 DataFilters/interfaces/factories/IDataFilterFactory.cpp \
 DataFilters/interfaces/IDataFilter.cpp DataFilters/CDumpOutputFilter.cpp \

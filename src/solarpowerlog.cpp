@@ -100,8 +100,8 @@
 #include "patterns/ICommand.h"
 #include "patterns/ICommandTarget.h"
 
-#include "interfaces/factories/IInverterFactory.h"
-#include "interfaces/factories/InverterFactoryFactory.h"
+#include "Inverters/factories/IInverterFactory.h"
+#include "Inverters/factories/InverterFactoryFactory.h"
 #include "Inverters/interfaces/InverterBase.h"
 
 #include "DataFilters/interfaces/factories/IDataFilterFactory.h"

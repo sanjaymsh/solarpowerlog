@@ -91,7 +91,9 @@
 
 #include "configuration/ILogger.h"
 
+#ifdef HAVE_CMDLINEOPTS
 #include <boost/program_options.hpp>
+#endif
 
 #include "configuration/Registry.h"
 #include "interfaces/CWorkScheduler.h"
@@ -106,13 +108,12 @@
 #include "configuration/CConfigHelper.h"
 
 using namespace std;
-using namespace boost::program_options;
 
 /** this array of string specifies which sections int the config file must be present.
  * The programm will abort if any of these is missing.
  */
 static const char *required_sections[] = { "application", "inverter",
-	"inverter.inverters", "logger", "logger.loggers" };
+		"inverter.inverters", "logger", "logger.loggers" };
 
 /** Just dump the read config to cout.... (without values, as for these one must know the type  forehand )
 
@@ -124,8 +125,7 @@ static const char *required_sections[] = { "application", "inverter",
  DumpSettings(set);
  [/code]
  */
-void DumpSettings( libconfig::Setting &set )
-{
+void DumpSettings(libconfig::Setting &set) {
 
 	if (set.getPath() != "")
 		cout << set.getPath();
@@ -161,14 +161,16 @@ void DumpSettings( libconfig::Setting &set )
 	}
 }
 
-int main( int ac, char* av[] )
-{
+int main(int argc, char* argv[]) {
 	bool error_detected = false;
 	string configfile = "solarpowerlog.conf";
 
+#ifdef  HAVE_CMDLINEOPTS
+	using namespace boost::program_options;
+
 	options_description desc("Programm Options");
 	desc.add_options()("help", "this message")("conf,c", value<string> (
-		&configfile), "specify configuration file")
+					&configfile), "specify configuration file")
 	//	("debug,d", value<int> (&loglevel), "debug level (currently unused)")
 	//	("foreground,f", value<int> (&debug_level),
 	//		"do not daemonize, stay in foreground. (currently unused)")
@@ -176,7 +178,7 @@ int main( int ac, char* av[] )
 
 	variables_map vm;
 	try {
-		store(parse_command_line(ac, av, desc), vm);
+		store(parse_command_line(argc, argv, desc), vm);
 		notify(vm);
 	} catch (exception e) {
 		cerr << desc << "\n";
@@ -188,6 +190,14 @@ int main( int ac, char* av[] )
 		cout << desc << "\n";
 		return 0;
 	}
+#else
+	if (argc > 1) {
+		(void) argv; // remove warning unused parameter.
+		cerr << "Command line options disabled (compile time.)" << endl;
+		_exit(1);
+	}
+#endif
+
 	/* Loading configuration file */
 	// TODO avoid hardcoded filename. Get it from parameters.
 	if (!Registry::Instance().LoadConfig(configfile)) {
@@ -203,13 +213,10 @@ int main( int ac, char* av[] )
 		libconfig::Config *cfg = Registry::Configuration();
 		libconfig::Setting &rt = cfg->getRoot();
 
-		for (unsigned int i = 0; i < sizeof(required_sections)
-			/ sizeof(char*); i++) {
+		for (unsigned int i = 0; i < sizeof(required_sections) / sizeof(char*); i++) {
 			if (!rt.exists(required_sections[i])) {
-				cerr
-					<< " Configuration Check: Required Section "
-					<< required_sections[i] << " missing"
-					<< endl;
+				cerr << " Configuration Check: Required Section "
+						<< required_sections[i] << " missing" << endl;
 				error_detected = true;
 			}
 		}
@@ -220,14 +227,12 @@ int main( int ac, char* av[] )
 		_exit(1);
 	}
 
-
 #if defined HAVE_LIBLOG4CXX
 	// Activate Logging framework
 	{
 		using namespace log4cxx;
 		string tmp;
 		LoggerPtr l = Logger::getRootLogger();
-
 
 		CConfigHelper global("application");
 		global.GetConfig("dbglevel", tmp, (std::string) "ERROR");
@@ -236,8 +241,7 @@ int main( int ac, char* av[] )
 		try {
 			// Choose your poison .. aem .. config file format
 			if (global.GetConfig("logconfig", tmp)) {
-				if (tmp.substr(tmp.length() - 4, string::npos)
-					== ".xml") {
+				if (tmp.substr(tmp.length() - 4, string::npos) == ".xml") {
 					xml::DOMConfigurator::configure(tmp);
 				} else {
 					PropertyConfigurator::configure(tmp);
@@ -258,13 +262,12 @@ int main( int ac, char* av[] )
 
 	/** bootstraping the system */
 	LOG_DEBUG(mainlogger,
-		"Instanciating Inverter objects");
+			"Instanciating Inverter objects");
 
 	/** create the inverters via its factories. */
 	{
 		string section = "inverter.inverters";
-		libconfig::Setting &rt = Registry::Configuration()->lookup(
-			section);
+		libconfig::Setting &rt = Registry::Configuration()->lookup(section);
 
 		for (int i = 0; i < rt.getLength(); i++) {
 			std::string name;
@@ -276,50 +279,49 @@ int main( int ac, char* av[] )
 				manufactor = (const char *) rt[i]["manufactor"];
 				model = (const char *) rt[i]["model"];
 				LOG_DEBUG(mainlogger,
-					name << " " << manufactor );
+						name << " " << manufactor );
 			} catch (libconfig::SettingNotFoundException e) {
 				LOG_FATAL(mainlogger,
-					"Configuration Error: Required Setting was not found in \""
-					<< e.getPath() << '\"');
+						"Configuration Error: Required Setting was not found in \""
+						<< e.getPath() << '\"');
 				_exit(1);
 			}
 
 			if (Registry::Instance().GetInverter(name)) {
 				LOG_FATAL(mainlogger, "Inverter " << name
-					<< " declared more than once");
+						<< " declared more than once");
 				_exit(1);
 			}
 
 			IInverterFactory *factory =
-				InverterFactoryFactory::createInverterFactory(
-					manufactor);
+					InverterFactoryFactory::createInverterFactory(manufactor);
 			if (!factory) {
 				LOG_FATAL(mainlogger,
-					"Unknown inverter manufactor \""
-					<< manufactor << '\"');
+						"Unknown inverter manufactor \""
+						<< manufactor << '\"');
 				_exit(1);
 			}
 
 			IInverterBase *inverter = factory->Factory(model, name,
-				rt[i].getPath());
+					rt[i].getPath());
 
 			if (!inverter) {
 				LOG_FATAL(mainlogger,
-					"Cannot create Inverter model "
-					<< model << "for manufactor \""
-					<< manufactor << '\"');
+						"Cannot create Inverter model "
+						<< model << "for manufactor \""
+						<< manufactor << '\"');
 
 				LOG_FATAL(mainlogger,
-					"Supported models are: "
-					<< factory->GetSupportedModels());
+						"Supported models are: "
+						<< factory->GetSupportedModels());
 				_exit(1);
 			}
 
 			if (!inverter->CheckConfig()) {
 				LOG_FATAL(mainlogger,
-					"Inverter " << name << " ( "
-					<< manufactor << ", " << model
-					<< ") reported configuration error");
+						"Inverter " << name << " ( "
+						<< manufactor << ", " << model
+						<< ") reported configuration error");
 				_exit(1);
 			}
 
@@ -336,8 +338,7 @@ int main( int ac, char* av[] )
 		/** create the data filters via its factories. */
 
 		string section = "logger.loggers";
-		libconfig::Setting & rt = Registry::Configuration()->lookup(
-			section);
+		libconfig::Setting & rt = Registry::Configuration()->lookup(section);
 
 		for (int i = 0; i < rt.getLength(); i++) {
 			std::string name;
@@ -346,28 +347,27 @@ int main( int ac, char* av[] )
 
 			try {
 				name = (const char *) rt[i]["name"];
-				previousfilter
-					= (const char *) rt[i]["datasource"];
+				previousfilter = (const char *) rt[i]["datasource"];
 				type = (const char *) rt[i]["type"];
 
 				LOG_DEBUG(mainlogger,
-					"Datafilter " << name << " ("
-					<< type << ") connects to "
-					<< previousfilter <<
-					" with Config-path " << rt[i].getPath());
+						"Datafilter " << name << " ("
+						<< type << ") connects to "
+						<< previousfilter <<
+						" with Config-path " << rt[i].getPath());
 
 			} catch (libconfig::SettingNotFoundException e) {
 				LOG_FATAL(mainlogger,
-					"Configuration Error: Required Setting was not found in \""
-					<< e.getPath() << '\"' );
+						"Configuration Error: Required Setting was not found in \""
+						<< e.getPath() << '\"' );
 				_exit(1);
 			}
 
 			// TODO Also check for duplicate DataFilters.
 			if (Registry::Instance().GetInverter(name)) {
 				LOG_FATAL(mainlogger,
-					"CONFIG ERROR: Inverter or Logger Nameclash: "
-					<< name << " declared more than once"
+						"CONFIG ERROR: Inverter or Logger Nameclash: "
+						<< name << " declared more than once"
 				);
 				_exit(1);
 			}
@@ -376,31 +376,28 @@ int main( int ac, char* av[] )
 
 			if (!filter) {
 				LOG_FATAL(mainlogger,
-					"Couldn't create DataFilter " << name
-					<< "(" << type << ") connecting to "
-					<< previousfilter << " Config-path " << rt[i].getPath()
+						"Couldn't create DataFilter " << name
+						<< "(" << type << ") connecting to "
+						<< previousfilter << " Config-path " << rt[i].getPath()
 				);
 				_exit(1);
 			}
 
 			if (!filter->CheckConfig()) {
 				LOG_FATAL(mainlogger,
-				"DataFilter " << name << "(" << type
-					<< ") reported config error"
-					<< previousfilter );
+						"DataFilter " << name << "(" << type
+						<< ") reported config error"
+						<< previousfilter );
 				_exit(1);
 			}
 
 			Registry::Instance().AddInverter(filter);
 
 			// Filter is ready.
-
-			// TODO Register to registry.
 		}
 	}
 
 	LOG_DEBUG(mainlogger, "Entering main loop");
-
 
 	while (true) {
 		// cerr << "." << flush;

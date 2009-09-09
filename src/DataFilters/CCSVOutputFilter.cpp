@@ -29,6 +29,14 @@
  *  Created on: Jun 29, 2009
  *      Author: tobi
  */
+
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef  HAVE_FILTER_CSVDUMP
+
 #include <assert.h>
 #include <fstream>
 #include <iostream>
@@ -442,3 +450,4 @@ bool CCSVOutputFilter::search_list( const string id ) const
 	return false;
 }
 
+#endif

@@ -122,6 +122,8 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_FILTER_DUMBDUMP
+
 /** \fixme COMMENT ME
  *
  *
@@ -163,5 +165,7 @@ private:
 
 	bool clearscreen;
 };
+
+#endif
 
 #endif /* CDUMPOUTPUTFILTER_H_ */

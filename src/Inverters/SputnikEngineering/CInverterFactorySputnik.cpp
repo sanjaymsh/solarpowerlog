@@ -39,6 +39,7 @@
 
 using namespace std;
 
+#if defined HAVE_INV_SPUTNIK
 
 static const string supportedmodels =
 	"S-Series: \tModels 2000S, 3000S, 4200S, 6000S \n ";
@@ -73,3 +74,5 @@ CInverterFactorySputnik::~CInverterFactorySputnik() {
 const string & CInverterFactorySputnik::GetSupportedModels() const {
 	return supportedmodels;
 }
+
+#endif

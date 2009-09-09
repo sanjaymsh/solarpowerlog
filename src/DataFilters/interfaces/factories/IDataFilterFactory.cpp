@@ -35,8 +35,14 @@
 #endif
 
 #include "DataFilters/interfaces/factories/IDataFilterFactory.h"
+
+#ifdef HAVE_FILTER_DUMBDUMP
 #include "DataFilters/CDumpOutputFilter.h"
+#endif
+
+#ifdef HAVE_FILTER_CSVDUMP
 #include "DataFilters/CCSVOutputFilter.h"
+#endif
 
 #include "configuration/Registry.h"
 #include "configuration/CConfigHelper.h"
@@ -51,13 +57,17 @@ IDataFilter *IDataFilterFactory::Factory(const string & configurationpath)
 	cfghlp.GetConfig("type", type);
 	cfghlp.GetConfig("name",name);
 
+#ifdef HAVE_FILTER_DUMBDUMP
 	if (type == "DumbDumper") {
 		return new CDumpOutputFilter(name, configurationpath);
 	}
+#endif
 
+#ifdef HAVE_FILTER_CSVDUMP
 	if (type == "CVSWriter") {
 		return new CCSVOutputFilter(name, configurationpath);
 	}
+#endif
 
 	return NULL;
 }

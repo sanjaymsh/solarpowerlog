@@ -36,8 +36,10 @@
 
 #include "InverterFactoryFactory.h"
 #include "IInverterFactory.h"
-#include "Inverters/SputnikEngineering/CInverterFactorySputnik.h"
 
+#if defined HAVE_INV_SPUTNIK
+#include "Inverters/SputnikEngineering/CInverterFactorySputnik.h"
+#endif
 
 InverterFactoryFactory::InverterFactoryFactory() {
 	// TODO Auto-generated constructor stub
@@ -47,9 +49,11 @@ InverterFactoryFactory::InverterFactoryFactory() {
 IInverterFactory *InverterFactoryFactory::createInverterFactory(const string& manufactor)
 {
 
+#if defined HAVE_INV_SPUTNIK
 	if (manufactor == "SPUTNIK_ENGINEERING") {
 		return new CInverterFactorySputnik;
 	}
+#endif
 
 	return NULL;
 }

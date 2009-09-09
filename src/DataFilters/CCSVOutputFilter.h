@@ -169,6 +169,12 @@
 #ifndef CCSVOUTPUTFILTER_H_
 #define CCSVOUTPUTFILTER_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_FILTER_CSVDUMP
+
 #include <fstream>
 #include <list>
 
@@ -262,10 +268,8 @@ private:
 	 * \returns true, if in list, else false. */
 	bool search_list(const string id) const;
 
-
-
-
-
 };
+
+#endif
 
 #endif /* CCSVOUTPUTFILTER_H_ */

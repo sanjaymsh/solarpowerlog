@@ -37,6 +37,7 @@
 #include "config.h"
 #endif
 
+#if defined HAVE_INV_SPUTNIK
 
 #include "Inverters/interfaces/InverterBase.h"
 #include "Inverters/BasicCommands.h"
@@ -218,5 +219,7 @@ private:
 	/// helper to detect status code changes.
 	unsigned int laststatuscode;
 };
+
+#endif
 
 #endif /* CINVERTERSPUTNIKSSERIES_H_ */

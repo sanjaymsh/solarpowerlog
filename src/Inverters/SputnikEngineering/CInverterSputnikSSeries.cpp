@@ -44,6 +44,8 @@
 #include "config.h"
 #endif
 
+#if defined HAVE_INV_SPUTNIK
+
 #include "configuration/Registry.h"
 #include "configuration/CConfigHelper.h"
 
@@ -2236,3 +2238,4 @@ void CInverterSputnikSSeries::create_versioncapa( void )
 	}
 }
 
+#endif

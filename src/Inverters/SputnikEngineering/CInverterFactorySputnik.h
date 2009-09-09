@@ -33,6 +33,8 @@
 #ifndef CINVERTERFACTORYSPUTNIK_H_
 #define CINVERTERFACTORYSPUTNIK_H_
 
+
+
 /** \fixme COMMENT ME
  *
  *
@@ -42,6 +44,8 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#if defined HAVE_INV_SPUTNIK
 
 #include "interfaces/factories/IInverterFactory.h"
 
@@ -59,5 +63,7 @@ public:
 	CInverterFactorySputnik();
 	virtual ~CInverterFactorySputnik();
 };
+
+#endif
 
 #endif /* CINVERTERFACTORYSPUTNIK_H_ */

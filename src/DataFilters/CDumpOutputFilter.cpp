@@ -34,6 +34,8 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_FILTER_DUMBDUMP
+
 #include <assert.h>
 
 #include "CDumpOutputFilter.h"
@@ -319,3 +321,5 @@ string CDumpOutputFilter::DumpValue( IValue *value )
 	}
 	return ret;
 }
+
+#endif

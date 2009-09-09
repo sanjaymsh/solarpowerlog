@@ -200,8 +200,8 @@ public:
 	void Setup( const std::string &name, const std::string &configuration,
 		const std::string& section );
 #else
-	void Setup( const std::string &name, const std::string &configuration,
-		const std::string& section ) {};
+	void Setup( const std::string &, const std::string &,
+		const std::string&  ) { };
 #endif
 
 
@@ -215,8 +215,8 @@ public:
 	void Setup( const std::string &parent,
 		const std::string &specialization );
 #else
-	void Setup( const std::string &parent,
-			const std::string &specialization ) {};
+	void Setup( const std::string &,
+			const std::string & ) {};
 #endif
 
 	/** the default constructor set up logging with the root logger. */
@@ -260,6 +260,7 @@ public:
 		} else
 			return false;
 #else
+		(void) loglevel; // removes unused parameter warning
 		return false;
 #endif
 	}
@@ -268,6 +269,8 @@ public:
 	{
 #if defined HAVE_LIBLOG4CXX
 		currentlevel = loglevel;
+#else
+		(void) loglevel; // removes unused parameter warning
 #endif
 	}
 
@@ -276,6 +279,10 @@ public:
 #if defined HAVE_LIBLOG4CXX
 		if (IsEnabled(loglevel))
 			loggerptr_->log(log4cxx::Level::toLevel(loglevel),log);
+#else
+		// remove unused parameter warning
+		(void) log;
+		(void) loglevel;
 #endif
 	}
 

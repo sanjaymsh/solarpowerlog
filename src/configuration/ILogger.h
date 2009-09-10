@@ -153,6 +153,9 @@
 
 #endif
 
+
+#ifdef HAVE_LIBLOG4CXX
+
 /** Interface for logging services
  *
  * This class is the interface to the underlying logging class.
@@ -172,8 +175,6 @@ class ILogger /*: public std::ostream*/
 {
 public:
 
-
-#ifdef HAVE_LIBLOG4CXX
 	enum level
 	{
 		OFF = log4cxx::Level::OFF_INT,
@@ -185,7 +186,6 @@ public:
 		TRACE = log4cxx::Level::TRACE_INT,
 		ALL = log4cxx::Level::ALL_INT
 	};
-#endif
 
 	/** Configure the logger with a name (to identify) ,
 	 * the configuration string (for retrieving logger config)
@@ -196,14 +196,8 @@ public:
 	 * \param sectin where to place the logger
 	 *
 	 */
-#ifdef HAVE_LIBLOG4CXX
 	void Setup( const std::string &name, const std::string &configuration,
 		const std::string& section );
-#else
-	void Setup( const std::string &, const std::string &,
-		const std::string&  ) { };
-#endif
-
 
 	/** Adding a logger in a lower hierarchy level (below a parent object)
 	 * by just specifing the parent.
@@ -211,34 +205,170 @@ public:
 	 * This logger will inheritate all settings by its parent, or, the XML
 	 * file might configure it.
 	 * */
-#ifdef HAVE_LIBLOG4CXX
 	void Setup( const std::string &parent,
 		const std::string &specialization );
-#else
-	void Setup( const std::string &,
-			const std::string & ) {};
-#endif
 
 	/** the default constructor set up logging with the root logger. */
-#ifdef HAVE_LIBLOG4CXX
 	ILogger();
-#else
-	ILogger() {};
-#endif
 
-#if defined HAVE_LIBLOG4CXX
 	virtual ~ILogger();
-#else
+
+	/// Getter for loggername
+	inline std::string getLoggername() const
+	{
+		return loggername_;
+	}
+
+	/** Check if a logging statement would go through and
+	 * if so setup logging level.
+	 *
+	 * This function should be used before using the << operator, as
+	 * this function will avoid calling all the ostream-operators,
+	 * when indeed the logging level is below that one configured
+	 * for the logger,
+	 *
+	 * The LOG_xxx macros will do that for you.
+	 *
+	 * Example:
+	 * \code
+	 * if (logger->IsEnabled(FATAL)) logger << "Fatal Error occured" <<endl;
+	 * \endcode*/
+	inline bool IsEnabled( int loglevel )
+	{
+		if (loglevel >= currentloggerlevel_) {
+			currentlevel = loglevel;
+			return true;
+		} else
+			return false;
+	}
+
+	/// set the next loglevel (the level which the app will log with the next time)
+	/// usually this is not needed, as IsEnabled and LOG_xxx() do that for you
+	///
+	/// \param loglevel the level for subsequent logging.
+	///
+	/// \note: Please use LOG_xxx whenever possible.
+	inline void SetLogLevel( int loglevel )
+	{
+		currentlevel = loglevel;
+	}
+
+	/// Log a string with the level.
+	///
+	/// \param loglevel level to log with
+	/// \param log string to log
+	/// \note when logging a static string, this might be more performant.
+	/// than LOG_xxx.
+	inline void Log( int loglevel, const std::string &log )
+	{
+		if (IsEnabled(loglevel))
+			loggerptr_->log(log4cxx::Level::toLevel(loglevel),log);
+	}
+
+	/** provides the << operator for convenient logging (std::string version)
+	 *
+	 * \note the loglevel of the message has to be setup prior logging
+	 *
+	 * \note Use LOG_xxx() macros whenever possible.
+	*/
+	std::string & operator <<( std::string &os )
+	{
+		if (currentlevel >= currentloggerlevel_) {
+			loggerptr_->forcedLog(log4cxx::Level::toLevel(
+				currentlevel), os);
+		}
+		return os;
+	}
+
+	/** provides the << operator for convenient logging (stringstream version)
+	 *
+	 * \note the loglevel of the message has to be setup prior logging
+	 *
+	 * \note Use LOG_xxx() macros whenever possible.
+	*/
+	std::stringstream & operator <<( std::stringstream &os )
+	{
+		if (currentlevel >= currentloggerlevel_) {
+			std::string s = os.str();
+			loggerptr_->forcedLog(log4cxx::Level::toLevel(
+				currentlevel), s);
+		}
+		return os;
+	}
+
+private:
+
+	/// cache for the configuration string.
+	std::string config_;
+
+	/// cache for the loggers name.
+	std::string loggername_;
+
+	/// The logger of liblog4cxx...
+	log4cxx::LoggerPtr loggerptr_;
+
+	/// the last set log level from the application ("I want to log at this level next")
+	int currentlevel;
+
+	/// stores the logging level of the underlaying logger (cache)
+	/// FIXME: Think about removing that one...
+	/// should be queried from the logger, or at least updated when setting the level.
+	int currentloggerlevel_;
+
+
+};
+
+#endif // HAVE_LIBLOG4CXX
+#ifndef HAVE_LIBLOG4CXX
+/** Interface for logging services
+ *
+ * This class is the interface to the underlying logging class.
+ * (planned: log4cxx)
+ *
+ * Loggers can be attached to every object, and log4cxx allows to structure
+ * them into a hierarchy.
+ *
+ * This class is responsible to give every object access to its own logger,
+ * and extract the logger's configuration out of the configuration file.
+ * (allowing to configure the log for each component individually)
+ *
+ * The class is intended to use a composition or by inheritance.
+ *
+ */
+
+class ILogger /*: public std::ostream*/
+{
+public:
+
+	/** Configure the logger with a name (to identify) ,
+	 * the configuration string (for retrieving logger config)
+	 * and a section (under what hierarchy to place the logger)
+	 *
+	 * \param name of the logger
+	 * \param configurationpath where to retrieve the config
+	 * \param sectin where to place the logger
+	 *
+	 */
+	void Setup( const std::string &, const std::string &,
+		const std::string&  ) { };
+
+	/** Adding a logger in a lower hierarchy level (below a parent object)
+	 * by just specifing the parent.
+	 *
+	 * This logger will inheritate all settings by its parent, or, the XML
+	 * file might configure it.
+	 * */
+	void Setup( const std::string &,
+			const std::string & ) {};
+
+	/** the default constructor set up logging with the root logger. */
+	ILogger() {};
+
 	virtual ~ILogger() {};
-#endif
 
 	std::string getLoggername() const
 	{
-#if defined HAVE_LIBLOG4CXX
-		return loggername_;
-#else
 		return "";
-#endif
 	}
 
 	/** Check if a logging statement would go through and
@@ -251,76 +381,32 @@ public:
 	 * \code
 	 * if (logger->IsEnabled(FATAL)) logger << "Fatal Error occured" <<endl;
 	 * \endcode*/
-	inline bool IsEnabled( int loglevel )
+	inline bool IsEnabled( int )
 	{
-#if defined HAVE_LIBLOG4CXX
-		if (loglevel >= currentloggerlevel_) {
-			currentlevel = loglevel;
-			return true;
-		} else
-			return false;
-#else
-		(void) loglevel; // removes unused parameter warning
 		return false;
-#endif
 	}
 
-	inline void SetLogLevel( int loglevel )
+	inline void SetLogLevel( int )
 	{
-#if defined HAVE_LIBLOG4CXX
-		currentlevel = loglevel;
-#else
-		(void) loglevel; // removes unused parameter warning
-#endif
 	}
 
-	inline void Log( int loglevel, std::string log )
+	inline void Log( int , std::string )
 	{
-#if defined HAVE_LIBLOG4CXX
-		if (IsEnabled(loglevel))
-			loggerptr_->log(log4cxx::Level::toLevel(loglevel),log);
-#else
-		// remove unused parameter warning
-		(void) log;
-		(void) loglevel;
-#endif
 	}
-
 
 	std::string & operator <<( std::string &os )
 	{
-#if defined HAVE_LIBLOG4CXX
-		if (currentlevel >= currentloggerlevel_) {
-			loggerptr_->forcedLog(log4cxx::Level::toLevel(
-				currentlevel), os);
-		}
-#endif
 		return os;
 	}
 
 	std::stringstream & operator <<( std::stringstream &os )
 	{
-#if defined HAVE_LIBLOG4CXX
-		if (currentlevel >= currentloggerlevel_) {
-			std::string s = os.str();
-			loggerptr_->forcedLog(log4cxx::Level::toLevel(
-				currentlevel), s);
-		}
-#endif
 		return os;
 	}
 
-#if defined HAVE_LIBLOG4CXX
-private:
-
-	std::string config_;
-	std::string loggername_;
-	log4cxx::LoggerPtr loggerptr_;
-
-	int currentlevel;
-	int currentloggerlevel_;
-#endif
-
 };
+#endif // !HAVE_LIBLOG4CXX
+
+
 
 #endif /* ILOGGER_H_ */

@@ -41,21 +41,63 @@
 
 using namespace std;
 
+
+/** Construct a logger object with default settings.
+ *
+ * When using this constructor, the logger will attach to the root
+ * logger by default. This can be overridden by a subsequent call Setup() */
 ILogger::ILogger()
 {
 	// if not overridden by setup, always log to the root logger.
 	loggerptr_ = log4cxx::Logger::getRootLogger();
+	currentloggerlevel_ = loggerptr_->getLevel()->toInt();
 }
 
+/** Setup logger in the logger, attaching to a parent.
+ *
+ * The parent logger and the specialization forms the path of the new logger
+ * for easier identification of the source of the message. The new logger is
+ * put one level deeper than its parent.
+ *
+ * For example, Inverter_1 adds a Comm which specalizsation of "Comms_TCP_ASIO",
+ * the resulting logger is Inveter_1.Comms_TCP_ASIO
+ *
+ * The logging level will be deducted from the parent, (default
+ * from log4cxx).
+ *
+ * \param parent logger to attach from. Must not be empty.
+ * \param specialization for the logger. (the name of the new one)
+ */
 void ILogger::Setup( const std::string & parent,
 	const std::string & specialization )
 {
 	loggername_ = parent + "." + specialization;
 	log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger(loggername_));
+	log4cxx::LevelPtr ptr=logger->getEffectiveLevel();
+	currentloggerlevel_ = ptr->toInt();
 	loggerptr_ = logger;
-
 }
 
+
+/** Setup a logger. Do not associate to a parent
+ *
+ * (of course, the root logger is always parent)
+ *
+ * This variant creates a logger with the path <section>.<name>
+ * <section> is the name of the section in the configuration file,
+ * <name> the name of the object,
+ *
+ * The Settings for the logger are extracted from the configuration
+ * file and with this precedence:
+ * - Specification in XML file (liblog4cxx config)
+ * - <section>.<name> enry dbglevel in the solarpowerlog.conf
+ * - application.dbglevel in the solarpowerlog.conf
+ * - "ERROR" if nothing is given,
+ *
+ * \param name of the new logger
+ * \param configuration path where to obtain te objects config.
+ *
+*/
 void ILogger::Setup( const string & name, const string & configuration,
 	const string& section )
 {
@@ -67,19 +109,21 @@ void ILogger::Setup( const string & name, const string & configuration,
 	log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger(loggername_));
 	loggerptr_ = logger;
 
-#warning missing: if XML configuring is choosen, the XML should be able to override the \
-	settings here. But this code will still take priority.
+	// check if the logger has magically already a level.
+	// if so, it must be from XML.
+	log4cxx::LevelPtr ptr=logger->getLevel();
+	if (!ptr) {
 
-	CConfigHelper global("application");
-	global.GetConfig("dbglevel", level, (std::string) "ERROR");
+		CConfigHelper global("application");
+		global.GetConfig("dbglevel", level, (std::string) "ERROR");
 
-	CConfigHelper hlp(configuration);
-	hlp.GetConfig("dbglevel", level);
+		CConfigHelper hlp(configuration);
+		hlp.GetConfig("dbglevel", level);
 
-	logger->setLevel(log4cxx::Level::toLevel(level));
+		logger->setLevel(log4cxx::Level::toLevel(level));
+	}
+
 	currentloggerlevel_ = logger->getLevel()->toInt();
-	LOG4CXX_DEBUG(logger, "Logger for " << configuration << "."
-		<< name << " created.");
 }
 
 ILogger::~ILogger()

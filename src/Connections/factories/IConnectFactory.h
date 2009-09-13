@@ -37,7 +37,7 @@
 #include "config.h"
 #endif
 
-#include "interfaces/IConnect.h"
+#include "Connections/interfaces/IConnect.h"
 
 using namespace std;
 

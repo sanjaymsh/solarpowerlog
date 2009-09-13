@@ -205,7 +205,7 @@
 #include <string>
 #include <map>
 
-#include "interfaces/IConnect.h"
+#include "Connections/interfaces/IConnect.h"
 #include "interfaces/CCapability.h"
 #include "patterns/ICommandTarget.h"
 #include "configuration/ILogger.h"

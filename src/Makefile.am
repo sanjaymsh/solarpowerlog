@@ -8,7 +8,7 @@ bin_PROGRAMS = solarpowerlog
 solarpowerlog_SOURCES = interfaces/CCapability.cpp interfaces/CMutexHelper.cpp \
 Inverters/factories/InverterFactoryFactory.cpp \
 Inverters/factories/IInverterFactory.cpp interfaces/CWorkScheduler.cpp \
-interfaces/CTimedWork.cpp interfaces/IConnect.cpp \
+interfaces/CTimedWork.cpp Connections/interfaces/IConnect.cpp \
 DataFilters/interfaces/factories/IDataFilterFactory.cpp \
 DataFilters/interfaces/IDataFilter.cpp DataFilters/CDumpOutputFilter.cpp \
 DataFilters/CCSVOutputFilter.cpp \

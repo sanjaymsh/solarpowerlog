@@ -218,6 +218,9 @@ private:
 
 	/// helper to detect status code changes.
 	unsigned int laststatuscode;
+
+	/// helper for Execute Command to store error detection / recovery (errorcounter)
+	unsigned int errcnt_;
 };
 
 #endif

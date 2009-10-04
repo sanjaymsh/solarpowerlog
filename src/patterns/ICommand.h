@@ -63,6 +63,10 @@ public:
     int getCmd() const;
 
     void *getData() const;
+    void setData(void *data)
+    {
+        this->data = data;
+    }
 
 private:
 	int cmd;

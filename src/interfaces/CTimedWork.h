@@ -49,7 +49,6 @@
  */
 class CTimedWork
 {
-
 public:
 	/** Constructor: Takes the scheduler to inform, the command to execute and the time when.
 	 */
@@ -62,6 +61,7 @@ public:
 
 	void ScheduleWork( ICommand *Command, struct timespec ts );
 
+	/// Ask thread to terminate.
 	void RequestTermination( void );
 
 private:

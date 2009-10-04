@@ -39,7 +39,7 @@
 
 #include <boost/thread/mutex.hpp>
 
-/** Mutex Wrapper for the GNU Common C++ Library
+/** Mutex Wrapper
  *
  * The library makes you keeping track when you entered the
  * Mutex. This generates the problem, that if the function
@@ -53,7 +53,6 @@
  */
 class CMutexAutoLock {
 public:
-
 	CMutexAutoLock(boost::mutex * mutex);
 	virtual ~CMutexAutoLock();
 

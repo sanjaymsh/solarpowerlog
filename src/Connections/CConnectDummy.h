@@ -50,9 +50,9 @@ public:
 
 	/// Connect to something
 	/// NOTE: Needed to be overriden! ALWAYS Open in a NON_BLOCK way, or implement a worker thread
-	virtual bool Connect() {return false;};
+	virtual bool Connect(ICommand *) {return false;};
 	/// Tear down the connection.
-	virtual bool Disconnect() {return false;};
+	virtual bool Disconnect(  ICommand * ) {return false;};
 
 
 	/// Send a array of characters (can be used as binary transport, too)
@@ -61,9 +61,11 @@ public:
 	///
 	/// Receive a string. Do now get more than maxxsize (-1 == no limit)
 	/// NOTE:
-	virtual bool Receive(string &/*wheretoplace*/) { return false; };
+	virtual bool Receive(string &/*wheretoplace*/, ICommand *) { return false; };
 
 	virtual bool CheckConfig(void) ;
+
+	virtual void _main (void) {};
 
 };
 

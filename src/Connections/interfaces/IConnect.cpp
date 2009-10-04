@@ -43,6 +43,8 @@ using namespace std;
 IConnect::IConnect( const string& configurationname )
 {
 	ConfigurationPath = configurationname;
+	_thread_is_running = false;
+	_thread_term_request = false;
 
 }
 
@@ -53,5 +55,15 @@ void IConnect::SetupLogger( const string &parentlogger, const string & spec )
 
 IConnect::~IConnect()
 {
-	// TODO Auto-generated destructor stub
+	mutex.lock();
+	if (_thread_is_running) {
+		_thread_term_request = true;
+		workerthread.interrupt();
+		mutex.unlock();
+		workerthread.join();
+	}
+	else
+	{
+		mutex.unlock();
+	}
 }

@@ -65,16 +65,22 @@ using namespace libconfig;
 
 struct asyncReadHandler
 {
+	asyncReadHandler( size_t *b, boost::system::error_code *ec )
+	{
+		bytes = b;
+		this->ec = ec;
+	}
 
 	void operator()( const boost::system::error_code& e,
 		std::size_t bytes_transferred )
 	{
-		bytes = bytes_transferred;
-		ec = e;
+		*bytes = bytes_transferred;
+		*ec = e;
 	}
 
-	size_t bytes;
-	boost::system::error_code ec;
+	// note, we need pointer as boost seems to make a copy of our handler...
+	size_t *bytes;
+	boost::system::error_code *ec;
 };
 
 CConnectTCPAsio::CConnectTCPAsio( const string &configurationname ) :
@@ -119,6 +125,7 @@ bool CConnectTCPAsio::Connect( ICommand *callback )
 
 	if (!callback) {
 		sem_wait(&semaphore);
+		LOG_TRACE(logger, "destroying asyncCommando" << commando );
 		delete commando;
 		return IsConnected();
 	}
@@ -145,6 +152,7 @@ bool CConnectTCPAsio::Disconnect( ICommand *callback )
 	if (!callback) {
 		// wait for async job completion
 		sem_wait(&semaphore);
+		LOG_TRACE(logger, "destroying asyncCommando" << commando );
 		delete commando;
 	}
 
@@ -192,6 +200,7 @@ bool CConnectTCPAsio::Receive( string & wheretoplace, ICommand *callback )
 		} else {
 			ret = true;
 		}
+		LOG_TRACE(logger, "destroying asyncCommando" << commando );
 		delete commando;
 		return ret;
 	}
@@ -229,15 +238,18 @@ bool CConnectTCPAsio::CheckConfig( void )
 
 void CConnectTCPAsio::_main( void )
 {
+	LOG_TRACE(logger, "Starting helper thread");
 	mutex.lock();
 	sem_init(&cmdsemaphore, 0, 0);
 	mutex.unlock();
 
 	while (!IsTermRequested()) {
 		int syscallret;
+		ICommand *cmd;
 
 		// wait for work or signals.
 		// FIXME Test this if this works ;-)
+		LOG_TRACE(logger, "Waiting for work");
 		syscallret = sem_wait(&cmdsemaphore);
 		if (syscallret == 0) {
 			// semaphore had work for us. process it.
@@ -245,6 +257,9 @@ void CConnectTCPAsio::_main( void )
 			mutex.lock();
 			if (!cmds.empty()) {
 				asyncCommand *donow = cmds.front();
+				// cache donow->callback, as it could be gone
+				// later.
+				cmd = donow->callback;
 				mutex.unlock();
 
 				LOG_TRACE(logger, "Received command " << donow << " with callback " << donow->callback );
@@ -256,12 +271,15 @@ void CConnectTCPAsio::_main( void )
 						mutex.lock();
 						LOG_TRACE(logger, "Front is " <<cmds.front() );
 						cmds.pop_front();
-						mutex.unlock();
 						// check if we have to delete the object
 						// or -- in case of sync operation --
 						// the caller will do that for us.
-						if (donow->callback)
+						// the "sign" is, that donow->callback is non NULL
+						// (as the object can be already gone, if
+						// the sync command had already deleted it)
+						if (cmd)
 							delete donow;
+						mutex.unlock();
 					}
 					break;
 
@@ -269,9 +287,9 @@ void CConnectTCPAsio::_main( void )
 					if (HandleDisConnect(donow)) {
 						mutex.lock();
 						cmds.pop_front();
-						mutex.unlock();
-						if (donow->callback)
+						if (cmd)
 							delete donow;
+						mutex.unlock();
 					}
 					break;
 
@@ -279,11 +297,10 @@ void CConnectTCPAsio::_main( void )
 					if (HandleReceive(donow)) {
 						mutex.lock();
 						cmds.pop_front();
-						mutex.unlock();
-						if (donow->callback)
+						if (cmd)
 							delete donow;
+						mutex.unlock();
 					}
-					break;
 					break;
 				}
 			} else {
@@ -338,7 +355,10 @@ bool CConnectTCPAsio::HandleConnect( asyncCommand *cmd )
 			break;
 	}
 
-	cfghelper.GetConfig("name", strhost);
+	// preset name, but only needed if we gonna log on these levels.
+	if (logger.IsEnabled(ILogger::ERROR)
+		|| logger.IsEnabled(ILogger::DEBUG))
+		cfghelper.GetConfig("name", strhost);
 
 	if (ec) {
 		LOG_ERROR(logger, "Connection to " << strhost << " failed" );
@@ -402,15 +422,13 @@ static void boosthelper_set_result( int* store, int value )
 
 bool CConnectTCPAsio::HandleReceive( asyncCommand *cmd )
 {
-	struct asyncReadHandler read_handler;
-	boost::system::error_code ec;
-	read_handler.bytes = 0;
+	boost::system::error_code ec, handlerec;
 
-	int result_timer = 0;
-	int result_read = 0;
+	volatile int result_timer = 0;
+	size_t bytes;
 	unsigned long timeout;
 	char buf[2];
-
+	struct asyncReadHandler read_handler(&bytes, &handlerec);
 	// timeout setup
 	ioservice->reset();
 
@@ -420,7 +438,8 @@ bool CConnectTCPAsio::HandleReceive( asyncCommand *cmd )
 	boost::posix_time::time_duration td = boost::posix_time::millisec(
 		timeout);
 	timer.expires_from_now(td);
-	timer.async_wait(boost::bind(&boosthelper_set_result, &result_timer, 1));
+	timer.async_wait(boost::bind(&boosthelper_set_result,
+		(int*) &result_timer, 1));
 
 	// socket preparation
 	//  async_read. However, boost:asio seems not to allow auto-buffers,
@@ -443,15 +462,15 @@ bool CConnectTCPAsio::HandleReceive( asyncCommand *cmd )
 	timer.cancel();
 	ioservice->poll(ec);
 
-	if (read_handler.ec) {
-		LOG_DEBUG(logger,"Async read failed with ec=" << read_handler.ec);
+	if (*read_handler.ec) {
+		LOG_DEBUG(logger,"Async read failed with ec=" << *read_handler.ec);
 		cmd->HandleCompletion((void*) -EIO);
 		return true;
 	}
 
-	if (read_handler.bytes != 1) {
+	if (1 != *read_handler.bytes) {
 		LOG_DEBUG(logger,"Received "
-			<< read_handler.bytes << " but expected only 1 byte");
+			<< *read_handler.bytes << " but expected only 1 byte");
 		cmd->HandleCompletion((void*) -EIO);
 		return true;
 
@@ -460,12 +479,13 @@ bool CConnectTCPAsio::HandleReceive( asyncCommand *cmd )
 	size_t avail = sockt->available();
 	size_t tmp;
 	size_t numrecvd = 1;
-	LOG_TRACE(logger, "Received " << avail << " bytes");
+	LOG_TRACE(logger, "There are " << avail << " bytes ready to read");
 	char recved[avail + 2];
 	recved[0] = buf[0];
 	while (avail > 0) {
-		tmp = sockt->read_some(asio::buffer(&buf[numrecvd], avail), ec);
-		LOG_TRACE(logger, "Read " << tmp << " of these with one call");
+		tmp = sockt->read_some(asio::buffer(&recved[numrecvd], avail),
+			ec);
+		LOG_TRACE(logger, "Read " << tmp << " of these");
 		avail -= tmp;
 		numrecvd += tmp;
 		// check if error occured.

@@ -58,8 +58,13 @@
 #ifndef ILOGGER_H_
 #define ILOGGER_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <string>
 #include <ostream>
+
 
 #ifdef HAVE_LIBLOG4CXX
 #include <log4cxx/logger.h>

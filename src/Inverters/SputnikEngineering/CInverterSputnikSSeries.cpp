@@ -129,6 +129,7 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	ownadr = 0xfb;
 	commadr = 0x01;
 	laststatuscode = (unsigned int) -1;
+	errcnt_ = 0;
 
 	// Add the capabilites that this inverter has
 	// Note: The "must-have" ones CAPA_CAPAS_REMOVEALL and CAPA_CAPAS_UPDATED are already instanciated by the base class constructor.
@@ -219,7 +220,6 @@ unsigned int CInverterSputnikSSeries::CalcChecksum(const char *str, int len) {
 }
 
 void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
-	static int errcnt = 0;
 	bool dbg = true;
 
 	string commstring = "";
@@ -237,7 +237,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 		// so lets schedule a reconnection.
 		// TODO this time should be configurable.
 		connection->Disconnect();
-		errcnt = 0;
+		errcnt_ = 0;
 
 		// Tell everyone that all data is now invalid.
 		CCapability *c = GetConcreteCapability(CAPA_INVERTER_DATASTATE);
@@ -350,10 +350,10 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 
 		if (!connection->Receive(reccomm) || reccomm.empty()) {
 
-			LOG_DEBUG(logger,"Did not receive answer " << errcnt << " ... retrying.");
+			LOG_DEBUG(logger,"Did not receive answer " << errcnt_ << " ... retrying.");
 
 			// TODO move errcnt-limit to configuration
-			if (errcnt++ > 10) {
+			if (errcnt_++ > 10) {
 				LOG_DEBUG(logger,"Did not receive answer. Reconnecting.");
 				cmd = new ICommand(CMD_DISCONNECTED, this, 0);
 				Registry::GetMainScheduler()->ScheduleWork(cmd);
@@ -369,7 +369,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 
 		LOG_TRACE(logger, "CMD_WAIT_RECEIVE / CMD_IDENTFY_WAIT after if");
 
-		errcnt = 0;
+		errcnt_ = 0;
 		LOG_TRACE(logger, "Received :" << reccomm << "len: " << reccomm.size());
 
 		if (logger.IsEnabled(ILogger::TRACE)) {

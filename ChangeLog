@@ -1,3 +1,12 @@
+solarpowerlog (0.11) unstable; urgency=low
+
+  * Sputniks' error recovery did not work sometimes 
+  * Components of the programm can now be selectivly choosen at compile time
+    to reduce the amount of required external libraries and memory footprint.
+  * Solved a bug with the logging levels.
+
+ -- Tobias Frost <tobi@coldtobi.de>  Sat, 26 Sep 2009 09:38:46 +0200
+
 solarpowerlog (0.10) unstable; urgency=low
 
   * New Feature: CVSOutputFilter -- writes data to a CVS file

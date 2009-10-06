@@ -166,17 +166,18 @@ bool CConnectTCPAsio::Disconnect( ICommand *callback )
 }
 
 // Send kept SYNC for the moment
-bool CConnectTCPAsio::Send( const char *tosend, unsigned int len )
+bool CConnectTCPAsio::Send( const char *tosend, unsigned int len, ICommand *callback )
 {
+#warning async operations not coded yet
 	size_t written;
 	written = asio::write(*sockt, asio::buffer(tosend, len));
 	return (written == len);
 }
 
 // Send kept SYNC for the moment
-bool CConnectTCPAsio::Send( const string & tosend )
+bool CConnectTCPAsio::Send( const string & tosend, ICommand *callback )
 {
-	return Send(tosend.c_str(), tosend.length());
+	return Send(tosend.c_str(), tosend.length(), callback);
 }
 
 /* Receive bytes from the stream -- asynced.

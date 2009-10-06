@@ -54,9 +54,8 @@ public:
 	/// Tear down the connection.
 	virtual bool Disconnect(  ICommand * ) {return false;};
 
-
 	/// Send a array of characters (can be used as binary transport, too)
-	virtual bool Send(const char */*tosend*/ , unsigned int /*len*/) { return false; };
+	virtual bool Send(const char */*tosend*/ , unsigned int /*len*/, ICommand * /*callback*/ = NULL) { return false; };
 	/// Send a strin Standard implementation only wraps to above Send.
 	///
 	/// Receive a string. Do now get more than maxxsize (-1 == no limit)

@@ -154,9 +154,9 @@ public:
 		IConnect::SetupLogger(parentlogger, "Comms_TCP_ASIO");
 	}
 
-	virtual bool Send( const char *tosend, unsigned int len );
+	virtual bool Send( const char *tosend, unsigned int len, ICommand *callback = NULL );
 
-	virtual bool Send( const string& tosend );
+	virtual bool Send( const string& tosend, ICommand *callback = NULL );
 
 	virtual bool Receive( string &wheretoplace, ICommand *callback );
 

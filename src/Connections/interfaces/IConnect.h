@@ -161,7 +161,7 @@ public:
 	/// \param tosend what to send
 	/// \param len how many bytes
 	/// \returns true on success, false on error.
-	virtual bool Send( const char *tosend, unsigned int len ) = 0;
+	virtual bool Send( const char *tosend, unsigned int len, ICommand *callback=NULL ) = 0;
 
 	/// Send a string
 	/// \note Standard implementation only wraps to above Send-binray.
@@ -169,9 +169,9 @@ public:
 	/// \param tosend std::string to send
 	/// \returns true on success, false on error.
 	/// Override for better performance!
-	virtual bool Send( const string& tosend )
+	virtual bool Send( const string& tosend, ICommand *callback=NULL )
 	{
-		return Send(tosend.c_str(), tosend.length());
+		return Send(tosend.c_str(), tosend.length(), callback);
 	}
 
 	/** Receive data from connection and place it into a std::string

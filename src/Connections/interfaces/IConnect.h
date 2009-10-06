@@ -142,6 +142,15 @@ public:
 	 * \returns true on successful reading (synchronous operation only),
 	 * will always return true on asynch operation, as error notification
 	 * solely to be done by the supplied cmd.
+	 *
+	 * ASYNCHRNOUNS ERROR CODES.
+	 * The result will be placed in the supplied ICommand's data field.
+	 *
+	 * The value will be usually EIO, as one hs to ask himself: What can go wrong here?
+	 *
+	 * \note Try hard to get the comm into a known state, where connect will
+	 * be able to recover, or reconnection might be futile as recovery strategy.
+	 *
 	 */
 	virtual bool Disconnect( ICommand *callback = NULL ) = 0;
 
@@ -183,7 +192,21 @@ public:
 	 * \returns true on successful reading (synchronous operation only),
 	 * will always return true on asynch operation, as error notification
 	 * solely to be done by the supplied cmd.
-	 * */
+	 *
+	 * ASYNCHRONOUS ERRORS:
+	 * The implementation might use errors out of error.h to specify the cause
+	 * of the error.
+	 *
+	 * These error values are defined in their meaning:
+	 *
+	 * 	EIO	I/O Error on the comms. Reason unknown or something
+	 * 		unexpected happended. (one should close and reopen the connection)
+	 *
+	 *	ETIMEDOUT Read request timed out: No bytes received during
+	 *		configured timeout.
+	 *
+	 *	ENOTCONN  Connection went down, e.g. eof received.
+	*/
 	virtual bool Receive( string &wheretoplace, ICommand *cmd = NULL ) = 0;
 
 	/// Check the configuration for validty. Retrurn false on config errors.

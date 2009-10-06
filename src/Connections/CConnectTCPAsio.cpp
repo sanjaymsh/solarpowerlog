@@ -133,7 +133,13 @@ bool CConnectTCPAsio::Connect( ICommand *callback )
 	return true;
 }
 
-// ASYNCED!!
+/* Disconnect
+ *
+ * The disconnection is done by the async task.
+ *
+ * (If to be done synchronous, it is also dispatched to the worker thread and
+ * directly waited for completion.)
+ * */
 bool CConnectTCPAsio::Disconnect( ICommand *callback )
 {
 	sem_t semaphore;
@@ -173,6 +179,11 @@ bool CConnectTCPAsio::Send( const string & tosend )
 	return Send(tosend.c_str(), tosend.length());
 }
 
+/* Receive bytes from the stream -- asynced.
+ *
+ * As with all other methods, will be done by the worker thread, even if
+ * synchronous operation is requested. In this case, we'll just wait for
+ * completion.*/
 bool CConnectTCPAsio::Receive( string & wheretoplace, ICommand *callback )
 {
 	// RECEIVE async Command:
@@ -200,16 +211,14 @@ bool CConnectTCPAsio::Receive( string & wheretoplace, ICommand *callback )
 		} else {
 			ret = true;
 		}
-		LOG_TRACE(logger, "destroying asyncCommando" << commando );
+		LOG_TRACE(logger, "destroying asyncCommando " << commando );
 		delete commando;
 		return ret;
 	}
 
-	// async job accepted!
 	return true;
 }
 
-// ASYNCED
 bool CConnectTCPAsio::IsConnected( void )
 {
 	mutex.lock();
@@ -376,7 +385,7 @@ bool CConnectTCPAsio::HandleConnect( asyncCommand *cmd )
 bool CConnectTCPAsio::HandleDisConnect( asyncCommand *cmd )
 {
 	boost::system::error_code ec;
-	bool success = true;
+	int error = 0;
 
 	if (!IsConnected()) {
 		cmd->HandleCompletion((void*) 0);
@@ -388,13 +397,14 @@ bool CConnectTCPAsio::HandleDisConnect( asyncCommand *cmd )
 	// (http://www.boost.org/doc/libs/1_36_0/doc/html/boost_asio/reference/basic_stream_socket/close/overload2.html)
 	sockt->shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
 	if (ec)
-		success = false;
+		error = -EIO;
 
 	sockt->close(ec);
-	if (ec)
-		success = false;
 
-	cmd->HandleCompletion((void*) success);
+	if (0 != error && 0 != ec )
+		error = -EIO;
+
+	cmd->HandleCompletion((void*) error);
 	return true;
 }
 
@@ -419,7 +429,6 @@ static void boosthelper_set_result( int* store, int value )
  *
  * HandleReceive expects a std::string in asyncCommand->auxData.
  */
-
 bool CConnectTCPAsio::HandleReceive( asyncCommand *cmd )
 {
 	boost::system::error_code ec, handlerec;
@@ -463,8 +472,16 @@ bool CConnectTCPAsio::HandleReceive( asyncCommand *cmd )
 	ioservice->poll(ec);
 
 	if (*read_handler.ec) {
-		LOG_DEBUG(logger,"Async read failed with ec=" << *read_handler.ec);
-		cmd->HandleCompletion((void*) -EIO);
+		// FIXME Handle error codes here. At least boost::asio::error::eof
+		// which is an indication that the other comm partner closed the
+		// connection.
+		if (*read_handler.ec != boost::asio::error::eof) {
+			LOG_DEBUG(logger,"Async read failed with ec=" << *read_handler.ec);
+			cmd->HandleCompletion((void*) -EIO);
+		} else {
+			LOG_TRACE(logger, "Received eof on socket read");
+			cmd->HandleCompletion((void*) -ENOTCONN);
+		}
 		return true;
 	}
 
@@ -490,10 +507,20 @@ bool CConnectTCPAsio::HandleReceive( asyncCommand *cmd )
 		numrecvd += tmp;
 		// check if error occured.
 		if (ec) {
+			int error;
+
+			switch (ec.value()) {
+			case boost::asio::error::eof:
+				error = -ENOTCONN;
+				break;
+			default:
+				error = -EIO;
+			}
+
 			void *v = cmd->GetAuxData();
 			// give everything we got before the error.
 			((std::string *) v)->assign(recved, numrecvd);
-			cmd->HandleCompletion((void*) -EIO);
+			cmd->HandleCompletion((void*) error);
 			return true;
 		}
 	}

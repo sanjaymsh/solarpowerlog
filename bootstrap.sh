@@ -1,3 +1,4 @@
 #!/bin/sh
 # generate everything for the autotools...
-autoheader -B src &&  aclocal && autoconf && automake --add-missing  
+rm aclocal.m4;
+autoheader -B src &&  aclocal -I m4 && autoconf && automake --add-missing  

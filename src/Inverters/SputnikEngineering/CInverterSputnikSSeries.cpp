@@ -65,6 +65,8 @@
 
 #include "configuration/ILogger.h"
 
+#include <cstring>
+
 using namespace libconfig;
 
 static struct {

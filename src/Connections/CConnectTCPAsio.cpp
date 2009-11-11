@@ -168,7 +168,7 @@ bool CConnectTCPAsio::Disconnect( ICommand *callback )
 // Send kept SYNC for the moment
 bool CConnectTCPAsio::Send( const char *tosend, unsigned int len, ICommand *callback )
 {
-#warning async operations not coded yet
+#warning sync operations not coded yet
 	size_t written;
 	written = asio::write(*sockt, asio::buffer(tosend, len));
 	return (written == len);
@@ -366,15 +366,16 @@ bool CConnectTCPAsio::HandleConnect( asyncCommand *cmd )
 	}
 
 	// preset name, but only needed if we gonna log on these levels.
-	if (logger.IsEnabled(ILogger::ERROR)
-		|| logger.IsEnabled(ILogger::DEBUG))
-		cfghelper.GetConfig("name", strhost);
+	//if (logger.IsEnabled(ILogger::ERROR)
+//		|| logger.IsEnabled(ILogger::DEBUG))
+//		cfghelper.GetConfig("name", strhost);
+//
 
-	if (ec) {
-		LOG_ERROR(logger, "Connection to " << strhost << " failed" );
-		cmd->HandleCompletion((void *) -ECONNREFUSED);
-		return true;
-	}
+//	if (ec) {
+//		LOG_ERROR(logger, "Connection to " << strhost << " failed" );
+//		cmd->HandleCompletion((void *) -ECONNREFUSED);
+//		return true;
+//	}
 
 	LOG_DEBUG(logger, "Connected to " << strhost );
 	// Signal success.

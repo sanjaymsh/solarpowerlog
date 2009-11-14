@@ -170,9 +170,7 @@ if test "x$enable_commandlineoptions" == "xyes"; then
 	else
 		AC_DEFINE([HAVE_CMDLINEOPTS], [1], [Use Boost for parsing command line options.])	
 	fi
-	fi
 fi
-
 
 
 # BOOST ASIO (Header-only-library)
@@ -196,8 +194,6 @@ AC_HEADER_STDBOOL
 AC_HEADER_TIME
 AC_HEADER_ASSERT
 AC_TYPE_SIZE_T
-AX_CXX_EXPLICIT
-AX_CXX_HAVE_STL
 
 
 ### Checks for library functions.

@@ -54,7 +54,7 @@
 #include <libconfig.h++>
 #include <iostream>
 #include <sstream>
-#include <string>
+#include <cstring>
 
 #include "patterns/ICommand.h"
 

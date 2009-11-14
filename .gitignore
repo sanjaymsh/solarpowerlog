@@ -13,3 +13,8 @@ src/stamp-h1
 autom4te.cache/*
 documentation/*.html
 *.o
+*.exe
+*~
+aclocal.m4
+config
+configure

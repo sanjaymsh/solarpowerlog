@@ -22,7 +22,12 @@ patterns/ICommandTarget.cpp patterns/IValue.cpp patterns/ICommand.cpp \
 patterns/IObserverObserver.cpp patterns/IObserverSubject.cpp \
 configuration/CConfigHelper.cpp 
 
-solarpowerlog_CPPFLAGS = $(CONFIG_CFLAGS) $(LOG4CXX_CFLAGS)
-solarpowerlog_LDADD = $(CONFIG_LIBS) $(LOG4CXX_LIBS) $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB) $(BOOST_DATE_TIME_LIB) $(BOOST_SYSTEM_LIB) $(BOOST_ASIO_LIB) $(BOOST_PROGRAM_OPTIONS_LIB) $(WIN32_LIBS)
+solarpowerlog_CPPFLAGS = $(CONFIG_CFLAGS) $(LOG4CXX_CFLAGS) $(APR_CFLAGS) \
+	$(APRUTIL_CFLAGS)
+
+solarpowerlog_LDADD = $(CONFIG_LIBS) $(LOG4CXX_LIBS) $(APR_LIBS) \
+	$(APRUTIL_LIBS) $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB) \
+	$(BOOST_DATE_TIME_LIB) $(BOOST_SYSTEM_LIB) $(BOOST_ASIO_LIB) \
+	$(BOOST_PROGRAM_OPTIONS_LIB) $(WIN32_LIBS)
 
 LIBS = $(DEPS_LIBS)

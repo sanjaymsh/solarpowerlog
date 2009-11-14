@@ -35,6 +35,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
+#include "porting.h"
 #endif
 
 #include <time.h>
@@ -43,7 +44,7 @@
 #include <semaphore.h>
 #include <map>
 
-#include <boost/thread.hpp>
+#include <boost/thread/mutex.hpp>
 
 class ICommand;
 class ICommandTarget;

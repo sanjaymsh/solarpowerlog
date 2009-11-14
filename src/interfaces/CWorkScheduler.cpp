@@ -36,6 +36,7 @@
 
 #include <boost/exception.hpp>
 #include <boost/bind.hpp>
+#include <boost/thread.hpp>
 
 #include "CWorkScheduler.h"
 

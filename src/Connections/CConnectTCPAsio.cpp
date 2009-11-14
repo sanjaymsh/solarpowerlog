@@ -168,9 +168,15 @@ bool CConnectTCPAsio::Disconnect( ICommand *callback )
 // Send kept SYNC for the moment
 bool CConnectTCPAsio::Send( const char *tosend, unsigned int len, ICommand *callback )
 {
-#warning sync operations not coded yet
+#warning async operations not coded yet
 	size_t written;
-	written = asio::write(*sockt, asio::buffer(tosend, len));
+	try {
+		written = asio::write(*sockt, asio::buffer(tosend, len));
+	}
+	catch (... ){
+		LOG_DEBUG(logger, "asio::tcp exeception: write failed" );
+		return false;
+	}
 	return (written == len);
 }
 

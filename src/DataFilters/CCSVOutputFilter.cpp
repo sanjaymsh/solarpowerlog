@@ -284,13 +284,22 @@ void CCSVOutputFilter::DoINITCmd( const ICommand * )
 		tmp = buf;
 	}
 
+
+
 	// Open the file. We use binary mode, as we want end the line ourself (LF+CR)
 	// leaned on RFC4180
+	file.clear(); // clear errorstates of fstream.
 	file.open(tmp.c_str(), fstream::out | fstream::in | fstream::app
 		| fstream::binary);
 
+#ifdef HAVE_WIN32_API
 	if (file.fail()) {
-		LOG_WARN(logger,"Failed to open file! Logger " << name
+		file.clear();
+		file.open(tmp.c_str(), fstream::out | fstream::app | fstream::binary);
+	}
+#endif
+	if (file.fail()) {
+		LOG_WARN(logger,"Failed to open file" << tmp <<". Logger " << name
 			<< " will not work. " );
 		file.close();
 	}

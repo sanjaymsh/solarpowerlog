@@ -169,9 +169,10 @@ int main(int argc, char* argv[]) {
 	using namespace boost::program_options;
 
 	options_description desc("Programm Options");
-	desc.add_options()("help", "this message")("conf,c", value<string> (
+	desc.add_options()
+		("help", "this message")("conf,c", value<string> (
 					&configfile), "specify configuration file")
-	//	("debug,d", value<int> (&loglevel), "debug level (currently unused)")
+		("version,v", "display solarpowerlog version")
 	//	("foreground,f", value<int> (&debug_level),
 	//		"do not daemonize, stay in foreground. (currently unused)")
 	;
@@ -190,16 +191,21 @@ int main(int argc, char* argv[]) {
 		cout << desc << "\n";
 		return 0;
 	}
+
+	if (vm.count("version")) {
+		cout << PACKAGE_STRING << endl;
+		return 0;
+	}
+
 #else
 	if (argc > 1) {
 		(void) argv; // remove warning unused parameter.
-		cerr << "Command line options disabled (compile time.)" << endl;
+		cerr << "This version does not support command line options." << endl;
 		_exit(1);
 	}
 #endif
 
 	/* Loading configuration file */
-	// TODO avoid hardcoded filename. Get it from parameters.
 	if (!Registry::Instance().LoadConfig(configfile)) {
 		cerr << "Could not load configuration " << configfile << endl;
 		_exit(1);

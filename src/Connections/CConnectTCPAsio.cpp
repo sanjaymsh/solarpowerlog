@@ -124,7 +124,7 @@ bool CConnectTCPAsio::Connect( ICommand *callback )
 
 	if (!callback) {
 		sem_wait(&semaphore);
-		LOG_TRACE(logger, "destroying asyncCommando" << commando );
+		LOG_TRACE(logger, "destroying asyncCommando " << commando );
 		delete commando;
 		return IsConnected();
 	}
@@ -314,8 +314,10 @@ void CConnectTCPAsio::_main( void )
 						// the "sign" is, that donow->callback is non NULL
 						// (as the object can be already gone, if
 						// the sync command had already deleted it)
-						if (delete_cmd)
+						if (delete_cmd) {
+							LOG_TRACE(logger, "Deleting " << donow);
 							delete donow;
+						}
 						mutex.unlock();
 					}
 					break;
@@ -324,8 +326,10 @@ void CConnectTCPAsio::_main( void )
 					if (HandleDisConnect(donow)) {
 						mutex.lock();
 						cmds.pop_front();
-						if (delete_cmd)
+						if (delete_cmd) {
+							LOG_TRACE(logger, "Deleting " << donow);
 							delete donow;
+						}
 						mutex.unlock();
 					}
 					break;
@@ -334,8 +338,10 @@ void CConnectTCPAsio::_main( void )
 					if (HandleReceive(donow)) {
 						mutex.lock();
 						cmds.pop_front();
-						if (delete_cmd)
+						if (delete_cmd) {
+							LOG_TRACE(logger, "Deleting " << donow);
 							delete donow;
+						}
 						mutex.unlock();
 					}
 					break;
@@ -394,7 +400,7 @@ bool CConnectTCPAsio::HandleConnect( asyncCommand *cmd )
 	ip::tcp::resolver::iterator iter = resolver.resolve(query);
 	ip::tcp::resolver::iterator end; // End marker.
 
-	// TODO Change to async connect for better timeout handling.
+#warning TODO Change to async connect for better timeout handling.
 	while (iter != end) {
 		ip::tcp::endpoint endpoint = *iter++;
 		LOG_DEBUG(logger, "Connecting to " << endpoint );
@@ -409,7 +415,7 @@ bool CConnectTCPAsio::HandleConnect( asyncCommand *cmd )
 
 	if (ec) {
 #warning remove log_error here, as it should be handled in the one calling connect.
-		LOG_ERROR(logger, "Connection to " << strhost << " failed with reason:" << ec.message() );
+		LOG_ERROR(logger, "Connection to " << strhost << " failed with reason: " << ec.message() );
 		cmd->callback->addData(ICMD_ERRNO, -ECONNREFUSED);
 		if (!ec.message().empty())
 			cmd->callback->addData(ICMD_ERRNO_STR, ec.message());

@@ -44,8 +44,12 @@
 #include "interfaces/IConnect.h"
 #include "interfaces/CWorkScheduler.h"
 #include "configuration/Registry.h"
+#include "patterns/ICommand.h"
 
 #include <semaphore.h>
+
+/// Default timeout for all operations, if not configured
+#define TCP_ASIO_DEFAULT_TIMEOUT (3000UL)
 
 using namespace std;
 
@@ -64,8 +68,21 @@ public:
 	asyncCommand( enum Commando c, ICommand *callback, sem_t *sem = NULL )
 	{
 		this->c = c;
-		this->callback = callback;
+		if (!callback) {
+			this->callback = new ICommand(NULL, NULL);
+			private_icommand = true;
+		} else {
+			this->callback = callback;
+			private_icommand = false;
+		}
+
 		this->sem = sem;
+	}
+
+	~asyncCommand()
+	{
+		if (private_icommand)
+			delete callback;
 	}
 
 	void SetSemaphore( sem_t *sem )
@@ -75,57 +92,35 @@ public:
 
 	/** Handle this jobs completion by notifying the sender
 	 *
-	 * \param data will be set as user data for the result. See
-	 * the documentation of the command for interpretation!*/
-	void HandleCompletion( void *data )
+	 */
+	void HandleCompletion( void )
 	{
-		if (callback) {
-			callback->setData((void *) data);
+		if (private_icommand) {
 			Registry::GetMainScheduler()->ScheduleWork(callback);
 		} else {
-			result = (void *) data;
 			sem_post(sem);
 		}
 	}
 
-	/// Getter for the result field
-	void *GetResult( void )
+	bool IsAsynchronous()
 	{
-		return result;
-	}
-
-	/// Setter for the result field
-	void SetResult( void *result )
-	{
-		this ->result = result;
-	}
-
-	/// Getter for some aux data
-	void *GetAuxData( void )
-	{
-		return auxdata;
-	}
-
-	/// Setter for aux data
-	void SetAuxData( void *aux )
-	{
-		this->auxdata = aux;
+		return private_icommand;
 	}
 
 	enum Commando c; ///< what to do
-	ICommand *callback; ///< if not-null, use this command to notify completion
-	/// data-field of the callback will be used to signal success (true) or failure
+
+	/** callback for completion handling
+	 * In this ICommand, the comand data is stored, results and data...
+	 * This ICommand is privately created, if private_icommand is true,
+	 * and will not be executed if so, but can be still be used for
+	 * storage  */
+	ICommand *callback;
 private:
 	sem_t *sem; ///< if not-null, use this semaphore to notify completion.
 	/// \note: it is context specific to check if it worked out or not.
 	/// The semaphore is intended to be used for the "synchronous fallback"
 
-	/// result: placeholder for the result of the command, so success or not....
-	void *result; /// result placeholder for syncrhronous commands
-
-	/// auxilary data: needed to complete a command, for example where to store
-	/// received data....
-	void *auxdata;
+	bool private_icommand;
 
 };
 
@@ -136,7 +131,7 @@ private:
  *
  *
  */
-class CConnectTCPAsio : public IConnect
+class CConnectTCPAsio: public IConnect
 {
 protected:
 
@@ -148,13 +143,13 @@ public:
 
 	virtual bool Disconnect( ICommand *callback );
 
-	virtual void SetupLogger( const string& parentlogger, const string & =
-		"" )
+	virtual void SetupLogger( const string& parentlogger, const string & = "" )
 	{
 		IConnect::SetupLogger(parentlogger, "Comms_TCP_ASIO");
 	}
 
-	virtual bool Send( const char *tosend, unsigned int len, ICommand *callback = NULL );
+	virtual bool Send( const char *tosend, unsigned int len,
+			ICommand *callback = NULL );
 
 	virtual bool Send( const string& tosend, ICommand *callback = NULL );
 

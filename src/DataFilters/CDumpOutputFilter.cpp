@@ -59,7 +59,7 @@ CDumpOutputFilter::CDumpOutputFilter( const string &name,
 	IDataFilter(name, configurationpath), AddedCaps(0)
 {
 	// Schedule the initialization and subscriptions later...
-	ICommand *cmd = new ICommand(CMD_INIT, this, 0);
+	ICommand *cmd = new ICommand(CMD_INIT, this);
 	Registry::GetMainScheduler()->ScheduleWork(cmd);
 
 	CCapability *c = IInverterBase::GetConcreteCapability(
@@ -139,7 +139,7 @@ void CDumpOutputFilter::Update( const IObserverSubject *subject )
 		if (AddedCaps)
 			return;
 		AddedCaps = true;
-		ICommand *cmd = new ICommand(CMD_ADDED_CAPAS, this, 0);
+		ICommand *cmd = new ICommand(CMD_ADDED_CAPAS, this);
 		Registry::GetMainScheduler()->ScheduleWork(cmd);
 		return;
 	}
@@ -188,7 +188,7 @@ void CDumpOutputFilter::ExecuteCommand( const ICommand *cmd )
 	}
 	case CMD_CYCLIC:
 	{
-		ICommand *cmd = new ICommand(CMD_CYCLIC, this, 0);
+		ICommand *cmd = new ICommand(CMD_CYCLIC, this);
 		timespec ts = { 5, 0 };
 
 		CCapability *c = GetConcreteCapability(

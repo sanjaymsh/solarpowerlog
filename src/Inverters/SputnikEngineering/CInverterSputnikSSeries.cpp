@@ -147,7 +147,7 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	AddCapability(s, c);
 
 	// Add the request to initialize as soon as the system is up.
-	ICommand *cmd = new ICommand(CMD_INIT, this, 0);
+	ICommand *cmd = new ICommand(CMD_INIT, this);
 	Registry::GetMainScheduler()->ScheduleWork(cmd);
 
 	CConfigHelper cfghlp(configurationpath);
@@ -247,7 +247,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 		v->Set(false);
 		c->Notify();
 
-		cmd = new ICommand(CMD_INIT, this, 0);
+		cmd = new ICommand(CMD_INIT, this);
 		timespec ts;
 		ts.tv_sec = 15;
 		ts.tv_nsec = 0;
@@ -260,7 +260,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 		LOG_TRACE(logger, "new state: CMD_INIT");
 
 		if (!connection->Connect()) {
-			cmd = new ICommand(CMD_INIT, this, 0);
+			cmd = new ICommand(CMD_INIT, this);
 			timespec ts;
 			ts.tv_sec = 15;
 			ts.tv_nsec = 0;
@@ -277,6 +277,8 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 			c->Notify();
 			break;
 		}
+
+#warning BUG: Does not handle "cannot connect case" correctly.
 
 		// Try to identify the inverter and get some initial data
 		pushinverterquery(TYP);
@@ -320,13 +322,13 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 		if (!connection->Send(commstring)) {
 			LOG_DEBUG(logger,"Error while sending: Reseting connection.");
 			connection->Disconnect();
-			cmd = new ICommand(CMD_DISCONNECTED, this, 0);
+			cmd = new ICommand(CMD_DISCONNECTED, this);
 			Registry::GetMainScheduler()->ScheduleWork(cmd);
 			break;
 		}
 
 		// wait for
-		cmd = new ICommand(CMD_IDENTFY_WAIT, this, 0);
+		cmd = new ICommand(CMD_IDENTFY_WAIT, this);
 		// TODO change that fixed-wait time to the "estimated roundtrip algorithm"
 		// which will calculate the expected delay....
 		timespec ts;
@@ -345,7 +347,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 		}
 
 		if (!connection->IsConnected()) {
-			cmd = new ICommand(CMD_DISCONNECTED, this, 0);
+			cmd = new ICommand(CMD_DISCONNECTED, this);
 			Registry::GetMainScheduler()->ScheduleWork(cmd);
 			break;
 		}
@@ -357,10 +359,10 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 			// TODO move errcnt-limit to configuration
 			if (errcnt_++ > 10) {
 				LOG_DEBUG(logger,"Did not receive answer. Reconnecting.");
-				cmd = new ICommand(CMD_DISCONNECTED, this, 0);
+				cmd = new ICommand(CMD_DISCONNECTED, this);
 				Registry::GetMainScheduler()->ScheduleWork(cmd);
 			} else {
-				cmd = new ICommand(CMD_IDENTFY_WAIT, this, 0);
+				cmd = new ICommand(CMD_IDENTFY_WAIT, this);
 				timespec ts;
 				ts.tv_sec = 0;
 				ts.tv_nsec = 300UL * 1000UL * 1000UL;
@@ -368,8 +370,6 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 			}
 			break;
 		}
-
-		LOG_TRACE(logger, "CMD_WAIT_RECEIVE / CMD_IDENTFY_WAIT after if");
 
 		errcnt_ = 0;
 		LOG_TRACE(logger, "Received :" << reccomm << "len: " << reccomm.size());
@@ -400,7 +400,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 			connection->Send(commstring);
 
 			// wait for
-			cmd = new ICommand(CMD_IDENTFY_WAIT, this, 0);
+			cmd = new ICommand(CMD_IDENTFY_WAIT, this);
 			// TODO change that fixed-wait time to the "estimated roundtrip algorithm"
 			// which will calculate the expected delay....
 			timespec ts;
@@ -415,7 +415,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 			c->Notify();
 		}
 
-		cmd = new ICommand(CMD_POLL, this, 0);
+		cmd = new ICommand(CMD_POLL, this);
 		CCapability *c = GetConcreteCapability(CAPA_INVERTER_QUERYINTERVAL);
 		CValue<float> *v = (CValue<float> *) c->getValue();
 		ts.tv_sec = v->Get();
@@ -454,13 +454,13 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 			if (!connection->Send(commstring)) {
 				LOG_DEBUG(logger,"Error while sending: Reseting connection.");
 				connection->Disconnect();
-				cmd = new ICommand(CMD_DISCONNECTED, this, 0);
+				cmd = new ICommand(CMD_DISCONNECTED, this);
 				Registry::GetMainScheduler()->ScheduleWork(cmd);
 				break;
 			}
 		}
 
-		cmd = new ICommand(CMD_WAIT_RECEIVE, this, 0);
+		cmd = new ICommand(CMD_WAIT_RECEIVE, this);
 		ts.tv_sec = 0;
 		ts.tv_nsec = 300UL * 1000UL * 1000UL;
 		Registry::GetMainScheduler()->ScheduleWork(cmd, ts);

@@ -69,7 +69,7 @@ CCSVOutputFilter::CCSVOutputFilter( const string & name,
 	headerwritten = false;
 
 	// Schedule the initialization and subscriptions later...
-	ICommand *cmd = new ICommand(CMD_INIT, this, 0);
+	ICommand *cmd = new ICommand(CMD_INIT, this);
 	Registry::GetMainScheduler()->ScheduleWork(cmd);
 
 	// We do not anything on these capabilities, so we remove our list.
@@ -175,10 +175,10 @@ void CCSVOutputFilter::ExecuteCommand( const ICommand *cmd )
 	{
 		DoINITCmd(cmd);
 
-		ICommand *ncmd = new ICommand(CMD_CYCLIC, this, 0);
+		ICommand *ncmd = new ICommand(CMD_CYCLIC, this);
 		struct timespec ts;
 		// Set cyclic timer to the query interval.
-		ncmd = new ICommand(CMD_CYCLIC, this, 0);
+		ncmd = new ICommand(CMD_CYCLIC, this);
 		ts.tv_sec = 5;
 		ts.tv_nsec = 0;
 
@@ -204,7 +204,7 @@ void CCSVOutputFilter::ExecuteCommand( const ICommand *cmd )
 		DoCYCLICmd(cmd);
 
 		// Set cyclic timer to the query interval.
-		ICommand *ncmd = new ICommand(CMD_CYCLIC, this, 0);
+		ICommand *ncmd = new ICommand(CMD_CYCLIC, this);
 		struct timespec ts;
 		ts.tv_sec = 5;
 		ts.tv_nsec = 0;
@@ -318,7 +318,7 @@ void CCSVOutputFilter::DoINITCmd( const ICommand * )
 	ts.tv_sec = remaining.hours() * 3600UL + remaining.minutes() * 60
 		+ remaining.seconds() + 10;
 	ts.tv_nsec = 0;
-	ICommand *ncmd = new ICommand(CMD_ROTATE, this, 0);
+	ICommand *ncmd = new ICommand(CMD_ROTATE, this);
 	Registry::GetMainScheduler()->ScheduleWork(ncmd, ts);
 
 }

@@ -42,9 +42,25 @@
 #include "configuration/ILogger.h"
 #include <boost/thread.hpp>
 #include "patterns/ICommand.h"
+#include <errno.h>
 
 using namespace std;
 
+
+// USED ICOMMAND TOKENS
+/// Receive-result of the Transaction (std::string)
+/// might be not present in case of error.
+#define ICONN_TOKEN_RECEIVE_STRING	"ICON_RECEIVE_STRING"
+
+/// Timeout modifier -- with this optional parameter the timeout parameter
+/// can be overridden from the config for the current operation.
+/// This allows fine-grade timeouts for any operation
+/// Note: If not specified, the implementation will
+/// either use a default value
+/// or retrieve a configuration value
+#define ICONN_TOKEN_TIMEOUT "ICON_TIMEOUT"
+
+#warning docs outdated!
 /** Interface for all communication classes
  *
  * This Interface is the API for all concrete comm methods.

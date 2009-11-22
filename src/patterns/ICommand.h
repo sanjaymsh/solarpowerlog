@@ -45,6 +45,16 @@
 
 #include <boost/any.hpp>
 
+// Tokens for ICommands (general meanings)
+
+/// Error indicator. Same as errno, integer. 0 for no error.
+#define ICMD_ERRNO "ICMD_ERRNO"
+
+/// Error indicator.
+/// Optional, but if existant, contains human readable error message
+#define ICMD_ERRNO_STR "ICMD_ERRMSG"
+
+
 class ICommandTarget;
 
 /** Encapsulates a command
@@ -78,7 +88,6 @@ private:
 	void setData(void *data) {
 		this->data = data;
 	}
-
 #ifdef DEPRECIATE_OLD_ICOMMAND
 public:
 #endif

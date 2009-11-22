@@ -39,6 +39,7 @@
 
 /** Just the constructor taking all elements... **/
 ICommand::ICommand(int command, ICommandTarget *target, void *dat) {
+#warning depreciate this syntax.
 	cmd = command;
 	trgt = target;
 	data = dat;
@@ -47,9 +48,17 @@ ICommand::ICommand(int command, ICommandTarget *target, void *dat) {
 ICommand::ICommand(int command, ICommandTarget *target, std::map<std::string,
 		boost::any> dat) {
 
+	this->cmd = command;
+	this->trgt = target;
+	this->dat = dat;
+	this->data = NULL;
+
 }
 
 ICommand::ICommand(int command, ICommandTarget *target) {
+	cmd = command;
+	trgt = target;
+	data = NULL;
 }
 
 /** Destructor, even for no need for destruction */
@@ -58,6 +67,7 @@ ICommand::~ICommand() {
 
 /** Delegate the command to the one that should do the work */
 void ICommand::execute() {
+	assert(trgt);
 	trgt->ExecuteCommand(this);
 }
 

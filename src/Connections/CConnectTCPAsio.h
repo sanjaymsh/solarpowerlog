@@ -95,16 +95,22 @@ public:
 	 */
 	void HandleCompletion( void )
 	{
-		if (private_icommand) {
+		if (!private_icommand) {
 			Registry::GetMainScheduler()->ScheduleWork(callback);
 		} else {
 			sem_post(sem);
 		}
 	}
 
+	/** Is the asyncCommnd really async, or was it only pretended?
+	 *
+	 * As syncronous operations are also dispatched asynchronous,
+	 * but we need a ICommand-object for this, we need the information
+	 * if it is sync or not to decide when to delete the object.
+	 * */
 	bool IsAsynchronous()
 	{
-		return private_icommand;
+		return !private_icommand;
 	}
 
 	enum Commando c; ///< what to do

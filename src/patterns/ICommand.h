@@ -30,8 +30,6 @@
  *      Author: tobi
  */
 
-#define DEPRECIATE_OLD_ICOMMAND
-
 #ifndef ICOMMAND_H_
 #define ICOMMAND_H_
 
@@ -80,19 +78,6 @@ public:
 
 	int getCmd() const;
 
-#ifdef DEPRECIATE_OLD_ICOMMAND
-private:
-#endif
-	ICommand(int command, ICommandTarget *target, void *dat);
-	void *getData() const;
-	void setData(void *data) {
-		this->data = data;
-	}
-#ifdef DEPRECIATE_OLD_ICOMMAND
-public:
-#endif
-
-
 	/** Find Data in Command
 	 *
 	 * Returns the data associated in the map to the given key
@@ -103,7 +88,7 @@ public:
 	 * \throw std::invalid_argument { throws this if data is not existant. The
 	 * data of the invalid_argument is the key which was not found }
 	 */
-	const boost::any findData(const std::string &key)
+	const boost::any findData(const std::string &key) const
 			throw (std::invalid_argument);
 
 	/** Remove Data from Command
@@ -132,10 +117,8 @@ public:
 private:
 	int cmd;
 	ICommandTarget *trgt;
-	void *data;
 
 	std::map<std::string, boost::any> dat;
-
 };
 
 #endif /* ICOMMAND_H_ */

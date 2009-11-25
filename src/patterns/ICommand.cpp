@@ -37,28 +37,17 @@
 #include "patterns/ICommand.h"
 #include "patterns/ICommandTarget.h"
 
-/** Just the constructor taking all elements... **/
-ICommand::ICommand(int command, ICommandTarget *target, void *dat) {
-#warning depreciate this syntax.
-	cmd = command;
-	trgt = target;
-	data = dat;
-}
-
 ICommand::ICommand(int command, ICommandTarget *target, std::map<std::string,
 		boost::any> dat) {
 
 	this->cmd = command;
 	this->trgt = target;
 	this->dat = dat;
-	this->data = NULL;
-
 }
 
 ICommand::ICommand(int command, ICommandTarget *target) {
 	cmd = command;
 	trgt = target;
-	data = NULL;
 }
 
 /** Destructor, even for no need for destruction */
@@ -76,15 +65,11 @@ int ICommand::getCmd() const {
 	return cmd;
 }
 
-/** Getter for the private cmd field (field is for Commandees use) */
-void *ICommand::getData() const {
-	return data;
-}
 
-const boost::any ICommand::findData(const std::string &key)
-		throw (std::invalid_argument) {
+const boost::any ICommand::findData(const std::string &key) const
+		throw (std::invalid_argument)  {
 
-	std::map<std::string, boost::any>::iterator it = dat.find(key);
+	std::map<std::string, boost::any>::const_iterator it = dat.find(key);
 	if (it != dat.end()) {
 		return (*it).second;
 	}

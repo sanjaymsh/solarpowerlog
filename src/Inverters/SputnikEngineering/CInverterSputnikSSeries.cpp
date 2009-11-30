@@ -224,6 +224,227 @@ unsigned int CInverterSputnikSSeries::CalcChecksum(const char *str, int len) {
 void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 	bool dbg = true;
 
+#define NEW_STATEMACHINE
+#if defined NEW_STATEMACHINE
+
+	string commstring = "";
+	string reccomm = "";
+	ICommand *cmd;
+	timespec ts;
+
+	switch ((Commands) Command->getCmd()) {
+
+	case CMD_DISCONNECTED: {
+		// DISCONNECTED: Error detected, the link to the com partner is down.
+		// Action: Schedule connection retry in xxx seconds
+		// Next-State: INIT (Try to connect)
+		LOG_TRACE(logger, "new state: CMD_DISCONNECTED");
+
+		// Timeout on reception
+		// we assume that we are now disconnected.
+		// so lets schedule a reconnection.
+		// TODO this time should be configurable.
+		connection->Disconnect();
+
+		// Tell everyone that all data is now invalid.
+		CCapability *c = GetConcreteCapability(CAPA_INVERTER_DATASTATE);
+		CValue<bool> *v = (CValue<bool> *) c->getValue();
+		v->Set(false);
+		c->Notify();
+
+		cmd = new ICommand(CMD_INIT, this);
+		timespec ts;
+		ts.tv_sec = 15;
+		ts.tv_nsec = 0;
+		Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
+		break;
+	}
+
+	case CMD_INIT: {
+		// INIT: Try to connect to the comm partner
+		// Action Connection Attempt
+		// Next-State: Wait4Connection
+		LOG_TRACE(logger, "new state: CMD_INIT");
+
+		CConfigHelper cfg(configurationpath);
+
+		cmd = new ICommand(CMD_WAIT4CONNECTION, this);
+		connection->Connect(cmd);
+		break;
+
+		// storage of objects in boost::any
+		//cmd->addData("TEST", cmd);
+		//cmd = boost::any_cast<ICommand*>(cmd->findData("TEST"));
+	}
+
+	case CMD_WAIT4CONNECTION:	{
+		int err = -1;
+		// WAIT4CONNECTION: Wait until connection is up of failed to set up
+		// by the communication object.
+		// Action: Check success/error flag
+		// Next-State: Depending on success:
+		//		success IDENTIFY_COMM
+		//		error 	DISCONNECTED
+		try {
+			err = boost::any_cast<int>(Command->findData(ICMD_ERRNO));
+		}
+		catch (...)
+		{
+			LOG_DEBUG(logger,"CMD_WAIT4CONNECTION: unexpected exception");
+			err = -1;
+		}
+
+		if (err < 0) {
+			try {
+				LOG_ERROR(logger, "Error while connecting: " <<
+						boost::any_cast<string>(Command->findData(ICMD_ERRNO_STR)));
+			} catch (...) {
+			}
+
+			cmd = new ICommand(CMD_DISCONNECTED, this);
+			Registry::GetMainScheduler()->ScheduleWork(cmd);
+		} else
+		{
+			cmd = new ICommand(CMD_QUERY_IDENTIFY, this);
+			Registry::GetMainScheduler()->ScheduleWork(cmd);
+		}
+	}
+	break;
+
+	case CMD_QUERY_IDENTIFY:
+		pushinverterquery(TYP);
+		pushinverterquery(SWV);
+		pushinverterquery(BUILDVER);
+
+	case CMD_QUERY_POLL:
+		pushinverterquery(PAC);
+		pushinverterquery(KHR);
+		pushinverterquery(PIN);
+		pushinverterquery(KT0);
+		pushinverterquery(DDY);
+		pushinverterquery(KYR);
+		pushinverterquery(KMT);
+		pushinverterquery(KDY);
+		pushinverterquery(KT0);
+		pushinverterquery(PRL);
+
+		pushinverterquery(UDC);
+		pushinverterquery(IDC);
+		pushinverterquery(IL1);
+		pushinverterquery(UL1);
+		pushinverterquery(TKK);
+		pushinverterquery(TMI);
+		pushinverterquery(THR);
+		pushinverterquery(TNF);
+		pushinverterquery(SYS);
+
+	case CMD_SEND_QUERIES:
+	{
+		commstring = assemblequerystring();
+		LOG_TRACE(logger, "Sending: " << commstring << " Len: "<< commstring.size());
+
+		// XXX cmd = new ICommand(CMD_WAIT_SENT, this);
+		#warning Send() is not yet async!
+		connection->Send(commstring /*,cmd */ );
+	}
+//	break;
+
+	case CMD_WAIT_RECEIVE:
+	{
+		cmd = new ICommand(CMD_EVALUATE_RECEIVE, this);
+		connection->Receive(commstring, cmd);
+	}
+	break;
+
+	case CMD_EVALUATE_RECEIVE:
+	{
+		int err;
+		std::string s;
+		try {
+		err = boost::any_cast<int>(Command->findData(ICMD_ERRNO));
+		}
+		catch (...) {
+			LOG_DEBUG(logger, "BUG: Unexpected exception.");
+			err = -1;
+			break;
+		}
+
+		if (err < 0) {
+			// we do not differenziate the error here, a error is a error....
+			cmd = new ICommand(CMD_DISCONNECTED,this);
+			Registry::GetMainScheduler()->ScheduleWork(cmd);
+			try {
+				s = boost::any_cast<std::string>
+					(Command->findData(ICMD_ERRNO_STR));
+				LOG_DEBUG(logger, "Receive Error: " << s);
+			}
+			catch(...) {
+				LOG_DEBUG(logger, "Receive Error: (unknown error)");
+			}
+			break;
+		}
+
+		try {
+			s = boost::any_cast<std::string>
+				(Command->findData(ICONN_TOKEN_RECEIVE_STRING));
+
+		}
+		catch (...) {
+			LOG_DEBUG(logger, "Unexpected Exception");
+			break;
+		}
+
+		LOG_TRACE(logger, "Received :" << s << "len: " << s.size());
+		if (logger.IsEnabled(ILogger::TRACE)) {
+				string st;
+				char buf[32];
+				for (unsigned int i = 0; i < s.size(); i++) {
+					sprintf(buf, "%02x", (unsigned char) s[i]);
+					st = st + buf;
+					if (i && i % 16 == 0)
+						st = st + "\n";
+					else
+						st = st + ' ';
+				}
+				LOG_TRACE(logger, "Received in hex: "<< st );
+		}
+
+		if (!parsereceivedstring(s)) {
+			// Reconnect on parse errors.
+			LOG_ERROR(logger, "Parse error while receiving.");
+			LOG_DEBUG(logger, "Received: " << s);
+			cmd = new ICommand(CMD_DISCONNECTED,this);
+			Registry::GetMainScheduler()->ScheduleWork(cmd);
+			break;
+		}
+
+		// check if there are queries left in this cycle.
+		if (!cmdqueue.empty()) {
+			cmd = new ICommand(CMD_SEND_QUERIES, this);
+			// there are more. finish them before setting the data valid.
+			Registry::GetMainScheduler()->ScheduleWork(cmd);
+			break;
+		}
+
+		// TODO differenciate between identify query and "normal" runtime queries
+		cmd = new ICommand(CMD_QUERY_POLL, this);
+
+		CCapability *c = GetConcreteCapability(CAPA_INVERTER_DATASTATE);
+		CValue<bool> *vb = (CValue<bool> *) c->getValue();
+		vb->Set(true);
+		c->Notify();
+
+		c = GetConcreteCapability(CAPA_INVERTER_QUERYINTERVAL);
+		CValue<float> *v = (CValue<float> *) c->getValue();
+		ts.tv_sec = v->Get();
+		ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
+		Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
+	}
+	break;
+	}
+
+#else
+
 	string commstring = "";
 	string reccomm = "";
 
@@ -336,7 +557,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 		ts.tv_nsec = 500UL * 1000UL * 1000UL;
 		Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
 		break;
-
+	}
 	case CMD_WAIT_RECEIVE:
 		LOG_TRACE(logger, "new state: CMD_WAIT_RECEIVE ");
 		dbg = false;
@@ -466,6 +687,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 		Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
 		break;
 	}
+#endif
 }
 
 void CInverterSputnikSSeries::pushinverterquery(enum query q) {

@@ -69,10 +69,16 @@ private:
 	/// Commands for the Workscheduler
 	enum Commands {
 		CMD_INIT = 1000,
+		CMD_WAIT4CONNECTION,
 		CMD_IDENTFY_WAIT,
 		CMD_POLL,
 		CMD_WAIT_RECEIVE,
-		CMD_DISCONNECTED
+		CMD_DISCONNECTED,
+		CMD_QUERY_IDENTIFY,
+		CMD_EVALUATE_RECEIVE,
+		CMD_WAIT_SENT,
+		CMD_SEND_QUERIES,
+		CMD_QUERY_POLL
 	};
 
 	/// Dataports of the sputnik inverters.

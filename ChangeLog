@@ -1,4 +1,4 @@
-solarpowerlog (0.11) unstable; urgency=low
+solarpowerlog (0.11-unreleased) unstable; urgency=low
 
   * Sputniks' error recovery did not work sometimes 
   * Components of the programm can now be selectivly choosen at compile time

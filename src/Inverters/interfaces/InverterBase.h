@@ -214,6 +214,13 @@ class ICapaIterator;
 
 using namespace std;
 
+/// connectiontimeout: Wait this long for the connectin attempt to time out
+/// note: currently FIXME (not implemented in ASIO TCP)
+/// note: This tweak is optional. The Connection method needs not to honor
+/// this parameter (especially if the success/failure is immediatly known)
+#define CONFIG_TWEAK_CONNECTION_TIMEOUT "option_connectiontimeout"
+#define CONFIG_TWEAK_CONNECTION_TIMEOUT_DEFAULT (15000)
+
 /** Inverter Interface .... */
 // TODO: This class renamed, as it also fits for the "Filters" (Data source, data computing/enhancing, ...)
 // Inverters will be only a special interface, derived from this base class

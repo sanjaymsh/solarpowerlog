@@ -380,6 +380,8 @@ bool CConnectTCPAsio::HandleConnect( asyncCommand *cmd )
 
 	CConfigHelper cfghelper(ConfigurationPath);
 
+#warning rework: Should be only needed from the configuration, as the \
+	calling object needs not be aware of these issues (should be transparent)
 	try {
 		timeout = boost::any_cast<long>(cmd->callback->findData(
 				ICONN_TOKEN_TIMEOUT));

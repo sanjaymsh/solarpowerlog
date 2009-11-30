@@ -345,6 +345,17 @@ class ILogger /*: public std::ostream*/
 {
 public:
 
+	enum level
+	{
+		OFF = 0,
+		FATAL ,
+		ERROR ,
+		WARN ,
+		INFO ,
+		DEBUG ,
+		TRACE ,
+		ALL
+	};
 	/** Configure the logger with a name (to identify) ,
 	 * the configuration string (for retrieving logger config)
 	 * and a section (under what hierarchy to place the logger)

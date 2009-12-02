@@ -211,6 +211,8 @@ private:
 
 	bool HandleReceive( asyncCommand *cmd );
 
+	bool HandleSend( asyncCommand *cmd );
+
 	list<asyncCommand*> cmds;
 	sem_t cmdsemaphore;
 

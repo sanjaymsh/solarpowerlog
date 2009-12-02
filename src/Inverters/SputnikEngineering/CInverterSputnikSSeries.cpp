@@ -343,11 +343,10 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 		commstring = assemblequerystring();
 		LOG_TRACE(logger, "Sending: " << commstring << " Len: "<< commstring.size());
 
-		// XXX cmd = new ICommand(CMD_WAIT_SENT, this);
-		#warning Send() is not yet async!
-		connection->Send(commstring /*,cmd */ );
+		cmd = new ICommand(CMD_WAIT_SENT, this);
+		connection->Send(commstring , cmd );
 	}
-//	break;
+	break;
 
 	case CMD_WAIT_RECEIVE:
 	{

@@ -52,6 +52,10 @@ using namespace std;
 /// might be not present in case of error.
 #define ICONN_TOKEN_RECEIVE_STRING	"ICON_RECEIVE_STRING"
 
+/// (private token) Send this string over the connection
+/// This is used to communicate to the worker thread what it should send.
+#define ICONN_TOKEN_SEND_STRING	"ICON_SEND_STRING"
+
 /// Timeout modifier -- with this optional parameter the timeout parameter
 /// can be overridden from the config for the current operation.
 /// This allows fine-grade timeouts for any operation

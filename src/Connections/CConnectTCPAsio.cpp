@@ -35,6 +35,8 @@
 #include "porting.h"
 #endif
 
+#define DEBUG_TCPASIO
+
 #include "interfaces/IConnect.h"
 #include "Connections/CConnectTCPAsio.h"
 
@@ -63,9 +65,9 @@ using namespace boost::asio;
 using namespace boost;
 using namespace libconfig;
 
-struct asyncReadHandler
+struct asyncASIOCompletionHandler
 {
-	asyncReadHandler( size_t *b, boost::system::error_code *ec )
+	asyncASIOCompletionHandler( size_t *b, boost::system::error_code *ec )
 	{
 		bytes = b;
 		this->ec = ec;
@@ -167,20 +169,49 @@ bool CConnectTCPAsio::Disconnect( ICommand *callback )
 bool CConnectTCPAsio::Send( const char *tosend, unsigned int len,
 		ICommand *callback )
 {
-#warning async operations not coded yet
+	sem_t semaphore;
+	bool ret;
+	std::string s(tosend, len);
+	s.assign(tosend, len);
+
+	asyncCommand *commando = new asyncCommand(asyncCommand::SEND, callback);
+	callback->addData(ICONN_TOKEN_SEND_STRING, s);
+
 	if (callback) {
-		LOG_ERROR(logger, "ERROR: Not coded yet -- CConnectTCPAsio::Send must not use callback for now! ");
-		assert(!callback);
+		sem_init(&semaphore, 0, 0);
+		commando->SetSemaphore(&semaphore);
 	}
 
-	size_t written;
-	try {
-		written = asio::write(*sockt, asio::buffer(tosend, len));
-	} catch (...) {
-		LOG_DEBUG(logger, "asio::tcp exeception: write failed" );
-		return false;
+	PushWork(commando);
+
+	if (!callback) {
+		int err;
+		// sync: wait for async job completion and check result.
+		sem_wait(&semaphore);
+		try {
+			err
+				= boost::any_cast<int>(commando->callback->findData(
+					ICMD_ERRNO));
+			if (err < 0) {
+				ret = false;
+			} else {
+				ret = true;
+			}
+		} catch (std::invalid_argument e) {
+			LOG_DEBUG(logger,"ERR: unexpected exception while "
+					"receive-handling: Invalid arguement " << e.what());
+			ret = false;
+		} catch (boost::bad_any_cast e) {
+			LOG_DEBUG(logger,"ERR: unexpected exception while "
+					"receive-handling: Bad cast " << e.what());
+			ret = false;
+		}
+
+		LOG_TRACE(logger, "destroying asyncCommando " << commando );
+		delete commando;
+		return ret;
 	}
-	return (written == len);
+	return true;
 }
 
 // Send kept SYNC for the moment
@@ -501,7 +532,7 @@ bool CConnectTCPAsio::HandleReceive( asyncCommand *cmd )
 	size_t bytes;
 	unsigned long timeout;
 	char buf[2];
-	struct asyncReadHandler read_handler(&bytes, &handlerec);
+	struct asyncASIOCompletionHandler read_handler(&bytes, &handlerec);
 	// timeout setup
 	ioservice->reset();
 
@@ -607,5 +638,108 @@ bool CConnectTCPAsio::HandleReceive( asyncCommand *cmd )
 	cmd->callback->addData(ICMD_ERRNO, 0);
 	cmd->HandleCompletion();
 
+	return true;
+}
+
+
+/** handles async sending */
+bool CConnectTCPAsio::HandleSend( asyncCommand *cmd ) {
+
+	boost::system::error_code ec, handlerec;
+	volatile int result_timer = 0;
+	size_t bytes;
+	unsigned long timeout;
+	struct asyncASIOCompletionHandler write_handler(&bytes, &handlerec);
+	// timeout setup
+	ioservice->reset();
+	std::string s;
+
+	try {
+		s = boost::any_cast<std::string>(cmd->callback->findData(ICONN_TOKEN_SEND_STRING));
+	}
+#ifdef DEBUG_TCPASIO
+	catch (std::invalid_argument e) {
+		LOG_DEBUG(logger, "BUG: required " << ICONN_TOKEN_SEND_STRING << " argument not set");
+
+	}
+	catch (boost::bad_any_cast e)
+	{
+		LOG_DEBUG(logger, "Unexpected exception in HandleSend: Bad cast" << e.what());
+	}
+#else
+	catch (...);
+#endif
+
+	try {
+		timeout = boost::any_cast<unsigned long>(cmd->callback->findData(
+				ICONN_TOKEN_TIMEOUT));
+	}
+#ifdef DEBUG_TCPASIO
+		catch (std::invalid_argument e) {
+		CConfigHelper cfghelper(ConfigurationPath);
+		cfghelper.GetConfig("tcptimeout", timeout, 3000UL);
+	} catch (boost::bad_any_cast e) {
+		LOG_DEBUG(logger, "Unexpected exception in HandleSend: Bad cast" << e.what());
+		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
+	}
+#else
+		catch (...) {
+		CConfigHelper cfghelper(ConfigurationPath);
+		cfghelper.GetConfig("tcptimeout", timeout, 3000UL);
+	}
+#endif
+
+	deadline_timer timer(*(this->ioservice));
+	boost::posix_time::time_duration td = boost::posix_time::millisec(timeout);
+	timer.expires_from_now(td);
+	timer.async_wait(boost::bind(&boosthelper_set_result, (int*) &result_timer,
+			1));
+
+	// socket preparation
+	//  async_write the whole std::string
+	boost::asio::async_write(*sockt, boost::asio::buffer(s), write_handler);
+
+	// run one of the scheduled services
+	size_t num = ioservice->run_one(ec);
+
+	// ioservice error or timeout
+	if (num == 0 || result_timer) {
+		timer.cancel(ec);
+		sockt->cancel(ec);
+		LOG_TRACE(logger,"Async write timeout");
+		cmd->callback->addData(ICMD_ERRNO, -ETIMEDOUT);
+		cmd->HandleCompletion();
+		ioservice->poll();
+		return true;
+	}
+
+	// cancel the timer, and catch the completion handler
+	timer.cancel();
+	ioservice->poll(ec);
+
+	if (*write_handler.ec) {
+		if (*write_handler.ec != boost::asio::error::eof) {
+			LOG_DEBUG(logger,"Async write failed with ec=" << *write_handler.ec
+					<< " msg="<< write_handler.ec->message());
+			cmd->callback->addData(ICMD_ERRNO, -EIO);
+			cmd->callback->addData(ICMD_ERRNO_STR, write_handler.ec->message());
+		} else {
+			cmd->callback->addData(ICMD_ERRNO, -ENOTCONN);
+			LOG_TRACE(logger, "Received eof on socket write");
+		}
+		cmd->HandleCompletion();
+		return true;
+	}
+
+	if (s.length() != *write_handler.bytes) {
+		LOG_DEBUG(logger,"Sent "
+				<< *write_handler.bytes << " but expected "<< s.length() );
+		cmd->callback->addData(ICMD_ERRNO, -EIO);
+		cmd->HandleCompletion();
+		return true;
+	}
+
+	cmd->callback->addData(ICMD_ERRNO, 0);
+	cmd->HandleCompletion();
 	return true;
 }

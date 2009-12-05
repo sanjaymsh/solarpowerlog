@@ -376,10 +376,33 @@ void CConnectTCPAsio::_main( void )
 						mutex.unlock();
 					}
 					break;
+
+				case asyncCommand::SEND:
+				{
+					if(HandleSend(donow)) {
+						mutex.lock();
+						cmds.pop_front();
+						if (delete_cmd) {
+							LOG_TRACE(logger, "Deleting " << donow);
+							delete donow;
+						}
+						mutex.unlock();
+					}
 				}
-			} else {
-				mutex.unlock();
+				break;
+
+				default:
+				{
+					LOG_FATAL(logger, "Unknown command received.");
+					abort();
+					break;
+				}
 			}
+
+		} else {
+			mutex.unlock();
+		}
+
 		}
 	}
 

@@ -278,6 +278,8 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 	}
 
 	case CMD_WAIT4CONNECTION:	{
+		LOG_TRACE(logger, "new state: CMD_WAIT4CONNECTION");
+
 		int err = -1;
 		// WAIT4CONNECTION: Wait until connection is up of failed to set up
 		// by the communication object.
@@ -312,11 +314,15 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 	break;
 
 	case CMD_QUERY_IDENTIFY:
+		LOG_TRACE(logger, "new state: CMD_QUERY_IDENTIFY ");
+
 		pushinverterquery(TYP);
 		pushinverterquery(SWV);
 		pushinverterquery(BUILDVER);
 
 	case CMD_QUERY_POLL:
+		LOG_TRACE(logger, "new state: CMD_QUERY_POLL ");
+
 		pushinverterquery(PAC);
 		pushinverterquery(KHR);
 		pushinverterquery(PIN);
@@ -340,6 +346,8 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 
 	case CMD_SEND_QUERIES:
 	{
+		LOG_TRACE(logger, "new state: CMD_SEND_QUERIES ");
+
 		commstring = assemblequerystring();
 		LOG_TRACE(logger, "Sending: " << commstring << " Len: "<< commstring.size());
 
@@ -348,15 +356,42 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 	}
 	break;
 
+	case CMD_WAIT_SENT:
+	{
+		LOG_TRACE(logger, "new state: CMD_WAIT_SENT");
+		int err;
+		try {
+		err = boost::any_cast<int>(Command->findData(ICMD_ERRNO));
+		}
+		catch (...) {
+			LOG_DEBUG(logger, "BUG: Unexpected exception.");
+			err = -1;
+		}
+
+		if (err < 0) {
+			cmd = new ICommand(CMD_DISCONNECTED, this);
+		}
+		else {
+			cmd = new ICommand(CMD_WAIT_RECEIVE, this);
+		}
+		Registry::GetMainScheduler()->ScheduleWork(cmd);
+	}
+	break;
+
 	case CMD_WAIT_RECEIVE:
 	{
-		cmd = new ICommand(CMD_EVALUATE_RECEIVE, this);
+		LOG_TRACE(logger, "new state: CMD_WAIT_RECEIVE");
+
+		cmd =
+				new ICommand(CMD_EVALUATE_RECEIVE, this);
 		connection->Receive(commstring, cmd);
 	}
 	break;
 
 	case CMD_EVALUATE_RECEIVE:
 	{
+		LOG_TRACE(logger, "new state: CMD_EVALUATE_RECEIVE");
+
 		int err;
 		std::string s;
 		try {
@@ -365,7 +400,6 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 		catch (...) {
 			LOG_DEBUG(logger, "BUG: Unexpected exception.");
 			err = -1;
-			break;
 		}
 
 		if (err < 0) {
@@ -386,7 +420,6 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 		try {
 			s = boost::any_cast<std::string>
 				(Command->findData(ICONN_TOKEN_RECEIVE_STRING));
-
 		}
 		catch (...) {
 			LOG_DEBUG(logger, "Unexpected Exception");
@@ -440,6 +473,11 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 		Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
 	}
 	break;
+
+	default:
+		LOG_FATAL(logger, "Unknown CMD received");
+		abort();
+
 	}
 
 #else

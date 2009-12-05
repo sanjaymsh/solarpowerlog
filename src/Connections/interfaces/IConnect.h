@@ -174,6 +174,8 @@ public:
 	 */
 	virtual bool Disconnect( ICommand *callback = NULL ) = 0;
 
+#warning depreciate synchronous interface
+// private:
 	/// Send a array of characters (can be used as binary transport, too)
 	///
 	/// \warning not all classes might understand binary transport. Check
@@ -228,6 +230,8 @@ public:
 	 *	ENOTCONN  Connection went down, e.g. eof received.
 	*/
 	virtual bool Receive( string &wheretoplace, ICommand *cmd = NULL ) = 0;
+
+public:
 
 	/// Check the configuration for validty. Retrurn false on config errors.
 	/// (programm will abort then!)

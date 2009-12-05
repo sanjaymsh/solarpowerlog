@@ -1,0 +1,12 @@
+This is a simple set of shell scripts which will "simulate" a Sputnik Inverter.
+In "double quotes", because it its very simplified:
+- Will wait on any incoming bytes 
+- Won't do any check on these
+- Will answer with a static response.
+
+Syntax:
+./netcat_sputnik <port-to-use>
+
+The example solarpowerlog.conf in this directory can be uses with
+./netcat_sputnik 12345
+

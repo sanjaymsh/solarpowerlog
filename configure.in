@@ -1,7 +1,7 @@
 
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(solarpowerlog, 0.11, tobi@coldtobi.de)
+AC_INIT(solarpowerlog, 0.12, tobi@coldtobi.de)
 AC_PREREQ(2.59)
 # use own directory for the autotools stuff
 AC_CONFIG_AUX_DIR(config)
@@ -14,7 +14,7 @@ AC_CONFIG_HEADERS(src/config.h)
 # TODO
 #AC_COPYRIGHT (copyright-notice )
 
-AM_INIT_AUTOMAKE(solarpowerlog, 0.10+)
+AM_INIT_AUTOMAKE(solarpowerlog, 0.12)
 
 AC_CONFIG_SRCDIR([src/solarpowerlog.cpp])
 
@@ -219,5 +219,3 @@ AC_MSG_NOTICE([Sputnik support: ........................... $enable_sputnik])
 AC_MSG_NOTICE([FILTERS AND LOGGERS:]);
 AC_MSG_NOTICE([CSV logger support: ........................ $enable_csvlogger])
 AC_MSG_NOTICE([Dumb Dumper support: ....................... $enable_dumbdumper])
-
-

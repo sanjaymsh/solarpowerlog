@@ -1,3 +1,32 @@
+solarpowerlog (0.12) unstable; urgency=low
+
+   * Communication is now done asynchronous instead of polling.
+     This should improve the timing accuracy, as well laying the
+     preparing for a"daisy-chain-commmunications-module"
+   * Added a simple simulator to enable debugging at night
+   * FTBFS fixed when lib4logcxx was unavailable
+   * New parameter "--version"
+   * CVSDumper: Bugfix for Win32, "Won't open file"
+   * Fixing a build error on newer boost libraries
+   * Autotools: Fix for Win32: liblog4cxx depends on apr and needs also to 
+     link in this library. This was not seen on linux.
+   * Autotools: Added missing m4 macros
+   * Autotools fix: now autotools will also run under win32 to generate the
+     configure script
+   * Many other tweaks and code rewrites....
+
+ -- Tobias Frost <tobi@coldtobi.de>  Sun, 06 Dec 2009 16:11:25 +0200
+   
+    
+solarpowerlog (0.11-unreleased) unstable; urgency=low
+
+  * Sputniks' error recovery did not work sometimes 
+  * Components of the programm can now be selectivly choosen at compile time
+    to reduce the amount of required external libraries and memory footprint.
+  * Solved a bug with the logging levels.
+
+ -- Tobias Frost <tobi@coldtobi.de>  Sat, 26 Sep 2009 09:38:46 +0200
+
 solarpowerlog (0.10) unstable; urgency=low
 
   * New Feature: CVSOutputFilter -- writes data to a CVS file

@@ -424,7 +424,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 		}
 
 		LOG_TRACE(logger, "Received :" << s << "len: " << s.size());
-		if (logger.IsEnabled(ILogger::TRACE)) {
+		if (logger.IsEnabled(ILogger::LL_TRACE)) {
 				string st;
 				char buf[32];
 				for (unsigned int i = 0; i < s.size(); i++) {
@@ -1007,7 +1007,7 @@ bool CInverterSputnikSSeries::parsereceivedstring(const string & s) {
 
 	// Debug: Print all received tokens
 #if defined DEBUG_TOKENIZER
-	if (logger.IsEnabled(ILogger::TRACE)) {
+	if (logger.IsEnabled(ILogger::LL_TRACE)) {
 		std::stringstream ss;
 		vector<string>::iterator it;
 		for (i = 0, it = tokens.begin(); it != tokens.end() - 1; it++) {

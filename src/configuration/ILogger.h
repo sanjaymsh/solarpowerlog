@@ -75,7 +75,7 @@
 
 #define LOG_FATAL(logger, message)  do \
 	{\
-		if (logger.IsEnabled(ILogger::FATAL)) { \
+		if (logger.IsEnabled(ILogger::LL_FATAL)) { \
 			std::stringstream ss;\
 			ss << message;\
 			logger << ss;\
@@ -84,7 +84,7 @@
 
 #define LOG_ERROR(logger, message)  do \
 	{\
-		if (logger.IsEnabled(ILogger::ERROR)) { \
+		if (logger.IsEnabled(ILogger::LL_ERROR)) { \
 			std::stringstream ss;\
 			ss << message;\
 			logger << ss;\
@@ -93,7 +93,7 @@
 
 #define LOG_WARN(logger, message)   do \
 	{\
-		if (logger.IsEnabled(ILogger::WARN)) { \
+		if (logger.IsEnabled(ILogger::LL_WARN)) { \
 			std::stringstream ss;\
 			ss << message;\
 			logger << ss;\
@@ -102,7 +102,7 @@
 
 #define LOG_INFO(logger, message)   do \
 	{\
-		if (logger.IsEnabled(ILogger::INFO)) { \
+		if (logger.IsEnabled(ILogger::LL_INFO)) { \
 			std::stringstream ss;\
 			ss << message;\
 			logger << ss;\
@@ -111,7 +111,7 @@
 
 #define LOG_DEBUG(logger, message)   do \
 	{\
-		if (logger.IsEnabled(ILogger::DEBUG)) { \
+		if (logger.IsEnabled(ILogger::LL_DEBUG)) { \
 			std::stringstream ss;\
 			ss << message;\
 			logger << ss;\
@@ -120,7 +120,7 @@
 
 #define LOG_TRACE(logger, message)   do \
 	{\
-		if (logger.IsEnabled(ILogger::TRACE)) { \
+		if (logger.IsEnabled(ILogger::LL_TRACE)) { \
 			std::stringstream ss;\
 			ss << message;\
 			logger << ss;\
@@ -129,7 +129,7 @@
 
 #define LOG_ALL(logger, message)   do \
 	{\
-		if (logger.IsEnabled(ILogger::ALL)) { \
+		if (logger.IsEnabled(ILogger::LL_ALL)) { \
 			std::stringstream ss;\
 			ss << message;\
 			logger << ss;\
@@ -182,14 +182,14 @@ public:
 
 	enum level
 	{
-		OFF = log4cxx::Level::OFF_INT,
-		FATAL = log4cxx::Level::FATAL_INT,
-		ERROR = log4cxx::Level::ERROR_INT,
-		WARN = log4cxx::Level::WARN_INT,
-		INFO = log4cxx::Level::INFO_INT,
-		DEBUG = log4cxx::Level::DEBUG_INT,
-		TRACE = log4cxx::Level::TRACE_INT,
-		ALL = log4cxx::Level::ALL_INT
+		LL_OFF = log4cxx::Level::OFF_INT,
+		LL_FATAL = log4cxx::Level::FATAL_INT,
+		LL_ERROR = log4cxx::Level::ERROR_INT,
+		LL_WARN = log4cxx::Level::WARN_INT,
+		LL_INFO = log4cxx::Level::INFO_INT,
+		LL_DEBUG = log4cxx::Level::DEBUG_INT,
+		LL_TRACE = log4cxx::Level::TRACE_INT,
+		LL_ALL = log4cxx::Level::ALL_INT
 	};
 
 	/** Configure the logger with a name (to identify) ,
@@ -347,14 +347,14 @@ public:
 
 	enum level
 	{
-		OFF = 0,
-		FATAL ,
-		ERROR ,
-		WARN ,
-		INFO ,
-		DEBUG ,
-		TRACE ,
-		ALL
+		LL_OFF = 0,
+		LL_FATAL ,
+		LL_ERROR ,
+		LL_WARN ,
+		LL_INFO ,
+		LL_DEBUG ,
+		LL_TRACE ,
+		LL_ALL
 	};
 	/** Configure the logger with a name (to identify) ,
 	 * the configuration string (for retrieving logger config)

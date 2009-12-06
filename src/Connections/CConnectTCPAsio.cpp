@@ -466,7 +466,7 @@ bool CConnectTCPAsio::HandleConnect( asyncCommand *cmd )
 	}
 
 	// preset name, but only needed if we gonna log on these levels.
-	if (logger.IsEnabled(ILogger::ERROR) || logger.IsEnabled(ILogger::DEBUG))
+	if (logger.IsEnabled(ILogger::LL_ERROR) || logger.IsEnabled(ILogger::LL_DEBUG))
 		cfghelper.GetConfig("name", strhost);
 
 	if (ec) {

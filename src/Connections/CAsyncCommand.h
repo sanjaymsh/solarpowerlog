@@ -23,30 +23,27 @@ public:
 	/// Try to receive data
 	};
 
-	CAsyncCommand( enum Commando c, ICommand *callback, sem_t *sem = NULL )
-	{
-		this->c = c;
-		if (!callback) {
-			this->callback = new ICommand(NULL, NULL);
-			private_icommand = true;
-		} else {
-			this->callback = callback;
-			private_icommand = false;
-		}
+	/** Constructor which create the object
+	 *
+	 * \param c Commando to be used
+	 * \param callback ICommand used as callback. Might be NULL. In this case the semaphore mechanism is used.
+	 * \param sem Semaphore. If callback is NULL, for the completion handling this semaphore is used.
+	 * The caller just waits for the semaphore (sem_wait) and the programm will wait for the completion of the
+	 * async command.
+	 *
+	 */
+	CAsyncCommand( enum Commando c, ICommand *callback, sem_t *sem = NULL );
 
-		this->sem = sem;
-	}
+	/** Destructor */
+	~CAsyncCommand();
 
-	~CAsyncCommand()
-	{
-		if (private_icommand)
-			delete callback;
-	}
-
-	void SetSemaphore( sem_t *sem )
+	/** Setter for "late setting" the to-be used semaphore.
+	*/
+	inline void SetSemaphore( sem_t *sem )
 	{
 		this->sem = sem;
 	}
+
 
 	/** Handle this jobs completion by notifying the sender
 	 *
@@ -66,7 +63,7 @@ public:
 	 * but we need a ICommand-object for this, we need the information
 	 * if it is sync or not to decide when to delete the object.
 	 * */
-	bool IsAsynchronous()
+	inline bool IsAsynchronous()
 	{
 		return !private_icommand;
 	}
@@ -79,6 +76,7 @@ public:
 	 * and will not be executed if so, but can be still be used for
 	 * storage  */
 	ICommand *callback;
+
 private:
 	sem_t *sem; ///< if not-null, use this semaphore to notify completion.
 	/// \note: it is context specific to check if it worked out or not.

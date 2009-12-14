@@ -367,7 +367,22 @@ void CCSVOutputFilter::DoCYCLICmd( const ICommand * )
 	boost::posix_time::ptime n =
 		boost::posix_time::second_clock::local_time();
 
-	file << to_simple_string(n);
+	// assign facet only to a temporay stringstream.
+	// this avoids having a persistent object.
+	/// time_facet for the formating of the string
+	std::string format;
+	CConfigHelper cfg(configurationpath);
+	cfg.GetConfig("Format_Timestamp", format, std::string("%Y-%m-%d %T"));
+	boost::posix_time::time_facet *facet = new boost::posix_time::time_facet(format.c_str());
+	std::stringstream ss;
+	ss.imbue(std::locale(ss.getloc(), facet));
+	ss << n;
+	file << ss.str();
+
+	// note: do not delete the facet. This is done by the locale.
+	// See: http://rhubbarb.wordpress.com/2009/10/17/boost-datetime-locales-and-facets/
+	// (the locale will delete the object, so there is no leak. If we would
+	// delete, this crashes.)
 
 	list<string>::const_iterator it;
 	CCapability *c;

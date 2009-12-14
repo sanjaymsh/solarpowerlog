@@ -12,7 +12,8 @@ interfaces/CTimedWork.cpp Connections/interfaces/IConnect.cpp \
 DataFilters/interfaces/factories/IDataFilterFactory.cpp \
 DataFilters/interfaces/IDataFilter.cpp DataFilters/CDumpOutputFilter.cpp \
 DataFilters/CCSVOutputFilter.cpp \
-configuration/Registry.cpp configuration/ILogger.cpp Connections/CConnectDummy.cpp \
+configuration/Registry.cpp configuration/ILogger.cpp \
+Connections/CAsyncCommand.cpp Connections/CConnectDummy.cpp \
 Connections/factories/IConnectFactory.cpp Connections/CConnectTCPAsio.cpp \
 solarpowerlog.cpp Inverters/SputnikEngineering/CInverterFactorySputnik.cpp \
 Inverters/SputnikEngineering/CInverterSputnikSSeries.cpp \

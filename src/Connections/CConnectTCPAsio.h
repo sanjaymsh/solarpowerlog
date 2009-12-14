@@ -40,95 +40,18 @@
 
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/streambuf.hpp>
+#include <semaphore.h>
 
 #include "interfaces/IConnect.h"
 #include "interfaces/CWorkScheduler.h"
 #include "configuration/Registry.h"
 #include "patterns/ICommand.h"
-
-#include <semaphore.h>
+#include "Connections/CAsyncCommand.h"
 
 /// Default timeout for all operations, if not configured
 #define TCP_ASIO_DEFAULT_TIMEOUT (3000UL)
 
 using namespace std;
-
-class asyncCommand
-{
-public:
-	enum Commando
-	{
-		DISCONNECT, /// Tear down a connection
-		CONNECT, /// Connect
-		SEND, /// Send data
-		RECEIVE,
-	/// Try to receive data
-	};
-
-	asyncCommand( enum Commando c, ICommand *callback, sem_t *sem = NULL )
-	{
-		this->c = c;
-		if (!callback) {
-			this->callback = new ICommand(NULL, NULL);
-			private_icommand = true;
-		} else {
-			this->callback = callback;
-			private_icommand = false;
-		}
-
-		this->sem = sem;
-	}
-
-	~asyncCommand()
-	{
-		if (private_icommand)
-			delete callback;
-	}
-
-	void SetSemaphore( sem_t *sem )
-	{
-		this->sem = sem;
-	}
-
-	/** Handle this jobs completion by notifying the sender
-	 *
-	 */
-	void HandleCompletion( void )
-	{
-		if (!private_icommand) {
-			Registry::GetMainScheduler()->ScheduleWork(callback);
-		} else {
-			sem_post(sem);
-		}
-	}
-
-	/** Is the asyncCommnd really async, or was it only pretended?
-	 *
-	 * As syncronous operations are also dispatched asynchronous,
-	 * but we need a ICommand-object for this, we need the information
-	 * if it is sync or not to decide when to delete the object.
-	 * */
-	bool IsAsynchronous()
-	{
-		return !private_icommand;
-	}
-
-	enum Commando c; ///< what to do
-
-	/** callback for completion handling
-	 * In this ICommand, the comand data is stored, results and data...
-	 * This ICommand is privately created, if private_icommand is true,
-	 * and will not be executed if so, but can be still be used for
-	 * storage  */
-	ICommand *callback;
-private:
-	sem_t *sem; ///< if not-null, use this semaphore to notify completion.
-	/// \note: it is context specific to check if it worked out or not.
-	/// The semaphore is intended to be used for the "synchronous fallback"
-
-	bool private_icommand;
-
-};
 
 /** This class implements a method to connect to TCP/IP via the boost ASIO
  * library.
@@ -185,7 +108,7 @@ private:
 	 *
 	 * \returns false if work could not be pushed or true if it worked out.
 	 */
-	bool PushWork( asyncCommand *cmd );
+	bool PushWork( CAsyncCommand *cmd );
 
 	/// cancel all current work.
 	//void CancelWork( void );
@@ -199,7 +122,7 @@ private:
 	 *
 	 *
 	 * */
-	bool HandleConnect( asyncCommand *cmd );
+	bool HandleConnect( CAsyncCommand *cmd );
 
 	/** Handle the disconnect command.
 	 *
@@ -207,13 +130,13 @@ private:
 	 * be handled again
 	 */
 
-	bool HandleDisConnect( asyncCommand *cmd );
+	bool HandleDisConnect( CAsyncCommand *cmd );
 
-	bool HandleReceive( asyncCommand *cmd );
+	bool HandleReceive( CAsyncCommand *cmd );
 
-	bool HandleSend( asyncCommand *cmd );
+	bool HandleSend( CAsyncCommand *cmd );
 
-	list<asyncCommand*> cmds;
+	list<CAsyncCommand*> cmds;
 	sem_t cmdsemaphore;
 
 };

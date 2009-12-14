@@ -16,7 +16,7 @@ documentation/*.html
 *.exe
 *~
 aclocal.m4
-config
+config/*
 configure
 src/config.h.in
 src/solarpowerlog

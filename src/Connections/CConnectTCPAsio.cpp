@@ -114,7 +114,7 @@ bool CConnectTCPAsio::Connect( ICommand *callback )
 {
 	sem_t semaphore;
 
-	asyncCommand *commando = new asyncCommand(asyncCommand::CONNECT, callback);
+	CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::CONNECT, callback);
 
 	// if callback is NUll, fallback to synchronous operation.
 	if (!callback) {
@@ -126,7 +126,7 @@ bool CConnectTCPAsio::Connect( ICommand *callback )
 
 	if (!callback) {
 		sem_wait(&semaphore);
-		LOG_TRACE(logger, "destroying asyncCommando " << commando );
+		LOG_TRACE(logger, "destroying CAsyncCommando " << commando );
 		delete commando;
 		return IsConnected();
 	}
@@ -145,7 +145,7 @@ bool CConnectTCPAsio::Disconnect( ICommand *callback )
 {
 	sem_t semaphore;
 
-	asyncCommand *commando = new asyncCommand(asyncCommand::DISCONNECT,
+	CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::DISCONNECT,
 			callback);
 	// if callback is NULL, fallback to synchronous operation.
 	// (we will do the job asynchronous, but wait for completion here)
@@ -159,7 +159,7 @@ bool CConnectTCPAsio::Disconnect( ICommand *callback )
 	if (!callback) {
 		// wait for async job completion
 		sem_wait(&semaphore);
-		LOG_TRACE(logger, "destroying asyncCommando " << commando );
+		LOG_TRACE(logger, "destroying CAsyncCommando " << commando );
 		delete commando;
 	}
 	return true;
@@ -174,7 +174,7 @@ bool CConnectTCPAsio::Send( const char *tosend, unsigned int len,
 	std::string s(tosend, len);
 	s.assign(tosend, len);
 
-	asyncCommand *commando = new asyncCommand(asyncCommand::SEND, callback);
+	CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::SEND, callback);
 	callback->addData(ICONN_TOKEN_SEND_STRING, s);
 
 	if (callback) {
@@ -207,7 +207,7 @@ bool CConnectTCPAsio::Send( const char *tosend, unsigned int len,
 			ret = false;
 		}
 
-		LOG_TRACE(logger, "destroying asyncCommando " << commando );
+		LOG_TRACE(logger, "destroying CAsyncCommando " << commando );
 		delete commando;
 		return ret;
 	}
@@ -233,7 +233,7 @@ bool CConnectTCPAsio::Receive( string & wheretoplace, ICommand *callback )
 	sem_t semaphore;
 	bool ret;
 
-	asyncCommand *commando = new asyncCommand(asyncCommand::RECEIVE, callback);
+	CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::RECEIVE, callback);
 
 	if (!callback) {
 		sem_init(&semaphore, 0, 0);
@@ -273,7 +273,7 @@ bool CConnectTCPAsio::Receive( string & wheretoplace, ICommand *callback )
 		}
 
 		out:
-		LOG_TRACE(logger, "destroying asyncCommando " << commando );
+		LOG_TRACE(logger, "destroying CAsyncCommando " << commando );
 		delete commando;
 		return ret;
 	}
@@ -323,7 +323,7 @@ void CConnectTCPAsio::_main( void )
 			mutex.lock();
 			if (!cmds.empty()) {
 				bool delete_cmd;
-				asyncCommand *donow = cmds.front();
+				CAsyncCommand *donow = cmds.front();
 				// cache info if to delete the objet later,
 				// as later it might be already gone.
 				delete_cmd = donow->IsAsynchronous();
@@ -333,7 +333,7 @@ void CConnectTCPAsio::_main( void )
 				LOG_TRACE(logger, "Received command " << donow << " with callback " << donow->callback );
 
 				switch (donow->c) {
-				case asyncCommand::CONNECT:
+				case CAsyncCommand::CONNECT:
 					if (HandleConnect(donow)) {
 						LOG_TRACE(logger, "Check command " << donow << " with callback " << donow->callback );
 						mutex.lock();
@@ -353,7 +353,7 @@ void CConnectTCPAsio::_main( void )
 					}
 					break;
 
-				case asyncCommand::DISCONNECT:
+				case CAsyncCommand::DISCONNECT:
 					if (HandleDisConnect(donow)) {
 						mutex.lock();
 						cmds.pop_front();
@@ -365,7 +365,7 @@ void CConnectTCPAsio::_main( void )
 					}
 					break;
 
-				case asyncCommand::RECEIVE:
+				case CAsyncCommand::RECEIVE:
 					if (HandleReceive(donow)) {
 						mutex.lock();
 						cmds.pop_front();
@@ -377,7 +377,7 @@ void CConnectTCPAsio::_main( void )
 					}
 					break;
 
-				case asyncCommand::SEND:
+				case CAsyncCommand::SEND:
 				{
 					if(HandleSend(donow)) {
 						mutex.lock();
@@ -409,7 +409,7 @@ void CConnectTCPAsio::_main( void )
 	IConnect::_main();
 }
 
-bool CConnectTCPAsio::PushWork( asyncCommand *cmd )
+bool CConnectTCPAsio::PushWork( CAsyncCommand *cmd )
 {
 	LOG_TRACE(logger, "Pushing command " << cmd << " with callback " << cmd->callback );
 	mutex.lock();
@@ -420,7 +420,7 @@ bool CConnectTCPAsio::PushWork( asyncCommand *cmd )
 	return true;
 }
 
-bool CConnectTCPAsio::HandleConnect( asyncCommand *cmd )
+bool CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 {
 	string strhost, port;
 	unsigned long timeout = -1;
@@ -487,7 +487,7 @@ bool CConnectTCPAsio::HandleConnect( asyncCommand *cmd )
 
 }
 
-bool CConnectTCPAsio::HandleDisConnect( asyncCommand *cmd )
+bool CConnectTCPAsio::HandleDisConnect( CAsyncCommand *cmd )
 {
 	boost::system::error_code ec, ec2;
 	std::string message;
@@ -545,9 +545,9 @@ static void boosthelper_set_result( int* store, int value )
  * -- if got the byte, try to read all available bytes
  * -- if got the timer, cancel socket read and return error.
  *
- * HandleReceive expects a std::string in asyncCommand->auxData.
+ * HandleReceive expects a std::string in CAsyncCommand->auxData.
  */
-bool CConnectTCPAsio::HandleReceive( asyncCommand *cmd )
+bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 {
 	boost::system::error_code ec, handlerec;
 
@@ -666,7 +666,7 @@ bool CConnectTCPAsio::HandleReceive( asyncCommand *cmd )
 
 
 /** handles async sending */
-bool CConnectTCPAsio::HandleSend( asyncCommand *cmd ) {
+bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 
 	boost::system::error_code ec, handlerec;
 	volatile int result_timer = 0;

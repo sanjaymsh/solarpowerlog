@@ -20,7 +20,8 @@ else
 CROSS= --build $(DEB_BUILD_GNU_TYPE)
 endif
 
-
+configure: 
+	./bootstrap.sh
 
 config.status: configure
 	dh_testdir
@@ -31,7 +32,6 @@ endif
 ifneq "$(wildcard /usr/share/misc/config.guess)" ""
 	cp -f /usr/share/misc/config.guess config.guess
 endif
-	./bootstrap.sh
 	./configure $(CROSS) --prefix=/usr --mandir=\$${prefix}/share/man --infodir=\$${prefix}/share/info CFLAGS="$(CFLAGS)" LDFLAGS="-Wl,-z,defs"
 
 

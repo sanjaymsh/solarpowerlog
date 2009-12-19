@@ -388,7 +388,7 @@ void CCSVOutputFilter::DoCYCLICmd( const ICommand * )
 	CCapability *c;
 	IValue *v;
 	for (it = CSVCapas.begin(); it != CSVCapas.end(); it++) {
-		file << " , ";
+		file << ",";
 		c = base->GetConcreteCapability(*it);
 		if (c) {
 			v = c->getValue();
@@ -407,13 +407,13 @@ void CCSVOutputFilter::DoCYCLICmd( const ICommand * )
 
 			if (string::npos != tmp.find(',') || string::npos
 				!= tmp.find("\x0d\x0a")) {
-				file << " \"" << tmp << "\" ";
+				file << '"' << tmp << '"';
 			} else {
 				file << tmp;
 			}
 
 		} else {
-			file << ' ';
+			// file << ' ';
 		}
 	}
 	file << (char) 0x0d << (char) 0x0a;

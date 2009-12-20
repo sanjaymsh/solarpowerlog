@@ -85,6 +85,18 @@ CCSVOutputFilter::CCSVOutputFilter( const string & name,
 	CapabilityMap.erase(CAPA_CAPAS_REMOVEALL);
 	delete c;
 
+	// However, to help following plugins, we will publish some data here:
+
+	// (this enables other plugins to use our files as data source)
+	c = new CCapability(CAPA_CSVDUMPER_FILENAME, CAPA_CSVDUMPER_FILENAME_TYPE, this);
+	AddCapability(CAPA_CSVDUMPER_FILENAME,c);
+
+	// A comma-seperated list of parameters which are currently logged.
+	// note: This list might grow over time, so when parsing the CSV File,
+	// be prepared that there might be not all given from the beginning of the
+	// file
+	c = new CCapability(CAPA_CSVDUMPER_LOGGEDCAPABILITES, CAPA_CSVDUMPER_LOGGEDCAPABILITES_TYPE, this);
+	AddCapability(CAPA_CSVDUMPER_LOGGEDCAPABILITES,c);
 }
 
 CCSVOutputFilter::~CCSVOutputFilter()
@@ -104,6 +116,11 @@ bool CCSVOutputFilter::CheckConfig()
 	CConfigHelper hlp(configurationpath);
 	fail |= !hlp.CheckConfig("datasource", Setting::TypeString);
 	fail |= !hlp.CheckConfig("logfile", Setting::TypeString);
+
+	fail |= !hlp.CheckConfig("Compact_CSV", Setting::TypeBoolean, true);
+	fail |= !hlp.CheckConfig("flush_file_buffer_immediatly", Setting::TypeBoolean, true);
+	fail |= !hlp.CheckConfig("Format_Timestamp", Setting::TypeString, true);
+	fail |= !hlp.CheckConfig("rotate", Setting::TypeBoolean, true);
 
 	if (hlp.CheckConfig("data2log", Setting::TypeString, false, false)) {
 		hlp.GetConfig("data2log", setting);
@@ -267,6 +284,7 @@ void CCSVOutputFilter::DoINITCmd( const ICommand * )
 	cfghlp.GetConfig("logfile", tmp);
 	bool rotate;
 	cfghlp.GetConfig("rotate", rotate, false);
+
 	if (rotate) {
 		date today(day_clock::local_day());
 		//note: the %s will be removed, so +10 is enough.

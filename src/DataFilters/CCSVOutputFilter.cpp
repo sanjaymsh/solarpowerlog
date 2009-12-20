@@ -332,7 +332,7 @@ void CCSVOutputFilter::DoCYCLICmd( const ICommand * )
 	#warning document me: config Uption // FIXME
 	cfg.GetConfig("Compact_CSV", compact_file, false);
 #warning document me: config Uption // FIXME
-cfg.GetConfig("flush_file_buffer_immediatly", flush_after_write, false);
+cfg.GetConfig("flush_file_buffer_immediatly", flush_after_write, true);
 
 	// TODO REMOVE DEBUG CODE (flushing for debugging)
 
@@ -428,7 +428,7 @@ cfg.GetConfig("flush_file_buffer_immediatly", flush_after_write, false);
 	}
 
 	if ( !compact_file ||  ss.str() != last_line) {
-		file << ss << (char) 0x0d << (char) 0x0a;
+		file << ss.str() << (char) 0x0d << (char) 0x0a;
 		last_line = ss.str();
 		if (flush_after_write)
 			file << flush;

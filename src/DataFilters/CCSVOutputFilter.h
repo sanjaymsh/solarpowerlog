@@ -269,6 +269,8 @@ private:
 	 * \returns true, if in list, else false. */
 	bool search_list(const string id) const;
 
+	/// cache: last emitted string without timestamp
+	std::string last_line;
 };
 
 #endif

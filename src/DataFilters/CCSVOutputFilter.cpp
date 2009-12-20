@@ -284,8 +284,6 @@ void CCSVOutputFilter::DoINITCmd( const ICommand * )
 		tmp = buf;
 	}
 
-
-
 	// Open the file. We use binary mode, as we want end the line ourself (LF+CR)
 	// leaned on RFC4180
 	file.clear(); // clear errorstates of fstream.
@@ -325,6 +323,19 @@ void CCSVOutputFilter::DoINITCmd( const ICommand * )
 
 void CCSVOutputFilter::DoCYCLICmd( const ICommand * )
 {
+	bool compact_file, flush_after_write;
+	std::string format;
+
+	CConfigHelper cfg(configurationpath);
+#warning document me: Config option
+	cfg.GetConfig("Format_Timestamp", format, std::string("%Y-%m-%d %T"));
+	#warning document me: config Uption // FIXME
+	cfg.GetConfig("Compact_CSV", compact_file, false);
+#warning document me: config Uption // FIXME
+cfg.GetConfig("flush_file_buffer_immediatly", flush_after_write, false);
+
+	// TODO REMOVE DEBUG CODE (flushing for debugging)
+
 	/* Check for data validty. */
 	if (!datavalid) {
 		return;
@@ -345,6 +356,7 @@ void CCSVOutputFilter::DoCYCLICmd( const ICommand * )
 
 	/* output CSV Header*/
 	if (!headerwritten) {
+		last_line.clear();
 		bool first = true;
 		list<string>::const_iterator it;
 		for (it = CSVCapas.begin(); it != CSVCapas.end(); it++) {
@@ -370,14 +382,12 @@ void CCSVOutputFilter::DoCYCLICmd( const ICommand * )
 	// assign facet only to a temporay stringstream.
 	// this avoids having a persistent object.
 	/// time_facet for the formating of the string
-	std::string format;
-	CConfigHelper cfg(configurationpath);
-	cfg.GetConfig("Format_Timestamp", format, std::string("%Y-%m-%d %T"));
 	boost::posix_time::time_facet *facet = new boost::posix_time::time_facet(format.c_str());
 	std::stringstream ss;
 	ss.imbue(std::locale(ss.getloc(), facet));
 	ss << n;
 	file << ss.str();
+	ss.str("");
 
 	// note: do not delete the facet. This is done by the locale.
 	// See: http://rhubbarb.wordpress.com/2009/10/17/boost-datetime-locales-and-facets/
@@ -388,7 +398,7 @@ void CCSVOutputFilter::DoCYCLICmd( const ICommand * )
 	CCapability *c;
 	IValue *v;
 	for (it = CSVCapas.begin(); it != CSVCapas.end(); it++) {
-		file << ",";
+		ss << ",";
 		c = base->GetConcreteCapability(*it);
 		if (c) {
 			v = c->getValue();
@@ -407,19 +417,22 @@ void CCSVOutputFilter::DoCYCLICmd( const ICommand * )
 
 			if (string::npos != tmp.find(',') || string::npos
 				!= tmp.find("\x0d\x0a")) {
-				file << '"' << tmp << '"';
+				ss << '"' << tmp << '"';
 			} else {
-				file << tmp;
+				ss << tmp;
 			}
 
 		} else {
 			// file << ' ';
 		}
 	}
-	file << (char) 0x0d << (char) 0x0a;
 
-	// TODO REMOVE DEBUG CODE (flushing for debugging)
-	file << flush;
+	if ( !compact_file ||  ss.str() != last_line) {
+		file << ss << (char) 0x0d << (char) 0x0a;
+		last_line = ss.str();
+		if (flush_after_write)
+			file << flush;
+	}
 
 }
 

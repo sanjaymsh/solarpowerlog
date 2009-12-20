@@ -104,6 +104,40 @@
  *      </td>
  * </tr>
  * <tr>
+ * 	<td> compact_csv  </td>
+ * 	<td> bool  </td>
+ * 	<td> &nbsp;</th>
+ *  	<td> false  </td>
+ *      <td> if true, do not write lines with the exact same data
+ *      (except timestamp) twice into the file.
+ *      </td>
+ * </tr>
+ * <tr>
+ * 	<td> flush_file_buffer_immediatly </td>
+ * 	<td> bool  </td>
+ * 	<td> &nbsp;</th>
+ *  	<td> true  </td>
+ *      <td> if true, do not cache informations but immediatelly write to disk.
+ *      If you are "only logging" this might be fine to set to false, if you do
+ *      some kind of real-time data processing, make this false, as it might take
+ *      some times for the data to enter the disk.
+ *      (If unsure, say "true".)
+ *      </td>
+ * </tr>
+ * <tr>
+ * 	<td> format_timestamp </td>
+ * 	<td> string  </td>
+ * 	<td> &nbsp;</th>
+ *  	<td> "%Y-%m-%d %T" </td>
+ *      <td> How should the timestamp be rendered? You can use the options as
+ *      described here:
+ *      http://www.boost.org/doc/libs/1_37_0/doc/html/date_time/date_time_io.html#date_time.format_flags
+ *      <br/>
+ *      However, the default set the date in the ISO 8601 format, for example
+ *      2009-12-20 13:34:56.
+ *      </td>
+ * </tr>
+ * <tr>
  * 	<td> data2log  </td>
  * 	<td> string or array  </td>
  * 	<td> &nbsp;</th>
@@ -113,10 +147,8 @@
  *      See below for details.
  *      </td>
  * </tr>
-
- *
  * </table>
-
+ *
  * <b>logfile:</b>
  * This logger has the facility to start a new logfile at
  * midnight (only if the inverter is offline).

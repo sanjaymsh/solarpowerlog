@@ -114,6 +114,7 @@ public:
 	CConfigHelper( const string& configurationpath );
 	virtual ~CConfigHelper();
 
+// FIXME Document me
 	bool CheckConfig( const string &setting, libconfig::Setting::Type type,
 		bool optional = false, bool printerr = true );
 

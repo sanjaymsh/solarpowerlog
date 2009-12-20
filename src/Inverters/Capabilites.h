@@ -400,7 +400,19 @@ enum InverterStatusCodes
 #define CAPA_INVERTER_STATUS_READABLE_NAME "Inverter Overall Status"
 #define CAPA_INVERTER_STATUS_READABLE_TYPE IValue::string_type
 
+// Filter "CSVDumper" provides the current logging filename in this value.
+// Present only if CSV Dumper is in the chain.
+// Empty, if the file could not be opened.
+#define CAPA_CSVDUMPER_FILENAME "CVSDumper::Filename"
+#define CAPA_CSVDUMPER_FILENAME_TYPE IValue::string_type
 
+// Filer "CSVDumper" logges these capabilites.
+// Note: This lis might change over runtime, as only in "log everything" mode
+// the CSV is expanded dynamically. Be prepared that might be not enough data
+// in your CSV!
+// The Capabilites are "Comma seperated", with no blank in between.
+#define CAPA_CSVDUMPER_LOGGEDCAPABILITES "CSVDumpler:LoggedCappas"
+#define CAPA_CSVDUMPER_LOGGEDCAPABILITES_TYPE IValue::string_type
 
 
 #endif /* CAPABILITES_H_ */

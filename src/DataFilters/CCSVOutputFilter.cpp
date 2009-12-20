@@ -117,15 +117,15 @@ bool CCSVOutputFilter::CheckConfig()
 	fail |= !hlp.CheckConfig("datasource", Setting::TypeString);
 	fail |= !hlp.CheckConfig("logfile", Setting::TypeString);
 
-	fail |= !hlp.CheckConfig("Compact_CSV", Setting::TypeBoolean, true);
+	fail |= !hlp.CheckConfig("compact_csv", Setting::TypeBoolean, true);
 	fail |= !hlp.CheckConfig("flush_file_buffer_immediatly", Setting::TypeBoolean, true);
-	fail |= !hlp.CheckConfig("Format_Timestamp", Setting::TypeString, true);
+	fail |= !hlp.CheckConfig("format_timestamp", Setting::TypeString, true);
 	fail |= !hlp.CheckConfig("rotate", Setting::TypeBoolean, true);
 
 	if (hlp.CheckConfig("data2log", Setting::TypeString, false, false)) {
 		hlp.GetConfig("data2log", setting);
 		if (setting != "all") {
-			LOG_ERROR(logger, "Configuration Error: data2log must be \"all\" or of Type Array.");
+			LOG_ERROR(logger, "Configuration Error: data2log must be \"all\" or of the type \"Array\".");
 			fail = true;
 		}
 	} else if (!hlp.CheckConfig("data2log", Setting::TypeArray)) {
@@ -317,9 +317,23 @@ void CCSVOutputFilter::DoINITCmd( const ICommand * )
 		LOG_WARN(logger,"Failed to open file" << tmp <<". Logger " << name
 			<< " will not work. " );
 		file.close();
+		tmp = "";
 	}
 
+	// Update the filename. If empty, the subsequent plugin knows that there
+	// was a problem.
+	CCapability *cap = this->GetConcreteCapability(
+				CAPA_CSVDUMPER_FILENAME);
+	((CValue<std::string> *) cap->getValue())->Set("tmp");
+	cap->Notify();
+
+	// a new file needs a new header
 	headerwritten = false;
+	// Technically seen, the file is now empty and the we-are-logging-this capa
+	// CAPA_CSVDUMPER_LOGGEDCAPABILITES is wrong. But in some seconds, we probably
+	// write the same as the last day, so we set the changes later.
+	// (In other words: I told you, that in the file needs not to be all the
+	// datas we claim to be there here...
 
 	// Set a timer to some seconds after midnight, to enforce rotating with correct date
 	boost::posix_time::ptime n =
@@ -351,7 +365,7 @@ void CCSVOutputFilter::DoCYCLICmd( const ICommand * )
 #warning document me: config Uption // FIXME
 cfg.GetConfig("flush_file_buffer_immediatly", flush_after_write, true);
 
-	// TODO REMOVE DEBUG CODE (flushing for debugging)
+	std::stringstream ss;
 
 	/* Check for data validty. */
 	if (!datavalid) {
@@ -378,15 +392,20 @@ cfg.GetConfig("flush_file_buffer_immediatly", flush_after_write, true);
 		list<string>::const_iterator it;
 		for (it = CSVCapas.begin(); it != CSVCapas.end(); it++) {
 			if (!first) {
-				file << ",";
+				ss << ",";
 			} else {
-				file << "Timestamp ,";
+				ss << "Timestamp,";
 			}
 			first = false;
-			file << '\"' << *(it) << '\"';
+			ss << *(it);
 		}
 		// CSV after RFC 4180 requires CR LF
-		file << (char) 0x0d << (char) 0x0a;
+		file << ss.str() << (char) 0x0d << (char) 0x0a;
+		CCapability *cap = GetConcreteCapability(CAPA_CSVDUMPER_LOGGEDCAPABILITES);
+		assert(cap);
+		((CValue<std::string> *)cap->getValue())->Set(ss.str());
+		cap->Notify();
+		ss.str("");
 		headerwritten = true;
 	}
 
@@ -400,7 +419,6 @@ cfg.GetConfig("flush_file_buffer_immediatly", flush_after_write, true);
 	// this avoids having a persistent object.
 	/// time_facet for the formating of the string
 	boost::posix_time::time_facet *facet = new boost::posix_time::time_facet(format.c_str());
-	std::stringstream ss;
 	ss.imbue(std::locale(ss.getloc(), facet));
 	ss << n;
 	file << ss.str();

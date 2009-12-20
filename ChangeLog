@@ -1,3 +1,21 @@
+solarpowerlog (trunk)
+
+   * [CSV Dumper] 
+	- can (as confiureable) now have a ISO 8601 timestamp (closing #2).
+	  Defaults to ISO 8601, "yyyy-mm-dd hh:mm:ss" 
+	- the files will be now more compact, as we are not writing spaces
+	  before and after the seperator
+	- optionally, it will write "compacter" file, writing only if any data
+	  actually changed. 
+	- also, if used as only CSV Logging, I/Os can be reduced by disabling
+	  "flusing" after every write. (default is "off", as the previous 
+	  behaviour.
+	- Preparing for plugins that make use of the CSV: Adding capabilites
+	  what is logged and where the file is located. 
+
+ -- Tobias Frost <tobi@coldtobi.de>  
+ 
+
 solarpowerlog (0.12) unstable; urgency=low
 
    * Communication is now done asynchronous instead of polling.

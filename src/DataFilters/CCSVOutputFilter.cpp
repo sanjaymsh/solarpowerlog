@@ -103,7 +103,6 @@ bool CCSVOutputFilter::CheckConfig()
 
 	CConfigHelper hlp(configurationpath);
 	fail |= !hlp.CheckConfig("datasource", Setting::TypeString);
-	fail |= !hlp.CheckConfig("clearscreen", Setting::TypeBoolean, true);
 	fail |= !hlp.CheckConfig("logfile", Setting::TypeString);
 
 	if (hlp.CheckConfig("data2log", Setting::TypeString, false, false)) {

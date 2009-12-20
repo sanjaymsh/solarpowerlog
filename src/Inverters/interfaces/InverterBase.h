@@ -269,7 +269,14 @@ public:
 protected:
 
 	/// Add a Capability for the inverter.
+#warning TODO: Make this interface obsolete.
 	virtual void AddCapability( const string &id, CCapability* capa );
+
+protected:
+	/// Add a Capability for the inverter.
+	virtual void AddCapability( CCapability* capa ) {
+		AddCapability(capa->getDescription(),capa);
+	}
 
 	/** returns a iterator of the Capabilties. The iterator is inizialized at the begin of the map.*/
 	virtual map<string, CCapability*>::iterator

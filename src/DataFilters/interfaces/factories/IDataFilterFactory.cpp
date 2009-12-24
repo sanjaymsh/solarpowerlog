@@ -44,6 +44,10 @@
 #include "DataFilters/CCSVOutputFilter.h"
 #endif
 
+#ifdef HAVE_FILTER_HTMLWRITER
+#include "DataFilters/CHTMLWriter.h"
+#endif
+
 #include "configuration/Registry.h"
 #include "configuration/CConfigHelper.h"
 
@@ -66,6 +70,12 @@ IDataFilter *IDataFilterFactory::Factory(const string & configurationpath)
 #ifdef HAVE_FILTER_CSVDUMP
 	if (type == "CVSWriter") {
 		return new CCSVOutputFilter(name, configurationpath);
+	}
+#endif
+
+#ifdef 	HAVE_FILTER_HTMLWRITER
+	if (type == "HTMLWriter") {
+		return new CHTMLWriter(name, configurationpath);
 	}
 #endif
 

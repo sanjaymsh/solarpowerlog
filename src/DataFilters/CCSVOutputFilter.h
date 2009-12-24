@@ -222,7 +222,6 @@
  *
  */
 
-
 class CCSVOutputFilter : public IDataFilter
 {
 public:

@@ -8,6 +8,12 @@
 #ifndef CHTMLWRITER_H_
 #define CHTMLWRITER_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_FILTER_HTMLWRITER
+
 #include "DataFilters/interfaces/IDataFilter.h"
 
 #include "ctemplate/ctemplate.h"
@@ -27,12 +33,19 @@ class CHTMLWriter: public IDataFilter
 public:
 	CHTMLWriter( const string &name, const string & configurationpath );
 
+	virtual ~CHTMLWriter();
+
+	virtual bool CheckConfig();
+
+	virtual void  Update( const IObserverSubject *subject );
+
 	enum Commands
 	{
 		CMD_INIT
 	};
 
-	virtual ~CHTMLWriter();
 };
+
+#endif
 
 #endif /* CHTMLWRITER_H_ */

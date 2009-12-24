@@ -3,8 +3,8 @@ ACLOCAL_AMFLAGS = -I m4
 
 AM_CXXFLAGS = $(BOOST_CPPFLAGS)
 
-CTEMPLATE_LIB =-lctemplate
-CTEMPLATE_CFLAGS = -I ../extlibs
+#CTEMPLATE_LIB =-lctemplate
+#CTEMPLATE_CFLAGS = -I ../extlibs
 
 bin_PROGRAMS = solarpowerlog
 
@@ -50,4 +50,4 @@ libctemplateclean:
 	(cd ../extlibs/ctemplate/ && $(MAKE) clean)  
 
 # do not forget to make the template library 
-all: libctemplate.a
+all: ${CTEMPLATE_DEPS}

@@ -5,6 +5,12 @@
  *      Author: tobi
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifdef HAVE_FILTER_HTMLWRITER
+
 #include "DataFilters/CHTMLWriter.h"
 
 #include "configuration/Registry.h"
@@ -25,3 +31,21 @@ CHTMLWriter::~CHTMLWriter()
 {
 	// TODO Auto-generated destructor stub
 }
+
+
+bool CHTMLWriter::CheckConfig()
+{
+	cout << "The module cannot be used yet";
+	return false;
+}
+
+
+
+void CHTMLWriter::Update(const IObserverSubject *subject)
+{
+
+}
+
+
+
+#endif

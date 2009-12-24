@@ -1,0 +1,12 @@
+In this folder, external code is placed which is used by solarpowerlog but 
+which is not available through debian packages:
+
+Please check the projects informations for details about copyright, license and
+authors -- the packages are provided "as is".
+
+Folder		Origin  				License
+ctemplate	http://libctemplate.sourceforge.net/	GPL3
+Used for templating the HTML output
+Modifications: None. 
+
+ 

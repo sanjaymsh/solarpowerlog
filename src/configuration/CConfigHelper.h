@@ -115,6 +115,21 @@ public:
 	virtual ~CConfigHelper();
 
 // FIXME Document me
+	/** Basic checks on configuration, with the support for optioanl parameters
+	 *
+	 * The function checks if the configurationkey (parameter setting)
+	 * Mandatory options (optional=false, default) are checked for existance first,
+	 * optional options are only checked if the type if ok.
+	 * If printerr is given with true (default), the type of error is logged-.
+	 *
+	 * \returns true if the tests passed, else false
+	 *
+	 * \param setting key of the configuration
+	 * \param type expected type
+	 * \param optional is it mandatory or optionally,
+	 * \param printerr explain the error to the main logger
+	 *
+	 * */
 	bool CheckConfig( const string &setting, libconfig::Setting::Type type,
 		bool optional = false, bool printerr = true );
 

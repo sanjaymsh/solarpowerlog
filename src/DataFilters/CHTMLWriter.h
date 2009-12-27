@@ -16,7 +16,9 @@
 
 #include "DataFilters/interfaces/IDataFilter.h"
 
+extern "C" {
 #include "ctemplate/ctemplate.h"
+}
 
 /** Writes data prepared by other plugins / inverters
  * to a template, which can be HTML, for example
@@ -31,18 +33,44 @@
 class CHTMLWriter: public IDataFilter
 {
 public:
-	CHTMLWriter( const string &name, const string & configurationpath );
+	CHTMLWriter(const string &name, const string & configurationpath);
 
 	virtual ~CHTMLWriter();
 
 	virtual bool CheckConfig();
 
-	virtual void  Update( const IObserverSubject *subject );
+	virtual void Update(const IObserverSubject *subject);
+
+	virtual void ExecuteCommand(const ICommand *cmd);
 
 	enum Commands
 	{
-		CMD_INIT
+		CMD_INIT,
+		CMD_UPDATED,
+		CMD_CYCLIC,
 	};
+
+
+private:
+
+	void CheckOrUnSubscribe( bool subscribe = true );
+
+	// Configuraion cache
+	float writeevery;
+	bool derivetiming;
+	bool generatetemplate;
+	std::string generatetemplatedir;
+	std::string htmlfile;
+	std::string templatefile;
+
+	bool updated;
+	bool datavalid;
+
+	/// Helper: Generated the cyclic ICommand cmd and attach it.
+	void ScheduleCyclicEvent(enum CHTMLWriter::Commands cmd);
+
+	/// DoCyclicCmd -- makes the page.
+	void DoCyclicCmd(const ICommand *);
 
 };
 

@@ -114,11 +114,10 @@ void CDumpOutputFilter::Update( const IObserverSubject *subject )
 
 	// check for the mandatory Capas now, as they might require
 	// immediate actions.
-
 	if (parentcap->getDescription() == CAPA_CAPAS_REMOVEALL) {
 		// forward the notification.
 		// but -- to be nice -- update the value first
-		ourcap = GetConcreteCapability(CAPA_CAPAS_REMOVEALL);
+		ourcap = IInverterBase::GetConcreteCapability(CAPA_CAPAS_REMOVEALL);
 		assert (ourcap);
 		assert (ourcap->getValue()->GetType() == CAPA_CAPAS_REMOVEALL_TYPE);
 		assert (parentcap->getValue()->GetType() == CAPA_CAPAS_REMOVEALL_TYPE);
@@ -227,6 +226,14 @@ void CDumpOutputFilter::CheckOrUnSubscribe( bool subscribe )
 	if (!base)
 		return;
 
+	// mmh, i think they are unused... this filter iterates and needs not to
+	// subscribe.
+	CCapability *cap = base->GetConcreteCapability(
+			CAPA_INVERTER_DATASTATE);
+	if (cap)
+		cap->SetSubscription(this, subscribe);
+
+#if 0
 	CCapability *cap = base->GetConcreteCapability(
 		CAPA_INVERTER_MANUFACTOR_NAME);
 	if (cap)
@@ -247,10 +254,7 @@ void CDumpOutputFilter::CheckOrUnSubscribe( bool subscribe )
 	cap = base->GetConcreteCapability(CAPA_INVERTER_KWH_M2D);
 	if (cap)
 		cap->SetSubscription(this, subscribe);
-
-	cap = base->GetConcreteCapability(CAPA_INVERTER_KWH_M2D);
-	if (cap)
-		cap->SetSubscription(this, subscribe);
+#endif
 }
 
 /// This simple Data-Dumper will just dump all info over all capas it has.

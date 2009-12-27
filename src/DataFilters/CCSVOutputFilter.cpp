@@ -45,7 +45,7 @@
 #include <memory>
 
 #include <boost/date_time/gregorian/gregorian.hpp>
-#include "boost/date_time/local_time/local_time.hpp"
+#include <boost/date_time/local_time/local_time.hpp>
 
 #include "configuration/Registry.h"
 #include "configuration/CConfigHelper.h"
@@ -86,7 +86,6 @@ CCSVOutputFilter::CCSVOutputFilter( const string & name,
 	delete c;
 
 	// However, to help following plugins, we will publish some data here:
-
 	// (this enables other plugins to use our files as data source)
 	c = new CCapability(CAPA_CSVDUMPER_FILENAME, CAPA_CSVDUMPER_FILENAME_TYPE, this);
 	AddCapability(CAPA_CSVDUMPER_FILENAME,c);
@@ -114,7 +113,6 @@ bool CCSVOutputFilter::CheckConfig()
 	bool fail = false;
 
 	CConfigHelper hlp(configurationpath);
-	fail |= !hlp.CheckConfig("datasource", Setting::TypeString);
 	fail |= !hlp.CheckConfig("logfile", Setting::TypeString);
 
 	fail |= !hlp.CheckConfig("compact_csv", Setting::TypeBoolean, true);
@@ -173,7 +171,7 @@ void CCSVOutputFilter::Update( const IObserverSubject *subject )
 
 	// propagate "caps updated"
 	if (cap->getDescription() == CAPA_CAPAS_UPDATED) {
-		c = GetConcreteCapability(CAPA_CAPAS_UPDATED);
+		c = IInverterBase::GetConcreteCapability(CAPA_CAPAS_UPDATED);
 		*(CValue<bool> *) c->getValue()
 			= *(CValue<bool> *) cap->getValue();
 		c->Notify();
@@ -314,7 +312,7 @@ void CCSVOutputFilter::DoINITCmd( const ICommand * )
 	}
 #endif
 	if (file.fail()) {
-		LOG_WARN(logger,"Failed to open file" << tmp <<". Logger " << name
+		LOG_WARN(logger,"Failed to open file " << tmp <<". Logger " << name
 			<< " will not work. " );
 		file.close();
 		tmp = "";

@@ -61,7 +61,7 @@ void CHTMLWriter::ScheduleCyclicEvent(enum Commands cmd)
 }
 
 CHTMLWriter::CHTMLWriter(const string & name, const string & configurationpath) :
-	IDataFilter(name, configurationpath)
+	IDataFilter(name, configurationpath), datavalid(false), updated(false)
 {
 
 	// Schedule the initialization and subscriptions later...
@@ -116,7 +116,7 @@ bool CHTMLWriter::CheckConfig()
 			libconfig::Setting::TypeString, true)) {
 		hlp.GetConfig("generate_template", generatetemplate, false);
 		hlp.GetConfig("generate_template_dir", generatetemplatedir,
-				std::string("/tmp"));
+				std::string("/tmp/"));
 
 		if (generatetemplatedir.size()
 				&& generatetemplatedir[generatetemplatedir.size() - 1] != '/') {
@@ -138,12 +138,7 @@ bool CHTMLWriter::CheckConfig()
 		fail = true;
 	}
 
-	//	fail |= !hlp.CheckConfig("format_timestamp", Setting::TypeString, true);
-	//	fail |= !hlp.CheckConfig("rotate", Setting::TypeBoolean, true);
-
-
-	cout << "The module cannot be used yet";
-	return false;
+	return !fail;
 }
 
 void CHTMLWriter::Update(const IObserverSubject *subject)
@@ -239,8 +234,8 @@ void CHTMLWriter::ExecuteCommand(const ICommand *cmd)
 	case CMD_CYCLIC:
 	{
 
+		DoCyclicCmd(cmd);
 		ScheduleCyclicEvent(CMD_CYCLIC);
-
 	}
 
 	case CMD_UPDATED:
@@ -255,7 +250,7 @@ void CHTMLWriter::ExecuteCommand(const ICommand *cmd)
 
 void CHTMLWriter::DoCyclicCmd(const ICommand *)
 {
-	fstream fs;
+	ofstream fs;
 
 	// C-Template vars
 	TMPL_varlist *tmpl_looplist = NULL; /**< list for the inverter loop */
@@ -270,9 +265,8 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 		std::string s;
 		CConfigHelper cfg(configurationpath);
 		cfg.GetConfig("name", s);
-		s = generatetemplatedir + s;
-		fs.open(s.c_str(), fstream::out | fstream::in | fstream::app
-				| fstream::binary);
+		s = generatetemplatedir + s + ".html";
+		fs.open(s.c_str(), fstream::out | fstream::trunc | fstream::binary);
 
 #ifdef HAVE_WIN32_API
 		if (fs.fail()) {
@@ -288,7 +282,7 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 		fs
 				<< "<html><head></head><body><h1>This are the variables known to the template system: </h1>"
 				<< endl
-				<< "<table border=1><tr><th>Name of the Attribure</th><th>Current Value</th></tr>";
+				<< "<table border=1><tr><th>Name of the Attribute</th><th>Current Value</th></tr>";
 	}
 
 	// reminder: this first version only attaches one inverter!
@@ -319,7 +313,7 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 
 	if (generatetemplate) {
 		fs
-				<< "<tr><th>HTMWriter Capabilities<th/><th>(these are outside of the loop)<th/></tr>"
+				<< "<tr><th>HTMWriter Capabilities</th><th>(these are outside of the loop)</th></tr>"
 				<< endl;
 	}
 	map<string, CCapability*>::const_iterator it;
@@ -344,7 +338,7 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 	}
 
 	// okay, now open a file in memory to catch template errors.
-	FILE *errfile = NULL, *outfile = NULL;
+	FILE *errfile = NULL, *out = NULL;
 	char *ptr = NULL;
 	size_t size = 0;
 	errfile = open_memstream(&ptr, &size);
@@ -361,38 +355,35 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 				htmlfile.find("%s")).c_str(), year, month, day,
 				htmlfile.substr(htmlfile.find("%s") + 2, string::npos).c_str());
 
-		outfile = fopen(buf, "w");
-		if (outfile == 0) {
-			LOG_WARN(logger, "Could not open filename "<< buf);
+		out = fopen(buf, "w+");
+		if (out == 0) {
+			LOG_ERROR(logger, "Could not open filename "<< buf);
 		}
+
 	} else {
-		outfile = fopen(htmlfile.c_str(), "w");
-		if (outfile == 0) {
-			LOG_WARN(logger, "Could not open filename "<< htmlfile);
+		out = fopen(htmlfile.c_str(), "w+");
+		if (out == NULL) {
+			LOG_ERROR(logger, "Could not open filename "<< htmlfile);
 		}
 	}
-	if (!outfile)
-		goto out;
 
-	if (-1 == TMPL_write(templatefile.c_str(), NULL, NULL, tmpl_list, outfile,
-			errfile)) {
+	if (out && -1 == TMPL_write(templatefile.c_str(), NULL, NULL, tmpl_list,
+			out, errfile)) {
 		// error while writing. lets examine errfile.
 		// we need first to close the file to update ptr and size.
 		fclose(errfile);
-		errfile=NULL; // avoid closing a 2nd time later.
+		errfile = NULL; // avoid closing a 2nd time later.
 		LOG_ERROR(logger, "Error while writing html file."
 				" The template library reported this: " << ptr);
-	}
-	else
-	{
-		LOG_DEBUG(logger, "Done writing HTML File. Wrote " << ftell(outfile) << " Bytes");
+	} else if (out) {
+		LOG_DEBUG(logger, "Done writing HTML File. Wrote " << ftell(out) << " Bytes");
 	}
 
 	// cleanup.
-	out:
-	if (tmpl_list) TMPL_free_varlist(tmpl_list);
-	if (outfile)
-		fclose(outfile);
+	if (tmpl_list)
+		TMPL_free_varlist(tmpl_list);
+	if (out)
+		fclose(out);
 	if (errfile)
 		fclose(errfile);
 	if (ptr)

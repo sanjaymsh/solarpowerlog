@@ -93,6 +93,7 @@ CConnectTCPAsio::CConnectTCPAsio( const string &configurationname ) :
 	ioservice = new io_service;
 	sockt = new ip::tcp::socket(*ioservice);
 
+	sem_init(&cmdsemaphore, 0, 0);
 	StartWorkerThread();
 }
 
@@ -306,9 +307,6 @@ bool CConnectTCPAsio::CheckConfig( void )
 void CConnectTCPAsio::_main( void )
 {
 	LOG_TRACE(logger, "Starting helper thread");
-	mutex.lock();
-	sem_init(&cmdsemaphore, 0, 0);
-	mutex.unlock();
 
 	while (!IsTermRequested()) {
 		int syscallret;

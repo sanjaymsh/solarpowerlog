@@ -322,7 +322,7 @@ void CCSVOutputFilter::DoINITCmd( const ICommand * )
 	// was a problem.
 	CCapability *cap = this->GetConcreteCapability(
 				CAPA_CSVDUMPER_FILENAME);
-	((CValue<std::string> *) cap->getValue())->Set("tmp");
+	((CValue<std::string> *) cap->getValue())->Set(tmp);
 	cap->Notify();
 
 	// a new file needs a new header

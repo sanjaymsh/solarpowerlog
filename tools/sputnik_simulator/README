@@ -7,6 +7,6 @@ In "double quotes", because it its very simplified:
 Syntax:
 ./netcat_sputnik <port-to-use>
 
-The example solarpowerlog.conf in this directory can be uses with
+The example solarpowerlog.conf in this directory can be used with
 ./netcat_sputnik 12345
 

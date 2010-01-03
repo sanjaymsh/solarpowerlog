@@ -8,6 +8,10 @@
 #ifndef _CTEMPLATE_H
 #define _CTEMPLATE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct TMPL_varlist TMPL_varlist;
 typedef struct TMPL_loop  TMPL_loop;
 typedef struct TMPL_fmtlist TMPL_fmtlist;
@@ -40,5 +44,9 @@ int TMPL_write(const char *filename, const char *tmplstr,
 void TMPL_encode_entity(const char *value, FILE *out);
 
 void TMPL_encode_url   (const char *value, FILE *out);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

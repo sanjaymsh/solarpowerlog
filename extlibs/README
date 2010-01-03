@@ -7,6 +7,6 @@ authors -- the packages are provided "as is".
 Folder		Origin  				License
 ctemplate	http://libctemplate.sourceforge.net/	GPL3
 Used for templating the HTML output
-Modifications: None. 
+Modifications: Added C++ Wrapper to the header file. 
 
  

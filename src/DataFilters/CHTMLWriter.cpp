@@ -61,7 +61,7 @@ void CHTMLWriter::ScheduleCyclicEvent(enum Commands cmd)
 }
 
 CHTMLWriter::CHTMLWriter(const string & name, const string & configurationpath) :
-	IDataFilter(name, configurationpath), datavalid(false), updated(false)
+	IDataFilter(name, configurationpath), updated(false), datavalid(false)
 {
 
 	// Schedule the initialization and subscriptions later...
@@ -255,7 +255,7 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 	// C-Template vars
 	TMPL_varlist *tmpl_looplist = NULL; /**< list for the inverter loop */
 	TMPL_loop *tmpl_loop = NULL; /**< loop */
-	TMPL_varlist *tmpl_list = NULL; /**< list for generationg the output */
+	TMPL_varlist *tmpl_list = NULL; /**< list for generationg the o	ut */
 
 	if (!datavalid) {
 		return;

@@ -13,8 +13,10 @@ Inverters/factories/InverterFactoryFactory.cpp \
 Inverters/factories/IInverterFactory.cpp interfaces/CWorkScheduler.cpp \
 interfaces/CTimedWork.cpp Connections/interfaces/IConnect.cpp \
 DataFilters/interfaces/factories/IDataFilterFactory.cpp \
+DataFilters/HTMLWriter/formatter/IFormater.cpp \
+DataFilters/HTMLWriter/formatter/CFormaterWebRootStrip.cpp \
 DataFilters/interfaces/IDataFilter.cpp DataFilters/CDumpOutputFilter.cpp \
-DataFilters/CCSVOutputFilter.cpp DataFilters/CHTMLWriter.cpp \
+DataFilters/CCSVOutputFilter.cpp DataFilters/HTMLWriter/CHTMLWriter.cpp \
 configuration/Registry.cpp configuration/ILogger.cpp \
 Connections/CAsyncCommand.cpp Connections/CConnectDummy.cpp \
 Connections/factories/IConnectFactory.cpp Connections/CConnectTCPAsio.cpp \

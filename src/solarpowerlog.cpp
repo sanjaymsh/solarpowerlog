@@ -163,6 +163,7 @@ void DumpSettings(libconfig::Setting &set) {
 
 int main(int argc, char* argv[]) {
 	bool error_detected = false;
+	bool dumpconfig = false;
 	string configfile = "solarpowerlog.conf";
 
 #ifdef  HAVE_CMDLINEOPTS
@@ -170,9 +171,11 @@ int main(int argc, char* argv[]) {
 
 	options_description desc("Programm Options");
 	desc.add_options()
-		("help", "this message")("conf,c", value<string> (
-					&configfile), "specify configuration file")
+		("help", "this message")
+		("conf,c",
+			value<string> (&configfile), "specify configuration file")
 		("version,v", "display solarpowerlog version")
+		("dumpcfg", value<bool> (&dumpconfig)->zero_tokens(), "Dump configuration structure, then exit")
 	//	("foreground,f", value<int> (&debug_level),
 	//		"do not daemonize, stay in foreground. (currently unused)")
 	;
@@ -209,6 +212,11 @@ int main(int argc, char* argv[]) {
 	if (!Registry::Instance().LoadConfig(configfile)) {
 		cerr << "Could not load configuration " << configfile << endl;
 		_exit(1);
+	}
+
+	if (dumpconfig) {
+		DumpSettings(Registry::Configuration()->getRoot());
+		_exit(0);
 	}
 
 	// Note: As a limitation of libconfig, one cannot create the configs

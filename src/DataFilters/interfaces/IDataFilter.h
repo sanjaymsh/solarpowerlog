@@ -83,11 +83,12 @@ class IDataFilter : public IObserverObserver ,
 	public IInverterBase // The inverter, though the capabilites, also provides the
 // interface for being a subject (observer pattern)
 {
-public:
+protected:
 	IDataFilter( const string &name, const string & configurationpath ) :
 		IInverterBase(name, configurationpath, "datafilter")
 	{ }
 
+public:
 	virtual ~IDataFilter();
 
 	/** Filters need not to use the CommandQueue facility, so defaulting to

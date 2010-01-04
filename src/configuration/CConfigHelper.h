@@ -182,7 +182,6 @@ public:
 	 *
 	 * With this helper, you can simply query the array by its index.
 	 *
-	 *
 	 * \param [in] setting Setting-id
 	 * \param [in] index Index of the array
 	 * \param [out] store place where config is placed.
@@ -208,8 +207,10 @@ public:
 		}
 	}
 
+
 	/** Get the configuration for an array entry, identified by a index.
-	 * (string specalization)
+	 * (string specalization) -> this is needed as libconfig would be ambigiius
+	 * for char* and std::string.
 	 *
 	 * See Libconfig's docs for how the arrays working.
 	 *
@@ -238,6 +239,48 @@ public:
 			return false;
 		}
 	}
+
+	// this ugly helper is for the CHTHML Writer -- we are having there
+	// a list which embeddes a array. The entries are anonymous, that is without
+	// a destinctive name.
+	// I currently wonder how a bettter access function should look like ;-O)
+	// TODO make this more elegant and reusable...
+	//
+	// so, well, this function looks up an entry in the embedded array,
+	// with param i giving the row, index the column.
+template<class T>
+	bool GetConfigArray( const int i, int index, T &store )
+	{
+		libconfig::Setting & set
+			= Registry::Instance().GetSettingsForObject(cfgpath);
+
+		try {
+			store = (const char *) set[i][index];
+			return true;
+		} catch (libconfig::SettingNotFoundException e) {
+			return false;
+		} catch (libconfig::SettingTypeException e) {
+			// TODO: Assert here?
+			return false;
+		}
+	}
+
+bool GetConfigArray( const int i, int index, string &store )
+{
+	libconfig::Setting & set
+		= Registry::Instance().GetSettingsForObject(cfgpath);
+
+	try {
+		store = (const char *) set[i][index];
+		return true;
+	} catch (libconfig::SettingNotFoundException e) {
+		return false;
+	} catch (libconfig::SettingTypeException e) {
+		// TODO: Assert here?
+		return false;
+	}
+}
+
 
 private:
 	string cfgpath;

@@ -234,6 +234,9 @@ AC_TYPE_SIZE_T
 ### Checks for library functions.
 #AC_CHECK_FUNCS([socket])
 
+# Cygwin has no open_memstream, at least not in the current stable version. 
+AC_CHECK_FUNC(open_memstream, AC_DEFINE(HAVE_OPEN_MEMSTREAM, 1, [1 if open_memstream is available]))
+
 AC_PROG_INSTALL
 
 AC_CONFIG_FILES(

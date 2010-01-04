@@ -45,7 +45,7 @@
 #endif
 
 #ifdef HAVE_FILTER_HTMLWRITER
-#include "DataFilters/CHTMLWriter.h"
+#include "DataFilters/HTMLWriter/CHTMLWriter.h"
 #endif
 
 #include "configuration/Registry.h"

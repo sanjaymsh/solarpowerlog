@@ -63,9 +63,10 @@ using namespace std;
 class CConnectTCPAsio: public IConnect
 {
 protected:
+	friend class IConnectFactory;
+	CConnectTCPAsio( const string & configurationname );
 
 public:
-	CConnectTCPAsio( const string & configurationname );
 	virtual ~CConnectTCPAsio();
 
 	virtual bool Connect( ICommand *callback );

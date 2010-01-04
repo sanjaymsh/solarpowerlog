@@ -134,6 +134,13 @@
 #define CAPA_INVERTER_MODEL_TYPE IValue::string_type
 
 
+/** Basic informations again -- how is the inverter named in the config file
+ * Note: This has to be added by the concrete inverter class. */
+#define CAPA_INVERTER_CONFIGNAME "Inverter Name"
+#define CAPA_INVERTER_CONFIGNAME_TYPE IValue::string_type
+
+
+
 /** Firmware version informations.
  *
  * If available, can contain a human-readable info about the
@@ -411,7 +418,7 @@ enum InverterStatusCodes
 // the CSV is expanded dynamically. Be prepared that might be not enough data
 // in your CSV!
 // The Capabilites are "Comma seperated", with no blank in between.
-#define CAPA_CSVDUMPER_LOGGEDCAPABILITES "CSVDumpler:LoggedCappas"
+#define CAPA_CSVDUMPER_LOGGEDCAPABILITES "CSVDumpler::LoggedCaps"
 #define CAPA_CSVDUMPER_LOGGEDCAPABILITES_TYPE IValue::string_type
 
 

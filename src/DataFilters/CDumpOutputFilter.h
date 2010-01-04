@@ -28,7 +28,7 @@
  *  \date Jun 1, 2009
  *  \author Tobias Frost
  *
-*/
+ */
 
 /**
  *  \page CDumpOutputFilter [LOGGER] DumpDumper: A Simple Data Logger
@@ -97,23 +97,23 @@
  *
  * \code
  * 	loggers = (
-		{
-			# This dumper is known as (required)
-			name = "Simple Dumper 1";
-			# It is of type
-			type = "DumbDumper";
-			# And gets its data from
-			datasource = "Inverter_1";
-			# Yes, it should clean the screen before dumping
-			# (optional. Defaults to false (off)
-			# use true to enable it.
-			clearscreen = true;
-		};
+ {
+ # This dumper is known as (required)
+ name = "Simple Dumper 1";
+ # It is of type
+ type = "DumbDumper";
+ # And gets its data from
+ datasource = "Inverter_1";
+ # Yes, it should clean the screen before dumping
+ # (optional. Defaults to false (off)
+ # use true to enable it.
+ clearscreen = true;
+ };
  *
  *
  * \endcode
  *
-*/
+ */
 
 #ifndef CDUMPOUTPUTFILTER_H_
 #define CDUMPOUTPUTFILTER_H_
@@ -132,29 +132,29 @@
 #include "DataFilters/interfaces/IDataFilter.h"
 #include "Inverters/interfaces/CNestedCapaIterator.h"
 
-class CDumpOutputFilter : public IDataFilter
+class CDumpOutputFilter: public IDataFilter
 {
-public:
-	CDumpOutputFilter( const string &name,
-		const string & configurationpath );
+protected:
+	friend class IDataFilterFactory;
+	CDumpOutputFilter(const string &name, const string & configurationpath);
 
+public:
 	virtual ~CDumpOutputFilter();
 
 	virtual bool CheckConfig();
 
-	virtual void Update( const IObserverSubject *subject );
+	virtual void Update(const IObserverSubject *subject);
 
 	/** This DataFilter uses the CWorkScheduler, so it needs to implement
 	 * this function. \sa ICommandTarget::ExecuteCommand */
-	virtual void ExecuteCommand( const ICommand *cmd );
-
+	virtual void ExecuteCommand(const ICommand *cmd);
 
 private:
-	void CheckOrUnSubscribe( bool subscribe = true );
+	void CheckOrUnSubscribe(bool subscribe = true);
 
-	void DoCyclicWork( void );
+	void DoCyclicWork(void);
 
-	string DumpValue( IValue *value );
+	string DumpValue(IValue *value);
 
 	enum Commands
 	{

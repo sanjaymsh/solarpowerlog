@@ -224,10 +224,12 @@
 
 class CCSVOutputFilter : public IDataFilter
 {
-public:
 
+protected:
+	friend class IDataFilterFactory;
 	CCSVOutputFilter( const string &name, const string & configurationpath );
 
+public:
 	virtual ~CCSVOutputFilter();
 
 	virtual bool CheckConfig();

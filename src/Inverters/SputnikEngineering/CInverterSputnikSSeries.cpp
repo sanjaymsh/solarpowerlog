@@ -164,6 +164,12 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	c = new CCapability(s, v, this);
 	AddCapability(s, c);
 
+	s = CAPA_INVERTER_CONFIGNAME;
+	v = IValue::Factory(CAPA_INVERTER_CONFIGNAME_TYPE);
+	((CValue<std::string>*) v)->Set(name);
+	c = new CCapability(s, v, this);
+	AddCapability(s, c);
+
 	LOG_DEBUG(logger,"Inverter configuration:");
 	LOG_DEBUG(logger,"class CInverterSputnikSSeries ");
 	LOG_DEBUG(logger,"Query Interval: "<< interval);

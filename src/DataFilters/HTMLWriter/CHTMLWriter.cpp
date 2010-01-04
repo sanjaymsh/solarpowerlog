@@ -15,7 +15,7 @@
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/date_time/local_time/local_time.hpp>
 
-#include "DataFilters/CHTMLWriter.h"
+#include "DataFilters/HTMLWriter/CHTMLWriter.h"
 
 #include "configuration/Registry.h"
 #include "configuration/CConfigHelper.h"
@@ -25,6 +25,9 @@
 #include "Inverters/interfaces/ICapaIterator.h"
 #include "patterns/CValue.h"
 #include "configuration/ILogger.h"
+
+#include "DataFilters/HTMLWriter/formatter/IFormater.h"
+#include <string>
 
 /// local helpers: Bundle the cyclic-event calculation here...
 /// the following function schedules the next CMD_CYCLIC Command, out of config
@@ -255,7 +258,7 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 	// C-Template vars
 	TMPL_varlist *tmpl_looplist = NULL; /**< list for the inverter loop */
 	TMPL_loop *tmpl_loop = NULL; /**< loop */
-	TMPL_varlist *tmpl_list = NULL; /**< list for generationg the o	ut */
+	TMPL_varlist *tmpl_list = NULL; /**< list for generationg the out */
 
 	if (!datavalid) {
 		return;
@@ -279,10 +282,26 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 			fs.close();
 		}
 
-		fs
-				<< "<html><head></head><body><h1>This are the variables known to the template system: </h1>"
-				<< endl
-				<< "<table border=1><tr><th>Name of the Attribute</th><th>Current Value</th></tr>";
+		fs << "<html><head></head><body><h1>This are the variables known to "
+			"the template system: </h1>" << endl << "<table border=1>"
+			"<tr><th>Name of the Attribute</th><th>Current Value</th></tr>";
+	}
+
+	// Get the configuration to the formatting specs and map them
+	// TODO make this only once....
+	multimap<std::string, std::string> formattermap;
+	std::string s = configurationpath + ".formatters";
+	cerr << s << endl;
+	CConfigHelper formatters(s);
+	for (int i = 0;; i++) {
+		std::string s1, s2;
+		if (formatters.GetConfigArray(i, 0, s1) && formatters.GetConfigArray(i,
+				1, s2)) {
+			formattermap.insert(pair<std::string, std::string> (s1, s2));
+			LOG_DEBUG(logger, "Inserting formatter spec <" << s1 << ',' << s2 << '>');
+		} else {
+			break;
+		}
 	}
 
 	// reminder: this first version only attaches one inverter!
@@ -290,14 +309,30 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 	// loop over all capabilites and add it to the list
 	auto_ptr<ICapaIterator> cit(GetCapaNewIterator());
 	while (cit->HasNext()) {
+		multimap<std::string, std::string>::iterator it;
 		pair<string, CCapability*> cappair = cit->GetNext();
 
-		std::string tmpstring = *(cappair.second->getValue());
+		std::string value = *(cappair.second->getValue());
+
+		for (it = formattermap.find(cappair.first); it != formattermap.end(); it++) {
+			IFormater *frmt;
+			string x = (*it).second;
+			if ((frmt = IFormater::Factory(x, configurationpath))) {
+				if (!frmt->Format(value, value)) {
+					LOG_ERROR(logger,"Could not reformat " << cappair.first <<
+							": Formater reported error.");
+				}
+				delete frmt;
+			} else {
+				LOG_ERROR(logger,"Formatter " << x << "unknown" );
+			}
+		}
+
 		tmpl_looplist = TMPL_add_var(tmpl_looplist, cappair.first.c_str(),
-				tmpstring.c_str(), NULL);
+				value.c_str(), NULL);
 
 		if (this->generatetemplate) {
-			fs << "<tr><td> " << cappair.first << " </td><td> " << tmpstring
+			fs << "<tr><td> " << cappair.first << " </td><td> " << value
 					<< " </td>\n";
 		}
 	}
@@ -309,7 +344,7 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 	// (here, we would add the other inverters linked to this story)
 
 	// now adding all the stuff to the main list.
-	tmpl_list = TMPL_add_loop(tmpl_list, "loop", tmpl_loop);
+	tmpl_list = TMPL_add_loop(tmpl_list, "inverters", tmpl_loop);
 
 	if (generatetemplate) {
 		fs

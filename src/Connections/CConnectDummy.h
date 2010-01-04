@@ -44,8 +44,12 @@
 #include "interfaces/IConnect.h"
 
 class CConnectDummy: public IConnect {
-public:
+
+protected:
+	friend class IConnectFactory;
 	CConnectDummy(const string &configurationname);
+
+public:
 	virtual ~CConnectDummy();
 
 	/// Connect to something

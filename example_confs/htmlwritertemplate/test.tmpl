@@ -1,0 +1,25 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+  "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>Solarpowerlog CHTMWriter Example</title>
+<style type="text/css" title="CSS" media=all>
+        @import "./css/style.css";
+    </style>
+
+</head>
+<body>
+
+<* Emit Basic Inverter informations *>
+<TMPL_LOOP name="inverters">
+   <TMPL_INCLUDE name=".../snippets/basic_inverter_data.tmpl">
+ </TMPL_LOOP>        
+
+
+<TMPL_LOOP name="inverters">
+   <TMPL_IF name="CSVDumpler::LoggedCaps">
+        <TMPL_INCLUDE name=".../snippets/CSVLogger.tmpl">
+    </TMPL_IF>
+</TMPL_LOOP>  
+ </body>
+</html>

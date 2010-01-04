@@ -1,0 +1,51 @@
+body {
+    background-color: #0000d0;
+    // 6495ed; 
+}
+
+
+table.invertervalues {
+    border-width: 0px 0px 0px 0px;
+    border-spacing: 0px;
+    border-style: none none none none;
+    border-color: gray gray gray gray;
+    border-collapse: collapse;
+}
+
+table.invertervalues th {
+    border: thin dotted black;
+   background-color: #483d8b;
+   color:white;    
+ }
+table.invertervalues td {
+    padding: 1px 1px 1px 1px;
+    border: thin dotted black;
+}
+
+table.invertervalues tr:hover {
+    background-color: darkblue;
+    padding: 1px 1px 1px 1px;
+}
+
+table.invertervalues tr {
+   background-color: #6495ed;
+   padding: 1px 1px 1px 1px;
+   
+}
+
+.basicinverterdata h1 {
+    margin: 0 0 0 0;
+}
+    
+.basicinverterdata h5 {
+    margin: 0 0 0 0;
+}
+
+.basicinverterdata h3 {
+     margin: 5px 0 5px 0;
+}   
+
+.debug {
+    visibility: hidden;
+    height: 0px;
+}

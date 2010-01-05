@@ -275,7 +275,7 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 #ifdef HAVE_WIN32_API
 		if (fs.fail()) {
 			fs.clear();
-			fs.open(tmp.c_str(), fstream::out | fstream::app | fstream::binary);
+			fs.open(s.c_str(), fstream::out | fstream::app | fstream::binary);
 		}
 #endif
 		if (fs.fail()) {
@@ -299,7 +299,7 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 		if (formatters.GetConfigArray(i, 0, s1) && formatters.GetConfigArray(i,
 				1, s2)) {
 			formattermap.insert(pair<std::string, std::string> (s1, s2));
-			LOG_DEBUG(logger, "Inserting formatter spec <" << s1 << ',' << s2 << '>');
+			LOG_TRACE(logger, "Inserting formatter spec <" << s1 << ',' << s2 << '>');
 		} else {
 			break;
 		}

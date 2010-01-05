@@ -418,7 +418,7 @@ enum InverterStatusCodes
 // the CSV is expanded dynamically. Be prepared that might be not enough data
 // in your CSV!
 // The Capabilites are "Comma seperated", with no blank in between.
-#define CAPA_CSVDUMPER_LOGGEDCAPABILITES "CSVDumpler::LoggedCaps"
+#define CAPA_CSVDUMPER_LOGGEDCAPABILITES "CSVDumper::LoggedCaps"
 #define CAPA_CSVDUMPER_LOGGEDCAPABILITES_TYPE IValue::string_type
 
 

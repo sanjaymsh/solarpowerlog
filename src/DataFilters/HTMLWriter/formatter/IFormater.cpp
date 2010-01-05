@@ -7,13 +7,16 @@
 
 #include "DataFilters/HTMLWriter/formatter/IFormater.h"
 #include "DataFilters/HTMLWriter/formatter/CFormaterWebRootStrip.h"
+#include "DataFilters/HTMLWriter/formatter/CFormatterSearchCSVEntry.h"
 
-IFormater *IFormater::Factory(const std::string &spec,
-		const std::string &configpath)
+IFormater *IFormater::Factory(const std::string &spec)
 {
 	if (spec == "stripwebroot") {
-		return new CFormaterWebRootStrip(configpath);
+		return new CFormaterWebRootStrip();
 	}
 
+	if (spec == "searchcvsentry") {
+		return new CFormatterSearchCSVEntry();
+	}
 	return NULL;
 }

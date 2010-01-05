@@ -30,6 +30,18 @@
 #include "DataFilters/HTMLWriter/formatter/IFormater.h"
 #include <string>
 
+// helper, because we do not want the multi map for the formatters sorted.
+
+struct unsortedmultimap
+{
+	//bool operator ()( const std::vector<std::string>,  const std::vector<std::string>)  const {
+	bool operator ()(const std::string &, const std::string &) const
+	{
+
+		return false;
+	}
+};
+
 /// local helpers: Bundle the cyclic-event calculation here...
 /// the following function schedules the next CMD_CYCLIC Command, out of config
 /// or out of a Capability
@@ -290,16 +302,41 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 
 	// Get the configuration to the formatting specs and map them
 	// TODO make this only once....
-	multimap<std::string, std::string> formattermap;
+	multimap<std::string, std::vector<std::string> >
+			formattermap;
+
 	std::string s = configurationpath + ".formatters";
-	cerr << s << endl;
+	std::string s1, s2;
 	CConfigHelper formatters(s);
+
 	for (int i = 0;; i++) {
-		std::string s1, s2;
+//		LOG_TRACE(logger, "In formatter loop: i="<<i);
+//
 		if (formatters.GetConfigArray(i, 0, s1) && formatters.GetConfigArray(i,
 				1, s2)) {
-			formattermap.insert(pair<std::string, std::string> (s1, s2));
-			LOG_TRACE(logger, "Inserting formatter spec <" << s1 << ',' << s2 << '>');
+
+			// LOG_TRACE(logger,"s1="<<s1 << " s2=" << s2);
+
+			// We store the informations this way:
+			// we iteratre over the configuration array and make a vector out
+			// of it.
+			// so the vector will look like:
+			// [0] formatter name
+			// [1] target template variable (maybe empty)
+			// [2] parameter for formatter
+			// [3...] other parameters for the formatter
+			std::vector<std::string> vs;
+			vs.push_back(s2); // we already got the formatter's name
+			int j;
+			j = 2;
+			while (formatters.GetConfigArray(i, j++, s2)) {
+				vs.push_back(s2);
+			}
+
+			formattermap.insert(pair<std::string, std::vector<std::string> > (
+					s1, vs));
+
+			LOG_TRACE(logger, "Inserting formatter spec <" << s1 << ',' << vs[0] << '>');
 		} else {
 			break;
 		}
@@ -314,32 +351,56 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 	// TODO FIXME currently, there is only one. So we make this dynamic later.
 
 	tmpl_looplist = TMPL_add_var(tmpl_looplist, "iteration", "0", NULL);
-	if ( generatetemplate ) {
+	if (generatetemplate) {
 		fs << "<tr><td> iteration </td><td> " << "0" << " </td>\n";
 	}
 
 	auto_ptr<ICapaIterator> cit(GetCapaNewIterator());
 	while (cit->HasNext()) {
-		multimap<std::string, std::string>::iterator it;
+		multimap<std::string, vector<std::string> >::iterator it;
 		pair<string, CCapability*> cappair = cit->GetNext();
 
+		// get the value of the capability
 		std::string value = *(cappair.second->getValue());
+		// cache the name of the capability
+		std::string templatename = cappair.first.c_str();
 
+		// LOG_TRACE(logger, "Capability:" << cappair.first << " Value:"<< value);
+
+		// TODO Rip this part into its own function -- this way, we can also do some daisy-chain
+		// formatting: Modify value x to value y, modify value y to value z ....
 		for (it = formattermap.find(cappair.first); it != formattermap.end(); it++) {
 			IFormater *frmt;
-			string x = (*it).second;
-			if ((frmt = IFormater::Factory(x, configurationpath))) {
-				if (!frmt->Format(value, value)) {
+
+			string formatter_to_create = (*it).second[0];
+
+			LOG_TRACE(logger, "reformatting " << templatename << " with a " << (*it).second[0] );
+
+			if ((frmt = IFormater::Factory(formatter_to_create))) {
+
+				if (!frmt->Format(value, value, (*it).second)) {
 					LOG_ERROR(logger,"Could not reformat " << cappair.first <<
 							": Formater reported error.");
 				}
+
+				// check if we should store the result to another template
+				// variable not the original one.
+				if ((*it).second.size() > 2 && (*it).second[1] != "") {
+					// yes, store the result to the new template var.
+					tmpl_looplist = TMPL_add_var(tmpl_looplist,
+							(*it).second[1].c_str(), value.c_str(), NULL);
+					// in this case, restore the original value before checking
+					// out a possible next formatter.
+					value = *(cappair.second->getValue());
+				}
+
 				delete frmt;
 			} else {
-				LOG_ERROR(logger,"Formatter " << x << "unknown" );
+				LOG_ERROR(logger,"Failed to create formatter " << formatter_to_create );
 			}
 		}
 
-		tmpl_looplist = TMPL_add_var(tmpl_looplist, cappair.first.c_str(),
+		tmpl_looplist = TMPL_add_var(tmpl_looplist, templatename.c_str(),
 				value.c_str(), NULL);
 
 		if (this->generatetemplate) {
@@ -347,6 +408,7 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 					<< " </td>\n";
 		}
 	}
+
 
 	// adding the loop entry to the loop varlist.
 	tmpl_loop = TMPL_add_varlist(tmpl_loop, tmpl_looplist);

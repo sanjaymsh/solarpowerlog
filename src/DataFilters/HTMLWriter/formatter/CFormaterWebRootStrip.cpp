@@ -9,8 +9,7 @@
 #include "DataFilters/HTMLWriter/formatter/CFormaterWebRootStrip.h"
 #include "configuration/CConfigHelper.h"
 
-CFormaterWebRootStrip::CFormaterWebRootStrip(const std::string & configpath) :
-IFormater(configpath)
+CFormaterWebRootStrip::CFormaterWebRootStrip()
 {
 }
 
@@ -19,26 +18,30 @@ CFormaterWebRootStrip::~CFormaterWebRootStrip()
 	// TODO Auto-generated destructor stub
 }
 
-bool CFormaterWebRootStrip::Format(const std::string & what, std::string & store)
+bool CFormaterWebRootStrip::Format(const std::string &what, std::string &store,
+		const std::vector<std::string> &parameters)
 {
-	CConfigHelper ch(config);
 	std::string strip;
 	size_t pos;
-	ch.GetConfig("webroot",strip,std::string("/var/www"));
+
+	if (parameters.size() < 3) {
+		strip = "/var/www";
+	} else {
+		strip = parameters[2];
+	}
 
 	// basic check: what must be bigger than strip.
-	if (strip.length() > what.length()) return false;
+	if (strip.length() > what.length())
+		return false;
 
 	// make sure that the string is there
-	pos= what.find(strip);
+	pos = what.find(strip);
 
-	if ( pos != std::string::npos )
-	{
+	if (pos != std::string::npos) {
 		store = what.substr(strip.length(), std::string::npos);
 		return true;
 	}
 
 	return false;
 }
-
 

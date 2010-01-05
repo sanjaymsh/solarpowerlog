@@ -7,6 +7,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
+#include "porting.h"
 #endif
 
 #ifdef HAVE_FILTER_HTMLWRITER
@@ -373,11 +374,19 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 	}
 
 	// okay, now open a file in memory to catch template errors.
-	FILE *errfile = NULL, *out = NULL;
+	// (if supported at least)
+	FILE *errfile = NULL;
+	FILE *out = NULL;
+#ifdef HAVE_OPEN_MEMSTREAM
 	char *ptr = NULL;
 	size_t size = 0;
-	errfile = open_memstream(&ptr, &size);
+#endif
 
+#ifdef HAVE_OPEN_MEMSTREAM
+	errfile = open_memstream(&ptr, &size);
+#else
+#warning Note: opem_memstream not available on this platform. Will not be able to tell you template errors
+#endif
 	// generate filename of the output file
 	if (htmlfile.find("%s") != std::string::npos) {
 		boost::gregorian::date today(boost::gregorian::day_clock::local_day());
@@ -406,10 +415,19 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 			out, errfile)) {
 		// error while writing. lets examine errfile.
 		// we need first to close the file to update ptr and size.
+#ifdef HAVE_OPEN_MEMSTREAM
 		fclose(errfile);
 		errfile = NULL; // avoid closing a 2nd time later.
 		LOG_ERROR(logger, "Error while writing html file."
 				" The template library reported this: " << ptr);
+#else
+		// esp. for the cygwin 1.5 port, we cannot tell the reason why it happened.
+		// patches are welcome to open a temporary file on disk instead and then
+		// (when cagwin 1.7 comes out, this is no longer an issue: They implemented
+		// the GNU extended syscall)
+		LOG_ERROR(logger, "Error while writing html file (template error)");
+#endif
+
 	} else if (out) {
 		LOG_DEBUG(logger, "Done writing HTML File. Wrote " << ftell(out) << " Bytes");
 	}
@@ -419,10 +437,12 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 		TMPL_free_varlist(tmpl_list);
 	if (out)
 		fclose(out);
+#ifdef HAVE_OPEN_MEMSTREAM
 	if (errfile)
 		fclose(errfile);
 	if (ptr)
 		free(ptr);
+#endif
 }
 
 void CHTMLWriter::CheckOrUnSubscribe(bool subscribe)

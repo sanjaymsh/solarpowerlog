@@ -308,6 +308,16 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 	// reminder: this first version only attaches one inverter!
 	// Step one:
 	// loop over all capabilites and add it to the list
+
+	// Add the number of the inverter to the exported vars, as the snippets
+	// probably want to do something special on the first one only.
+	// TODO FIXME currently, there is only one. So we make this dynamic later.
+
+	tmpl_looplist = TMPL_add_var(tmpl_looplist, "iteration", "0", NULL);
+	if ( generatetemplate ) {
+		fs << "<tr><td> iteration </td><td> " << "0" << " </td>\n";
+	}
+
 	auto_ptr<ICapaIterator> cit(GetCapaNewIterator());
 	while (cit->HasNext()) {
 		multimap<std::string, std::string>::iterator it;
@@ -429,7 +439,7 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 #endif
 
 	} else if (out) {
-		LOG_DEBUG(logger, "Done writing HTML File. Wrote " << ftell(out) << " Bytes");
+		LOG_TRACE(logger, "Done writing HTML File. Wrote " << ftell(out) << " Bytes");
 	}
 
 	// cleanup.

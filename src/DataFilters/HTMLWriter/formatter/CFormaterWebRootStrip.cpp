@@ -8,8 +8,6 @@
 #include "DataFilters/HTMLWriter/formatter/IFormater.h"
 #include "DataFilters/HTMLWriter/formatter/CFormaterWebRootStrip.h"
 #include "configuration/CConfigHelper.h"
-#include <iostream>
-
 
 CFormaterWebRootStrip::CFormaterWebRootStrip(const std::string & configpath) :
 IFormater(configpath)
@@ -33,9 +31,6 @@ bool CFormaterWebRootStrip::Format(const std::string & what, std::string & store
 
 	// make sure that the string is there
 	pos= what.find(strip);
-
-	cerr << what << " ";
-	cerr << strip << endl;
 
 	if ( pos != std::string::npos )
 	{

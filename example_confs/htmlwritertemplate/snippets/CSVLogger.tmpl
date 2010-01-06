@@ -1,7 +1,92 @@
-<div class="csvdumper"><H2> CSV Dumper </H2>
+<H2> CSV Dumper </H2>
+<div class="debug_">
+<TMPL_LOOP name="inverters">
+<h3> Filename: <TMPL_VAR name="CSVDumper::Filename" /> </h3>
+<h3> LoggedCapas: </h3><p><TMPL_VAR name="CSVDumper::LoggedCaps" /></p>
+</TMPL_LOOP>  
+</div>
 
-<div class="debug">
-<h3> Filename: <TMPL_VAR name="CVSDumper::Filename" /> </h3>
-<h3> LoggedCapas: </h3><p><TMPL_VAR name="CSVDumpler::LoggedCaps" /></p>
-</div>
-</div>
+<* First emit the header of the script *>
+<script> 
+var timeplot;
+function onLoad() {
+
+ var timeGeometry = new Timeplot.DefaultTimeGeometry({
+    gridColor: new Timeplot.Color("#000000"),
+    axisLabelsPlacement: "top"  });
+    
+ var valueGeometry = new Timeplot.DefaultValueGeometry({
+    gridColor: "#000000",
+    axisLabelsPlacement: "left"
+  });
+
+  var valueGeometry2 = new Timeplot.DefaultValueGeometry({
+    gridColor: "#000000"
+  });
+    
+<* we need a eventsource for every inverter having a CVSDumper attached. We know by looking 
+at the capa for the filename. *>
+<TMPL_LOOP name="inverters">
+    <TMPL_IF name="CSVDumper::Filename">
+    var eventSource<TMPL_VAR name="iteration"/> = new Timeplot.DefaultEventSource();    
+    </TMPL_IF>
+</TMPL_LOOP>  
+ 
+<* here's the tricky part. creating the timeplot infos. *> 
+var plotInfo = [
+<TMPL_LOOP name="inverters">
+<TMPL_IF name="CSVDumper::Filename">
+Timeplot.createPlotInfo({
+    id: "plot1_<TMPL_VAR name="iteration"/>",
+    dataSource: new Timeplot.ColumnSource(eventSource<TMPL_VAR name="iteration"/>,<TMPL_VAR name="powernow"/>),
+    valueGeometry: valueGeometry,
+    timeGeometry: timeGeometry,
+    <TMPL_IF    name="iteration" value="0"  > lineColor: "#0000ff", fillColor: "#a0a0ff",
+    <TMPL_ELSIF name="iteration" value="1" /> lineColor: "#00ff00", fillColor: "#a0ffa0",
+    <TMPL_ELSIF name="iteration" value="2" /> lineColor: "#ff0000", fillColor: "#ffa0a0",
+    </TMPL_IF>
+    showValues: true,
+    roundValues: false
+    }), 
+</TMPL_IF>   
+</TMPL_LOOP>   
+
+<TMPL_LOOP name="inverters">
+<TMPL_IF name="CSVDumper::Filename">
+Timeplot.createPlotInfo({
+    id: "plot2_<TMPL_VAR name="iteration"/>",
+    dataSource: new Timeplot.ColumnSource(eventSource<TMPL_VAR name="iteration"/>,<TMPL_VAR name="kwhtoday"/>),
+    valueGeometry: valueGeometry2,
+    timeGeometry: timeGeometry,
+    <TMPL_IF    name="iteration" value="0"  > lineColor: "#0000ff",
+    <TMPL_ELSIF name="iteration" value="1" /> lineColor: "#00ff00", 
+    <TMPL_ELSIF name="iteration" value="2" /> lineColor: "#ff0000",
+    </TMPL_IF>
+    showValues: true,
+    roundValues: false
+    }), 
+</TMPL_IF>   
+</TMPL_LOOP>
+    
+];
+
+timeplot = Timeplot.create(document.getElementById("csvtimeplot"), plotInfo);
+<TMPL_LOOP name="inverters">
+<TMPL_IF name="CSVDumper::Filename">
+  timeplot.loadText("<TMPL_VAR name="CSVDumper::Filename">", ",", eventSource<TMPL_VAR name="iteration"/>);
+</TMPL_IF>  
+</TMPL_LOOP>    
+ }
+
+var resizeTimerID = null;
+function onResize() {
+    if (resizeTimerID == null) {
+        resizeTimerID = window.setTimeout(function() {
+            resizeTimerID = null;
+            timeplot.repaint();
+        }, 100);
+    }
+}
+</script>
+
+<div id="csvtimeplot" style="height: 450px;"></div>

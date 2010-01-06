@@ -1,25 +1,47 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
-  "http://www.w3.org/TR/html4/strict.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
 <head>
+<TMPL_INCLUDE name=".../snippets/CSVLogger_header.tmpl">
 <title>Solarpowerlog CHTMWriter Example</title>
-<style type="text/css" title="CSS" media=all>
-        @import "./css/style.css";
-    </style>
-
+<style type="text/css" title="CSS" media=all>@import "./css/style.css";</style>
 </head>
-<body>
 
-<* Emit Basic Inverter informations *>
-<TMPL_LOOP name="inverters">
-   <TMPL_INCLUDE name=".../snippets/basic_inverter_data.tmpl">
- </TMPL_LOOP>        
+<* The CSV logger visualization needs some javascript tags in the body.
+Therefore, we need to include the middle part, which will also include
+the "body" tag.*>
+<*TMPL_IF name="CSVDumpler::LoggedCaps"*>
+<body onload="onLoad();" onresize="onResize();">
+<*TMPL_ELSIF*> 
+<*body*>
+<*/TMPL_IF*>
+
+<div id="header">
+    <div style="float:left; text-align:right;">
+        <H1>Solarpowerlog <TMPL_VAR name="spl_version" /></h1>
+        <p> by Tobias Frost "coldtobi". <a href="http://solarpowerlog.coldtobi.de"> Solarpowerlog homepage</a></p>
+    </div>
+    <p class="FLOSS"> solarpowerlog is free software. <br/>
+    <!-- this image is reserved if I have anything important to tell, like security problems, etc... remove it if you feel uncomfortable that I see you in my logs....-->
+    <img src="http://www.frost.de/solarpowerlog/msg<TMPL_VAR name="spl_version"/>.png" /></p>
+</div>
+
+<div id="content">
+    <div id="leftcolumn">
+
+        <div id="inverter_basic">
+            <* Emit Basic Inverter informations *>
+            <TMPL_INCLUDE name=".../snippets/basic_inverter_data.tmpl">     
+        </div>
+    </div> 
+    
+    <div id="mainarea">
+        <* visualization in timeplots *>
+        <div class="csvdumper">
+            <TMPL_INCLUDE name=".../snippets/CSVLogger.tmpl">
+        </div>
+    </div> 
+</div> 
 
 
-<TMPL_LOOP name="inverters">
-   <TMPL_IF name="CSVDumpler::LoggedCaps">
-        <TMPL_INCLUDE name=".../snippets/CSVLogger.tmpl">
-    </TMPL_IF>
-</TMPL_LOOP>  
  </body>
 </html>

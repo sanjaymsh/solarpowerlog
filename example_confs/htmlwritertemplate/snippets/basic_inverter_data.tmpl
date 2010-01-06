@@ -1,17 +1,14 @@
 <* This template snippet writes a small table with showing the values of the 
 inverter. *>
 <!-- Basic Inverter informations -->
-<div class="basicinverterdata">
-<h1><TMPL_VAR name="Inverter Name" /> 
-<TMPL_IF name="Inverter Manufactor">
-  <h5> Model: <TMPL_VAR name="Inverter Manufactor" /> 
-  <TMPL_VAR name="Inverter Model" /></h5>
-<TMPL_ELSIF name="Inverter Model">
-  <h5> Model: <TMPL_VAR name="Inverter Model" /></h5>
-</TMPL_IF> 
-<!-- Basic Values of the inverter -->
-<h3> Current Values </h3>
-<table class="invertervalues"><tr><th> Name  </th><th> Value </th><th>Unit</th></tr> 
+<TMPL_LOOP name="inverters">
+<div class="bid_maindiv">
+<h1 class="bid_name"><TMPL_VAR name="Inverter Name" /> </h1>
+<p class="bid_model"><TMPL_VAR name="Inverter Manufactor" /> 
+ <TMPL_VAR name="Inverter Model" /></p>
+<* Basic Values of the inverter *>
+<h3 class="bid_cv"> Current Values </h3>
+<table class="bid_table"><tr><th> Name  </th><th> Value </th><th>Unit</th></tr> 
 <TMPL_IF name="Current Grid Feeding Power"><tr><td>Feeding Power</td><td> <TMPL_VAR name="Current Grid Feeding Power"/></td><td>W</td> </tr></TMPL_IF>
 <TMPL_IF name="Inverter Power On Hours"><tr><td>Power-on hours</td><td> <TMPL_VAR name="Inverter Power On Hours"/></td><td>h</td></tr></TMPL_IF>
 <TMPL_IF name="Energy produced this year (kWh)"><tr><td>produced this year</td><td> <TMPL_VAR name="Energy produced this year (kWh)"/> </td><td>kWh</td> </tr></TMPL_IF>
@@ -28,3 +25,4 @@ inverter. *>
 <TMPL_IF name="Inverter Temperature (C)"><tr><td>Inverter Temperature</td><td> <TMPL_VAR name="Inverter Temperature (C)"> </td></td><td>&deg;C</td></tr></TMPL_IF>
 </table> 
 </div>
+ </TMPL_LOOP>

@@ -48,12 +48,6 @@ struct unsortedmultimap
 void CHTMLWriter::ScheduleCyclicEvent(enum Commands cmd)
 {
 	// set all members
-	writeevery = 0;
-	derivetiming = 0;
-	generatetemplate = 0;
-	updated = 0;
-	datavalid = 0;
-
 	ICommand *ncmd = new ICommand(cmd, this);
 	CCapability *c;
 	struct timespec ts;
@@ -86,6 +80,12 @@ void CHTMLWriter::ScheduleCyclicEvent(enum Commands cmd)
 CHTMLWriter::CHTMLWriter(const string & name, const string & configurationpath) :
 	IDataFilter(name, configurationpath), updated(false), datavalid(false)
 {
+
+	writeevery = 0;
+	derivetiming = 0;
+	generatetemplate = 0;
+	updated = 0;
+	datavalid = 0;
 
 	// Schedule the initialization and subscriptions later...
 	ICommand *cmd = new ICommand(CMD_INIT, this);

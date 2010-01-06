@@ -410,7 +410,7 @@ enum InverterStatusCodes
 // Filter "CSVDumper" provides the current logging filename in this value.
 // Present only if CSV Dumper is in the chain.
 // Empty, if the file could not be opened.
-#define CAPA_CSVDUMPER_FILENAME "CVSDumper::Filename"
+#define CAPA_CSVDUMPER_FILENAME "CSVDumper::Filename"
 #define CAPA_CSVDUMPER_FILENAME_TYPE IValue::string_type
 
 // Filer "CSVDumper" logges these capabilites.

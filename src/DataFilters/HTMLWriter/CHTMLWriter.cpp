@@ -365,15 +365,35 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 		// cache the name of the capability
 		std::string templatename = cappair.first.c_str();
 
-		// LOG_TRACE(logger, "Capability:" << cappair.first << " Value:"<< value);
+//	 LOG_TRACE(logger, "Capability: " << cappair.first << "\tValue: "<< value);
+
+//	 if ( formattermap.find(templatename) != formattermap.end())
+//	 {
+//		 LOG_TRACE(logger, "****");
+//	 }
 
 		// TODO Rip this part into its own function -- this way, we can also do some daisy-chain
 		// formatting: Modify value x to value y, modify value y to value z ....
+
+	// debug code: dump the multimap find results.
+#if 0
+		for (it = formattermap.find(cappair.first); it != formattermap.end(); it++) {
+
+		LOG_TRACE(logger, "***** " << templatename <<": found 1st=" << (*it).first << " 2nd " << (*it).second[0]);
+
+		}
+#endif
+
 		for (it = formattermap.find(cappair.first); it != formattermap.end(); it++) {
 			IFormater *frmt;
 
-			string formatter_to_create = (*it).second[0];
+			// the multimap returns everything after the first result
+			// so we have to recheck we really want this result.
+			// FIXME the multimap seems not to be best for the task, so maybe
+			// code should be reworked to use another container.
+			if (cappair.first != (*it).first ) break;
 
+			string formatter_to_create = (*it).second[0];
 			LOG_TRACE(logger, "reformatting " << templatename << " with a " << (*it).second[0] );
 
 			if ((frmt = IFormater::Factory(formatter_to_create))) {
@@ -389,6 +409,15 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 					// yes, store the result to the new template var.
 					tmpl_looplist = TMPL_add_var(tmpl_looplist,
 							(*it).second[1].c_str(), value.c_str(), NULL);
+
+					if (this->generatetemplate) {
+						fs << "<tr><td> " << (*it).second[1].c_str() <<
+								"<br/><p style=\"font-size:x-small\">reformatted from "
+								<< templatename <<
+								"</p></td><td> " << value
+								<< " </td>\n";
+					}
+
 					// in this case, restore the original value before checking
 					// out a possible next formatter.
 					value = *(cappair.second->getValue());
@@ -408,7 +437,6 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 					<< " </td>\n";
 		}
 	}
-
 
 	// adding the loop entry to the loop varlist.
 	tmpl_loop = TMPL_add_varlist(tmpl_loop, tmpl_looplist);
@@ -438,6 +466,9 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 		}
 
 	}
+
+	// we add some others here....
+	tmpl_list = TMPL_add_var(tmpl_list, "spl_version", PACKAGE_VERSION, NULL);
 
 	// template assistance is now done, so close the file.
 	if (generatetemplate) {

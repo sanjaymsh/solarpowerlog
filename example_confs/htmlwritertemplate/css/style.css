@@ -7,7 +7,7 @@ font-family:Arial, Helvetica, sans-serif;
 }
 
 html {
-	overflow: auto;
+    overflow: auto;
     max-height: 100%;
 }
 
@@ -21,9 +21,9 @@ body {
 }
 
 #page {
-    width:99%;
-    margin-left: auto;
-    margin-right: auto;  	
+    width:98%;
+    margin-left: 1em;
+    margin-right: 1em;      
 }
 
 /* the header of the page. */
@@ -32,45 +32,55 @@ body {
     color: #afa0e0;
     text-align:left;
     font-size:90%;
-    padding: 1em 1em 0em 1em;
+    padding: 1em 0em 0em 0em;
     clear:both;
 }
+
+#header a:link {
+    color: #afa0e0;
+}
+
+#header a:visited {
+    color: #483d8b;
+}
+
 
 /* this is the clearfix for the header, so that the floats
 are cleaned. Also paints the line below the header */
 #header:after
 {
-	content: " ";
+    content: " ";
     display: block;
     height: 0;
     clear: both;
     padding-top: 0.2em;
     padding-bottom: 0;
     margin: 0;
-    border-bottom-width: thin; 
-    border-bottom-style: solid; 
+    --border-bottom-width: thin; 
+    --border-bottom-style: solid; 
 }
 
 /* solarpowerlog is free software -- to the right please. */
 .FLOSS {
     float:right;
     text-align:right;
-    font-size:xx-small;	
+    font-size:xx-small; 
 }
 
 /* paragraphs in the header */
 #header p {
-	font-size:75%;
-	margin-left: 1em;
+    font-size:75%;
+    margin-left: 1em;
 }
 
 /* main content div */
 #content {
-	 background-color: #00001a;
-	/*background-color:red;*/
-	padding-top: 1px;
-	min-height: 1em;
-	width:99%;
+     background-color: #00001a;
+    /*background-color:red;*/
+    padding-top: 1px;
+    min-height: 1em;
+    width:99%;
+    border-top: 1px solid #afa0e0;
 }
 
 
@@ -79,23 +89,21 @@ are cleaned. Also paints the line below the header */
 }
     
 #content:after {
-	content: " ";
-	visibility:hidden;
+    content: " ";
+    visibility:hidden;
     display: block;
     height: 0;
     clear: both;
-}	
+}   
 
 /* the coloumn on the left */
 #leftcolumn {
-	border-right: thin solid #afa0e0;
-	float:left;
-	width: 15em;
-	overflow:auto;
-	margin-right:0.5em;
-	padding-top: 0.5em;
-	/*   margin 0 0 0 0;
-    padding 0 0 0 0;  */
+    border-right: thin solid #afa0e0;
+    float:left;
+    width: 15em;
+    overflow:auto;
+    margin-right:0.5em;
+    padding-top: 0.5em;
 }
 
 table.bid_table {
@@ -165,19 +173,19 @@ table.bid_table tr {
 }
 
 #csvtimeplot {
-	color: black;
-	height:400px;
-	clear:right;
-	}
+    color: black;
+    height:400px;
+    clear:right;
+    }
 
 .csv_filename {
-	font-size: 10px;
-	height:24px;
-	float:right;
-	}
-		
+    font-size: 10px;
+    height:24px;
+    float:right;
+    }
+        
 .csv_capas {
-	visibility: hidden;
+    visibility: hidden;
     height: 0px;
 }
 .csv_header
@@ -188,8 +196,8 @@ table.bid_table tr {
 
 .csv_name 
 {
-	font-weight:bolder;
-	float:left;
+    font-weight:bolder;
+    float:left;
     padding-right: 1em;
 }
 

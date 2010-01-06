@@ -42,6 +42,7 @@ var plotInfo = [
 <TMPL_LOOP name="inverters">
 <TMPL_IF name="CSVDumper::Filename">
 Timeplot.createPlotInfo({
+    <TMPL_IF name="iteration" value="0"><TMPL_ELSE/>,</TMPL_IF>
     id: "plot1_<TMPL_VAR name="iteration"/>",
     dataSource: new Timeplot.ColumnSource(eventSource<TMPL_VAR name="iteration"/>,<TMPL_VAR name="powernow"/>),
     valueGeometry: valueGeometry,
@@ -52,13 +53,13 @@ Timeplot.createPlotInfo({
     </TMPL_IF>
     showValues: true,
     roundValues: false
-    }), 
+    })
 </TMPL_IF>   
 </TMPL_LOOP>   
 
 <TMPL_LOOP name="inverters">
 <TMPL_IF name="CSVDumper::Filename">
-Timeplot.createPlotInfo({
+,Timeplot.createPlotInfo({
     id: "plot2_<TMPL_VAR name="iteration"/>",
     dataSource: new Timeplot.ColumnSource(eventSource<TMPL_VAR name="iteration"/>,<TMPL_VAR name="kwhtoday"/>),
     valueGeometry: valueGeometry2,
@@ -69,7 +70,7 @@ Timeplot.createPlotInfo({
     </TMPL_IF>
     showValues: true,
     roundValues: false
-    }), 
+    })
 </TMPL_IF>   
 </TMPL_LOOP>
     

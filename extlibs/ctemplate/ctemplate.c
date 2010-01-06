@@ -1073,9 +1073,25 @@ is_true(const tagnode *iftag, const TMPL_varlist *varlist) {
 static void
 write_text(const char *p, int len, FILE *out) {
     int i, k;
+    char lastwasblank = 0;
 
     for (i = 0; i < len; i++) {
 
+        switch (p[i]) {
+
+		case ' ':
+		case '\t':
+		case '\r':
+		case '\n':
+			if (lastwasblank) {
+				continue;
+			}
+			lastwasblank = 1;
+			break;
+
+		default:
+			lastwasblank = 0;
+		}
         /* check for \ or \\ before \n or \r\n */
 
         if (p[i] == '\\') {

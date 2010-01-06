@@ -21,3 +21,4 @@ configure
 src/config.h.in
 src/solarpowerlog
 *.a
+extlibs/ctemplate/template

@@ -1,4 +1,4 @@
-solarpowerlog (trunk)
+solarpowerlog (0.20) unstable; urgency=low
 
    * [CSV Dumper] 
 	- can (as confiureable) now have a ISO 8601 timestamp (closing #2).
@@ -12,9 +12,21 @@ solarpowerlog (trunk)
 	  behaviour.
 	- Preparing for plugins that make use of the CSV: Adding capabilites
 	  what is logged and where the file is located. 
-
- -- Tobias Frost <tobi@coldtobi.de>  
- 
+	- Removed some checks from unused configuration parameters
+	- Rotate was not checked in CheckConfig()
+	- Added two capabilites, one telling the filename, the other telling what
+	  we are currently logging (preparing for visualization)
+	- A little more RFC-something conform -- also in the header
+   * [HTMLWRITER]
+    - A new data filter. This is the reason why we release 0.20
+      This filter can write out HTML pages which show nice visualizations.
+    - Added examples for this writer
+   * [GENERAL] 
+    - Some typos in the Capabilites names fixed. 
+    - Added an external library, ctemplate, for HTML Writer. 
+    - Modified this library to emit smaller pages. 
+    
+ -- Tobias Frost <tobi@coldtobi.de>  Wed, 06 Jan 2010 20:50:35 +0200
 
 solarpowerlog (0.12) unstable; urgency=low
 

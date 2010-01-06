@@ -47,6 +47,13 @@ struct unsortedmultimap
 /// or out of a Capability
 void CHTMLWriter::ScheduleCyclicEvent(enum Commands cmd)
 {
+	// set all members
+	writeevery = 0;
+	derivetiming = 0;
+	generatetemplate = 0;
+	updated = 0;
+	datavalid = 0;
+
 	ICommand *ncmd = new ICommand(cmd, this);
 	CCapability *c;
 	struct timespec ts;

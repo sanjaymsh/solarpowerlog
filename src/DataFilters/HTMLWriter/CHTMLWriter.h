@@ -16,7 +16,9 @@
 
 #include "DataFilters/interfaces/IDataFilter.h"
 
+extern "C" {
 #include "ctemplate/ctemplate.h"
+}
 
 /** Writes data prepared by other plugins / inverters
  * to a template, which can be HTML, for example

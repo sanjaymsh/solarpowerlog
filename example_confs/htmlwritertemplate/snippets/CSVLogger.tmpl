@@ -1,16 +1,21 @@
-<H2> CSV Dumper </H2>
+<h2 class="csv_header"> CSV Dumper </h2>
 <div class="debug_">
 <TMPL_LOOP name="inverters">
-<h3> Filename: <TMPL_VAR name="CSVDumper::Filename" /> </h3>
-<h3> LoggedCapas: </h3><p><TMPL_VAR name="CSVDumper::LoggedCaps" /></p>
+<h3 class="csv_filename"> Filename: <TMPL_VAR name="CSVDumper::Filename" /> </h3>
+<p class="csv_name"> <TMPL_VAR name="Inverter Name" /> </p>
+<p class="csv_model"><TMPL_VAR name="Inverter Manufactor" /> 
+ <TMPL_VAR name="Inverter Model" /> </p>
+ 
+<p class="csv_capas"> LoggedCapas: <TMPL_VAR name="CSVDumper::LoggedCaps" /></p>
 </TMPL_LOOP>  
 </div>
 
 <* First emit the header of the script *>
-<script> 
+<script type="text/javascript"> 
 var timeplot;
 function onLoad() {
 
+    window.onresize=onResize;
  var timeGeometry = new Timeplot.DefaultTimeGeometry({
     gridColor: new Timeplot.Color("#000000"),
     axisLabelsPlacement: "top"  });

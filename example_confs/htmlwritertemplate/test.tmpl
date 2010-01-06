@@ -1,28 +1,31 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-<TMPL_INCLUDE name=".../snippets/CSVLogger_header.tmpl">
-<title>Solarpowerlog CHTMWriter Example</title>
-<style type="text/css" title="CSS" media=all>@import "./css/style.css";</style>
+    <meta http-equiv="Content-type" content="text/html;charset=UTF-8"/>
+    <TMPL_INCLUDE name=".../snippets/CSVLogger_header.tmpl">
+    <title>Solarpowerlog CHTMWriter Example</title>
+    <style type="text/css" title="CSS" media="all">
+        @import "./css/style.css"; </style>
 </head>
 
 <* The CSV logger visualization needs some javascript tags in the body.
 Therefore, we need to include the middle part, which will also include
 the "body" tag.*>
 <*TMPL_IF name="CSVDumpler::LoggedCaps"*>
-<body onload="onLoad();" onresize="onResize();">
+
+<body onload="onLoad();" >
 <*TMPL_ELSIF*> 
 <*body*>
 <*/TMPL_IF*>
-
+<div id="page">
 <div id="header">
     <div style="float:left; text-align:right;">
-        <H1>Solarpowerlog <TMPL_VAR name="spl_version" /></h1>
+        <h1>Solarpowerlog <TMPL_VAR name="spl_version" /></h1>
         <p> by Tobias Frost "coldtobi". <a href="http://solarpowerlog.coldtobi.de"> Solarpowerlog homepage</a></p>
     </div>
     <p class="FLOSS"> solarpowerlog is free software. <br/>
     <!-- this image is reserved if I have anything important to tell, like security problems, etc... remove it if you feel uncomfortable that I see you in my logs....-->
-    <img src="http://www.frost.de/solarpowerlog/msg<TMPL_VAR name="spl_version"/>.png" /></p>
+    <img src="http://www.frost.de/solarpowerlog/msg<TMPL_VAR name="spl_version"/>.png" alt="" /></p>
 </div>
 
 <div id="content">
@@ -41,7 +44,7 @@ the "body" tag.*>
         </div>
     </div> 
 </div> 
-
+</div>
 
  </body>
 </html>

@@ -1,3 +1,5 @@
+@charset "utf-8";
+
 * {
 margin: 0;
 padding: 0;
@@ -5,7 +7,7 @@ font-family:Arial, Helvetica, sans-serif;
 }
 
 html {
-    overflow: auto;
+	overflow: auto;
     max-height: 100%;
 }
 
@@ -21,7 +23,7 @@ body {
 #page {
     width:99%;
     margin-left: auto;
-    margin-right: auto;     
+    margin-right: auto;  	
 }
 
 /* the header of the page. */
@@ -38,7 +40,7 @@ body {
 are cleaned. Also paints the line below the header */
 #header:after
 {
-    content: " ";
+	content: " ";
     display: block;
     height: 0;
     clear: both;
@@ -46,7 +48,6 @@ are cleaned. Also paints the line below the header */
     padding-bottom: 0;
     margin: 0;
     border-bottom-width: thin; 
-    border-botom-color:white;
     border-bottom-style: solid; 
 }
 
@@ -54,53 +55,47 @@ are cleaned. Also paints the line below the header */
 .FLOSS {
     float:right;
     text-align:right;
-    font-size:xx-small; 
+    font-size:xx-small;	
 }
 
 /* paragraphs in the header */
 #header p {
-    font-size:75%;
-    margin-left: 1em;
+	font-size:75%;
+	margin-left: 1em;
 }
 
 /* main content div */
 #content {
-     background-color: #00001a;
-    //background-color:red;
-    padding-top: 1px;
-    min-height: 1em;
-    width:99%;
+	 background-color: #00001a;
+	/*background-color:red;*/
+	padding-top: 1px;
+	min-height: 1em;
+	width:99%;
 }
 
 
 #mainarea {
-    padding-right: -4em;
-    padding-left: 16em;
- //   float:right;
-    max-width: 100%;
-    margin 0 0 0 0;
-    padding 0 0 0 0;
-    
+ 
 }
     
 #content:after {
-    content: ".";
-    visibility:none;
+	content: " ";
+	visibility:hidden;
     display: block;
     height: 0;
     clear: both;
-}   
+}	
 
 /* the coloumn on the left */
 #leftcolumn {
-    border-right: thin solid #afa0e0;
-    float:left;
-    width: 15em;
-    overflow:auto;
-    margin-right:0.5em;
-    // padding-top: 0.5em;
-       margin 0 0 0 0;
-    padding 0 0 0 0;
+	border-right: thin solid #afa0e0;
+	float:left;
+	width: 15em;
+	overflow:auto;
+	margin-right:0.5em;
+	padding-top: 0.5em;
+	/*   margin 0 0 0 0;
+    padding 0 0 0 0;  */
 }
 
 table.bid_table {
@@ -109,7 +104,6 @@ table.bid_table {
     border-style: none none none none;
     border-color: gray gray gray gray;
     border-collapse: collapse;
-    with:95%;
 }
 
 table.bid_table th {
@@ -129,16 +123,13 @@ table.bid_table tr:hover {
 }
 
 table.bid_table tr {
-   background-color: #4b70b2; // 6495ed;
+   background-color: #4b70b2; 
    color: #9f91cc;
    padding: 1px 1px 1px 1px;
 }
 
 .bid_table {
-    width:95%;  
-    align:center;
-    margin-left: auto;
-    margin-right: auto;
+    width:98%;  
 }
 
 .bid_cv {
@@ -162,25 +153,47 @@ table.bid_table tr {
 }
 
 #csvtimeplot {
-   background-color: #f8f8ff    ;
-   opacity:0.9;
+   background-color: #f8f8ff;
    height: 450px;
 }
 
-// area for the basic inverter data
 .bid_maindiv {
- background-color: #f8f8ff;
- float: left;
 }
 
-// Area for the timeplots. 
+
 .csvdumper {
-    background-color: #f8f8ff;
-    width:90%;
 }
-#csvtimeplot {
-    color: black;
-    height:300px;
-    
-    }
 
+#csvtimeplot {
+	color: black;
+	height:400px;
+	clear:right;
+	}
+
+.csv_filename {
+	font-size: 10px;
+	height:24px;
+	float:right;
+	}
+		
+.csv_capas {
+	visibility: hidden;
+    height: 0px;
+}
+.csv_header
+{
+    visibility: hidden;
+    height: 0px;
+}
+
+.csv_name 
+{
+	font-weight:bolder;
+	float:left;
+    padding-right: 1em;
+}
+
+.csv_model 
+{float:left;
+    font-weight:normal;
+}

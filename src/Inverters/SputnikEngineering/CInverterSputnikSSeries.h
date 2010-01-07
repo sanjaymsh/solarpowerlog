@@ -45,11 +45,12 @@
 #include <queue>
 
 /** \fixme Implements the Inverter Interface for the Sputnik S Series
-  *
-  * The Sputnik S-Series are an inverter family by Sputnik Engineering
-  * Please see the manufactor's homepage for details.
+ *
+ * The Sputnik S-Series are an inverter family by Sputnik Engineering
+ * Please see the manufactor's homepage for details.
  */
-class CInverterSputnikSSeries: public IInverterBase {
+class CInverterSputnikSSeries: public IInverterBase
+{
 public:
 	CInverterSputnikSSeries(const string & name,
 			const string & configurationpath);
@@ -67,7 +68,8 @@ protected:
 private:
 
 	/// Commands for the Workscheduler
-	enum Commands {
+	enum Commands
+	{
 		CMD_INIT = 1000,
 		CMD_WAIT4CONNECTION,
 		CMD_IDENTFY_WAIT,
@@ -82,73 +84,21 @@ private:
 	};
 
 	/// Dataports of the sputnik inverters.
-	enum Ports {
-		QUERY = 100, COMMAND = 200, ALARM = 300, // told that the device reports errors on this ports.
+	enum Ports
+	{
+		QUERY = 100, COMMAND = 200, ALARM = 300,
 		INTERFACE = 1000
 	};
 
 	/// known queries
-	enum query {
-		TYP,
-		SWV,
-		BUILDVER,
-		EC00,
-		EC01,
-		EC02,
-		EC03,
-		EC04,
-		EC05,
-		EC06,
-		EC07,
-		EC08,
-		PAC,
-		KHR,
-		DYR,
-		DMT,
-		DDY,
-		KYR,
-		KMT,
-		KDY,
-		KT0,
-
-#if 0
-		/// these are for MaxMeteo and Maxcount -- not currently supported
-		/// as I neighter own the hardware not have need for it.
-		/// If you want these features, please remember, patches are welcome.
-		I1Y,
-		I1P,
-		I1S,
-		I1D,
-		I1T,
-		I2Y,
-		I2S,
-		I2D,
-		I2T,
-		PYR,
-		RDY,
-		RT0,
-		RAD,
-		TSZ,
-
-#endif
-		PIN,
-		TNF,
-		// ADR, // << nonsense, as we 'know' the adress.
-		PRL,
-		UDC,
-		UL1,
-		UL2,
-		UL3,
-		IDC,
-		IL1,
-		IL2,
-		IL3,
-		TKK,
-		TK2,
-		TK3,
-		TMI,
-		THR,
-		SYS
+	enum query
+	{
+		TYP,	SWV,	BUILDVER,	EC00,	EC01,	EC02,
+		EC03,	EC04,	EC05,	EC06,	EC07,	EC08,	PAC,
+		KHR,	DYR,	DMT,	DDY,	KYR,	KMT,	KDY,
+		KT0,	PIN,	TNF,	PRL,	UDC,	UL1,	UL2,
+		UL3,	IDC,	IL1,	IL2,	IL3,	TKK,	TK2,
+		TK3,	TMI,	THR,	SYS
 	};
 
 	/// Add a inverter-query into the queue for later quering...
@@ -211,7 +161,6 @@ private:
 
 	// a helper, as this is shared by two token parsers.
 	void create_versioncapa(void);
-
 
 	///  some internal infos we cache....
 	int swversion;

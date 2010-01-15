@@ -59,7 +59,7 @@ void CHTMLWriter::ScheduleCyclicEvent(enum Commands cmd)
 			ts.tv_sec = v->Get();
 			ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
 		} else {
-			LOG_INFO(logger,
+			LOGINFO(logger,
 					"INFO: The associated inverter does not specify the "
 					"queryinterval. Defaulting to 300 seconds. Consider specifing writeevery");
 			ts.tv_sec = 300;
@@ -123,10 +123,10 @@ bool CHTMLWriter::CheckConfig()
 			derivetiming = true;
 		}
 		if (writeevery < 0.0) {
-			LOG_ERROR(logger, "Configuration Error: writeevery must be positive.");
+			LOGERROR(logger, "Configuration Error: writeevery must be positive.");
 			fail = true;
 		} else if (writeevery < 0.00001) {
-			LOG_ERROR(logger, "Configuration Error: writeevery=0 not yet implemented.");
+			LOGERROR(logger, "Configuration Error: writeevery=0 not yet implemented.");
 			fail = true;
 		}
 
@@ -244,7 +244,7 @@ void CHTMLWriter::ExecuteCommand(const ICommand *cmd)
 				assert(c);
 				c->Subscribe(this);
 			} else {
-				LOG_WARN(logger,
+				LOGWARN(logger,
 						"Warning: Could not find data source to connect. Filter: "
 						<< configurationpath << "." << name);
 			}
@@ -298,7 +298,7 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 		}
 #endif
 		if (fs.fail()) {
-			LOG_WARN(logger,"Template-Assistant: Failed to open file: " << s);
+			LOGWARN(logger,"Template-Assistant: Failed to open file: " << s);
 			fs.close();
 		}
 
@@ -343,7 +343,7 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 			formattermap.insert(pair<std::string, std::vector<std::string> > (
 					s1, vs));
 
-			LOG_TRACE(logger, "Inserting formatter spec <" << s1 << ',' << vs[0] << '>');
+			LOGTRACE(logger, "Inserting formatter spec <" << s1 << ',' << vs[0] << '>');
 		} else {
 			break;
 		}
@@ -386,7 +386,7 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 #if 0
 		for (it = formattermap.find(cappair.first); it != formattermap.end(); it++) {
 
-		LOG_TRACE(logger, "***** " << templatename <<": found 1st=" << (*it).first << " 2nd " << (*it).second[0]);
+		LOGTRACE(logger, "***** " << templatename <<": found 1st=" << (*it).first << " 2nd " << (*it).second[0]);
 
 		}
 #endif
@@ -401,12 +401,12 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 			if (cappair.first != (*it).first ) break;
 
 			string formatter_to_create = (*it).second[0];
-			LOG_TRACE(logger, "reformatting " << templatename << " with a " << (*it).second[0] );
+			LOGTRACE(logger, "reformatting " << templatename << " with a " << (*it).second[0] );
 
 			if ((frmt = IFormater::Factory(formatter_to_create))) {
 
 				if (!frmt->Format(value, value, (*it).second)) {
-					LOG_ERROR(logger,"Could not reformat " << cappair.first <<
+					LOGERROR(logger,"Could not reformat " << cappair.first <<
 							": Formater reported error.");
 				}
 
@@ -432,7 +432,7 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 
 				delete frmt;
 			} else {
-				LOG_ERROR(logger,"Failed to create formatter " << formatter_to_create );
+				LOGERROR(logger,"Failed to create formatter " << formatter_to_create );
 			}
 		}
 
@@ -511,13 +511,13 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 
 		out = fopen(buf, "w+");
 		if (out == 0) {
-			LOG_ERROR(logger, "Could not open filename "<< buf);
+			LOGERROR(logger, "Could not open filename "<< buf);
 		}
 
 	} else {
 		out = fopen(htmlfile.c_str(), "w+");
 		if (out == NULL) {
-			LOG_ERROR(logger, "Could not open filename "<< htmlfile);
+			LOGERROR(logger, "Could not open filename "<< htmlfile);
 		}
 	}
 
@@ -528,18 +528,18 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 #ifdef HAVE_OPEN_MEMSTREAM
 		fclose(errfile);
 		errfile = NULL; // avoid closing a 2nd time later.
-		LOG_ERROR(logger, "Error while writing html file."
+		LOGERROR(logger, "Error while writing html file."
 				" The template library reported this: " << ptr);
 #else
 		// esp. for the cygwin 1.5 port, we cannot tell the reason why it happened.
 		// patches are welcome to open a temporary file on disk instead and then
 		// (when cagwin 1.7 comes out, this is no longer an issue: They implemented
 		// the GNU extended syscall)
-		LOG_ERROR(logger, "Error while writing html file (template error)");
+		LOGERROR(logger, "Error while writing html file (template error)");
 #endif
 
 	} else if (out) {
-		LOG_TRACE(logger, "Done writing HTML File. Wrote " << ftell(out) << " Bytes");
+		LOGTRACE(logger, "Done writing HTML File. Wrote " << ftell(out) << " Bytes");
 	}
 
 	// cleanup.

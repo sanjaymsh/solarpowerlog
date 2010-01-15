@@ -237,6 +237,12 @@ AC_TYPE_SIZE_T
 # Cygwin has no open_memstream, at least not in the current stable version. 
 AC_CHECK_FUNC(open_memstream, AC_DEFINE(HAVE_OPEN_MEMSTREAM, 1, [1 if open_memstream is available]))
 
+# Lets check if we have a syslog here, as we want to prepare it if we run in background. 
+AC_CHECK_FUNC(openlog, [have_openlog=yes], [have_openlog=no])
+if test "$have_openlog" = "yes" ;then
+ AC_DEFINE([HAVE_OPENLOG], [1], [Are the syslog-calls available on this system])
+fi  
+  
 AC_PROG_INSTALL
 
 AC_CONFIG_FILES(
@@ -249,6 +255,9 @@ AC_MSG_NOTICE([]);
 AC_MSG_NOTICE([CONFIGURATION SUMMARY:]);
 ### Print summary
 AC_MSG_NOTICE([Logging support: ........................... $enable_logging])
+if test "$have_openlog" = "no"; then
+AC_MSG_NOTICE([                  No support for syslog detected])
+fi
 AC_MSG_NOTICE([Commandline options: ....................... $enable_commandlineoptions])
 
 AC_MSG_NOTICE([INVERTERS:]);

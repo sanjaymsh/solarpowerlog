@@ -84,10 +84,21 @@
 
 #if defined HAVE_LIBLOG4CXX
 #include <log4cxx/logger.h>
+#include <log4cxx/simplelayout.h>
 #include <log4cxx/basicconfigurator.h>
 #include <log4cxx/propertyconfigurator.h>
 #include <log4cxx/xml/domconfigurator.h>
+// for testing
+#include <log4cxx/net/syslogappender.h>
+using namespace log4cxx::net;
 #endif
+
+#ifdef HAVE_OPENLOG
+#include <syslog.h>
+#endif
+
+#include <sys/stat.h>
+#include <signal.h>
 
 #include "configuration/ILogger.h"
 
@@ -108,6 +119,9 @@
 #include "configuration/CConfigHelper.h"
 
 using namespace std;
+using namespace log4cxx;
+
+char *progname;
 
 /** this array of string specifies which sections int the config file must be present.
  * The programm will abort if any of these is missing.
@@ -125,7 +139,8 @@ static const char *required_sections[] = { "application", "inverter",
  DumpSettings(set);
  [/code]
  */
-void DumpSettings(libconfig::Setting &set) {
+void DumpSettings(libconfig::Setting &set)
+{
 
 	if (set.getPath() != "")
 		cout << set.getPath();
@@ -161,24 +176,99 @@ void DumpSettings(libconfig::Setting &set) {
 	}
 }
 
-int main(int argc, char* argv[]) {
+volatile sig_atomic_t killsignal = false;
+
+void SignalHandler(int signal)
+{
+	switch (signal)
+	{
+
+	case SIGTERM:
+		// die.
+		if (!killsignal) {
+			killsignal = true;
+			LOGINFO(Registry::GetMainLogger(), progname << " Termination requested. Will terminate at next opportunity.");
+		} else {
+			LOGFATAL(Registry::GetMainLogger(), progname << " Termination signal received. Please be patient.");
+		}
+		break;
+	case SIGSEGV:
+		cerr << progname << " Segmentation fault. " << endl;
+		LOGFATAL(Registry::GetMainLogger(), progname << " Segmentation fault.");
+		exit(1);
+	}
+}
+
+void daemonize(void)
+{
+	ILogger mainlogger;
+
+	// dameonize.
+	LOGDEBUG(mainlogger, "Rising a daemon.");
+
+	pid_t pid, sid;
+	pid = fork();
+	if (pid < 0) {
+		LOGFATAL(mainlogger, "Could not dameonize. fork() error="<<errno );
+		exit(1);
+	}
+
+	if (pid > 0) {
+		// on daemons, the parent use _exit.
+		_exit(EXIT_SUCCESS);
+	}
+
+	sid = setsid();
+	if (sid < 0) {
+		LOGFATAL(mainlogger, "Could not dameonize. setsid() error="<<errno );
+		exit(EXIT_FAILURE);
+	}
+
+	// the second fork seems not to be necessary on linux, but believing
+	// references, it is for for some unixes to avoid reattached to some
+	// controlling tty
+	// http://web.archive.org/web/20020416015637/www.whitefang.com/unix/faq_2.html#SEC16
+	pid = fork();
+	if (pid < 0) {
+		LOGFATAL(mainlogger, "Could not dameonize. 2nd fork() error="<<errno );
+		exit(1);
+	}
+
+	if (pid > 0) {
+		// on daemons, the parent use _exit.
+		_exit(EXIT_SUCCESS);
+	}
+
+	// change umask to 000, change dir to root dir to avoid locking the dir
+	// we started from
+	umask(0);
+	chdir("/");
+
+	// reopen stdio, stderr, stdin
+	freopen("/dev/null", "r", stdin);
+	freopen("/dev/null", "w", stdout);
+	freopen("/dev/null", "w", stderr);
+}
+
+int main(int argc, char* argv[])
+{
 	bool error_detected = false;
 	bool dumpconfig = false;
+	bool background = false;
 	string configfile = "solarpowerlog.conf";
+
+	progname = argv[0];
 
 #ifdef  HAVE_CMDLINEOPTS
 	using namespace boost::program_options;
 
 	options_description desc("Programm Options");
-	desc.add_options()
-		("help", "this message")
-		("conf,c",
-			value<string> (&configfile), "specify configuration file")
-		("version,v", "display solarpowerlog version")
-		("dumpcfg", value<bool> (&dumpconfig)->zero_tokens(), "Dump configuration structure, then exit")
-	//	("foreground,f", value<int> (&debug_level),
-	//		"do not daemonize, stay in foreground. (currently unused)")
-	;
+	desc.add_options()("help", "this message")("conf,c", value<string> (
+			&configfile), "specify configuration file")("version,v",
+			"display solarpowerlog version")("background,b", value<bool> (
+			&background)->zero_tokens(), "run in background.")("dumpcfg",
+			value<bool> (&dumpconfig)->zero_tokens(),
+			"Dump configuration structure, then exit");
 
 	variables_map vm;
 	try {
@@ -204,19 +294,18 @@ int main(int argc, char* argv[]) {
 	if (argc > 1) {
 		(void) argv; // remove warning unused parameter.
 		cerr << "This version does not support command line options." << endl;
-		_exit(1);
+		exit(1);
 	}
 #endif
 
-	/* Loading configuration file */
 	if (!Registry::Instance().LoadConfig(configfile)) {
 		cerr << "Could not load configuration " << configfile << endl;
-		_exit(1);
+		exit(1);
 	}
 
 	if (dumpconfig) {
 		DumpSettings(Registry::Configuration()->getRoot());
-		_exit(0);
+		exit(0);
 	}
 
 	// Note: As a limitation of libconfig, one cannot create the configs
@@ -238,13 +327,18 @@ int main(int argc, char* argv[]) {
 
 	if (error_detected) {
 		cerr << "Error detected" << endl;
-		_exit(1);
+		exit(1);
 	}
+
+#ifdef HAVE_OPENLOG
+	// prepare the syslog, needed if we gonna log to it
+	// (if the user configures this, as the liblog4cxx supports syslog as well)
+	openlog(progname, LOG_PID, LOG_USER);
+#endif
 
 #if defined HAVE_LIBLOG4CXX
 	// Activate Logging framework
 	{
-		using namespace log4cxx;
 		string tmp;
 		LoggerPtr l = Logger::getRootLogger();
 
@@ -272,10 +366,18 @@ int main(int argc, char* argv[]) {
 	}
 #endif
 
+	// fork to background if demanded
+	if (background)
+		daemonize();
+
+	// register some signal handler to detect when we want to quit.
+	signal(SIGTERM, SignalHandler);
+	signal(SIGSEGV, SignalHandler);
+
 	ILogger mainlogger;
 
 	/** bootstraping the system */
-	LOG_DEBUG(mainlogger,
+	LOGDEBUG(mainlogger,
 			"Instanciating Inverter objects");
 
 	/** create the inverters via its factories. */
@@ -292,51 +394,51 @@ int main(int argc, char* argv[]) {
 				name = (const char *) rt[i]["name"];
 				manufactor = (const char *) rt[i]["manufactor"];
 				model = (const char *) rt[i]["model"];
-				LOG_DEBUG(mainlogger,
+				LOGDEBUG(mainlogger,
 						name << " " << manufactor );
 			} catch (libconfig::SettingNotFoundException e) {
-				LOG_FATAL(mainlogger,
+				LOGFATAL(mainlogger,
 						"Configuration Error: Required Setting was not found in \""
 						<< e.getPath() << '\"');
-				_exit(1);
+				exit(1);
 			}
 
 			if (Registry::Instance().GetInverter(name)) {
-				LOG_FATAL(mainlogger, "Inverter " << name
+				LOGFATAL(mainlogger, "Inverter " << name
 						<< " declared more than once");
-				_exit(1);
+				exit(1);
 			}
 
 			IInverterFactory *factory =
 					InverterFactoryFactory::createInverterFactory(manufactor);
 			if (!factory) {
-				LOG_FATAL(mainlogger,
+				LOGFATAL(mainlogger,
 						"Unknown inverter manufactor \""
 						<< manufactor << '\"');
-				_exit(1);
+				exit(1);
 			}
 
 			IInverterBase *inverter = factory->Factory(model, name,
 					rt[i].getPath());
 
 			if (!inverter) {
-				LOG_FATAL(mainlogger,
+				LOGFATAL(mainlogger,
 						"Cannot create Inverter model "
 						<< model << "for manufactor \""
 						<< manufactor << '\"');
 
-				LOG_FATAL(mainlogger,
+				LOGFATAL(mainlogger,
 						"Supported models are: "
 						<< factory->GetSupportedModels());
-				_exit(1);
+				exit(1);
 			}
 
 			if (!inverter->CheckConfig()) {
-				LOG_FATAL(mainlogger,
+				LOGFATAL(mainlogger,
 						"Inverter " << name << " ( "
 						<< manufactor << ", " << model
 						<< ") reported configuration error");
-				_exit(1);
+				exit(1);
 			}
 
 			Registry::Instance().AddInverter(inverter);
@@ -345,7 +447,7 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	LOG_DEBUG(mainlogger, "Instanciating DataFilter objects");
+	LOGDEBUG(mainlogger, "Instanciating DataFilter objects");
 
 	{
 		IDataFilterFactory factory;
@@ -364,45 +466,45 @@ int main(int argc, char* argv[]) {
 				previousfilter = (const char *) rt[i]["datasource"];
 				type = (const char *) rt[i]["type"];
 
-				LOG_DEBUG(mainlogger,
+				LOGDEBUG(mainlogger,
 						"Datafilter " << name << " ("
 						<< type << ") connects to "
 						<< previousfilter <<
 						" with Config-path " << rt[i].getPath());
 
 			} catch (libconfig::SettingNotFoundException e) {
-				LOG_FATAL(mainlogger,
+				LOGFATAL(mainlogger,
 						"Configuration Error: Required Setting was not found in \""
 						<< e.getPath() << '\"' );
-				_exit(1);
+				exit(1);
 			}
 
 			// TODO Also check for duplicate DataFilters.
 			if (Registry::Instance().GetInverter(name)) {
-				LOG_FATAL(mainlogger,
+				LOGFATAL(mainlogger,
 						"CONFIG ERROR: Inverter or Logger Nameclash: "
 						<< name << " declared more than once"
 				);
-				_exit(1);
+				exit(1);
 			}
 
 			IDataFilter *filter = factory.Factory(rt[i].getPath());
 
 			if (!filter) {
-				LOG_FATAL(mainlogger,
+				LOGFATAL(mainlogger,
 						"Couldn't create DataFilter " << name
 						<< "(" << type << ") connecting to "
 						<< previousfilter << " Config-path " << rt[i].getPath()
 				);
-				_exit(1);
+				exit(1);
 			}
 
 			if (!filter->CheckConfig()) {
-				LOG_FATAL(mainlogger,
+				LOGFATAL(mainlogger,
 						"DataFilter " << name << "(" << type
 						<< ") reported config error"
 						<< previousfilter );
-				_exit(1);
+				exit(1);
 			}
 
 			Registry::Instance().AddInverter(filter);
@@ -411,13 +513,10 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	LOG_DEBUG(mainlogger, "Entering main loop");
-
-	while (true) {
-		// cerr << "." << flush;
+	while (!killsignal) {
 		Registry::GetMainScheduler()->DoWork(true);
-		// cerr << ":" << flush;
 	}
 
+	LOGINFO(Registry::GetMainLogger(), "Terminating.");
 	return 0;
 }

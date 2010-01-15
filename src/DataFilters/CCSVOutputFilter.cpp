@@ -123,7 +123,7 @@ bool CCSVOutputFilter::CheckConfig()
 	if (hlp.CheckConfig("data2log", Setting::TypeString, false, false)) {
 		hlp.GetConfig("data2log", setting);
 		if (setting != "all") {
-			LOG_ERROR(logger, "Configuration Error: data2log must be \"all\" or of the type \"Array\".");
+			LOGERROR(logger, "Configuration Error: data2log must be \"all\" or of the type \"Array\".");
 			fail = true;
 		}
 	} else if (!hlp.CheckConfig("data2log", Setting::TypeArray)) {
@@ -136,7 +136,7 @@ bool CCSVOutputFilter::CheckConfig()
 	hlp.GetConfig("datasource", str);
 	IInverterBase *i = Registry::Instance().GetInverter(str);
 	if (!i) {
-		LOG_ERROR(logger,
+		LOGERROR(logger,
 			"Setting " << setting << " in " << configurationpath
 			<< "." << name
 			<< ": Cannot find instance of Inverter with the name "
@@ -203,7 +203,7 @@ void CCSVOutputFilter::ExecuteCommand( const ICommand *cmd )
 			ts.tv_sec = v->Get();
 			ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
 		} else {
-			LOG_INFO(logger,
+			LOGINFO(logger,
 				"INFO: The associated inverter does not specify the "
 				"queryinterval. Defaulting to 5 seconds");
 		}
@@ -269,7 +269,7 @@ void CCSVOutputFilter::DoINITCmd( const ICommand * )
 		if (!cap->CheckSubscription(this))
 			cap->Subscribe(this);
 	} else {
-		LOG_ERROR(logger, "Could not find data source to connect. Filter: "
+		LOGERROR(logger, "Could not find data source to connect. Filter: "
 			<< configurationpath << "." << name );
 		abort();
 	}
@@ -312,7 +312,7 @@ void CCSVOutputFilter::DoINITCmd( const ICommand * )
 	}
 #endif
 	if (file.fail()) {
-		LOG_WARN(logger,"Failed to open file " << tmp <<". Logger " << name
+		LOGWARN(logger,"Failed to open file " << tmp <<". Logger " << name
 			<< " will not work. " );
 		file.close();
 		tmp = "";

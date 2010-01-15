@@ -73,7 +73,7 @@
 
 #ifdef HAVE_LIBLOG4CXX
 
-#define LOG_FATAL(logger, message)  do \
+#define LOGFATAL(logger, message)  do \
 	{\
 		if (logger.IsEnabled(ILogger::LL_FATAL)) { \
 			std::stringstream ss;\
@@ -82,7 +82,7 @@
 		}\
 	} while(0)
 
-#define LOG_ERROR(logger, message)  do \
+#define LOGERROR(logger, message)  do \
 	{\
 		if (logger.IsEnabled(ILogger::LL_ERROR)) { \
 			std::stringstream ss;\
@@ -91,7 +91,7 @@
 		}\
 	} while(0)
 
-#define LOG_WARN(logger, message)   do \
+#define LOGWARN(logger, message)   do \
 	{\
 		if (logger.IsEnabled(ILogger::LL_WARN)) { \
 			std::stringstream ss;\
@@ -100,7 +100,7 @@
 		}\
 	} while(0)
 
-#define LOG_INFO(logger, message)   do \
+#define LOGINFO(logger, message)   do \
 	{\
 		if (logger.IsEnabled(ILogger::LL_INFO)) { \
 			std::stringstream ss;\
@@ -109,7 +109,7 @@
 		}\
 	} while(0)
 
-#define LOG_DEBUG(logger, message)   do \
+#define LOGDEBUG(logger, message)   do \
 	{\
 		if (logger.IsEnabled(ILogger::LL_DEBUG)) { \
 			std::stringstream ss;\
@@ -118,7 +118,7 @@
 		}\
 	} while(0)
 
-#define LOG_TRACE(logger, message)   do \
+#define LOGTRACE(logger, message)   do \
 	{\
 		if (logger.IsEnabled(ILogger::LL_TRACE)) { \
 			std::stringstream ss;\
@@ -127,7 +127,7 @@
 		}\
 	} while(0)
 
-#define LOG_ALL(logger, message)   do \
+#define LOGALL(logger, message)   do \
 	{\
 		if (logger.IsEnabled(ILogger::LL_ALL)) { \
 			std::stringstream ss;\
@@ -138,23 +138,23 @@
 
 #else
 
-#define LOG_FATAL(logger, message) do { \
+#define LOGFATAL(logger, message) do { \
 	cerr << message << endl;\
 } while(0)
 
-#define LOG_ERROR(logger, message) do { \
+#define LOGERROR(logger, message) do { \
 	cerr << message << endl;\
 } while(0)
 
-#define LOG_WARN(logger, message)
+#define LOGWARN(logger, message)
 
-#define LOG_INFO(logger, message)
+#define LOGINFO(logger, message)
 
-#define LOG_DEBUG(logger, message)
+#define LOGDEBUG(logger, message)
 
-#define LOG_TRACE(logger, message)
+#define LOGTRACE(logger, message)
 
-#define LOG_ALL(logger, message)
+#define LOGALL(logger, message)
 
 #endif
 

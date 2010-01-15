@@ -170,12 +170,12 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	c = new CCapability(s, v, this);
 	AddCapability(s, c);
 
-	LOG_DEBUG(logger,"Inverter configuration:");
-	LOG_DEBUG(logger,"class CInverterSputnikSSeries ");
-	LOG_DEBUG(logger,"Query Interval: "<< interval);
-	LOG_DEBUG(logger,"Ownadr: " << ownadr << " Commadr: " << commadr);
+	LOGDEBUG(logger,"Inverter configuration:");
+	LOGDEBUG(logger,"class CInverterSputnikSSeries ");
+	LOGDEBUG(logger,"Query Interval: "<< interval);
+	LOGDEBUG(logger,"Ownadr: " << ownadr << " Commadr: " << commadr);
 	cfghlp.GetConfig("comms", s, (string) "unset");
-	LOG_DEBUG(logger,"Communication: " << s);
+	LOGDEBUG(logger,"Communication: " << s);
 
 }
 
@@ -203,7 +203,7 @@ bool CInverterSputnikSSeries::CheckConfig() {
 		fail |= (true != connection->CheckConfig());
 	}
 
-	LOG_TRACE(logger, "Check Configuration result:" << !fail);
+	LOGTRACE(logger, "Check Configuration result:" << !fail);
 	return !fail;
 }
 
@@ -241,7 +241,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 		// DISCONNECTED: Error detected, the link to the com partner is down.
 		// Action: Schedule connection retry in xxx seconds
 		// Next-State: INIT (Try to connect)
-		LOG_TRACE(logger, "new state: CMD_DISCONNECTED");
+		LOGTRACE(logger, "new state: CMD_DISCONNECTED");
 
 		// Timeout on reception
 		// we assume that we are now disconnected.
@@ -267,7 +267,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 		// INIT: Try to connect to the comm partner
 		// Action Connection Attempt
 		// Next-State: Wait4Connection
-		LOG_TRACE(logger, "new state: CMD_INIT");
+		LOGTRACE(logger, "new state: CMD_INIT");
 
 		CConfigHelper cfg(configurationpath);
 
@@ -281,7 +281,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 	}
 
 	case CMD_WAIT4CONNECTION:	{
-		LOG_TRACE(logger, "new state: CMD_WAIT4CONNECTION");
+		LOGTRACE(logger, "new state: CMD_WAIT4CONNECTION");
 
 		int err = -1;
 		// WAIT4CONNECTION: Wait until connection is up of failed to set up
@@ -295,13 +295,13 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 		}
 		catch (...)
 		{
-			LOG_DEBUG(logger,"CMD_WAIT4CONNECTION: unexpected exception");
+			LOGDEBUG(logger,"CMD_WAIT4CONNECTION: unexpected exception");
 			err = -1;
 		}
 
 		if (err < 0) {
 			try {
-				LOG_ERROR(logger, "Error while connecting: " <<
+				LOGERROR(logger, "Error while connecting: " <<
 						boost::any_cast<string>(Command->findData(ICMD_ERRNO_STR)));
 			} catch (...) {
 			}
@@ -317,14 +317,14 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 	break;
 
 	case CMD_QUERY_IDENTIFY:
-		LOG_TRACE(logger, "new state: CMD_QUERY_IDENTIFY ");
+		LOGTRACE(logger, "new state: CMD_QUERY_IDENTIFY ");
 
 		pushinverterquery(TYP);
 		pushinverterquery(SWV);
 		pushinverterquery(BUILDVER);
 
 	case CMD_QUERY_POLL:
-		LOG_TRACE(logger, "new state: CMD_QUERY_POLL ");
+		LOGTRACE(logger, "new state: CMD_QUERY_POLL ");
 
 		pushinverterquery(PAC);
 		pushinverterquery(KHR);
@@ -349,10 +349,10 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 
 	case CMD_SEND_QUERIES:
 	{
-		LOG_TRACE(logger, "new state: CMD_SEND_QUERIES ");
+		LOGTRACE(logger, "new state: CMD_SEND_QUERIES ");
 
 		commstring = assemblequerystring();
-		LOG_TRACE(logger, "Sending: " << commstring << " Len: "<< commstring.size());
+		LOGTRACE(logger, "Sending: " << commstring << " Len: "<< commstring.size());
 
 		cmd = new ICommand(CMD_WAIT_SENT, this);
 		connection->Send(commstring , cmd );
@@ -361,13 +361,13 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 
 	case CMD_WAIT_SENT:
 	{
-		LOG_TRACE(logger, "new state: CMD_WAIT_SENT");
+		LOGTRACE(logger, "new state: CMD_WAIT_SENT");
 		int err;
 		try {
 		err = boost::any_cast<int>(Command->findData(ICMD_ERRNO));
 		}
 		catch (...) {
-			LOG_DEBUG(logger, "BUG: Unexpected exception.");
+			LOGDEBUG(logger, "BUG: Unexpected exception.");
 			err = -1;
 		}
 
@@ -383,7 +383,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 
 	case CMD_WAIT_RECEIVE:
 	{
-		LOG_TRACE(logger, "new state: CMD_WAIT_RECEIVE");
+		LOGTRACE(logger, "new state: CMD_WAIT_RECEIVE");
 
 		cmd =
 				new ICommand(CMD_EVALUATE_RECEIVE, this);
@@ -393,7 +393,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 
 	case CMD_EVALUATE_RECEIVE:
 	{
-		LOG_TRACE(logger, "new state: CMD_EVALUATE_RECEIVE");
+		LOGTRACE(logger, "new state: CMD_EVALUATE_RECEIVE");
 
 		int err;
 		std::string s;
@@ -401,7 +401,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 		err = boost::any_cast<int>(Command->findData(ICMD_ERRNO));
 		}
 		catch (...) {
-			LOG_DEBUG(logger, "BUG: Unexpected exception.");
+			LOGDEBUG(logger, "BUG: Unexpected exception.");
 			err = -1;
 		}
 
@@ -412,10 +412,10 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 			try {
 				s = boost::any_cast<std::string>
 					(Command->findData(ICMD_ERRNO_STR));
-				LOG_DEBUG(logger, "Receive Error: " << s);
+				LOGDEBUG(logger, "Receive Error: " << s);
 			}
 			catch(...) {
-				LOG_DEBUG(logger, "Receive Error: (unknown error)");
+				LOGDEBUG(logger, "Receive Error: (unknown error)");
 			}
 			break;
 		}
@@ -425,11 +425,11 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 				(Command->findData(ICONN_TOKEN_RECEIVE_STRING));
 		}
 		catch (...) {
-			LOG_DEBUG(logger, "Unexpected Exception");
+			LOGDEBUG(logger, "Unexpected Exception");
 			break;
 		}
 
-		LOG_TRACE(logger, "Received :" << s << "len: " << s.size());
+		LOGTRACE(logger, "Received :" << s << "len: " << s.size());
 		if (logger.IsEnabled(ILogger::LL_TRACE)) {
 				string st;
 				char buf[32];
@@ -441,13 +441,13 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 					else
 						st = st + ' ';
 				}
-				LOG_TRACE(logger, "Received in hex: "<< st );
+				LOGTRACE(logger, "Received in hex: "<< st );
 		}
 
 		if (!parsereceivedstring(s)) {
 			// Reconnect on parse errors.
-			LOG_ERROR(logger, "Parse error while receiving.");
-			LOG_DEBUG(logger, "Received: " << s);
+			LOGERROR(logger, "Parse error while receiving.");
+			LOGDEBUG(logger, "Received: " << s);
 			cmd = new ICommand(CMD_DISCONNECTED,this);
 			Registry::GetMainScheduler()->ScheduleWork(cmd);
 			break;
@@ -478,12 +478,10 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 	break;
 
 	default:
-		LOG_FATAL(logger, "Unknown CMD received");
+		LOGFATAL(logger, "Unknown CMD received");
 		abort();
 
 	}
-
-
 
 }
 
@@ -493,7 +491,7 @@ void CInverterSputnikSSeries::pushinverterquery(enum query q) {
 
 string CInverterSputnikSSeries::assemblequerystring() {
 	if (cmdqueue.empty()) {
-		LOG_TRACE(logger, "assemblequerystring: empty task lisk.");
+		LOGTRACE(logger, "assemblequerystring: empty task lisk.");
 		return "";
 	}
 
@@ -1020,48 +1018,48 @@ bool CInverterSputnikSSeries::parsereceivedstring(const string & s) {
 			ss << i++ << ": " << (*it) << "\tlen: "
 			<< (*it).length() << endl;
 		}
-		LOG_TRACE(logger,ss);
+		LOGTRACE(logger,ss);
 	}
 #endif
 
 	unsigned int tmp;
 	if (1 != sscanf(tokens.back().c_str(), "%x", &tmp)) {
-		LOG_DEBUG(logger, "could not parse checksum. Token was:" );
+		LOGDEBUG(logger, "could not parse checksum. Token was:" );
 		return false;
 	}
 
 	if (tmp != CalcChecksum(s.c_str(), s.length() - 6)) {
-		LOG_DEBUG(logger, "Checksum error on received telegram");
+		LOGDEBUG(logger, "Checksum error on received telegram");
 		return false;
 	}
 
 	if (1 != sscanf(tokens[0].c_str(), "%x", &tmp)) {
-		LOG_DEBUG(logger, " could not parse from address");
+		LOGDEBUG(logger, " could not parse from address");
 		return false;
 	}
 
 	if (tmp != commadr) {
-		LOG_DEBUG(logger, "not for us: Wrong Sender");
+		LOGDEBUG(logger, "not for us: Wrong Sender");
 		return false;
 	}
 
 	if (1 != sscanf(tokens[1].c_str(), "%x", &tmp)) {
-		LOG_DEBUG(logger, "could not parse to-address");
+		LOGDEBUG(logger, "could not parse to-address");
 		return false;
 	}
 
 	if (tmp != ownadr) {
-		LOG_DEBUG(logger, "not for us: Wrong receiver");
+		LOGDEBUG(logger, "not for us: Wrong receiver");
 		return false;
 	}
 
 	if (1 != sscanf(tokens[2].c_str(), "%x", &tmp)) {
-		LOG_DEBUG(logger, "could not parse telegram length");
+		LOGDEBUG(logger, "could not parse telegram length");
 		return false;
 	}
 
 	if (tmp != s.length()) {
-		LOG_DEBUG(logger, "wrong telegram length ");
+		LOGDEBUG(logger, "wrong telegram length ");
 		return false;
 	}
 
@@ -1071,7 +1069,7 @@ bool CInverterSputnikSSeries::parsereceivedstring(const string & s) {
 	bool ret = true;
 	for (i = 4; i < tokens.size() - 1; i++) {
 		if (!parsetoken(tokens[i])) {
-			LOG_DEBUG(logger,
+			LOGDEBUG(logger,
 					"BUG: Parse Error at token " << tokens[i]
 					<< ". Received: " << s << "If the token is unkown or you subject a bug, please report it giving the  token ans received string"
 			);
@@ -1290,8 +1288,8 @@ bool CInverterSputnikSSeries::token_TYP(const vector<string> & tokens) {
 	} while (model_lookup[++i].typ != (unsigned int) -1);
 
 	if (model_lookup[i].typ == (unsigned int) -1) {
-		LOG_WARN(logger, "Identified a " << model_lookup[i].description);
-		LOG_WARN(logger, "Received TYP was " << tokens[0] << "=" << tokens[1]);
+		LOGWARN(logger, "Identified a " << model_lookup[i].description);
+		LOGWARN(logger, "Received TYP was " << tokens[0] << "=" << tokens[1]);
 	}
 
 	// lookup if we already know that informations.
@@ -1316,7 +1314,7 @@ bool CInverterSputnikSSeries::token_TYP(const vector<string> & tokens) {
 		CValue<string> *val = (CValue<string>*) cap->getValue();
 		if (model_lookup[i].description != val->Get()) {
 
-			LOG_DEBUG(logger, "WEIRD: Updating inverter type from "
+			LOGDEBUG(logger, "WEIRD: Updating inverter type from "
 					<< val->Get() << " to "
 					<< model_lookup[i].description);
 
@@ -1324,7 +1322,7 @@ bool CInverterSputnikSSeries::token_TYP(const vector<string> & tokens) {
 			cap->Notify();
 		}
 	} else {
-		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_MODEL << " not a string ");
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_MODEL << " not a string ");
 	}
 
 	return true;
@@ -1414,7 +1412,7 @@ bool CInverterSputnikSSeries::token_PAC(const vector<string> & tokens) {
 			cap->Notify();
 		}
 	} else {
-		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_ACPOWER_TOTAL
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_ACPOWER_TOTAL
 				<< " not a float ");
 	}
 
@@ -1457,7 +1455,7 @@ bool CInverterSputnikSSeries::token_KHR(const vector<string> & tokens) {
 			cap->Notify();
 		}
 	} else {
-		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_PON_HOURS << " not a float ");
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_PON_HOURS << " not a float ");
 	}
 
 	return true;
@@ -1515,7 +1513,7 @@ bool CInverterSputnikSSeries::token_KYR(const vector<string> & tokens) {
 			cap->Notify();
 		}
 	} else {
-		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_Y2D << " not a float ");
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_Y2D << " not a float ");
 	}
 
 	return true;
@@ -1558,7 +1556,7 @@ bool CInverterSputnikSSeries::token_KMT(const vector<string> & tokens) {
 			cap->Notify();
 		}
 	} else {
-		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_M2D << " not a float ");
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_M2D << " not a float ");
 	}
 
 	return true;
@@ -1600,7 +1598,7 @@ bool CInverterSputnikSSeries::token_KDY(const vector<string> & tokens) {
 			cap->Notify();
 		}
 	} else {
-		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_2D << " not a float ");
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_2D << " not a float ");
 	}
 
 	return true;
@@ -1644,7 +1642,7 @@ bool CInverterSputnikSSeries::token_KT0(const vector<string> & tokens) {
 			cap->Notify();
 		}
 	} else {
-		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_TOTAL_NAME
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_TOTAL_NAME
 				<< " not a float ");
 	}
 
@@ -1687,7 +1685,7 @@ bool CInverterSputnikSSeries::token_PIN(const vector<string> & tokens) {
 			cap->Notify();
 		}
 	} else {
-		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_INSTALLEDPOWER_NAME
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_INSTALLEDPOWER_NAME
 				<< " not a float ");
 	}
 
@@ -1732,7 +1730,7 @@ bool CInverterSputnikSSeries::token_TNF(const vector<string> & tokens) {
 			cap->Notify();
 		}
 	} else {
-		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_NET_FREQUENCY_NAME
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_NET_FREQUENCY_NAME
 				<< " not a float ");
 	}
 
@@ -1775,7 +1773,7 @@ bool CInverterSputnikSSeries::token_PRL(const vector<string> & tokens) {
 			cap->Notify();
 		}
 	} else {
-		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_RELPOWER_NAME
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_RELPOWER_NAME
 				<< " not a float ");
 	}
 
@@ -1823,7 +1821,7 @@ bool CInverterSputnikSSeries::token_UDC(const vector<string> & tokens) {
 			cap->Notify();
 		}
 	} else {
-		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_INPUT_DC_VOLTAGE_NAME
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_INPUT_DC_VOLTAGE_NAME
 				<< " not a float ");
 	}
 
@@ -1866,7 +1864,7 @@ bool CInverterSputnikSSeries::token_UL1(const vector<string> & tokens) { // Unit
 			cap->Notify();
 		}
 	} else {
-		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_GRID_AC_VOLTAGE_NAME
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_GRID_AC_VOLTAGE_NAME
 				<< " not a float");
 	}
 
@@ -1921,7 +1919,7 @@ bool CInverterSputnikSSeries::token_IDC(const vector<string> & tokens) { // Unit
 			cap->Notify();
 		}
 	} else {
-		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_INPUT_DC_CURRENT_NAME
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_INPUT_DC_CURRENT_NAME
 				<< " not a float");
 	}
 
@@ -1965,7 +1963,7 @@ bool CInverterSputnikSSeries::token_IL1(const vector<string> & tokens) {
 			cap->Notify();
 		}
 	} else {
-		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_GRID_AC_CURRENT_NAME
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_GRID_AC_CURRENT_NAME
 				<< " not a float");
 	}
 
@@ -2018,7 +2016,7 @@ bool CInverterSputnikSSeries::token_TKK(const vector<string> & tokens) {
 			cap->Notify();
 		}
 	} else {
-		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_TEMPERATURE_NAME
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_TEMPERATURE_NAME
 				<< " not a float");
 	}
 
@@ -2055,7 +2053,7 @@ bool CInverterSputnikSSeries::token_SYS(const vector<string> &tokens) {
 		return false;
 
 	if (tokens[2] != "0") {
-		LOG_INFO(logger, "Received an unkown SYS response. Please file a bug"
+		LOGINFO(logger, "Received an unkown SYS response. Please file a bug"
 				<< " along with the following: " << tokens[0] << ","
 				<< tokens[1] << "," << tokens[2]);
 	}
@@ -2073,10 +2071,10 @@ bool CInverterSputnikSSeries::token_SYS(const vector<string> &tokens) {
 
 	if (laststatuscode != (unsigned int) -1 && statuscodes[i].code
 			== (unsigned int) -1) {
-		LOG_INFO(logger, "SYS reported an (too us) unknown status code of "
+		LOGINFO(logger, "SYS reported an (too us) unknown status code of "
 				<< tokens[0] << "=" << tokens[1] << "," << tokens[2]
 		);
-		LOG_INFO (logger,
+		LOGINFO (logger,
 				" PLEASE file a with all informations you have, for example,"
 				<< " reading the display of the inverter and of course the infors given above."
 		);
@@ -2106,7 +2104,7 @@ bool CInverterSputnikSSeries::token_SYS(const vector<string> &tokens) {
 			cap->Notify();
 		}
 	} else {
-		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_STATUS_NAME << " not a int");
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_STATUS_NAME << " not a int");
 	}
 
 	// now also do the same with the string.
@@ -2131,7 +2129,7 @@ bool CInverterSputnikSSeries::token_SYS(const vector<string> &tokens) {
 			cap->Notify();
 		}
 	} else {
-		LOG_DEBUG(logger, "BUG: " << CAPA_INVERTER_STATUS_READABLE_NAME
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_STATUS_READABLE_NAME
 				<< " not a string ");
 	}
 

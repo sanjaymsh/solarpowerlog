@@ -77,7 +77,7 @@ pair<string, CCapability*> ICapaIterator::GetNext()
 		return *(it++);
 	}
 
-	LOG_DEBUG(Registry::GetMainLogger(),
+	LOGDEBUG(Registry::GetMainLogger(),
 		"BUG: NOTHING TO RETURN: USE HasNext() PRIOR GETNEXT()");
 	assert(false);
 	return *it;

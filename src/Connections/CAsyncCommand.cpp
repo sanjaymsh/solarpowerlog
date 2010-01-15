@@ -32,7 +32,17 @@ CAsyncCommand::~CAsyncCommand()
 {
 	// if we created the callback, delete it.
 	// else, we are not owner of it, and so we cannot delete it.
-	if (private_icommand)
+	if (private_icommand) {
 		delete callback;
+	}
+}
+
+void CAsyncCommand::HandleCompletion( void )
+{
+	if (!private_icommand) {
+		Registry::GetMainScheduler()->ScheduleWork(callback);
+	} else {
+		sem_post(sem);
+	}
 }
 

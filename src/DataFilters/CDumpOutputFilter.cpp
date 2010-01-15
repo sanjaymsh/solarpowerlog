@@ -94,7 +94,7 @@ bool CDumpOutputFilter::CheckConfig()
 	hlp.GetConfig("datasource", str, (std::string) "");
 	IInverterBase *i = Registry::Instance().GetInverter(str);
 	if (!i) {
-		LOG_ERROR(logger, "Setting " << setting << " in " << configurationpath
+		LOGERROR(logger, "Setting " << setting << " in " << configurationpath
 			<< "." << name
 			<< ": Cannot find instance of Inverter with the name "
 			<< str );
@@ -176,7 +176,7 @@ void CDumpOutputFilter::ExecuteCommand( const ICommand *cmd )
 				assert(cap);
 				cap->Subscribe(this);
 			} else {
-				LOG_WARN(logger,
+				LOGWARN(logger,
 					"Warning: Could not find data source to connect. Filter: "
 					<< configurationpath << "." << name);
 			}

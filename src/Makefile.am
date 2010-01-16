@@ -3,8 +3,9 @@ ACLOCAL_AMFLAGS = -I m4
 
 AM_CXXFLAGS = $(BOOST_CPPFLAGS)
 
-#CTEMPLATE_LIB =-lctemplate
-#CTEMPLATE_CFLAGS = -I ../extlibs
+DBIXX_LIB =-ldbixx
+
+
 
 bin_PROGRAMS = solarpowerlog
 
@@ -40,7 +41,7 @@ solarpowerlog_LDADD = $(CONFIG_LIBS) $(LOG4CXX_LIBS) $(APR_LIBS) \
 LIBS = $(DEPS_LIBS)  
 
 # add the search path to the linker path 
-solarpowerlog_LDFLAGS = $(pwd) -L ../extlibs/ctemplate 
+solarpowerlog_LDFLAGS = $(pwd) -L ../extlibs/ctemplate -L ../extlibs/dbixx
 
 # rule to make the ctemplate library 
 libctemplate.a: 

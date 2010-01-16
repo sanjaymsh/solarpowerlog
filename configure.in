@@ -18,6 +18,8 @@ AM_INIT_AUTOMAKE(solarpowerlog, 0.20)
 
 AC_CONFIG_SRCDIR([src/solarpowerlog.cpp])
 
+# configure extlibs 
+AC_CONFIG_SUBDIRS([extlibs/dbixx])
 
 ### options for some features that might not always be needed 
 ### (for shrinking the footprint)
@@ -124,6 +126,7 @@ if test "x$enable_htmlwriter" != "xno" ; then
 else
     AC_MSG_NOTICE([Support for the HTMLWriter disabled as requested.])
 fi
+
 
 AC_SUBST(CTEMPLATE_LIB)
 AC_SUBST(CTEMPLATE_CFLAGS)

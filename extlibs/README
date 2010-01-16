@@ -4,9 +4,16 @@ which is not available through debian packages:
 Please check the projects informations for details about copyright, license and
 authors -- the packages are provided "as is".
 
-Folder		Origin  				License
-ctemplate	http://libctemplate.sourceforge.net/	GPL3
+Folder		License Origin  		
+ctemplate	GPL3 	http://libctemplate.sourceforge.net
 Used for templating the HTML output
 Modifications: 
     Added C++ Wrapper to the header file.
     Emits smaller pages due filtering double-blanks 
+
+Folder		License	Origin				
+dbixx		LGPL2.1	http://cppcms.svn.sourceforge.net/viewvc/cppcms/dbixx/trunk/
+CppCMS LibDBI C++ Wrapper -- C++ Web Development Framework
+Modifications:
+    Added some includes to fix build error. Patch send upstream. 
+

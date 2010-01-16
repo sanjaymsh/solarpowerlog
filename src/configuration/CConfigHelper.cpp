@@ -86,7 +86,7 @@ bool CConfigHelper::CheckConfig( const string & setting,
 	if (printerr) {
 		string name = cfgpath;
 		cfg->lookupValue(cfgpath + ".name", name);
-		LOG_ERROR(Registry::GetMainLogger(), "Setting " << setting <<
+		LOGERROR(Registry::GetMainLogger(), "Setting " << setting <<
 			" of " << name << " " << reason);
 	}
 	return false;

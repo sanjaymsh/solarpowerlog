@@ -48,14 +48,7 @@ public:
 	/** Handle this jobs completion by notifying the sender
 	 *
 	 */
-	void HandleCompletion( void )
-	{
-		if (!private_icommand) {
-			Registry::GetMainScheduler()->ScheduleWork(callback);
-		} else {
-			sem_post(sem);
-		}
-	}
+	void HandleCompletion( void );
 
 	/** Is the asyncCommnd really async, or was it only pretended?
 	 *

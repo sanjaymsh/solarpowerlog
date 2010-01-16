@@ -110,10 +110,10 @@
 #include <libconfig.h++>
 
 #include <boost/noncopyable.hpp>
+#include "interfaces/CWorkScheduler.h"
 
 #include "configuration/ILogger.h"
 
-class CWorkScheduler;
 class IInverterBase;
 
 using namespace std;
@@ -240,10 +240,11 @@ public:
 	 * \returns pointer to the scheduler */
 	static CWorkScheduler *GetMainScheduler( void )
 	{
+		if(! Registry::Instance().mainscheduler) {
+			Registry::Instance().mainscheduler = new CWorkScheduler;
+		}
 		return Registry::Instance().mainscheduler;
 	}
-
-
 
 private:
 	CWorkScheduler *mainscheduler;
@@ -255,7 +256,6 @@ protected:
 
 private:
 	libconfig::Config *Config;
-	bool config_loaded;
 
 	// TODO generalize this interface, as we might also store
 	// other types of objects here.

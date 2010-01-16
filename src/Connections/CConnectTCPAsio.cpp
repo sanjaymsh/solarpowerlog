@@ -127,7 +127,7 @@ bool CConnectTCPAsio::Connect( ICommand *callback )
 
 	if (!callback) {
 		sem_wait(&semaphore);
-		LOG_TRACE(logger, "destroying CAsyncCommando " << commando );
+		LOGTRACE(logger, "destroying CAsyncCommando " << commando );
 		delete commando;
 		return IsConnected();
 	}
@@ -160,7 +160,7 @@ bool CConnectTCPAsio::Disconnect( ICommand *callback )
 	if (!callback) {
 		// wait for async job completion
 		sem_wait(&semaphore);
-		LOG_TRACE(logger, "destroying CAsyncCommando " << commando );
+		LOGTRACE(logger, "destroying CAsyncCommando " << commando );
 		delete commando;
 	}
 	return true;
@@ -199,16 +199,16 @@ bool CConnectTCPAsio::Send( const char *tosend, unsigned int len,
 				ret = true;
 			}
 		} catch (std::invalid_argument e) {
-			LOG_DEBUG(logger,"ERR: unexpected exception while "
+			LOGDEBUG(logger,"ERR: unexpected exception while "
 					"receive-handling: Invalid arguement " << e.what());
 			ret = false;
 		} catch (boost::bad_any_cast e) {
-			LOG_DEBUG(logger,"ERR: unexpected exception while "
+			LOGDEBUG(logger,"ERR: unexpected exception while "
 					"receive-handling: Bad cast " << e.what());
 			ret = false;
 		}
 
-		LOG_TRACE(logger, "destroying CAsyncCommando " << commando );
+		LOGTRACE(logger, "destroying CAsyncCommando " << commando );
 		delete commando;
 		return ret;
 	}
@@ -262,19 +262,19 @@ bool CConnectTCPAsio::Receive( string & wheretoplace, ICommand *callback )
 					commando->callback->findData(ICONN_TOKEN_RECEIVE_STRING));
 
 		} catch (std::invalid_argument e) {
-			LOG_DEBUG(logger,"ERR: unexpected exception while "
+			LOGDEBUG(logger,"ERR: unexpected exception while "
 					"receive-handling: Invalid arguement " << e.what());
 			ret = false;
 			goto out;
 		} catch (boost::bad_any_cast e) {
-			LOG_DEBUG(logger,"ERR: unexpected exception while "
+			LOGDEBUG(logger,"ERR: unexpected exception while "
 					"receive-handling: Bad cast " << e.what());
 			ret = false;
 			goto out;
 		}
 
 		out:
-		LOG_TRACE(logger, "destroying CAsyncCommando " << commando );
+		LOGTRACE(logger, "destroying CAsyncCommando " << commando );
 		delete commando;
 		return ret;
 	}
@@ -306,14 +306,14 @@ bool CConnectTCPAsio::CheckConfig( void )
 
 void CConnectTCPAsio::_main( void )
 {
-	LOG_TRACE(logger, "Starting helper thread");
+	LOGTRACE(logger, "Starting helper thread");
 
 	while (!IsTermRequested()) {
 		int syscallret;
 
 		// wait for work or signals.
 		// FIXME Test this if this works ;-)
-		LOG_TRACE(logger, "Waiting for work");
+		LOGTRACE(logger, "Waiting for work");
 		syscallret = sem_wait(&cmdsemaphore);
 		if (syscallret == 0) {
 			// semaphore had work for us. process it.
@@ -328,14 +328,14 @@ void CConnectTCPAsio::_main( void )
 
 				mutex.unlock();
 
-				LOG_TRACE(logger, "Received command " << donow << " with callback " << donow->callback );
+				LOGTRACE(logger, "Received command " << donow << " with callback " << donow->callback );
 
 				switch (donow->c) {
 				case CAsyncCommand::CONNECT:
 					if (HandleConnect(donow)) {
-						LOG_TRACE(logger, "Check command " << donow << " with callback " << donow->callback );
+						LOGTRACE(logger, "Check command " << donow << " with callback " << donow->callback );
 						mutex.lock();
-						LOG_TRACE(logger, "Front is " <<cmds.front() );
+						LOGTRACE(logger, "Front is " <<cmds.front() );
 						cmds.pop_front();
 						// check if we have to delete the object
 						// or -- in case of sync operation --
@@ -344,7 +344,7 @@ void CConnectTCPAsio::_main( void )
 						// (as the object can be already gone, if
 						// the sync command had already deleted it)
 						if (delete_cmd) {
-							LOG_TRACE(logger, "Deleting " << donow);
+							LOGTRACE(logger, "Deleting " << donow);
 							delete donow;
 						}
 						mutex.unlock();
@@ -356,7 +356,7 @@ void CConnectTCPAsio::_main( void )
 						mutex.lock();
 						cmds.pop_front();
 						if (delete_cmd) {
-							LOG_TRACE(logger, "Deleting " << donow);
+							LOGTRACE(logger, "Deleting " << donow);
 							delete donow;
 						}
 						mutex.unlock();
@@ -368,7 +368,7 @@ void CConnectTCPAsio::_main( void )
 						mutex.lock();
 						cmds.pop_front();
 						if (delete_cmd) {
-							LOG_TRACE(logger, "Deleting " << donow);
+							LOGTRACE(logger, "Deleting " << donow);
 							delete donow;
 						}
 						mutex.unlock();
@@ -381,7 +381,7 @@ void CConnectTCPAsio::_main( void )
 						mutex.lock();
 						cmds.pop_front();
 						if (delete_cmd) {
-							LOG_TRACE(logger, "Deleting " << donow);
+							LOGTRACE(logger, "Deleting " << donow);
 							delete donow;
 						}
 						mutex.unlock();
@@ -391,7 +391,7 @@ void CConnectTCPAsio::_main( void )
 
 				default:
 				{
-					LOG_FATAL(logger, "Unknown command received.");
+					LOGFATAL(logger, "Unknown command received.");
 					abort();
 					break;
 				}
@@ -409,7 +409,7 @@ void CConnectTCPAsio::_main( void )
 
 bool CConnectTCPAsio::PushWork( CAsyncCommand *cmd )
 {
-	LOG_TRACE(logger, "Pushing command " << cmd << " with callback " << cmd->callback );
+	LOGTRACE(logger, "Pushing command " << cmd << " with callback " << cmd->callback );
 	mutex.lock();
 	cmds.push_back(cmd);
 	mutex.unlock();
@@ -440,7 +440,7 @@ bool CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 	} catch (std::invalid_argument e) {
 		cfghelper.GetConfig("tcptimeout", timeout, TCP_ASIO_DEFAULT_TIMEOUT);
 	} catch (boost::bad_any_cast e) {
-		LOG_DEBUG(logger,
+		LOGDEBUG(logger,
 				"BUG: Handling Connect: Bad cast for " << ICONN_TOKEN_TIMEOUT);
 		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
 	}
@@ -457,7 +457,7 @@ bool CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 #warning TODO Change to async connect for better timeout handling.
 	while (iter != end) {
 		ip::tcp::endpoint endpoint = *iter++;
-		LOG_DEBUG(logger, "Connecting to " << endpoint );
+		LOGDEBUG(logger, "Connecting to " << endpoint );
 		sockt->connect(endpoint, ec);
 		if (!ec)
 			break;
@@ -469,7 +469,7 @@ bool CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 
 	if (ec) {
 #warning remove log_error here, as it should be handled in the one calling connect.
-		LOG_ERROR(logger, "Connection to " << strhost << " failed with reason: " << ec.message() );
+		LOGERROR(logger, "Connection to " << strhost << " failed with reason: " << ec.message() );
 		cmd->callback->addData(ICMD_ERRNO, -ECONNREFUSED);
 		if (!ec.message().empty())
 			cmd->callback->addData(ICMD_ERRNO_STR, ec.message());
@@ -477,7 +477,7 @@ bool CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 		return true;
 	}
 
-	LOG_DEBUG(logger, "Connected to " << strhost );
+	LOGDEBUG(logger, "Connected to " << strhost );
 	// Signal success.
 	cmd->callback->addData(ICMD_ERRNO, 0);
 	cmd->HandleCompletion();
@@ -564,7 +564,7 @@ bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 		CConfigHelper cfghelper(ConfigurationPath);
 		cfghelper.GetConfig("tcptimeout", timeout, 3000UL);
 	} catch (boost::bad_any_cast e) {
-		LOG_DEBUG(logger, "Unexpected exception in HandleReceive: Bad cast" << e.what());
+		LOGDEBUG(logger, "Unexpected exception in HandleReceive: Bad cast" << e.what());
 		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
 	}
 
@@ -586,7 +586,7 @@ bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 	if (num == 0 || result_timer) {
 		timer.cancel(ec);
 		sockt->cancel(ec);
-		LOG_TRACE(logger,"Async read timeout");
+		LOGTRACE(logger,"Async read timeout");
 		cmd->callback->addData(ICMD_ERRNO, -ETIMEDOUT);
 		cmd->HandleCompletion();
 		ioservice->poll();
@@ -598,21 +598,21 @@ bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 
 	if (*read_handler.ec) {
 		if (*read_handler.ec != boost::asio::error::eof) {
-			LOG_DEBUG(logger,"Async read failed with ec=" << *read_handler.ec
+			LOGDEBUG(logger,"Async read failed with ec=" << *read_handler.ec
 					<< " msg="<< read_handler.ec->message());
 			cmd->callback->addData(ICMD_ERRNO, -EIO);
 			cmd->callback->addData(ICMD_ERRNO_STR, read_handler.ec->message());
 
 		} else {
 			cmd->callback->addData(ICMD_ERRNO, -ENOTCONN);
-			LOG_TRACE(logger, "Received eof on socket read");
+			LOGTRACE(logger, "Received eof on socket read");
 		}
 		cmd->HandleCompletion();
 		return true;
 	}
 
 	if (1 != *read_handler.bytes) {
-		LOG_DEBUG(logger,"Received "
+		LOGDEBUG(logger,"Received "
 				<< *read_handler.bytes << " but expected only 1 byte");
 		cmd->callback->addData(ICMD_ERRNO, -EIO);
 		cmd->HandleCompletion();
@@ -624,12 +624,12 @@ bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 	size_t numrecvd = 1;
 	std::string receivestr;
 
-	LOG_TRACE(logger, "There are " << avail << " bytes ready to read");
+	LOGTRACE(logger, "There are " << avail << " bytes ready to read");
 	char recved[avail + 2];
 	recved[0] = buf[0];
 	while (avail > 0) {
 		tmp = sockt->read_some(asio::buffer(&recved[numrecvd], avail), ec);
-		LOG_TRACE(logger, "Read " << tmp << " of these");
+		LOGTRACE(logger, "Read " << tmp << " of these");
 		avail -= tmp;
 		numrecvd += tmp;
 		// check if error occured.
@@ -680,12 +680,12 @@ bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 	}
 #ifdef DEBUG_TCPASIO
 	catch (std::invalid_argument e) {
-		LOG_DEBUG(logger, "BUG: required " << ICONN_TOKEN_SEND_STRING << " argument not set");
+		LOGDEBUG(logger, "BUG: required " << ICONN_TOKEN_SEND_STRING << " argument not set");
 
 	}
 	catch (boost::bad_any_cast e)
 	{
-		LOG_DEBUG(logger, "Unexpected exception in HandleSend: Bad cast" << e.what());
+		LOGDEBUG(logger, "Unexpected exception in HandleSend: Bad cast" << e.what());
 	}
 #else
 	catch (...);
@@ -700,7 +700,7 @@ bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 		CConfigHelper cfghelper(ConfigurationPath);
 		cfghelper.GetConfig("tcptimeout", timeout, 3000UL);
 	} catch (boost::bad_any_cast e) {
-		LOG_DEBUG(logger, "Unexpected exception in HandleSend: Bad cast" << e.what());
+		LOGDEBUG(logger, "Unexpected exception in HandleSend: Bad cast" << e.what());
 		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
 	}
 #else
@@ -727,7 +727,7 @@ bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 	if (num == 0 || result_timer) {
 		timer.cancel(ec);
 		sockt->cancel(ec);
-		LOG_TRACE(logger,"Async write timeout");
+		LOGTRACE(logger,"Async write timeout");
 		cmd->callback->addData(ICMD_ERRNO, -ETIMEDOUT);
 		cmd->HandleCompletion();
 		ioservice->poll();
@@ -740,20 +740,20 @@ bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 
 	if (*write_handler.ec) {
 		if (*write_handler.ec != boost::asio::error::eof) {
-			LOG_DEBUG(logger,"Async write failed with ec=" << *write_handler.ec
+			LOGDEBUG(logger,"Async write failed with ec=" << *write_handler.ec
 					<< " msg="<< write_handler.ec->message());
 			cmd->callback->addData(ICMD_ERRNO, -EIO);
 			cmd->callback->addData(ICMD_ERRNO_STR, write_handler.ec->message());
 		} else {
 			cmd->callback->addData(ICMD_ERRNO, -ENOTCONN);
-			LOG_TRACE(logger, "Received eof on socket write");
+			LOGTRACE(logger, "Received eof on socket write");
 		}
 		cmd->HandleCompletion();
 		return true;
 	}
 
 	if (s.length() != *write_handler.bytes) {
-		LOG_DEBUG(logger,"Sent "
+		LOGDEBUG(logger,"Sent "
 				<< *write_handler.bytes << " but expected "<< s.length() );
 		cmd->callback->addData(ICMD_ERRNO, -EIO);
 		cmd->HandleCompletion();

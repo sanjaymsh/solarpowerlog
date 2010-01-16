@@ -46,10 +46,8 @@
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include "interfaces/CMutexHelper.h"
 
-CTimedWork::CTimedWork( CWorkScheduler *sch )
+CTimedWork::CTimedWork( CWorkScheduler *sch ) : sch(sch), terminate(false)
 {
-	this->sch = sch;
-	terminate = false;
 }
 
 CTimedWork::~CTimedWork()
@@ -67,7 +65,6 @@ void CTimedWork::run()
 
 void CTimedWork::ScheduleWork( ICommand *Command, struct timespec ts )
 {
-
 	boost::posix_time::ptime n =
 		boost::posix_time::microsec_clock::local_time();
 	boost::posix_time::seconds s(ts.tv_sec);

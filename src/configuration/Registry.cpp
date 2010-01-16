@@ -48,10 +48,8 @@ using namespace std;
 /** constructor for the registry. */
 Registry::Registry()
 {
-	config_loaded = false;
 	Config = NULL;
 
-	this->mainscheduler = new CWorkScheduler;
 
 }
 
@@ -59,7 +57,6 @@ bool Registry::LoadConfig( std::string name )
 {
 	if (Config)
 		delete Config;
-	config_loaded = false;
 	Config = new libconfig::Config;
 	try {
 		Config->readFile(name.c_str());
@@ -68,18 +65,18 @@ bool Registry::LoadConfig( std::string name )
 			<< " at Line " << ex.getLine() << ". ("
 			<< ex.getError() << ")" << std::endl;
 		delete Config;
+		Config = 0;
 		return false;
 	} catch (libconfig::FileIOException ex) {
 		std::cerr << "Error parsing configuration file " << name
 			<< ". IO Exception " << std::endl;
 		delete Config;
+		Config = 0;
 		return false;
 	}
 
 	// Be more sloppy on datatypes -> automatically convert if possible.
 	Config->setAutoConvert(true);
-	config_loaded = true;
-
 	return true;
 }
 

@@ -1,10 +1,13 @@
-
 dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT(solarpowerlog, 0.20, tobi@coldtobi.de)
 AC_PREREQ(2.59)
+
 # use own directory for the autotools stuff
 AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_MACRO_DIR([m4])
+
+AC_PROG_LIBTOOL
 
 CPPFLAGS="-Wall -Wextra"
 
@@ -183,38 +186,28 @@ else
 fi
 
 ## Check for Boost 
-AX_BOOST_BASE([1.38])
+BOOST_REQUIRE([1.38])
 
-AX_BOOST_SYSTEM
-if test "x$BOOST_SYSTEM_LIB" = "x"; then
-   AC_MSG_ERROR([boost::system library $BOOST_SYSTEM_LIB not found ])
-fi
+# Add the option to statically link to the boost libraries 
+BOOST_STATIC()
 
-AX_BOOST_THREAD
-if test "x$BOOST_THREAD_LIB" = "x"; then
-   AC_MSG_ERROR([boost::thread library not $BOOST_THREAD_LIB found ])
-fi
+#Check for ASIO (header only file)
+BOOST_ASIO()
 
-AX_BOOST_DATE_TIME
-if test "x$BOOST_DATE_TIME_LIB" = "x"; then
-  AC_MSG_ERROR([boost::date_time library $BOOST_DATE_TIME_LIB not found ])
-fi
+#Check for boost libraries
+BOOST_SYSTEM()
+BOOST_THREADS()
+BOOST_DATE_TIME()
 
-if test "x$enable_commandlineoptions" == "xyes"; then
-	AX_BOOST_PROGRAM_OPTIONS
-	if test "x$BOOST_PROGRAM_OPTIONS_LIB" = "x"; then
-		AC_MSG_NOTICE([boost::programm_options library $BOOST_PROGRAM_OPTIONS_LIB not found ])
+if test "x$enable_commandlineoptions" = "xyes"; then
+	BOOST_PROGRAM_OPTIONS
+	if test "x$BOOST_PROGRAM_OPTIONS_LIBS" = "x"; then
+		AC_MSG_NOTICE([boost::programm_options library $BOOST_PROGRAM_OPTIONS_LIBS not found ])
 		enable_commandlineoptions="no (dependency problem)"
 	else
 		AC_DEFINE([HAVE_CMDLINEOPTS], [1], [Use Boost for parsing command line options.])	
 	fi
 fi
-
-
-# BOOST ASIO (Header-only-library)
-# note: we are requiring boost 1.38, so we do not need to check the asio version here.
-AC_CHECK_HEADER([boost/asio/version.hpp], ,[AC_MSG_ERROR("boost::asio header not found")])
-
 
 ### Checks for header files.
 AC_CHECK_HEADER([w32api/wtypes.h],
@@ -256,6 +249,8 @@ AC_OUTPUT
 
 AC_MSG_NOTICE([]);
 AC_MSG_NOTICE([CONFIGURATION SUMMARY:]);
+
+
 ### Print summary
 AC_MSG_NOTICE([Logging support: ........................... $enable_logging])
 if test "$have_openlog" = "no"; then

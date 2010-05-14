@@ -34,14 +34,14 @@ solarpowerlog_CPPFLAGS = $(CONFIG_CFLAGS) $(LOG4CXX_CFLAGS) $(APR_CFLAGS) \
 	$(APRUTIL_CFLAGS) $(CTEMPLATE_CFLAGS)
 
 solarpowerlog_LDADD = $(CONFIG_LIBS) $(LOG4CXX_LIBS) $(APR_LIBS) \
-	$(APRUTIL_LIBS) $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB) \
-	$(BOOST_DATE_TIME_LIB) $(BOOST_SYSTEM_LIB) $(BOOST_ASIO_LIB) \
-	$(BOOST_PROGRAM_OPTIONS_LIB) $(WIN32_LIBS) $(CTEMPLATE_LIB)
+	$(APRUTIL_LIBS) $(BOOST_LDFLAGS) $(BOOST_THREAD_LIBS) \
+	$(BOOST_DATE_TIME_LIBS) $(BOOST_SYSTEM_LIBS) $(BOOST_ASIO_LIBS) \
+	$(BOOST_PROGRAM_OPTIONS_LIBS) $(WIN32_LIBS) -L../extlibs/ctemplate $(CTEMPLATE_LIB)
 
 LIBS = $(DEPS_LIBS)  
 
 # add the search path to the linker path 
-solarpowerlog_LDFLAGS = $(pwd) -L ../extlibs/ctemplate -L ../extlibs/dbixx
+solarpowerlog_LDFLAGS = $(pwd) -L../extlibs/ctemplate -L../extlibs/dbixx
 
 # rule to make the ctemplate library 
 libctemplate.a: 

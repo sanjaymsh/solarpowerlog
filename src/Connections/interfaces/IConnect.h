@@ -64,6 +64,14 @@ using namespace std;
 /// or retrieve a configuration value
 #define ICONN_TOKEN_TIMEOUT "ICON_TIMEOUT"
 
+/** Timeout specifier -- this (optional) parameter sets the timeout between two
+ *  bytes. It is only honoured by connection methods that "act" serial like.
+ *  One prominent example would be comms over serial line.
+ *  (note: normally this is not needed to be specified -- it can be set by
+ *  the configuration file or calculated at runtime out of the baudrate. )
+ *  Unit of the value by the token are ms.   */
+#define ICONN_TOKEN_INTERBYTETIMEOUT "ICON_INTERBYTE_TIMEOUT"
+
 #warning docs outdated!
 /** Interface for all communication classes
  *

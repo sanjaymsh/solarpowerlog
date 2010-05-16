@@ -562,7 +562,7 @@ bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 				ICONN_TOKEN_TIMEOUT));
 	} catch (std::invalid_argument e) {
 		CConfigHelper cfghelper(ConfigurationPath);
-		cfghelper.GetConfig("tcptimeout", timeout, 3000UL);
+		cfghelper.GetConfig("tcptimeout", timeout, TCP_ASIO_DEFAULT_TIMEOUT);
 	} catch (boost::bad_any_cast e) {
 		LOGDEBUG(logger, "Unexpected exception in HandleReceive: Bad cast" << e.what());
 		timeout = TCP_ASIO_DEFAULT_TIMEOUT;

@@ -42,6 +42,7 @@
 
 #include <libconfig.h++>
 #include "Connections/CConnectTCPAsio.h"
+#include "Connections/CConnectSerialAsio.h"
 
 using namespace std;
 
@@ -59,6 +60,9 @@ IConnect * IConnectFactory::Factory( const string &configurationpath )
 
 	if (type == "TCP/IP") {
 		return new CConnectTCPAsio(configurationpath);
+	}
+	if (type == "RS2xx") {
+		return new CConnectSerialAsio(configurationpath);
 	}
 
 	return new CConnectDummy(configurationpath);

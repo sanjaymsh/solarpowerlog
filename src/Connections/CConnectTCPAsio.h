@@ -38,6 +38,8 @@
 #include "porting.h"
 #endif
 
+#ifdef HAVE_COMMS_ASIOTCPIO
+
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <semaphore.h>
@@ -142,4 +144,5 @@ private:
 
 };
 
+#endif /* HAVE_COMMS_ASIOTCPIO */
 #endif /* CONNECTIONTCP_H_ */

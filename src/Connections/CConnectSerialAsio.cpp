@@ -41,6 +41,8 @@
 #include "porting.h"
 #endif
 
+#ifdef HAVE_COMMS_ASIOSERIAL
+
 #define DEBUG_SERIALASIO
 
 #include "interfaces/IConnect.h"
@@ -890,3 +892,5 @@ bool CConnectSerialAsio::HandleSend(CAsyncCommand *cmd)
 	cmd->HandleCompletion();
 	return true;
 }
+
+#endif /* HAVE_COMMS_ASIOSERIAL */

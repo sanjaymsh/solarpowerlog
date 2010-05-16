@@ -130,6 +130,35 @@ else
     AC_MSG_NOTICE([Support for the HTMLWriter disabled as requested.])
 fi
 
+## Communication Methods
+
+# Boost::asio::tcpip connection 
+AC_ARG_ENABLE([tcpcomms],
+    [AS_HELP_STRING([--disable-tcpcomms],
+            [Do not support TCP/IP connections to the inverter.])
+    ]
+)
+
+if test "x$enable_tcpcomms" != "xno" ; then
+    AC_DEFINE([HAVE_COMMS_ASIOTCPIO], [1], [TCP/IP communication support]) 
+    enable_tcpcomms=yes
+else
+    AC_MSG_NOTICE([Support for TCP/IP Communications disabled as requested.])
+fi
+
+# Boost::asio::serial_port connection 
+AC_ARG_ENABLE([serialcomms],
+    [AS_HELP_STRING([--disable-serialcomms],
+            ["Do not support serial port -- like RS232 -- connections to the inverter."])
+    ]
+)
+
+if test "x$enable_serialcomms" != "xno" ; then
+    AC_DEFINE([HAVE_COMMS_ASIOSERIAL], [1], [Serial port communication support]) 
+    enable_serialcomms=yes
+else
+    AC_MSG_NOTICE([Support for serial port communications disabled as requested.])
+fi
 
 AC_SUBST(CTEMPLATE_LIB)
 AC_SUBST(CTEMPLATE_CFLAGS)
@@ -260,6 +289,10 @@ AC_MSG_NOTICE([Commandline options: ....................... $enable_commandlineo
 
 AC_MSG_NOTICE([INVERTERS:]);
 AC_MSG_NOTICE([Sputnik support: ........................... $enable_sputnik])
+
+AC_MSG_NOTICE([COMMUNICATIONS:]);
+AC_MSG_NOTICE([TCP/IP: .................................... $enable_tcpcomms])
+AC_MSG_NOTICE([Serial Ports: .............................. $enable_serialcomms])
 
 AC_MSG_NOTICE([FILTERS AND LOGGERS:]);
 AC_MSG_NOTICE([CSV logger support: ........................ $enable_csvlogger])

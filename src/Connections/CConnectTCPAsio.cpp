@@ -35,6 +35,8 @@
 #include "porting.h"
 #endif
 
+#ifdef HAVE_COMMS_ASIOTCPIO
+
 #define DEBUG_TCPASIO
 
 #include "interfaces/IConnect.h"
@@ -764,3 +766,5 @@ bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 	cmd->HandleCompletion();
 	return true;
 }
+
+#endif /* HAVE_COMMS_ASIOTCPIO */

@@ -41,8 +41,14 @@
 #include "Connections/CConnectDummy.h"
 
 #include <libconfig.h++>
+
+#ifdef HAVE_COMMS_ASIOTCPIO
 #include "Connections/CConnectTCPAsio.h"
+#endif
+
+#ifdef HAVE_COMMS_ASIOSERIAL
 #include "Connections/CConnectSerialAsio.h"
+#endif
 
 using namespace std;
 
@@ -58,12 +64,16 @@ IConnect * IConnectFactory::Factory( const string &configurationpath )
 	CConfigHelper cfghelper(configurationpath);
 	cfghelper.GetConfig("comms",type);
 
+#ifdef HAVE_COMMS_ASIOTCPIO
 	if (type == "TCP/IP") {
 		return new CConnectTCPAsio(configurationpath);
 	}
+#endif
+#ifdef HAVE_COMMS_ASIOSERIAL
 	if (type == "RS2xx") {
 		return new CConnectSerialAsio(configurationpath);
 	}
+#endif
 
 	return new CConnectDummy(configurationpath);
 }

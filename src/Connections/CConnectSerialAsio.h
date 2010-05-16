@@ -44,6 +44,8 @@
 #include "porting.h"
 #endif
 
+#ifdef HAVE_COMMS_ASIOSERIAL
+
 #include <boost/asio/serial_port.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <semaphore.h>
@@ -155,5 +157,7 @@ private:
 	sem_t cmdsemaphore;
 
 };
+
+#endif /* HAVE_COMMS_ASIOSERIAL */
 
 #endif /* CONNECTIONTCP_H_ */

@@ -36,8 +36,8 @@
  *      Author: tobi
  */
 
-#ifndef CONNECTIONTCP_H_
-#define CONNECTIONTCP_H_
+#ifndef CCONNCECTSERIALASIO_H_
+#define CCONNCECTSERIALASIO_H_
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

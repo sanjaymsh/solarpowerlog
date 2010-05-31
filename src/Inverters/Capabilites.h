@@ -223,7 +223,7 @@
  *
  * Optional.
 */
-#define CAPA_INVERTER_KWH_TOTAL_NAME "Energy produced cumulated all time (kWh)"
+#define CAPA_INVERTER_KWH_TOTAL_NAME "Energy produced accumulated all time (kWh)"
 #define CAPA_INVERTER_KWH_TOTAL_TYPE IValue::float_type
 
 /** Installed Power

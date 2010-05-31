@@ -192,7 +192,6 @@ void CCSVOutputFilter::ExecuteCommand( const ICommand *cmd )
 		ICommand *ncmd = new ICommand(CMD_CYCLIC, this);
 		struct timespec ts;
 		// Set cyclic timer to the query interval.
-		ncmd = new ICommand(CMD_CYCLIC, this);
 		ts.tv_sec = 5;
 		ts.tv_nsec = 0;
 

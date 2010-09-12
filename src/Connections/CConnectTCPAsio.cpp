@@ -453,8 +453,10 @@ bool CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 	boost::system::error_code ec;
 	ip::tcp::resolver resolver(*ioservice);
 	ip::tcp::resolver::query query(strhost.c_str(), port);
-	ip::tcp::resolver::iterator iter = resolver.resolve(query);
-	ip::tcp::resolver::iterator end; // End marker.
+
+	// returns on error a default constructed iterator ...
+	ip::tcp::resolver::iterator iter = resolver.resolve(query, ec);
+	ip::tcp::resolver::iterator end; // ... which is a "End marker" itself.
 
 #warning TODO Change to async connect for better timeout handling.
 	while (iter != end) {

@@ -119,7 +119,10 @@ using namespace log4cxx::net;
 #include "configuration/CConfigHelper.h"
 
 using namespace std;
+
+#ifdef HAVE_LIBLOG4CXX
 using namespace log4cxx;
+#endif
 
 char *progname;
 

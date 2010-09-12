@@ -472,8 +472,6 @@ bool CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 		cfghelper.GetConfig("name", strhost);
 
 	if (ec) {
-#warning remove log_error here, as it should be handled in the one calling connect.
-		LOGERROR(logger, "Connection to " << strhost << " failed with reason: " << ec.message() );
 		cmd->callback->addData(ICMD_ERRNO, -ECONNREFUSED);
 		if (!ec.message().empty())
 			cmd->callback->addData(ICMD_ERRNO_STR, ec.message());

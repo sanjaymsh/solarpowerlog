@@ -304,12 +304,12 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 				LOGERROR(logger, "Error while connecting: " <<
 						boost::any_cast<string>(Command->findData(ICMD_ERRNO_STR)));
 			} catch (...) {
+				LOGERROR(logger, "Unknown error while connecting.");
 			}
 
 			cmd = new ICommand(CMD_DISCONNECTED, this);
 			Registry::GetMainScheduler()->ScheduleWork(cmd);
-		} else
-		{
+		} else	{
 			cmd = new ICommand(CMD_QUERY_IDENTIFY, this);
 			Registry::GetMainScheduler()->ScheduleWork(cmd);
 		}

@@ -24,7 +24,7 @@
  ----------------------------------------------------------------------------
  */
 
-/** \file IConnectSerialAsio.cpp
+/** \file CConnectSerialAsio.cpp
  *
  * This interface class abstracts the Comms-Interface (IConnect) to the
  * boost::asio class

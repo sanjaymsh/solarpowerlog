@@ -35,7 +35,6 @@
  *
  * */
 
-
 CSharedConnectionMaster::CSharedConnectionMaster(
 		const string & configurationname) :
 	IConnect(configurationname)
@@ -44,14 +43,17 @@ CSharedConnectionMaster::CSharedConnectionMaster(
 	string commsconfig = configurationname + ".CommsConfig";
 	connection = IConnectFactory::Factory(commsconfig);
 
-	sem_init(&cmdsemaphore, 0, 0);
-	StartWorkerThread();
-
 }
 
 CSharedConnectionMaster::~CSharedConnectionMaster()
 {
-	if (connection) delete connection;
+	if (connection)
+		delete connection;
+
+}
+
+void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
+{
 
 }
 
@@ -84,7 +86,7 @@ bool CSharedConnectionMaster::Send(const string& tosend, ICommand *callback)
 
 }
 
-bool CSharedConnectionMaster::Receive(string &wheretoplace, ICommand *callback)
+bool CSharedConnectionMaster::Receive(ICommand *callback)
 {
 
 }

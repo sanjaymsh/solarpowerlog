@@ -55,7 +55,7 @@ bool CSharedConnectionSlave::Send(const string& tosend, ICommand *callback)
 
 }
 
-bool CSharedConnectionSlave::Receive(string &wheretoplace, ICommand *callback)
+bool CSharedConnectionSlave::Receive(ICommand *callback)
 {
 
 }

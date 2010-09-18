@@ -385,9 +385,8 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command) {
 	{
 		LOGTRACE(logger, "new state: CMD_WAIT_RECEIVE");
 
-		cmd =
-				new ICommand(CMD_EVALUATE_RECEIVE, this);
-		connection->Receive(commstring, cmd);
+		cmd = new ICommand(CMD_EVALUATE_RECEIVE, this);
+		connection->Receive(cmd);
 	}
 	break;
 

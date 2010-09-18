@@ -78,15 +78,16 @@ public:
 		return concreteSharedConnection->Send(tosend, callback);
 	}
 
-	virtual bool Receive(string &wheretoplace, ICommand *callback)
+	virtual bool Receive(ICommand *callback)
 	{
 		assert(concreteSharedConnection);
-		return concreteSharedConnection->Receive(wheretoplace, callback);
+		return concreteSharedConnection->Receive(callback);
 	}
 
 	virtual bool CheckConfig(void);
 
-	virtual bool IsConnected(void) {
+	virtual bool IsConnected(void)
+	{
 		assert(concreteSharedConnection);
 		return concreteSharedConnection->IsConnected();
 	}

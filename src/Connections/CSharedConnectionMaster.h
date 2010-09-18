@@ -44,7 +44,7 @@ protected:
 
 	virtual bool Send(const string& tosend, ICommand *callback = NULL);
 
-	virtual bool Receive(string &wheretoplace, ICommand *callback);
+	virtual bool Receive(ICommand *callback);
 
 	virtual bool CheckConfig(void);
 

@@ -228,23 +228,28 @@ bool CConnectTCPAsio::Send( const string & tosend, ICommand *callback )
  * As with all other methods, will be done by the worker thread, even if
  * synchronous operation is requested. In this case, we'll just wait for
  * completion.*/
-bool CConnectTCPAsio::Receive( string & wheretoplace, ICommand *callback )
+bool CConnectTCPAsio::Receive( ICommand *callback )
 {
 	// RECEIVE async Command:
 	// auxdata: pointer to std::string, where to place received data
+
+	assert(callback);
 
 	sem_t semaphore;
 	bool ret;
 
 	CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::RECEIVE, callback);
 
+#if 0
 	if (!callback) {
 		sem_init(&semaphore, 0, 0);
 		commando->SetSemaphore(&semaphore);
 	}
+#endif
 
 	PushWork(commando);
 
+#if 0
 	if (!callback) {
 		int err;
 		// sync: wait for async job completion and check result.
@@ -280,6 +285,7 @@ bool CConnectTCPAsio::Receive( string & wheretoplace, ICommand *callback )
 		delete commando;
 		return ret;
 	}
+#endif
 	return true;
 }
 

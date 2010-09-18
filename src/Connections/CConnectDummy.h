@@ -64,7 +64,7 @@ public:
 	///
 	/// Receive a string. Do now get more than maxxsize (-1 == no limit)
 	/// NOTE:
-	virtual bool Receive(string &/*wheretoplace*/, ICommand *) { return false; };
+	virtual bool Receive( ICommand *) { return false; };
 
 	virtual bool CheckConfig(void) ;
 

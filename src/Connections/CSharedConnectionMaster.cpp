@@ -12,8 +12,15 @@
 
 #ifdef HAVE_COMMS_SHAREDCONNECTION
 
+#include "configuration/Registry.h"
 #include "CSharedConnectionMaster.h"
 #include "Connections/factories/IConnectFactory.h"
+#include "configuration/Registry.h"
+
+enum
+{
+	CMD_READ
+};
 
 // THOUGHTS:
 /*
@@ -54,6 +61,22 @@ CSharedConnectionMaster::~CSharedConnectionMaster()
 void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
 {
 
+	switch (Command->getCmd())
+	{
+
+	case CMD_READ:
+	{
+		list<ICommand*>::iterator it;
+		for (it = readcommands.begin(); it != readcommands.end(); it++) {
+			(*it)->mergeData(*Command);
+			Registry::GetMainScheduler()->ScheduleWork(*it);
+		}
+		readcommands.clear();
+		read_pending = false;
+		break;
+	}
+	}
+
 }
 
 bool CSharedConnectionMaster::Connect(ICommand *callback)
@@ -91,7 +114,21 @@ bool CSharedConnectionMaster::Send(const string& tosend, ICommand *callback)
 
 bool CSharedConnectionMaster::Receive(ICommand *callback)
 {
+	// Save command for later interpretation.
+	readcommands.push_back(callback);
 
+	// If no read is pending, issue a read commmand to the connection,
+	// but direct result to our class for later distribution.
+	// for this, we copy-construct a ICOmmand and modify it afterwards.
+	if (!read_pending) {
+		ICommand *cmd = new ICommand(*callback);
+		cmd->setTrgt(this);
+		cmd->setCmd(CMD_READ);
+		read_pending = true;
+		return connection->Receive(cmd);
+	}
+
+	return true;
 }
 
 bool CSharedConnectionMaster::CheckConfig(void)

@@ -59,6 +59,10 @@ protected:
 private:
 	IConnect *connection;
 
+	bool read_pending;
+
+	list<ICommand*> readcommands;
+
 
 };
 

@@ -5,7 +5,6 @@
  *      Author: tobi
  */
 
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #include "porting.h"
@@ -15,9 +14,7 @@
 
 #include "CSharedConnectionSlave.h"
 
-
-CSharedConnectionSlave::CSharedConnectionSlave(
-		const string & configurationname) :
+CSharedConnectionSlave::CSharedConnectionSlave(const string & configurationname) :
 	IConnect(configurationname)
 {
 

@@ -73,30 +73,30 @@ class CConnectSerialAsio: public IConnect
 {
 protected:
 	friend class IConnectFactory;
-	CConnectSerialAsio( const string & configurationname );
+	CConnectSerialAsio(const string & configurationname);
 
 public:
 	virtual ~CConnectSerialAsio();
 
-	virtual bool Connect( ICommand *callback );
+	virtual bool Connect(ICommand *callback);
 
-	virtual bool Disconnect( ICommand *callback );
+	virtual bool Disconnect(ICommand *callback);
 
-	virtual void SetupLogger( const string& parentlogger, const string & = "" )
+	virtual void SetupLogger(const string& parentlogger, const string & = "")
 	{
 		IConnect::SetupLogger(parentlogger, "Comms_TCP_ASIO");
 	}
 
-	virtual bool Send( const char *tosend, unsigned int len,
-			ICommand *callback = NULL );
+	virtual bool Send(const char *tosend, unsigned int len, ICommand *callback =
+			NULL);
 
-	virtual bool Send( const string& tosend, ICommand *callback = NULL );
+	virtual bool Send(const string& tosend, ICommand *callback = NULL);
 
 	virtual bool Receive(ICommand *callback);
 
-	virtual bool CheckConfig( void );
+	virtual bool CheckConfig(void);
 
-	virtual bool IsConnected( void );
+	virtual bool IsConnected(void);
 
 private:
 	boost::asio::io_service *ioservice;
@@ -109,11 +109,10 @@ private:
 	boost::asio::serial_port_base::flow_control flowctrl;
 	unsigned int baudrate;
 
-
 	time_t timer;
 
 	// async patch
-	virtual void _main( void );
+	virtual void _main(void);
 
 	/** push some new work to the worker thread.
 	 *  \note: If the work can be handled synchronously more efficent, the
@@ -125,7 +124,7 @@ private:
 	 *
 	 * \returns false if work could not be pushed or true if it worked out.
 	 */
-	bool PushWork( CAsyncCommand *cmd );
+	bool PushWork(CAsyncCommand *cmd);
 
 	/// cancel all current work.
 	//void CancelWork( void );
@@ -139,7 +138,7 @@ private:
 	 *
 	 *
 	 * */
-	bool HandleConnect( CAsyncCommand *cmd );
+	bool HandleConnect(CAsyncCommand *cmd);
 
 	/** Handle the disconnect command.
 	 *
@@ -147,11 +146,11 @@ private:
 	 * be handled again
 	 */
 
-	bool HandleDisConnect( CAsyncCommand *cmd );
+	bool HandleDisConnect(CAsyncCommand *cmd);
 
-	bool HandleReceive( CAsyncCommand *cmd );
+	bool HandleReceive(CAsyncCommand *cmd);
 
-	bool HandleSend( CAsyncCommand *cmd );
+	bool HandleSend(CAsyncCommand *cmd);
 
 	list<CAsyncCommand*> cmds;
 	sem_t cmdsemaphore;

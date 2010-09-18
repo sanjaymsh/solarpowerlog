@@ -15,7 +15,6 @@
 #include "CSharedConnectionMaster.h"
 #include "Connections/factories/IConnectFactory.h"
 
-
 // THOUGHTS:
 /*
  * - the master talks to the real connection class
@@ -72,17 +71,21 @@ bool CSharedConnectionMaster::Disconnect(ICommand *callback)
 void CSharedConnectionMaster::SetupLogger(const string& parentlogger,
 		const string &)
 {
-	if (connection) connection->SetupLogger(parentlogger,"");
+	if (connection)
+		connection->SetupLogger(parentlogger, "");
 }
 
 bool CSharedConnectionMaster::Send(const char *tosend, unsigned int len,
 		ICommand *callback)
 {
-
+	assert (connection);
+	return connection->Send(tosend, len, callback);
 }
 
 bool CSharedConnectionMaster::Send(const string& tosend, ICommand *callback)
 {
+	assert (connection);
+	return connection->Send(tosend, callback);
 
 }
 
@@ -93,18 +96,18 @@ bool CSharedConnectionMaster::Receive(ICommand *callback)
 
 bool CSharedConnectionMaster::CheckConfig(void)
 {
-
+	if (connection)
+		return connection->CheckConfig();
+	else {
+		LOGERROR(logger,"No connection object for shared master comms.");
+		return false;
+	}
 }
 
 bool CSharedConnectionMaster::IsConnected(void)
 {
-
+	assert(connection);
+	return connection->IsConnected();
 }
-
-void CSharedConnectionMaster::_main(void)
-{
-
-}
-
 
 #endif

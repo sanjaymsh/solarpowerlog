@@ -52,7 +52,6 @@
 /// Optional, but if existant, contains human readable error message
 #define ICMD_ERRNO_STR "ICMD_ERRMSG"
 
-
 class ICommandTarget;
 
 /** Encapsulates a command
@@ -65,7 +64,8 @@ class ICommandTarget;
  * NOTE: The one that calls execute should delete the object afterwards!
  *
  */
-class ICommand {
+class ICommand
+{
 public:
 	ICommand(int command, ICommandTarget *target, std::map<std::string,
 			boost::any> dat);
@@ -88,8 +88,20 @@ public:
 	 * \throw std::invalid_argument { throws this if data is not existant. The
 	 * data of the invalid_argument is the key which was not found }
 	 */
-	const boost::any findData(const std::string &key) const
-			throw (std::invalid_argument);
+
+	const boost::any findData(const std::string & key) const
+			throw(std::invalid_argument);
+
+
+	void setCmd(int cmd)
+	{
+		this->cmd = cmd;
+	}
+
+	void setTrgt(ICommandTarget *trgt)
+	{
+		this->trgt = trgt;
+	}
 
 	/** Remove Data from Command
 	 *
@@ -97,7 +109,8 @@ public:
 	 * \note: As the underlaying storage is a std::map,
 	 * the associated boost::any object will be deleted.
 	 */
-	inline void RemoveData(const std::string &key) {
+	inline void RemoveData(const std::string & key)
+	{
 		dat.erase(key);
 	}
 
@@ -106,13 +119,17 @@ public:
 	 * Add new data, or if the data is already existing, replace
 	 * the data with the new one.
 	 *
-	*/
-	void addData(const std::string &key, const boost::any &data) {
+	 */
+	void addData(const std::string &key, const boost::any &data)
+	{
 		if (dat.count(key)) {
 			dat.erase(key);
 		}
 		dat.insert(std::pair<std::string, boost::any>(key, data));
 	}
+
+	// Merge data from other ICommand into this one.
+	void mergeData(const ICommand &other);
 
 private:
 	int cmd;

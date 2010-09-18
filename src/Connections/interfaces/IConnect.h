@@ -46,7 +46,6 @@
 
 using namespace std;
 
-
 // USED ICOMMAND TOKENS
 /// Receive-result of the Transaction (std::string)
 /// might be not present in case of error.
@@ -124,11 +123,11 @@ public:
 	/// The constructor gets the configuration path to be used to extract
 	/// its configuration.
 	///
-	IConnect( const string &configurationname );
+	IConnect(const string &configurationname);
 
 	/// Setupp the Logger.
-	virtual void SetupLogger( const string& parentlogger,
-		const string &spec = "Comms" );
+	virtual void SetupLogger(const string& parentlogger, const string &spec =
+			"Comms");
 
 	/// Desctructor
 	virtual ~IConnect();
@@ -155,7 +154,7 @@ public:
 	 * immediatly known, one can also implement the async ops as synchronous
 	 * as long as it uses the async notification methods.
 	 */
-	virtual bool Connect( ICommand *callback = NULL ) = 0;
+	virtual bool Connect(ICommand *callback = NULL) = 0;
 
 	/** Tear down the connection.
 	 *
@@ -180,10 +179,10 @@ public:
 	 * be able to recover, or reconnection might be futile as recovery strategy.
 	 *
 	 */
-	virtual bool Disconnect( ICommand *callback = NULL ) = 0;
+	virtual bool Disconnect(ICommand *callback = NULL) = 0;
 
 #warning depreciate synchronous interface
-// private:
+	// private:
 	/// Send a array of characters (can be used as binary transport, too)
 	///
 	/// \warning not all classes might understand binary transport. Check
@@ -191,7 +190,8 @@ public:
 	/// \param tosend what to send
 	/// \param len how many bytes
 	/// \returns true on success, false on error.
-	virtual bool Send( const char *tosend, unsigned int len, ICommand *callback=NULL ) = 0;
+	virtual bool Send(const char *tosend, unsigned int len, ICommand *callback =
+			NULL) = 0;
 
 	/// Send a string
 	/// \note Standard implementation only wraps to above Send-binray.
@@ -199,7 +199,7 @@ public:
 	/// \param tosend std::string to send
 	/// \returns true on success, false on error.
 	/// Override for better performance!
-	virtual bool Send( const string& tosend, ICommand *callback=NULL )
+	virtual bool Send(const string& tosend, ICommand *callback = NULL)
 	{
 		return Send(tosend.c_str(), tosend.length(), callback);
 	}
@@ -236,20 +236,22 @@ public:
 	 *		configured timeout.
 	 *
 	 *	ENOTCONN  Connection went down, e.g. eof received.
-	*/
-	virtual bool Receive( string &wheretoplace, ICommand *cmd = NULL ) = 0;
+	 */
+	// virtual bool Receive( string &wheretoplace, ICommand *cmd = NULL ) = 0;
+
+	virtual bool Receive(ICommand *cmd) = 0;
 
 public:
 
 	/// Check the configuration for validty. Retrurn false on config errors.
 	/// (programm will abort then!)
-	virtual bool CheckConfig( void ) = 0;
+	virtual bool CheckConfig(void) = 0;
 
 	/// Check if we believe the connection is still active
 	/// Note: if the concrete implementation cannot tell,
 	/// it should always return true, as the default implementaion does.
 	/// (the inverter class has to do some kind of timeout-handling anyway)
-	virtual bool IsConnected( void )
+	virtual bool IsConnected(void)
 	{
 		return true;
 	}
@@ -274,7 +276,7 @@ protected:
 	/// function of the thread.
 	/// \note: if overridden, the overriding function has to call this one
 	/// right before exiting!
-	virtual void _main( void )
+	virtual void _main(void)
 	{
 		mutex.lock();
 		_thread_is_running = false;
@@ -282,17 +284,16 @@ protected:
 	}
 
 	/// Start the Worker thread.
-	virtual void StartWorkerThread( void )
+	virtual void StartWorkerThread(void)
 	{
 		mutex.lock();
-		workerthread = boost::thread(
-			boost::bind(&IConnect::_main, this));
+		workerthread = boost::thread(boost::bind(&IConnect::_main, this));
 
 		_thread_is_running = true;
 		mutex.unlock();
 	}
 
-	virtual bool IsTermRequested( void )
+	virtual bool IsTermRequested(void)
 	{
 		mutex.lock();
 		bool ret = _thread_term_request;
@@ -300,7 +301,7 @@ protected:
 		return ret;
 	}
 
-	virtual bool IsThreadRunning( void )
+	virtual bool IsThreadRunning(void)
 	{
 		mutex.lock();
 		bool ret = _thread_is_running;

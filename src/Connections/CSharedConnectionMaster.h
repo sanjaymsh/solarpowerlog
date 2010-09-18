@@ -20,16 +20,22 @@
 
 #include "interfaces/IConnect.h"
 #include "Connections/CAsyncCommand.h"
+#include "patterns/ICommandTarget.h"
+#include "patterns/ICommand.h"
+#include "CSharedConnectionSlave.h"
 
-class CSharedConnectionMaster: public IConnect
+class CSharedConnectionMaster: public IConnect, ICommandTarget
 {
 
 protected:
 	friend class CSharedConnection;
+	friend class CSharedConnectionSlave;
 	CSharedConnectionMaster(const string & configurationname);
 
 public:
 	virtual ~CSharedConnectionMaster();
+
+	void ExecuteCommand(const ICommand *Command);
 
 protected:
 
@@ -51,12 +57,7 @@ protected:
 	virtual bool IsConnected(void);
 
 private:
-	virtual void _main( void );
-
 	IConnect *connection;
-
-	list<CAsyncCommand*> cmds;
-	sem_t cmdsemaphore;
 
 
 };

@@ -160,6 +160,22 @@ else
     AC_MSG_NOTICE([Support for serial port communications disabled as requested.])
 fi
 
+# Shared Connection provider
+AC_ARG_ENABLE([sharedcomms],
+   [AS_HELP_STRING([--enable-sharedcomms],
+            ["Support sharing a communication object between two or more inverters. (experimental)"])
+    ]
+)
+
+if test "x$enable_sharedcomms" = "xyes" ; then
+    AC_DEFINE([HAVE_COMMS_SHAREDCONNECTION], [1], [Shared communication support]) 
+    enable_sharedcomms=yes
+else
+    AC_MSG_NOTICE([Support for shared communications disabled as requested.])
+    enable_sharedcomms=no
+fi
+
+
 AC_SUBST(CTEMPLATE_LIB)
 AC_SUBST(CTEMPLATE_CFLAGS)
 AC_SUBST(CTEMPLATE_DEPS)
@@ -293,6 +309,7 @@ AC_MSG_NOTICE([Sputnik support: ........................... $enable_sputnik])
 AC_MSG_NOTICE([COMMUNICATIONS:]);
 AC_MSG_NOTICE([TCP/IP: .................................... $enable_tcpcomms])
 AC_MSG_NOTICE([Serial Ports: .............................. $enable_serialcomms])
+AC_MSG_NOTICE([Shared Communication: ...................... $enable_sharedcomms])
 
 AC_MSG_NOTICE([FILTERS AND LOGGERS:]);
 AC_MSG_NOTICE([CSV logger support: ........................ $enable_csvlogger])

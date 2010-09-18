@@ -15,7 +15,11 @@
 
 #ifdef HAVE_COMMS_SHAREDCONNECTION
 
+#include <list>
+#include <semaphore.h>
+
 #include "interfaces/IConnect.h"
+#include "Connections/CAsyncCommand.h"
 
 class CSharedConnectionMaster: public IConnect
 {
@@ -45,6 +49,15 @@ protected:
 	virtual bool CheckConfig(void);
 
 	virtual bool IsConnected(void);
+
+private:
+	virtual void _main( void );
+
+	IConnect *connection;
+
+	list<CAsyncCommand*> cmds;
+	sem_t cmdsemaphore;
+
 
 };
 

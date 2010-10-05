@@ -266,6 +266,11 @@ public:
 	/// \returns false on error, true on success.
 	virtual bool CheckConfig() = 0;
 
+	virtual const std::string& GetConfigurationPath() const
+	{
+		return configurationpath;
+	}
+
 protected:
 
 	/// Add a Capability for the inverter.

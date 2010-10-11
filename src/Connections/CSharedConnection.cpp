@@ -42,9 +42,11 @@ bool CSharedConnection::CreateSharedConnectionObject()
 	if (s == "master") {
 		concreteSharedConnection = new CSharedConnectionMaster(
 				this->ConfigurationPath);
+		return true;
 	} else if (s == "slave") {
 		concreteSharedConnection = new CSharedConnectionSlave(
 				this->ConfigurationPath);
+		return true;
 	} else
 		return false;
 }
@@ -56,16 +58,16 @@ bool CSharedConnection::CheckConfig(void)
 	CConfigHelper cfg(ConfigurationPath);
 	std::string s;
 
-	if (!cfg.CheckConfig("SharedConnectionType", Setting::TypeString)) {
+	if (!cfg.CheckConfig("sharedsonnectionsype", Setting::TypeString)) {
 		fail = true;
 	} else {
-		cfg.GetConfig("SharedConnectionType", s);
+		cfg.GetConfig("sharedsonnectionsype", s);
 		if (s == "slave") {
-			LOGDEBUG(this->logger,"SharedConnection slave requested.");
+			LOGDEBUG(this->logger,"Shared connection slave requested.");
 		} else if (s == "master") {
-			LOGDEBUG(this->logger,"SharedConnection master requested.");
+			LOGDEBUG(this->logger,"Shared connection master requested.");
 		} else {
-			LOGFATAL(this->logger,"SharedConnection type must be master or slave.");
+			LOGFATAL(this->logger,"Configuration Error: Sharedconnectiontype must be master or slave.");
 			return false;
 		}
 	}

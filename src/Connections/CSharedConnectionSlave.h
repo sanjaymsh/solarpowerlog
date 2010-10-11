@@ -16,6 +16,7 @@
 #ifdef HAVE_COMMS_SHAREDCONNECTION
 
 #include "interfaces/IConnect.h"
+#include "CSharedConnectionMaster.h"
 
 class CSharedConnectionSlave: public IConnect
 {
@@ -31,8 +32,6 @@ protected:
 
 	virtual bool Disconnect(ICommand *callback);
 
-	virtual void SetupLogger(const string& parentlogger, const string & = "");
-
 	virtual bool Send(const char *tosend, unsigned int len, ICommand *callback =
 			NULL);
 
@@ -43,6 +42,9 @@ protected:
 	virtual bool CheckConfig(void);
 
 	virtual bool IsConnected(void);
+
+private:
+	class CSharedConnection *master;
 
 };
 

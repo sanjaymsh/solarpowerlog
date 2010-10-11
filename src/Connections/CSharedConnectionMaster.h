@@ -24,6 +24,15 @@
 #include "patterns/ICommand.h"
 #include "CSharedConnectionSlave.h"
 
+
+// Token inserted by this or the slave class to specify individual timeouts.
+// At this timestamp, the command can be considered timed-out.
+#define ICONNECT_TOKEN_TIMEOUTTIMESTAMP "CSharedConnection_Timeout"
+
+#define ICONNECT_TOKEN_PRV_ORIGINALCOMMAND "CSharedConnection_OrgiginalWork"
+
+#define SHARED_CONN_MASTER_DEFAULTTIMEOUT (3000UL)
+
 class CSharedConnectionMaster: public IConnect, ICommandTarget
 {
 
@@ -59,10 +68,10 @@ protected:
 private:
 	IConnect *connection;
 
-	bool read_pending;
-
 	list<ICommand*> readcommands;
 
+	// When is the current receive scheduled to timeout?
+	boost::posix_time::ptime readtimeout;
 
 };
 

@@ -440,6 +440,10 @@ bool CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 
 	CConfigHelper cfghelper(ConfigurationPath);
 
+#warning timeouts should be only configured in the calling objects! \
+	Otherwise it is hard to differenicate between commands! \
+	So depreciate tcptimeout and configure this in the inverter class!
+
 #warning rework: Should be only needed from the configuration, as the \
 	calling object needs not be aware of these issues (should be transparent)
 	try {

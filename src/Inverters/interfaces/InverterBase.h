@@ -224,7 +224,7 @@ using namespace std;
 /** Inverter Interface .... */
 // TODO: This class renamed, as it also fits for the "Filters" (Data source, data computing/enhancing, ...)
 // Inverters will be only a special interface, derived from this base class
-class IInverterBase : public ICommandTarget
+class IInverterBase: public ICommandTarget
 {
 
 public:
@@ -244,18 +244,18 @@ public:
 	 *        over Data-Validty. If it deletes his Capability, its client
 	 *        will automatically get the one of the inverter)
 	 */
-	IInverterBase( const string &name, const string & configurationpath,
-		const string & role );
+	IInverterBase(const string &name, const string & configurationpath,
+			const string & role);
 
 	virtual ~IInverterBase();
 
 	/** Getter for the name property. (Inverter Name equals to the one given in the config) */
-	virtual const std::string& GetName( void ) const;
+	virtual const std::string& GetName(void) const;
 
 	/** check for a specific capability and return the pointer to it
 	 * returns NULL if it is not registered. */
 	// TODO Move to c++ file
-	virtual CCapability *GetConcreteCapability( const string &identifier );
+	virtual CCapability *GetConcreteCapability(const string &identifier);
 
 	/// Get a Iterator over all Capability.
 	/// Filters may overload it to provide a CCapaNestedIterator.
@@ -271,26 +271,30 @@ public:
 		return configurationpath;
 	}
 
+	virtual IConnect * getConnection(void) const {
+		return connection;
+	}
+
 protected:
 
 	/// Add a Capability for the inverter.
 #warning TODO: Make this interface obsolete.
-	virtual void AddCapability( const string &id, CCapability* capa );
+	virtual void AddCapability(const string &id, CCapability* capa);
 
 protected:
 	/// Add a Capability for the inverter.
-	virtual void AddCapability( CCapability* capa ) {
-		AddCapability(capa->getDescription(),capa);
+	virtual void AddCapability(CCapability* capa)
+	{
+		AddCapability(capa->getDescription(), capa);
 	}
 
 	/** returns a iterator of the Capabilties. The iterator is inizialized at the begin of the map.*/
 	virtual map<string, CCapability*>::iterator
-		GetCapabilityIterator( void );
+	GetCapabilityIterator(void);
 
 	/** return a iterator of the Capabilites. The iterator is placed at the end of the map
 	 * This allows a end-of-list check */
-	virtual map<string, CCapability*>::iterator GetCapabilityLastIterator(
-		void );
+	virtual map<string, CCapability*>::iterator GetCapabilityLastIterator(void);
 
 	/** Configuration path as determined on start -- for easier fetching the config.*/
 	std::string configurationpath;

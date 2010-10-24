@@ -13,7 +13,7 @@
  General Public License as published by the Free Software Foundation; either
  version 3 of the License, or (at your option) any later version.
 
- This programm is distributed in the hope that it will be useful, but
+ This program is distributed in the hope that it will be useful, but
  WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
@@ -78,7 +78,7 @@ bool CNestedCapaIterator::HasNext()
 
 	if (parent) {
 		// Set the parent as new base, and ask the parent for its parent
-		// via getting the informations in its iterator.
+		// via getting the information in its iterator.
 		this->SetBase(parent);
 		auto_ptr<ICapaIterator> p(parent->GetCapaNewIterator());
 		this->setParent(p->getParent());

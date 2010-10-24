@@ -13,7 +13,7 @@
  General Public License (LGPL) as published by the Free Software Foundation;
  either version 3 of the License, or (at your option) any later version.
 
- This programm is distributed in the hope that it will be useful, but
+ This progrmm is distributed in the hope that it will be useful, but
  WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
@@ -36,18 +36,18 @@
  * For details, please also see the relevant interfaces, mostly CCapability and
  * IValue.
  *
- * Further informations can also be found on the chapter over Inverters and
+ * Further information can also be found on the chapter over Inverters and
  * DataFilters.
  *
  * \section CapPurpose "Purpose"
  *
  * Inverters have some datas to report. These datas might be states,
  * measurements or other information. Solarpowerlog bundles these kind of
- * informations into one object type, a Capability. The bundle contains as well
+ * information into one object type, a Capability. The bundle contains as well
  * the name as also the associated value.
  *
  * The name of a capability is used to identified the kind of information
- * stored. This way most informations are abstraced and brought to the same
+ * stored. This way most information are abstraced and brought to the same
  * common denominator:
  *
  * The inverter (data source) sets up the value and the receiver of the data can
@@ -56,20 +56,20 @@
  *
  * The inverter is not required to set up the complete set of information -- it
  * will just give the infos it has. On the other side, the receiver can not
- * expect that all informations are always available.
+ * expect that all information are always available.
  *
  * Even if this increases complexity of the receivers implementation -- it has
- * to make the features it has dependent on the informations diveristy it
+ * to make the features it has dependent on the information diveristy it
  * gets -- it also makes it far more flexible: The program will work on
- * inverters which delivers many informations as well with inverters which will
+ * inverters which delivers many information as well with inverters which will
  * deliver only a basic set.
  *
- * Also, if a inverter decides to give even more informations, this data can
+ * Also, if a inverter decides to give even more information, this data can
  * easily be added: The receiver which do not know about the infos won't care,
  * and the others can make use of it.
  *
  * Another use-case is, that data receiver can also use redudnt data sources:
- * They can reconstruct (unknown) pieces of informations out of others.
+ * They can reconstruct (unknown) pieces of information out of others.
  * For example, if the power in and power out is known, a filter can calculate
  * the efficeancy. If the inverter gives that value, the data receiver can use
  * that value. (actually a DataFilter is planned to make use of that...)
@@ -93,7 +93,7 @@
  *
  * In the file Capabilites.h some of the predefined Capbabilites are markes as
  * required. These means, that everyone using the interface has to implement
- * (data source) or at least is required to subscribe to this informations.
+ * (data source) or at least is required to subscribe to this information.
  *
  * These Capabilites are helping to manage the capability system.
  *

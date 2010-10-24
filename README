@@ -62,7 +62,7 @@ Inverter_3 sends it data to SimpleDumper_3
 
 application:
 {
-	# how often query the informations from the inveters
+	# how often query the information from the inveters
 	# the value specified the time between queries in seconds.
 	# should be a  float. 
 	pollinginterval = 5.0;
@@ -73,7 +73,7 @@ application:
 inverter :
 {
 	 inverters = ( 
-  		{ # (REQUIRED) Name of the Inverter (Will be used as reference in the programm)
+  		{ # (REQUIRED) Name of the Inverter (Will be used as reference in the program)
   		  name   = "Inverter_1";
   		  
   		  # (REQUIRED) "Human Readable Description of the fine piece of hardware. Not interpreted by this software"

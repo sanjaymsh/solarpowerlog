@@ -13,7 +13,7 @@
  General Public License (LGPL) as published by the Free Software Foundation;
  either version 3 of the License, or (at your option) any later version.
 
- This programm is distributed in the hope that it will be useful, but
+ This program is distributed in the hope that it will be useful, but
  WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
@@ -93,7 +93,7 @@
  * 	<td> yes </th>
  *  	<td> &nbsp;  </td>
  *      <td> Defines the filename where solarpowerlog should write to.
- *      	See below for additional informations, </td>
+ *      	See below for additional information, </td>
  * </tr>
  * <tr>
  * 	<td> rotate  </td>
@@ -117,7 +117,7 @@
  * 	<td> bool  </td>
  * 	<td> &nbsp;</th>
  *  	<td> true  </td>
- *      <td> if true, do not cache informations but immediatelly write to disk.
+ *      <td> if true, do not cache information but immediatelly write to disk.
  *      If you are "only logging" this might be fine to set to false, if you do
  *      some kind of real-time data processing, make this false, as it might take
  *      some times for the data to enter the disk.

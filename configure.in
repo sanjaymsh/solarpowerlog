@@ -247,7 +247,7 @@ BOOST_DATE_TIME()
 if test "x$enable_commandlineoptions" = "xyes"; then
 	BOOST_PROGRAM_OPTIONS
 	if test "x$BOOST_PROGRAM_OPTIONS_LIBS" = "x"; then
-		AC_MSG_NOTICE([boost::programm_options library $BOOST_PROGRAM_OPTIONS_LIBS not found ])
+		AC_MSG_NOTICE([boost::program_options library $BOOST_PROGRAM_OPTIONS_LIBS not found ])
 		enable_commandlineoptions="no (dependency problem)"
 	else
 		AC_DEFINE([HAVE_CMDLINEOPTS], [1], [Use Boost for parsing command line options.])	

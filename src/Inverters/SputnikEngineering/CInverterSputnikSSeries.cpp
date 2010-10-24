@@ -13,7 +13,7 @@
  General Public License as published by the Free Software Foundation; either
  version 3 of the License, or (at your option) any later version.
 
- This programm is distributed in the hope that it will be useful, but
+ This program is distributed in the hope that it will be useful, but
  WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
@@ -1114,7 +1114,7 @@ bool CInverterSputnikSSeries::parsereceivedstring(const string & s)
 		if (!parsetoken(tokens[i])) {
 			LOGDEBUG(logger,
 					"BUG: Parse Error at token " << tokens[i]
-					<< ". Received: " << s << "If the token is unkown or you subject a bug, please report it giving the  token ans received string"
+					<< ". Received: " << s << "If the token is unknown or you subject a bug, please report it giving the  token ans received string"
 			);
 			ret = false;
 		}
@@ -1338,7 +1338,7 @@ bool CInverterSputnikSSeries::token_TYP(const vector<string> & tokens)
 		LOGWARN(logger, "Received TYP was " << tokens[0] << "=" << tokens[1]);
 	}
 
-	// lookup if we already know that informations.
+	// lookup if we already know that information.
 	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_MODEL);
 
 	if (!cap) {
@@ -1436,7 +1436,7 @@ bool CInverterSputnikSSeries::token_PAC(const vector<string> & tokens)
 
 	fpac = pac / 2.0;
 
-	// lookup if we already know that informations.
+	// lookup if we already know that information.
 	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_ACPOWER_TOTAL);
 
 	if (!cap) {
@@ -1481,7 +1481,7 @@ bool CInverterSputnikSSeries::token_KHR(const vector<string> & tokens)
 
 	f = tmp;
 
-	// lookup if we already know that informations.
+	// lookup if we already know that information.
 	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_PON_HOURS);
 
 	if (!cap) {
@@ -1542,7 +1542,7 @@ bool CInverterSputnikSSeries::token_KYR(const vector<string> & tokens)
 
 	kwh = raw;
 
-	// lookup if we already know that informations.
+	// lookup if we already know that information.
 	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_KWH_Y2D);
 
 	if (!cap) {
@@ -1586,7 +1586,7 @@ bool CInverterSputnikSSeries::token_KMT(const vector<string> & tokens)
 
 	kwh = raw;
 
-	// lookup if we already know that informations.
+	// lookup if we already know that information.
 	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_KWH_M2D);
 
 	if (!cap) {
@@ -1630,7 +1630,7 @@ bool CInverterSputnikSSeries::token_KDY(const vector<string> & tokens)
 
 	kwh = raw / 10.0;
 
-	// lookup if we already know that informations.
+	// lookup if we already know that information.
 	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_KWH_2D);
 	if (!cap) {
 		string s;
@@ -1674,7 +1674,7 @@ bool CInverterSputnikSSeries::token_KT0(const vector<string> & tokens)
 
 	kwh = raw;
 
-	// lookup if we already know that informations.
+	// lookup if we already know that information.
 	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_KWH_TOTAL_NAME);
 
 	if (!cap) {
@@ -1718,7 +1718,7 @@ bool CInverterSputnikSSeries::token_PIN(const vector<string> & tokens)
 	sscanf(tokens[1].c_str(), "%x", &raw);
 
 	f = raw * 0.5;
-	// lookup if we already know that informations.
+	// lookup if we already know that information.
 	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_INSTALLEDPOWER_NAME);
 
 	if (!cap) {
@@ -1764,7 +1764,7 @@ bool CInverterSputnikSSeries::token_TNF(const vector<string> & tokens)
 	sscanf(tokens[1].c_str(), "%x", &raw);
 
 	f = raw / 100.0;
-	// lookup if we already know that informations.
+	// lookup if we already know that information.
 	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_NET_FREQUENCY_NAME);
 
 	if (!cap) {
@@ -1808,7 +1808,7 @@ bool CInverterSputnikSSeries::token_PRL(const vector<string> & tokens)
 	sscanf(tokens[1].c_str(), "%x", &raw);
 
 	f = raw;
-	// lookup if we already know that informations.
+	// lookup if we already know that information.
 	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_RELPOWER_NAME);
 
 	if (!cap) {
@@ -1856,7 +1856,7 @@ bool CInverterSputnikSSeries::token_UDC(const vector<string> & tokens)
 	sscanf(tokens[1].c_str(), "%x", &raw);
 
 	f = raw * 0.1;
-	// lookup if we already know that informations.
+	// lookup if we already know that information.
 	CCapability *cap = GetConcreteCapability(
 			CAPA_INVERTER_INPUT_DC_VOLTAGE_NAME);
 
@@ -1900,7 +1900,7 @@ bool CInverterSputnikSSeries::token_UL1(const vector<string> & tokens)
 	sscanf(tokens[1].c_str(), "%x", &raw);
 
 	f = raw * 0.1;
-	// lookup if we already know that informations.
+	// lookup if we already know that information.
 	CCapability *cap =
 			GetConcreteCapability(CAPA_INVERTER_GRID_AC_VOLTAGE_NAME);
 
@@ -1958,7 +1958,7 @@ bool CInverterSputnikSSeries::token_IDC(const vector<string> & tokens)
 	sscanf(tokens[1].c_str(), "%x", &raw);
 
 	f = raw * 0.01;
-	// lookup if we already know that informations.
+	// lookup if we already know that information.
 	CCapability *cap = GetConcreteCapability(
 			CAPA_INVERTER_INPUT_DC_CURRENT_NAME);
 
@@ -2003,7 +2003,7 @@ bool CInverterSputnikSSeries::token_IL1(const vector<string> & tokens)
 	sscanf(tokens[1].c_str(), "%x", &raw);
 
 	f = raw * 0.01;
-	// lookup if we already know that informations.
+	// lookup if we already know that information.
 	CCapability *cap =
 			GetConcreteCapability(CAPA_INVERTER_GRID_AC_CURRENT_NAME);
 
@@ -2060,7 +2060,7 @@ bool CInverterSputnikSSeries::token_TKK(const vector<string> & tokens)
 	sscanf(tokens[1].c_str(), "%x", &raw);
 
 	f = raw;
-	// lookup if we already know that informations.
+	// lookup if we already know that information.
 	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_TEMPERATURE_NAME);
 
 	if (!cap) {
@@ -2150,7 +2150,7 @@ bool CInverterSputnikSSeries::token_SYS(const vector<string> &tokens)
 				<< tokens[0] << "=" << tokens[1] << "," << tokens[2]
 		);
 		LOGINFO (logger,
-				" PLEASE file a with all informations you have, for example,"
+				" PLEASE file a with all information you have, for example,"
 				<< " reading the display of the inverter and of course the infors given above."
 		);
 	}
@@ -2241,7 +2241,7 @@ void CInverterSputnikSSeries::create_versioncapa(void)
 
 	ver = buf;
 
-	// lookup if we already know that informations.
+	// lookup if we already know that information.
 	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_FIRMWARE);
 
 	if (!cap) {

@@ -13,7 +13,7 @@
  General Public License as published by the Free Software Foundation; either
  version 3 of the License, or (at your option) any later version.
 
- This programm is distributed in the hope that it will be useful, but
+ This program is distributed in the hope that it will be useful, but
  WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
@@ -202,7 +202,7 @@ bool CConnectTCPAsio::Send( const char *tosend, unsigned int len,
 			}
 		} catch (std::invalid_argument e) {
 			LOGDEBUG(logger,"ERR: unexpected exception while "
-					"receive-handling: Invalid arguement " << e.what());
+					"receive-handling: Invalid argument " << e.what());
 			ret = false;
 		} catch (boost::bad_any_cast e) {
 			LOGDEBUG(logger,"ERR: unexpected exception while "
@@ -270,7 +270,7 @@ bool CConnectTCPAsio::Receive( ICommand *callback )
 
 		} catch (std::invalid_argument e) {
 			LOGDEBUG(logger,"ERR: unexpected exception while "
-					"receive-handling: Invalid arguement " << e.what());
+					"receive-handling: Invalid argument " << e.what());
 			ret = false;
 			goto out;
 		} catch (boost::bad_any_cast e) {

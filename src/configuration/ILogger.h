@@ -13,7 +13,7 @@
  General Public License (LGPL) as published by the Free Software Foundation;
  either version 3 of the License, or (at your option) any later version.
 
- This programm is distributed in the hope that it will be useful, but
+ This program is distributed in the hope that it will be useful, but
  WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
@@ -41,13 +41,13 @@
  *    some rare problems.
  *  - DEBUG: "Regular" Debug infos, like tracepoints, unusual program flow
  *    detection, etc. Detected problems that are likely a programming problem....
- *  - INFO: Verbatim informations targeted to the user, showing details of
+ *  - INFO: Verbatim information targeted to the user, showing details of
  *    the program flow, but not too much details.
  *    (showing when talking to a inverter, ...)
  *  - WARN:  This level indicates a minor problems, caused by external events.
  *    Usually some functions might be temporary not available.
  *  - ERROR: The program cannot function under this circumstances. The feature
- *    imposed will not be available until the reason is fixed and the programm
+ *    imposed will not be available until the reason is fixed and the program
  *    restarted.
  *    The program can usually continue to execute, but with the limitations.
  *  - FATAL: The program detected a problem which makes it impossible to

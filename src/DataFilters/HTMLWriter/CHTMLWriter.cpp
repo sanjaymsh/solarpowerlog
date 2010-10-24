@@ -324,8 +324,8 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 
 			// LOG_TRACE(logger,"s1="<<s1 << " s2=" << s2);
 
-			// We store the informations this way:
-			// we iteratre over the configuration array and make a vector out
+			// We store the information this way:
+			// we iterate over the configuration array and make a vector out
 			// of it.
 			// so the vector will look like:
 			// [0] formatter name

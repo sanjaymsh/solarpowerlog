@@ -13,7 +13,7 @@
  General Public License (LGPL) as published by the Free Software Foundation;
  either version 3 of the License, or (at your option) any later version.
 
- This programm is distributed in the hope that it will be useful, but
+ This program is distributed in the hope that it will be useful, but
  WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
@@ -44,7 +44,7 @@
  * The settings are structured to the indivdual sections, like general settings,
  * settings for inverters, settings for the loggers.
  *
- * The programm parses the basic layout of configuration.
+ * The program parses the basic layout of configuration.
  *
  * Out of the infos stored in configuration, the program generates a number of
  * objects.
@@ -118,7 +118,7 @@ class IInverterBase;
 
 using namespace std;
 
-/** The Registry stores some informations needed by several programm parts.
+/** The Registry stores some information needed by several program parts.
  * It also provides a global WorkScheduler.
  *
  * The Registry is a Singleton.

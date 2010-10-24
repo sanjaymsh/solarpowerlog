@@ -51,7 +51,7 @@ solarpowerlog (0.12) unstable; urgency=low
 solarpowerlog (0.11-unreleased) unstable; urgency=low
 
   * Sputniks' error recovery did not work sometimes 
-  * Components of the programm can now be selectivly choosen at compile time
+  * Components of the program can now be selectivly choosen at compile time
     to reduce the amount of required external libraries and memory footprint.
   * Solved a bug with the logging levels.
 

@@ -13,7 +13,7 @@
    General Public License (LGPL) as published by the Free Software Foundation;
    either version 3 of the License, or (at your option) any later version.
 
-   This programm is distributed in the hope that it will be useful, but
+   This program is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details.
@@ -79,9 +79,9 @@
  *
  * Common situation swhere this will be used:
  * 	- Configuration reload
- *  - Programm termination
+ *  - Program termination
  *
- * In case of a reload, a "CAPSA_CAPAS_UPDATED" will follow.
+ * In case of a reload, a "CAPA_CAPAS_UPDATED" will follow.
  *
  * \sa The pseudo cap "force unsubsribe" is related.
  *
@@ -112,7 +112,7 @@
 
 
 
-/** Basic informations for the user -- these informations are usually not
+/** Basic information for the user -- these information are usually not
  * updated. But, as a exception to this, a inverter class might do runtime
  * detection of these parameters, if the inverter supports them.
  *
@@ -123,7 +123,7 @@
 #define CAPA_INVERTER_MANUFACTOR_TYPE IValue::string_type
 
 
-/** Basic informations for the user -- these informations are usually not
+/** Basic information for the user -- these information are usually not
  * updated. But, as a exception to this, a inverter class might do runtime
  * detection of these parameters, if the inverter supports them.
  *
@@ -134,14 +134,14 @@
 #define CAPA_INVERTER_MODEL_TYPE IValue::string_type
 
 
-/** Basic informations again -- how is the inverter named in the config file
+/** Basic information again -- how is the inverter named in the config file
  * Note: This has to be added by the concrete inverter class. */
 #define CAPA_INVERTER_CONFIGNAME "Inverter Name"
 #define CAPA_INVERTER_CONFIGNAME_TYPE IValue::string_type
 
 
 
-/** Firmware version informations.
+/** Firmware version information.
  *
  * If available, can contain a human-readable info about the
  * inverters firmware
@@ -323,7 +323,7 @@
  * if supported, this shows the temp of the inverter.
  * (and one some models, if the fan is on.)
  *
- * (Note: If you prefer °F, you can programm a filter to
+ * (Note: If you prefer °F, you can program a filter to
  * transform it...)
  *
  * Type: Float
@@ -389,7 +389,7 @@ enum InverterStatusCodes
 /** Inverter Overall status -- human readable version
  *
  * This contains the status of the inverter, but parsed for humans.
- * This also should contain informations, why the inverter is in that state,
+ * This also should contain information, why the inverter is in that state,
  * if available.
  *
  * If available, one might give also the manufactor's statuscode

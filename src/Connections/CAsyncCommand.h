@@ -28,7 +28,7 @@ public:
 	 * \param c Commando to be used
 	 * \param callback ICommand used as callback. Might be NULL. In this case the semaphore mechanism is used.
 	 * \param sem Semaphore. If callback is NULL, for the completion handling this semaphore is used.
-	 * The caller just waits for the semaphore (sem_wait) and the programm will wait for the completion of the
+	 * The caller just waits for the semaphore (sem_wait) and the program will wait for the completion of the
 	 * async command.
 	 *
 	 */

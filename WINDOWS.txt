@@ -11,7 +11,7 @@ Libconfig 1.3.2  (cygconfig+8.dll)
 
 Libconfig is distributed under the terms of the GNU Lesser General Public License. You can download the (unmodified) 
 sources from (which the library was built) from my site at http://frost.de/files/libconfig-1.3.2.tar.gz.
-The file is distributed in this file. It just have to be in the same directory as the programm. 
+The file is distributed in this file. It just have to be in the same directory as the program. 
 
 Cygwin cygwin1.dll, cygexpat-0.dll 
 
@@ -20,13 +20,13 @@ Please download the setup.exe from their site and execute it. Installing it with
 will install the library.
 If solarpowerlog claims for a missing cygexpat-0.dll you need the package libexpat0. 
 
-All other libraries used in the programm should be only used at compile time
+All other libraries used in the program should be only used at compile time
 
 
 RUNNING
 ========
 
-solarpowerlog is a console programm. There is not GUI.
+solarpowerlog is a console program. There is not GUI.
 On startup, it will read a "solarpowerlog.conf" to retrieve its settings, or use the file specified
 on the command line (-c <file>). Please note, that all paths have to follow cygwin conventions. 
 

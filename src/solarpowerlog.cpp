@@ -13,7 +13,7 @@
  General Public License as published by the Free Software Foundation; either
  version 3 of the License, or (at your option) any later version.
 
- This programm is distributed in the hope that it will be useful, but
+ This program is distributed in the hope that it will be useful, but
  WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
@@ -38,8 +38,8 @@
  * This documentation purpose is to understand the internals and conecpts used,
  * so that the software can easily be enhanced.
  *
- * However, the best way to understand the programm is jumping into cold water:
- * Fire up your debugger and look how the programm executes.
+ * However, the best way to understand the program is jumping into cold water:
+ * Fire up your debugger and look how the program executes.
  *
  * \sa \ref mainBasicConcepts "Basic Concepts"
  *
@@ -63,7 +63,7 @@
  * identifier (usually a string) and return the created object.
  *
  * Factories allows that new specializations of interfaces can be added to
- * the programm without the need to change any of the other classes.
+ * the program without the need to change any of the other classes.
  *
  * For example, if you add a fancy bluetooth class, you just create a IConnect
  * based CConnectionBluetooth, implement it and add its id-string to the
@@ -127,7 +127,7 @@ using namespace log4cxx;
 char *progname;
 
 /** this array of string specifies which sections int the config file must be present.
- * The programm will abort if any of these is missing.
+ * The program will abort if any of these is missing.
  */
 static const char *required_sections[] = { "application", "inverter",
 		"inverter.inverters", "logger", "logger.loggers" };
@@ -265,7 +265,7 @@ int main(int argc, char* argv[])
 #ifdef  HAVE_CMDLINEOPTS
 	using namespace boost::program_options;
 
-	options_description desc("Programm Options");
+	options_description desc("Program Options");
 	desc.add_options()("help", "this message")("conf,c", value<string> (
 			&configfile), "specify configuration file")("version,v",
 			"display solarpowerlog version")("background,b", value<bool> (

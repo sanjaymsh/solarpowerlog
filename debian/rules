@@ -65,6 +65,19 @@ install: build
 
 	# Add here commands to install the package into debian/solarpowerlog.
 	$(MAKE) DESTDIR=$(CURDIR)/debian/solarpowerlog install
+	pwd
+	ls
+	echo "####"
+	ls debian
+
+	mkdir -p debian/solarpowerlog/etc/solarpowerlog
+	cp example_confs/solarpowerlog.conf debian/solarpowerlog/etc/solarpowerlog
+	cp -r example_confs/htmlwritertemplate debian/solarpowerlog/etc/solarpowerlog
+	# remove the temporary files from the dbixx built 
+	rm -r debian/solarpowerlog/usr/lib debian/solarpowerlog/usr/include 
+
+
+        
 
 
 # Build architecture-independent files here.
@@ -86,7 +99,7 @@ binary-arch: install
 #	dh_installpam
 #	dh_installmime
 #	dh_python
-#	dh_installinit
+	dh_installinit
 #	dh_installcron
 #	dh_installinfo
 	dh_installman

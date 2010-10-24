@@ -1,21 +1,20 @@
 This package was debianized by Tobias Frost <tobi@coldtobi.de> on
 Tue, 16 Jun 2009 21:07:45 +0200.
 
-It was downloaded from <url://example.com>
+It was downloaded from http://solarpowerlog.sourceforge.net
 
 Upstream Author(s):
+	Tobias Frost <tobi@coldtobi.de>
 
-    <put author's name and email here>
-    <likewise for another author>
 
 Copyright:
 
-    <Copyright (C) YYYY Name OfAuthor>
-    <likewise for another author>
+    Copyright (C) 2009-2010 Tobias Frost
 
 License:
 
-    <Put the license of the package here indented by 4 spaces>
+    GPL-3
+    LGPL-3
 
 The Debian packaging is:
 
@@ -24,5 +23,5 @@ The Debian packaging is:
 and is licensed under the GPL version 3, 
 see `/usr/share/common-licenses/GPL-3'.
 
-# Please also look if there are files or directories which have a
-# different copyright/license attached and list them here.
+solarpowerlog links against libdbixx, which is licensed under the LPGL-2.1
+The source to libdixx is included 

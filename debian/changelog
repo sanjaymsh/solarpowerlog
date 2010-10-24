@@ -1,3 +1,10 @@
+solarpowerlog (0.21-1) unstable; urgency=low
+  * This is a placeholder until the next release is due.
+    (until then, take a look at the git repository
+
+ -- Tobias Frost <tobi@coldtobi.de>  Sat, 23 Oct 2010 17:36:55 +0200
+
+
 solarpowerlog (0.20) unstable; urgency=low
 
    * [CSV Dumper] 

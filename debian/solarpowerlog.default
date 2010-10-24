@@ -1,0 +1,22 @@
+# Defaults for solarpowerlog initscript
+# sourced by /etc/init.d/solarpowerlog
+# installed at /etc/default/solarpowerlog by the maintainer scripts
+
+#
+# This is a POSIX shell fragment
+#
+
+# Enable the automatic start?
+# ENABLED=1
+
+# Where to cd to before executing solarpowerlog -- needed if you coded your html template location with relative paths.
+RUNDIR=/etc/solarpowerlog
+
+# Run it as this user.
+USER=nobody
+
+# Options to pass to solarpowerlog. For example, where is the config file:
+# (note: currently, please do not the commandline option to background the programm -- start-stop-daemon will do that for you
+# as solarpowerlog does not handle pid files at the moment. )
+OPTONS="-c /etc/solarpowerlog/solarpowerlog.conf"
+

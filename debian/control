@@ -1,13 +1,15 @@
 Source: solarpowerlog
-Section: unknown
+Section: utils
 Priority: extra
 Maintainer: Tobias Frost <tobi@coldtobi.de>
 Build-Depends: debhelper (>= 7), autotools-dev
-Standards-Version: 3.8.1
-Homepage: <insert the upstream URL, if relevant>
+Standards-Version: 3.9.1
+Homepage: http://solarpowerlog.coldtobi.de
 
 Package: solarpowerlog
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: <insert up to 60 chars description>
- <insert long description, indented with spaces>
+Description: Logging photovoltaic data 
+ The program's purpose is to track and log data from photo-voltaic inverters, 
+ collect power data and store them. Also a purpose is to provide an interface
+ to extract these data, allowing applications like web site stats of the system.

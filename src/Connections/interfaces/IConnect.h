@@ -89,7 +89,7 @@ using namespace std;
  * communication classes support this. But the plans are to make these all async-capable)
  *
  * The customers of the IConnect classes can choose if they want to use the
- * async or sync methods by specifing optional ICommand arguments. If they are
+ * async or sync methods by specifying optional ICommand arguments. If they are
  * obmitted (and therefore defaulting to NULL pointers) the command will use
  * synchronous methods, so returning the result directly (boolean).
  * The booleans are used because of how solarpowerlog developed

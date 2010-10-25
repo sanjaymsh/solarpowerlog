@@ -48,20 +48,20 @@
  *
  * Second, a helper class, CConfigHelper exists. This class has some methods
  * allowing to extract the configuration very conveniently:
- * 	- Check for existance of a key (including error reporting)
+ * 	- Check for existence of a key (including error reporting)
  * 	- Check for the type of a key (including error reporting)
  * 	- Retrieve the value
- * 	- Handle "optional" values by specifing the optional value to be used
+ * 	- Handle "optional" values by specifying the optional value to be used
  * 	  if the configuration cannot be read.
  *
  * \section ConfigNew_Use Usage and Examples
  *
  * Without many words, here are the some examples.
  *
- * Example 1: Check for key type and existance.
+ * Example 1: Check for key type and existence.
  * \code
  * 	CConfigHelper hlp(configurationpath);
- * 	// Required Key: Will set fail=true if non-existant or wrong type
+ * 	// Required Key: Will set fail=true if non-existent or wrong type
  *	fail |= !hlp.CheckConfig("datasource", Setting::TypeString);
  *	// Optional key: Will set fail=truel only if clearscreen is not boolean.
  *	fail |= !hlp.CheckConfig("clearscreen", Setting::TypeBoolean,
@@ -82,7 +82,7 @@
  *  \note C++ has strong types. So make sure, that everything matches.
  *  The above example would not compile, if you write "5.0" instead of "5.0f",
  *  as gcc would make a "double" and interval would be "float".
- *  This is also true for intergers: int != unsigned int!
+ *  This is also true for integers: int != unsigned int!
  *
  */
 

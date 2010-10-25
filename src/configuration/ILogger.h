@@ -205,7 +205,7 @@ public:
 		const std::string& section );
 
 	/** Adding a logger in a lower hierarchy level (below a parent object)
-	 * by just specifing the parent.
+	 * by just specifying the parent.
 	 *
 	 * This logger will inheritate all settings by its parent, or, the XML
 	 * file might configure it.
@@ -369,7 +369,7 @@ public:
 		const std::string&  ) { };
 
 	/** Adding a logger in a lower hierarchy level (below a parent object)
-	 * by just specifing the parent.
+	 * by just specifying the parent.
 	 *
 	 * This logger will inheritate all settings by its parent, or, the XML
 	 * file might configure it.

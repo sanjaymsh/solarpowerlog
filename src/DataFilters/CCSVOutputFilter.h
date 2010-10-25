@@ -36,7 +36,7 @@
  * The CSV Data Logger takes some or all data and writes it to a regular comma-
  * sepearated-file.
  *
- * The data to be logged can be selected by specifing the identifiers or by
+ * The data to be logged can be selected by specifying the identifiers or by
  * all data.
  *
  * Solarpowerlog honors the RFC 4180. However, some feature, like the "log all"

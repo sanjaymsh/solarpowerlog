@@ -61,7 +61,7 @@ void CHTMLWriter::ScheduleCyclicEvent(enum Commands cmd)
 		} else {
 			LOGINFO(logger,
 					"INFO: The associated inverter does not specify the "
-					"queryinterval. Defaulting to 300 seconds. Consider specifing writeevery");
+					"queryinterval. Defaulting to 300 seconds. Consider specifying writeevery");
 			ts.tv_sec = 300;
 			ts.tv_nsec = 0;
 		}

@@ -2128,7 +2128,7 @@ bool CInverterSputnikSSeries::token_SYS(const vector<string> &tokens)
 		return false;
 
 	if (tokens[2] != "0") {
-		LOGINFO(logger, "Received an unkown SYS response. Please file a bug"
+		LOGINFO(logger, "Received an unknown SYS response. Please file a bug"
 				<< " along with the following: " << tokens[0] << ","
 				<< tokens[1] << "," << tokens[2]);
 	}

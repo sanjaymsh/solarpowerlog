@@ -132,7 +132,7 @@ char *progname;
 static const char *required_sections[] = { "application", "inverter",
 		"inverter.inverters", "logger", "logger.loggers" };
 
-/** Just dump the read config to cout.... (without values, as for these one must know the type  forehand )
+/** Just dump the read config to cout.... (the values are automatically promoted to a string...)
 
  Use with:
  [code]
@@ -144,31 +144,54 @@ static const char *required_sections[] = { "application", "inverter",
  */
 void DumpSettings(libconfig::Setting &set)
 {
+	cout << "line " << set.getSourceLine() << " ";
 
 	if (set.getPath() != "")
-		cout << set.getPath();
+		cout << set.getPath() << " ";
 
 	if (!set.getName()) {
 		cout << "(anonymous) ";
 	}
 
+	try {
+		std::string s = set;
+		cout << "= " << s << "\t is";
+	} catch (...) {
+
+	}
+
+	try {
+		float s = set;
+		cout << "= " << s << "\t is";
+	} catch (...) {
+
+	}
+
+	try {
+		bool s = set;
+		cout << "= " << s << "\t is";
+	} catch (...) {
+
+	}
+
+
 	if (set.isAggregate()) {
-		cout << "\t is aggregate";
+		cout << " aggregate";
 	};
 	if (set.isArray()) {
-		cout << "\t is array ";
+		cout << " array";
 	}
 	if (set.isGroup()) {
-		cout << "\t is group ";
+		cout << " group";
 	}
 	if (set.isList()) {
-		cout << "\t is list ";
+		cout << " list";
 	}
 	//if (set.getPath() != "" ) cout << set.getPath() << "." ;
 	if (set.isNumber())
-		cout << " \t is number ";
+		cout << " number";
 	if (set.isScalar())
-		cout << " \t is scalar ";
+		cout << " scalar";
 
 	cout << endl;
 
@@ -307,6 +330,8 @@ int main(int argc, char* argv[])
 	}
 
 	if (dumpconfig) {
+		cout << "Dumping structure of " << configfile << endl;
+		Registry::Configuration()->setAutoConvert(true);
 		DumpSettings(Registry::Configuration()->getRoot());
 		exit(0);
 	}

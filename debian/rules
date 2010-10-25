@@ -88,7 +88,7 @@ binary-indep: install
 binary-arch: install
 	dh_testdir
 	dh_testroot
-	dh_installchangelogs ChangeLog
+	dh_installchangelogs 
 	dh_installdocs
 	dh_installexamples
 #	dh_install
@@ -102,7 +102,7 @@ binary-arch: install
 	dh_installinit
 #	dh_installcron
 #	dh_installinfo
-	dh_installman
+	dh_installman debian/solarpowerlog.1
 	dh_link
 	dh_strip
 	dh_compress

@@ -110,7 +110,7 @@ private:
 	string assemblequerystring();
 
 	/// parse the answer of the inverter.
-	bool parsereceivedstring(const string& s);
+	int parsereceivedstring(const string& s);
 
 	/// helper for parsereceivedstring()
 	bool parsetoken(string token);

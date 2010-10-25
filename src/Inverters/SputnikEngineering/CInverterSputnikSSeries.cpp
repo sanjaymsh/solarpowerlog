@@ -445,12 +445,25 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 			LOGTRACE(logger, "Received in hex: "<< st );
 		}
 
-		if (!parsereceivedstring(s)) {
+		int parseresult = parsereceivedstring(s);
+		if (0 < parseresult ) {
 			// Reconnect on parse errors.
 			LOGERROR(logger, "Parse error while receiving.");
 			LOGDEBUG(logger, "Received: " << s);
 			cmd = new ICommand(CMD_DISCONNECTED, this);
 			Registry::GetMainScheduler()->ScheduleWork(cmd);
+			break;
+		} else if ( parseresult == 0) {
+			// The received data seems not to be for our inverter.
+			// Can happen on a shared connection.
+			// So lets wait again.
+#warning check for race here.... receive could be already happened when we retry here. \
+	maybe needs to issue the read right after the write, before waiting for completion \
+	or the connection class needs to buffer reads and track whats already been read?
+
+
+			ICommand *cmd = new ICommand(CMD_EVALUATE_RECEIVE, this);
+			connection->Receive(cmd);
 			break;
 		}
 
@@ -1030,14 +1043,14 @@ string CInverterSputnikSSeries::assemblequerystring()
 	return querystring;
 }
 
-bool CInverterSputnikSSeries::parsereceivedstring(const string & s)
+int CInverterSputnikSSeries::parsereceivedstring(const string & s)
 {
 
 	unsigned int i;
 
 	// check for basic constraints...
 	if (s[0] != '{' || s[s.length() - 1] != '}')
-		return false;
+		return -1;
 
 	// tokenizer (taken from
 	// http://oopweb.com/CPP/Documents/CPPHOWTO/Volume/C++Programming-HOWTO-7.html
@@ -1068,55 +1081,55 @@ bool CInverterSputnikSSeries::parsereceivedstring(const string & s)
 	unsigned int tmp;
 	if (1 != sscanf(tokens.back().c_str(), "%x", &tmp)) {
 		LOGDEBUG(logger, "could not parse checksum. Token was:" );
-		return false;
+		return -1;
 	}
 
 	if (tmp != CalcChecksum(s.c_str(), s.length() - 6)) {
 		LOGDEBUG(logger, "Checksum error on received telegram");
-		return false;
+		return -1;
 	}
 
 	if (1 != sscanf(tokens[0].c_str(), "%x", &tmp)) {
 		LOGDEBUG(logger, " could not parse from address");
-		return false;
+		return -1;
 	}
 
 	if (tmp != commadr) {
-		LOGDEBUG(logger, "not for us: Wrong Sender");
-		return false;
+		LOGDEBUG(logger, "Received string is not for us: Wrong Sender");
+		return 0;
 	}
 
 	if (1 != sscanf(tokens[1].c_str(), "%x", &tmp)) {
 		LOGDEBUG(logger, "could not parse to-address");
-		return false;
+		return -1;
 	}
 
 	if (tmp != ownadr) {
-		LOGDEBUG(logger, "not for us: Wrong receiver");
-		return false;
+		LOGDEBUG(logger, "Received string is not for us: Wrong receiver");
+		return 0;
 	}
 
 	if (1 != sscanf(tokens[2].c_str(), "%x", &tmp)) {
 		LOGDEBUG(logger, "could not parse telegram length");
-		return false;
+		return -1;
 	}
 
 	if (tmp != s.length()) {
 		LOGDEBUG(logger, "wrong telegram length ");
-		return false;
+		return -1;
 	}
 
 	// TODO FIXME: Currently the data port is simply "ignored"
 	// parsetoken should get a second argument to get the port infos.
 
-	bool ret = true;
+	int  ret = 1;
 	for (i = 4; i < tokens.size() - 1; i++) {
 		if (!parsetoken(tokens[i])) {
 			LOGDEBUG(logger,
 					"BUG: Parse Error at token " << tokens[i]
 					<< ". Received: " << s << "If the token is unknown or you subject a bug, please report it giving the  token ans received string"
 			);
-			ret = false;
+			ret = -1;
 		}
 	}
 	return ret;

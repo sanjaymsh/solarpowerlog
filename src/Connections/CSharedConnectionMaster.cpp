@@ -83,10 +83,7 @@ CSharedConnectionMaster::CSharedConnectionMaster(
 		const string & configurationname) :
 	IConnect(configurationname)
 {
-	// Get real configuration path to extract target comms config.
-	string commsconfig = configurationname + ".CommsConfig";
-	connection = IConnectFactory::Factory(commsconfig);
-
+	connection = NULL;
 }
 
 CSharedConnectionMaster::~CSharedConnectionMaster()
@@ -345,6 +342,20 @@ bool CSharedConnectionMaster::Receive(ICommand *callback)
 
 bool CSharedConnectionMaster::CheckConfig(void)
 {
+
+	// Get real configuration path to extract target comms config.
+	string commsconfig = this->ConfigurationPath + ".realcomms";
+	string s;
+	CConfigHelper h(commsconfig);
+
+	if (! h.GetConfig("comms",s)) {
+		LOGFATAL(logger,"realcomms section: comms missing");
+		return false;
+	}
+
+	connection = IConnectFactory::Factory(commsconfig);
+
+
 	if (connection)
 		return connection->CheckConfig();
 	else {

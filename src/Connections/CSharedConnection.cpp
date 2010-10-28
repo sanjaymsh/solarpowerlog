@@ -33,22 +33,30 @@ CSharedConnection::~CSharedConnection()
 
 bool CSharedConnection::CreateSharedConnectionObject()
 {
+	if (concreteSharedConnection) return true;
+
 	CConfigHelper cfg(ConfigurationPath);
 	std::string s;
 
-	if (!cfg.GetConfig("SharedConnectionType", s))
+	if (!cfg.GetConfig("sharedconnection_type", s))
 		return false;
 
 	if (s == "master") {
+		LOGDEBUG(this->logger,"Shared connection master requested.");
 		concreteSharedConnection = new CSharedConnectionMaster(
 				this->ConfigurationPath);
-		return true;
 	} else if (s == "slave") {
+		LOGDEBUG(this->logger,"Shared connection slave requested.");
 		concreteSharedConnection = new CSharedConnectionSlave(
 				this->ConfigurationPath);
-		return true;
 	} else
 		return false;
+
+	concreteSharedConnection->SetupLogger(this->logger.getLoggername(),
+			"SharedTarget");
+
+	return true;
+
 }
 
 bool CSharedConnection::CheckConfig(void)
@@ -58,25 +66,19 @@ bool CSharedConnection::CheckConfig(void)
 	CConfigHelper cfg(ConfigurationPath);
 	std::string s;
 
-	if (!cfg.CheckConfig("sharedsonnectionsype", Setting::TypeString)) {
-		fail = true;
-	} else {
-		cfg.GetConfig("sharedsonnectionsype", s);
-		if (s == "slave") {
-			LOGDEBUG(this->logger,"Shared connection slave requested.");
-		} else if (s == "master") {
-			LOGDEBUG(this->logger,"Shared connection master requested.");
-		} else {
-			LOGFATAL(this->logger,"Configuration Error: Sharedconnectiontype must be master or slave.");
-			return false;
-		}
+	if (!cfg.GetConfig("sharedconnection_type", s)) {
+		LOGFATAL(logger,"Configuration Error: Sharedconnection_type not defined. Must be master or slave.");
+		return false;
 	}
+
+	if ( !CreateSharedConnectionObject() ) {
+		LOGFATAL(logger,"Configuration Error: Sharedconnection_type must be master or slave.");
+		return false;
+	}
+
 
 	if (fail)
 		return false;
-
-	if (!concreteSharedConnection)
-	if (!CreateSharedConnectionObject()) return false;
 
 	if (!concreteSharedConnection->CheckConfig())
 		return false;
@@ -85,17 +87,9 @@ bool CSharedConnection::CheckConfig(void)
 
 }
 
-void CSharedConnection::SetupLogger(const string& parentlogger,
-		const string &)
+void CSharedConnection::SetupLogger(const string& parentlogger, const string &)
 {
 	IConnect::SetupLogger(parentlogger, "Comms_SharedConnection");
-
-	if (!concreteSharedConnection)
-		CreateSharedConnectionObject();
-
-	if (!concreteSharedConnection)
-		concreteSharedConnection->SetupLogger(parentlogger
-				+ ".Comms_SharedConnection");
 }
 
 #endif

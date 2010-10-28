@@ -50,6 +50,10 @@
 #include "Connections/CConnectSerialAsio.h"
 #endif
 
+#ifdef HAVE_COMMS_SHAREDCONNECTION
+#include "Connections/CSharedConnection.h"
+#endif
+
 using namespace std;
 
 /** Facortry for generation of connection methods.
@@ -72,6 +76,11 @@ IConnect * IConnectFactory::Factory( const string &configurationpath )
 #ifdef HAVE_COMMS_ASIOSERIAL
 	if (type == "RS2xx") {
 		return new CConnectSerialAsio(configurationpath);
+	}
+#endif
+#ifdef HAVE_COMMS_SHAREDCONNECTION
+	if (type == "SharedConnection") {
+		return new CSharedConnection(configurationpath);
 	}
 #endif
 

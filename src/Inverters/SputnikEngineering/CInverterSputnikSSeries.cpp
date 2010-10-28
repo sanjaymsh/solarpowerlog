@@ -379,12 +379,11 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 
 		if (err < 0) {
 			cmd = new ICommand(CMD_DISCONNECTED, this);
-		} else {
-			cmd = new ICommand(CMD_WAIT_RECEIVE, this);
+			Registry::GetMainScheduler()->ScheduleWork(cmd);
+			break;
 		}
-		Registry::GetMainScheduler()->ScheduleWork(cmd);
 	}
-		break;
+	// Fall through ok.
 
 	case CMD_WAIT_RECEIVE:
 	{
@@ -457,10 +456,6 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 			// The received data seems not to be for our inverter.
 			// Can happen on a shared connection.
 			// So lets wait again.
-#warning check for race here.... receive could be already happened when we retry here. \
-	maybe needs to issue the read right after the write, before waiting for completion \
-	or the connection class needs to buffer reads and track whats already been read?
-
 
 			ICommand *cmd = new ICommand(CMD_EVALUATE_RECEIVE, this);
 			connection->Receive(cmd);

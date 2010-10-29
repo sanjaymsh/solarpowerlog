@@ -40,7 +40,7 @@
 
 using namespace std;
 
-IConnect::IConnect( const string& configurationname )
+IConnect::IConnect(const string& configurationname)
 {
 	ConfigurationPath = configurationname;
 	_thread_is_running = false;
@@ -48,7 +48,7 @@ IConnect::IConnect( const string& configurationname )
 
 }
 
-void IConnect::SetupLogger( const string &parentlogger, const string & spec )
+void IConnect::SetupLogger(const string &parentlogger, const string & spec)
 {
 	logger.Setup(parentlogger, spec);
 }
@@ -61,9 +61,33 @@ IConnect::~IConnect()
 		workerthread.interrupt();
 		mutex.unlock();
 		workerthread.join();
-	}
-	else
-	{
+	} else {
 		mutex.unlock();
 	}
+}
+
+void IConnect::StartWorkerThread(void)
+{
+	mutex.lock();
+	if (!_thread_is_running) {
+		workerthread = boost::thread(boost::bind(&IConnect::_main, this));
+		_thread_is_running = true;
+	}
+	mutex.unlock();
+}
+
+bool IConnect::IsTermRequested(void)
+{
+	mutex.lock();
+	bool ret = _thread_term_request;
+	mutex.unlock();
+	return ret;
+}
+
+bool IConnect::IsThreadRunning(void)
+{
+	mutex.lock();
+	bool ret = _thread_is_running;
+	mutex.unlock();
+	return ret;
 }

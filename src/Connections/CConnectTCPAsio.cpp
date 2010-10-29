@@ -94,9 +94,7 @@ CConnectTCPAsio::CConnectTCPAsio( const string &configurationname ) :
 	// TODO check if one central would do that too...
 	ioservice = new io_service;
 	sockt = new ip::tcp::socket(*ioservice);
-
 	sem_init(&cmdsemaphore, 0, 0);
-	StartWorkerThread();
 }
 
 CConnectTCPAsio::~CConnectTCPAsio()
@@ -309,7 +307,12 @@ bool CConnectTCPAsio::CheckConfig( void )
 	fail |= !cfghelper.CheckConfig("tcptimeout", libconfig::Setting::TypeInt,
 			false);
 
-	return !fail;
+	if (!fail) {
+		StartWorkerThread();
+		return true;
+	}
+
+	return false;
 }
 
 void CConnectTCPAsio::_main( void )

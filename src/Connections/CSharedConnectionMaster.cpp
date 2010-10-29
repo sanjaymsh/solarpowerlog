@@ -258,6 +258,8 @@ bool CSharedConnectionMaster::Disconnect(ICommand *callback)
 void CSharedConnectionMaster::SetupLogger(const string& parentlogger,
 		const string &)
 {
+	IConnect::SetupLogger(parentlogger, "");
+
 	if (connection)
 		connection->SetupLogger(parentlogger, "");
 }
@@ -355,10 +357,10 @@ bool CSharedConnectionMaster::CheckConfig(void)
 
 	connection = IConnectFactory::Factory(commsconfig);
 
-
-	if (connection)
+	if (connection) {
+		connection->SetupLogger(ConfigurationPath,"realcomms");
 		return connection->CheckConfig();
-	else {
+	} else {
 		LOGERROR(logger,"No connection object for shared master comms.");
 		return false;
 	}

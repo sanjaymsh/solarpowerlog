@@ -284,30 +284,16 @@ protected:
 	}
 
 	/// Start the Worker thread.
-	virtual void StartWorkerThread(void)
-	{
-		mutex.lock();
-		workerthread = boost::thread(boost::bind(&IConnect::_main, this));
+	virtual void StartWorkerThread(void);
 
-		_thread_is_running = true;
-		mutex.unlock();
-	}
+	/// Check if termination of the worker thread has been requested
+	virtual bool IsTermRequested(void);
 
-	virtual bool IsTermRequested(void)
-	{
-		mutex.lock();
-		bool ret = _thread_term_request;
-		mutex.unlock();
-		return ret;
-	}
-
-	virtual bool IsThreadRunning(void)
-	{
-		mutex.lock();
-		bool ret = _thread_is_running;
-		mutex.unlock();
-		return ret;
-	}
+	/// Check if thread is running
+	///
+	/// \note this does not check if the thread has crashed, only if it has not
+	/// self-terminated or never started..
+	virtual bool IsThreadRunning(void);
 
 private:
 	/// bool to check if the thread is started

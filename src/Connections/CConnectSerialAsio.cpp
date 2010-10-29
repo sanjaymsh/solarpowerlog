@@ -110,9 +110,7 @@ CConnectSerialAsio::CConnectSerialAsio(const string &configurationname) :
 	// TODO check if one central would do that too...
 	ioservice = new io_service;
 	port = new boost::asio::serial_port(*ioservice);
-
 	sem_init(&cmdsemaphore, 0, 0);
-	StartWorkerThread();
 }
 
 CConnectSerialAsio::~CConnectSerialAsio()
@@ -414,7 +412,13 @@ bool CConnectSerialAsio::CheckConfig(void)
 				"and number of stopbits.)" );
 	}
 
-	return !fail;
+
+	if (!fail) {
+		StartWorkerThread();
+		return true;
+	}
+
+	return false;
 }
 
 void CConnectSerialAsio::_main(void)

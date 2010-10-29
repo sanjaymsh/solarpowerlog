@@ -208,7 +208,7 @@ bool CInverterSputnikSSeries::CheckConfig()
 		fail |= (true != connection->CheckConfig());
 	}
 
-	LOGTRACE(logger, "Check Configuration result:" << !fail);
+	LOGTRACE(logger, "Check Configuration result: " << !fail);
 	return !fail;
 }
 
@@ -445,7 +445,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		}
 
 		int parseresult = parsereceivedstring(s);
-		if (0 < parseresult ) {
+		if (0 > parseresult ) {
 			// Reconnect on parse errors.
 			LOGERROR(logger, "Parse error while receiving.");
 			LOGDEBUG(logger, "Received: " << s);

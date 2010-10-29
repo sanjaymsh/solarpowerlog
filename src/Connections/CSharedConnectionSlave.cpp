@@ -40,8 +40,11 @@ bool CSharedConnectionSlave::Connect(ICommand *callback)
 
 bool CSharedConnectionSlave::Disconnect(ICommand *callback)
 {
+	// only the master will be allowed to disconnect for the time being.
 	assert(master);
-	return master->Disconnect(callback);
+	callback->addData(ICMD_ERRNO, 0);
+	Registry::GetMainScheduler()->ScheduleWork(callback);
+	return true;
 }
 
 bool CSharedConnectionSlave::Send(const char *tosend, unsigned int len,

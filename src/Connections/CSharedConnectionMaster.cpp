@@ -96,6 +96,9 @@ CSharedConnectionMaster::~CSharedConnectionMaster()
 void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
 {
 
+//	Command->DumpData(logger);
+
+
 	switch (Command->getCmd())
 	{
 
@@ -153,8 +156,10 @@ void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
 	{
 		long errorcode;
 
+
+
 		try {
-			errorcode = boost::any_cast<long>(Command->findData(ICMD_ERRNO));
+			errorcode = boost::any_cast<int>(Command->findData(ICMD_ERRNO));
 		} catch (std::invalid_argument e) {
 			LOGDEBUG(logger,"BUG: Required parameter not found." <<
 					__PRETTY_FUNCTION__ << " at " << __LINE__ << " what:" << e.what());
@@ -166,18 +171,24 @@ void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
 			errorcode = -EIO;
 		}
 
-		if (errorcode >= 0) {
+		if (errorcode != ETIMEDOUT) {
 			// Successful read. Distribute received data to all listeners.
 			list<ICommand*>::iterator it;
 			for (it = readcommands.begin(); it != readcommands.end(); it++) {
+//				LOGDEBUG(logger, "Premerge:");
+//				(*it)->DumpData(logger);
+//				LOGDEBUG(logger, "Merge with:");
+//				Command->DumpData(logger);
 				(*it)->mergeData(*Command);
+//				LOGDEBUG(logger, "Merged");
+//				(*it)->DumpData(logger);
 				Registry::GetMainScheduler()->ScheduleWork(*it);
 			}
 			readcommands.clear();
 			readtimeout = boost::posix_time::not_a_date_time;
 			break;
 
-		} else if (errorcode == ETIMEDOUT) {
+		} else /* if (errorcode == ETIMEDOUT) */ {
 			// timeout.
 			// notifiy and calculate the maximum waiting time for the next
 			// receive command.
@@ -252,7 +263,9 @@ bool CSharedConnectionMaster::Connect(ICommand *callback)
 
 bool CSharedConnectionMaster::Disconnect(ICommand *callback)
 {
-#warning TODO
+	assert(connection);
+	return connection->Disconnect(callback);
+
 }
 
 void CSharedConnectionMaster::SetupLogger(const string& parentlogger,

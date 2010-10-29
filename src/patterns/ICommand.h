@@ -43,6 +43,8 @@
 
 #include <boost/any.hpp>
 
+#include "configuration/ILogger.h"
+
 // Tokens for ICommands (general meanings)
 
 /// Error indicator. Same as errno, integer. 0 for no error.
@@ -130,6 +132,15 @@ public:
 
 	// Merge data from other ICommand into this one.
 	void mergeData(const ICommand &other);
+
+	void DumpData(ILogger &logger) const {
+		std::map<std::string, boost::any>::const_iterator it;
+		LOGDEBUG(logger,"dumping available data: ");
+		for(it=dat.begin(); it != dat.end(); it++) {
+			LOGDEBUG(logger, it->first);
+		}
+		LOGDEBUG(logger,"dumping done.");
+	}
 
 private:
 	int cmd;

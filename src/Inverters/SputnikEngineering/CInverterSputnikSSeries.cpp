@@ -414,9 +414,9 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 			try {
 				s = boost::any_cast<std::string>(Command->findData(
 						ICMD_ERRNO_STR));
-				LOGDEBUG(logger, "Receive Error: " << s);
+				LOGERROR(logger, "Receive Error: " << s);
 			} catch (...) {
-				LOGDEBUG(logger, "Receive Error: (unknown error)");
+				LOGERROR(logger, "Receive Error: " << strerror(-err));
 			}
 			break;
 		}

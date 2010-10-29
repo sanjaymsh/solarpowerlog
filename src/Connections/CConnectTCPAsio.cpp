@@ -602,6 +602,7 @@ bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 		timer.cancel(ec);
 		sockt->cancel(ec);
 		LOGTRACE(logger,"Async read timeout");
+		cmd->callback->addData(ICMD_ERRNO_STR, std::string("Read timeout"));
 		cmd->callback->addData(ICMD_ERRNO, -ETIMEDOUT);
 		cmd->HandleCompletion();
 		ioservice->poll();

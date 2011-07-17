@@ -55,7 +55,6 @@ public:
 
 	virtual const string &  GetSupportedModels() const = 0;
 
-
 	IInverterFactory();
 	virtual ~IInverterFactory();
 };

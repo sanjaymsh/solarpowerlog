@@ -43,10 +43,12 @@ class IInverterFactory;
 
 using namespace std;
 
-/** \fixme COMMENT ME
+/** IInverterFactoryFactory
  *
+ * This class implements a factory-factory pattern.
+ * The generated object is -- depending on the manufactor of the inverter --
+ * a factory able to generate the final object.
  *
- * TODO DOCUMENT ME!
  */
 class InverterFactoryFactory {
 public:

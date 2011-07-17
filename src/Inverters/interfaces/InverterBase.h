@@ -241,8 +241,15 @@ public:
 	 * 	  \note: DataFilters might want to delete one or more of them
 	 *        (out of their instance!), if they are sure that they don't
 	 *        need them. For example, a DataFilter has usually no influence
-	 *        over Data-Validty. If it deletes his Capability, its client
+	 *        over data validity. If it deletes its Capability, its client
 	 *        will automatically get the one of the inverter)
+	 *
+	 * \param name of the Inverter (name as in the config)
+	 * \param configurationpath is the path to access this inverters config
+	 * \param role specifies the role in which the inverter is used. Currently this
+	 *  is only used to setup the correct logging path for the associated logger.
+	 *  use "inverter" for inverters and "datafilter" for filters.
+	 *
 	 */
 	IInverterBase(const string &name, const string & configurationpath,
 			const string & role);

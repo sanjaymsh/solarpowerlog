@@ -67,7 +67,7 @@ bool CSharedConnectionSlave::Receive(ICommand *callback)
 	// If there is no timeout specified in the callback, derive it from
 	// the configuration or default. (The master does not have access to the
 	// slaves configuration, so we have to make it sure here...)
-#warning configuration parameter: check in config check and documentation missing
+#warning configuration parameter: check in configcheck() and documentation missing
 
 	unsigned long timeout = 0;
 
@@ -126,7 +126,6 @@ bool CSharedConnectionSlave::CheckConfig(void)
 		return false;
 	}
 
-	//
 	master = (CSharedConnection*) base->getConnection();
 
 	return true;

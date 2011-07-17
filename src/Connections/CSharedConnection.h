@@ -3,7 +3,7 @@
  *
  * Sharing a connection between 2 or more inverters.
  *
- * This class "manages" the communication between two or more ineverters,
+ * This class "manages" the communication between two or more inverters,
  * talking to the same communication object.
  *
  * Every inverter sharing a connection uses a object of this class for its
@@ -16,16 +16,17 @@
  * The master schedules the sending and receiving of the telegrams, and notifies
  * the inverters about reception or errors....
  *
- * The receiving inverter has to take care about filtering out answers not, as
+ * The receiving inverter has to take care about filtering out answers, as
  * there are inverters which do not employ a question-answer scheme, but just
  * answering.
  *
- * So, all inverters with pending receive commands will be informed...
+ * So, all inverters with pending receive commands will be informed.
  *
- *
+ * The slave object will only delegate the communication to the master and then
+ * waits for the completion.
  *
  *  Created on: Sep 12, 2010
- *      Author: tobi
+ *      Author: coldtobi
  */
 
 #ifndef CSHAREDCONNECTION_H_

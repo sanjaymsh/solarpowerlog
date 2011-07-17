@@ -1,8 +1,14 @@
 /*
  * CConnectSlave.h
  *
+ * This is the slave object for the Shared Communication.Please see the
+ * CSharedConnection class for documentation...
+ *
+ * (In few words, this will will proxy requests over to amaster object
+ * which then will do the comms)
+ *
  *  Created on: Sep 13, 2010
- *      Author: tobi
+ *      Author: coldtobi
  */
 
 #ifndef CCONNECTSLAVE_H_

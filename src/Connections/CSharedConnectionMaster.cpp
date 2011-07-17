@@ -90,7 +90,6 @@ CSharedConnectionMaster::~CSharedConnectionMaster()
 {
 	if (connection)
 		delete connection;
-
 }
 
 void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
@@ -116,16 +115,16 @@ void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
 		list<ICommand*>::iterator it = readcommands.begin();
 		while (it != readcommands.end()) {
 			ICommand *trgt = *it;
-			it++; // increment to be sure that we can remove the item after evalutaion.
+			it++; // increment to be sure that we can remove the item after evaluation.
 
 			try {
 				timeout = boost::any_cast<boost::posix_time::ptime>(
 						trgt->findData(ICONNECT_TOKEN_TIMEOUTTIMESTAMP));
-			} catch (std::invalid_argument e) {
+			} catch (std::invalid_argument &e) {
 				LOGDEBUG(logger,"BUG: Required timeout-key not found. " <<
 						__PRETTY_FUNCTION__ << " at " << __LINE__ << " what:" << e.what());
 				timeout = now;
-			} catch (boost::bad_any_cast e) {
+			} catch (boost::bad_any_cast &e) {
 				LOGDEBUG(logger,"BUG: Bad boost::any-cast at " <<
 						__PRETTY_FUNCTION__ << ", " << __LINE__ << " what:"
 						<< e.what());
@@ -156,16 +155,14 @@ void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
 	{
 		long errorcode;
 
-
-
 		try {
 			errorcode = boost::any_cast<int>(Command->findData(ICMD_ERRNO));
-		} catch (std::invalid_argument e) {
+		} catch (std::invalid_argument &e) {
 			LOGDEBUG(logger,"BUG: Required parameter not found." <<
 					__PRETTY_FUNCTION__ << " at " << __LINE__ << " what:" << e.what());
 			errorcode = -EIO;
 
-		} catch (boost::bad_any_cast e) {
+		} catch (boost::bad_any_cast &e) {
 			LOGDEBUG(logger,"BUG: Required parameter cast failed " <<
 					__PRETTY_FUNCTION__ << " at " << __LINE__ << " what:" << e.what());
 			errorcode = -EIO;
@@ -208,11 +205,11 @@ void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
 				try {
 					timeout = boost::any_cast<boost::posix_time::ptime>(
 							trgt->findData(ICONNECT_TOKEN_TIMEOUTTIMESTAMP));
-				} catch (std::invalid_argument e) {
+				} catch (std::invalid_argument &e) {
 					LOGDEBUG(logger,"BUG: Required timeout-key not found. " <<
 							__PRETTY_FUNCTION__ << " at " << __LINE__ << " what:" << e.what());
 					timeout = now;
-				} catch (boost::bad_any_cast e) {
+				} catch (boost::bad_any_cast &e) {
 					LOGDEBUG(logger,"BUG: Bad boost::any-cast at " <<
 							__PRETTY_FUNCTION__ << ", " << __LINE__ << " what:"
 							<< e.what());
@@ -249,6 +246,7 @@ void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
 
 		}
 
+		break;
 	}
 	}
 

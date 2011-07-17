@@ -98,7 +98,7 @@ bool CSharedConnectionSlave::CheckConfig(void)
 	fail |= !cfg.CheckConfig("useconnection", libconfig::Setting::TypeString,
 			false);
 
-	fail |= !cfg.CheckConfig("timeout", libconfig::Setting::TypeInt, false);
+	fail |= !cfg.CheckConfig("timeout", libconfig::Setting::TypeInt, true);
 
 	if (fail)
 		return false;
@@ -113,16 +113,16 @@ bool CSharedConnectionSlave::CheckConfig(void)
 
 	CConfigHelper bcfg(base->GetConfigurationPath());
 	bcfg.GetConfig("comms", s, std::string(""));
-	if (s != "sharedconnection") {
+	if (s != "SharedConnection") {
 		LOGERROR(logger,"inverter " << base->GetName() <<
 				" does not use a shared connection.");
 		return false;
 	}
 
-	cfg.GetConfig("sharedconnectiontype", s);
+	bcfg.GetConfig("sharedconnection_type", s);
 	if (s != "master") {
 		LOGERROR(logger,"inverter " << base->GetName() <<
-				" does not use a shared master connection.");
+				" does not use a shared master connection" );
 		return false;
 	}
 

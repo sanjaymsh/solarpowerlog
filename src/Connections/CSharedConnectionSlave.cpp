@@ -25,7 +25,7 @@
 CSharedConnectionSlave::CSharedConnectionSlave(const string & configurationname) :
 	IConnect(configurationname)
 {
-
+	master = NULL;
 }
 
 CSharedConnectionSlave::~CSharedConnectionSlave()

@@ -300,7 +300,7 @@ int main(int argc, char* argv[])
 	try {
 		store(parse_command_line(argc, argv, desc), vm);
 		notify(vm);
-	} catch (exception e) {
+	} catch (exception &e) {
 		cerr << desc << "\n";
 		return 1;
 
@@ -424,7 +424,7 @@ int main(int argc, char* argv[])
 				model = (const char *) rt[i]["model"];
 				LOGDEBUG(mainlogger,
 						name << " " << manufactor );
-			} catch (libconfig::SettingNotFoundException e) {
+			} catch (libconfig::SettingNotFoundException &e) {
 				LOGFATAL(mainlogger,
 						"Configuration Error: Required Setting was not found in \""
 						<< e.getPath() << '\"');
@@ -475,7 +475,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	LOGDEBUG(mainlogger, "Instanciating DataFilter objects");
+	LOGDEBUG(mainlogger, "Instantiating DataFilter objects");
 
 	{
 		IDataFilterFactory factory;

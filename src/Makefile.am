@@ -26,6 +26,8 @@ Connections/CSharedConnectionSlave.cpp Connections/CConnectSerialAsio.cpp \
 Connections/factories/IConnectFactory.cpp Connections/CConnectTCPAsio.cpp \
 solarpowerlog.cpp Inverters/SputnikEngineering/CInverterFactorySputnik.cpp \
 Inverters/SputnikEngineering/CInverterSputnikSSeries.cpp \
+Inverters/DummyInverter/CInverterDummy.cpp  \
+Inverters/DummyInverter/CInverterFactoryDummy.cpp \
 Inverters/interfaces/CNestedCapaIterator.cpp \
 Inverters/interfaces/ICapaIterator.cpp Inverters/interfaces/InverterBase.cpp \
 patterns/ICommandTarget.cpp patterns/IValue.cpp patterns/ICommand.cpp \

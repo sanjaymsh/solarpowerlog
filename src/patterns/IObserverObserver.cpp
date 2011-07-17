@@ -36,6 +36,7 @@
 #include "config.h"
 #endif
 
+#include <stddef.h>
 #include "IObserverObserver.h"
 #include "IObserverSubject.h"
 

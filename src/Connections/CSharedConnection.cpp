@@ -49,8 +49,10 @@ bool CSharedConnection::CreateSharedConnectionObject()
 		LOGDEBUG(this->logger,"Shared connection slave requested.");
 		concreteSharedConnection = new CSharedConnectionSlave(
 				this->ConfigurationPath);
-	} else
+	} else {
+		LOGERROR(this->logger,"Shared connection; Slave or master?");
 		return false;
+	}
 
 	concreteSharedConnection->SetupLogger(this->logger.getLoggername(),
 			"SharedTarget");

@@ -20,7 +20,7 @@ public:
 	virtual ~CInverterDummy();
 
 	virtual bool CheckConfig() {
-		return true;
+		return this->connection->CheckConfig();
 	}
 
 	virtual void ExecuteCommand(const ICommand *Command);

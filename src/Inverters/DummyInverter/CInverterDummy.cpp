@@ -53,7 +53,6 @@ CInverterDummy::~CInverterDummy()
 }
 
 
-
 void CInverterDummy::ExecuteCommand(const ICommand *Command)
 {
 	// ICommandTarget hook -- will be called with any new command which is due..
@@ -65,10 +64,6 @@ void CInverterDummy::ExecuteCommand(const ICommand *Command)
 	Command->DumpData(this->logger);
 
 	// Probably you want to have a big switch-case here, covering all your CMD_xxx
-
-
 }
-
-
 
 #endif /* HAVE_INV_DUMMY */

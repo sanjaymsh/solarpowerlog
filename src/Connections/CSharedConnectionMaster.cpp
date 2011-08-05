@@ -362,7 +362,7 @@ bool CSharedConnectionMaster::CheckConfig(void)
 	CConfigHelper h(commsconfig);
 
 	if (! h.GetConfig("comms",s)) {
-		LOGFATAL(logger,"realcomms section: comms missing");
+		LOGERROR(logger,"realcomms section: comms missing");
 		return false;
 	}
 

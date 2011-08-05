@@ -69,12 +69,12 @@ bool CSharedConnection::CheckConfig(void)
 	std::string s;
 
 	if (!cfg.GetConfig("sharedconnection_type", s)) {
-		LOGFATAL(logger,"Configuration Error: Sharedconnection_type not defined. Must be master or slave.");
+		LOGERROR(logger,"Configuration Error: Sharedconnection_type not defined. Must be master or slave.");
 		return false;
 	}
 
 	if ( !CreateSharedConnectionObject() ) {
-		LOGFATAL(logger,"Configuration Error: Sharedconnection_type must be master or slave.");
+		LOGERROR(logger,"Configuration Error: Sharedconnection_type must be master or slave.");
 		return false;
 	}
 

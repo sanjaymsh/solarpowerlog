@@ -34,6 +34,18 @@ make
 
 for a guide, please see the file INSTALL.
 
+Build-dependencies:
+===================
+
+To build under debian, you need to have the following packages installed:
+
+Minimal:
+autoconf libtool libconfig++-dev libboost-dev libboost-system-dev libboost-thread-dev libbost-program-options-dev
+libdbi-dev
+
+Full-fledged (additional) 
+liblog4cxx10-dev 
+
 
 CONFIGURATION FILE 
 ==================

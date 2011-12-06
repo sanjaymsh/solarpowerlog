@@ -130,9 +130,6 @@ bool CCSVOutputFilter::CheckConfig()
 		fail = true;
 	}
 
-	// FIXME: This will not work, if the inverter / logger is instanciated later.
-	// in the config file. This is not nice and can be avoided.
-	// (delegate the to CMD_INIT)
 	hlp.GetConfig("datasource", str);
 	IInverterBase *i = Registry::Instance().GetInverter(str);
 	if (!i) {

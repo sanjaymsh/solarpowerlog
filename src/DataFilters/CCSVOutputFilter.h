@@ -36,7 +36,7 @@
  * The CSV Data Logger takes some or all data and writes it to a regular comma-
  * sepearated-file.
  *
- * The data to be logged can be selected by specifying the identifiers or by
+ * The data to be logged can be selected by specifying the identifiers or
  * all data.
  *
  * Solarpowerlog honors the RFC 4180. However, some feature, like the "log all"
@@ -44,7 +44,7 @@
  * (However, patches will be accepted to fix this: For example, on a new feature,
  * one could just reparse the file and add the missing datas.
  *
- * Unavailable datas will be set to empty value.
+ * If some data is unavailable, it will be logged with an empty value.
  *
  * To increase the use of the logfile, a (ISO 8601)-like timestamp
  * will be inserted as the first column.
@@ -66,8 +66,7 @@
  * 	<td> string </td>
  * 	<td> yes </th>
  * 	<td> &nbsp; </td>
- *      <td> Names the Logger. Used to identify the logger, and alos needed
- *           if the logger should be chained.  </td>
+ *      <td> Names the Logger. Used to identify the logger. </td>
  *
  *</tr>
  * <tr>
@@ -76,31 +75,30 @@
  * 	<td> yes </th>
  *  	<td> &nbsp; </td>
  *      <td> Selects the LoggerType. To get a CSVLogger, this
- *           <b>must</b> be CSVLogger . </td>
+ *           <b>must</b> be CSVLogger. </td>
  *</tr>
  *  <tr>
  * 	<td> datasource </td>
  * 	<td> string </td>
  * 	<td> yes </th>
  *  	<td> &nbsp; </td>
- *      <td> Name of the datasource. Must be eighter a name of a Inverter
- *           (Inverter Section)
- *      or a name of another DataFilter. </td>
+ *      <td> Name of the datasource. Must be either a name of a Inverter
+ *           (Inverter Section) or a name of another DataFilter/logger. </td>
  * </tr>
  * <tr>
  * 	<td> logfile  </td>
  * 	<td> string  </td>
  * 	<td> yes </th>
  *  	<td> &nbsp;  </td>
- *      <td> Defines the filename where solarpowerlog should write to.
- *      	See below for additional information, </td>
+ *      <td> Defines the target file for this CSV file.
+ *      	See below for additional information. </td>
  * </tr>
  * <tr>
  * 	<td> rotate  </td>
  * 	<td> bool  </td>
  * 	<td> &nbsp;</th>
  *  	<td> false  </td>
- *      <td> Create a new logfile on midnight. See the notes on logfile below.
+ *      <td> Create a new logfile at midnight. Also see the notes on logfile below.
  *      </td>
  * </tr>
  * <tr>
@@ -108,8 +106,8 @@
  * 	<td> bool  </td>
  * 	<td> &nbsp;</th>
  *  	<td> false  </td>
- *      <td> if true, do not write lines with the exact same data
- *      (except timestamp) twice into the file.
+ *      <td> tries to keep the files compact if the data is not changing.
+ *      Done by not writing lines with the exact same content.
  *      </td>
  * </tr>
  * <tr>
@@ -117,11 +115,13 @@
  * 	<td> bool  </td>
  * 	<td> &nbsp;</th>
  *  	<td> true  </td>
- *      <td> if true, do not cache information but immediatelly write to disk.
+ *      <td> if true, do not cache information but immediately write to disk.
  *      If you are "only logging" this might be fine to set to false, if you do
  *      some kind of real-time data processing, make this false, as it might take
  *      some times for the data to enter the disk.
  *      (If unsure, say "true".)
+ *      One use of this option disabled is if you log to flash memory or if you want to avoid spinning up disks.
+ *      Be aware that you might lose some data if solarpowerlog crashes or power is lost.
  *      </td>
  * </tr>
  * <tr>
@@ -143,37 +143,37 @@
  * 	<td> &nbsp;</th>
  *  	<td> all  </td>
  *      <td> If the string reads "all", everything is logged. If an array is
- *      given, the data idenfied by the array will be loggged.
+ *      given, the data identified by the array will be logged.
  *      See below for details.
  *      </td>
  * </tr>
  * </table>
  *
  * <b>logfile:</b>
- * This logger has the facility to start a new logfile at
- * midnight (only if the inverter is offline).
- * Solarpowerlog will, if rotate is enabled, create a new logfile.
- * To avoid name clashes, it will add the current date
- * (ISO 8601: YYYY-MM-DD ) to the filename.
- * To specify *where* the name should be placed, use "%s".
- * If %s is not given, it will be appended *at the end* of the filename ,
- * so must likely after the suffix.
+ * With lofile the filename to log to will be specified.
+ * If "rotate" is enabled, this logger will
+ * begin a new logfile at midnight . To avoid overwriting the old logfile it will
+ * add the current date to the filename, using by default an ISO 8601 format: YYYY-MM-DD.
+ * To specify *where* the timestamp should be placed, use "%s".
+ * If %s is not given, it will be appended *at the end* of the filename.
  * For example
  * \code
  * 	logfile="Inverter_1_%s.csv"
  * \endcode
  * will create a logfile like "Inverter_1_2009-07-04.csv"
  *
- *
- * \todo TODO Allow logfile name, date feature, to specify by month, day, etc....
+ * To set the format of the timestamp see the option <b>format_timestamp</b>.
  *
  * <b> data2log:</b>
- * To specify which data should be logged, their ids have to be listed in a
+ *
+ * To specify which data should be logged, their identifiers have to be listed in a
  * array.
  *
- * The identifiers are usually described in the solarpower's inverter
- * documentation, in the documentation of the intermediate Datafilters or
- * by unsing the DumbDumper on the datasource.
+ * The identifiers supported can be retrieved by either the inverter's
+ * documentation, in the documentation of the intermediate datafilters.
+ *
+ * One can also use the DumbDumper logger or run the CVS Logger in the "all" mode
+ * to obtain a list.
  *
  * \note The identifiers are case sensitive!
  *
@@ -187,15 +187,14 @@
  * ];
  * \endcode
  *
+ * If you want to use the "log all" feature, just say "all" or do not specify the data to log
+ * (as "all" is the default)
+ *
  * \note When selecting "all features" and new features are detected at runtime,
  * the CSV-header will be written again with the new data added to a new column.
  * If you want to avoid having ever-changing tables, please configure
  * all the data you want to see in the log file. Data which is not present all
  * the time will then still gets its placeholder in the output file.
- *
- * \todo  TODO Also a feature is planned, where "all" can be used, but data can be
- * removed with a "-" as first letter.
- *
  */
 
 #ifndef CCSVOUTPUTFILTER_H_

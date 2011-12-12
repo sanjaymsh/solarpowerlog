@@ -206,6 +206,16 @@ PKG_CHECK_EXISTS
 # We only use C++...
 AC_LANG(C++)
 
+### Checks for header files.
+AC_CHECK_HEADER([w32api/wtypes.h],
+ [AC_DEFINE([HAVE_WIN32_API], [1], [Windows API]) ])
+
+if test "x$ac_cv_header_w32api_wtypes_h" = "xyes"; then
+  AC_MSG_RESULT([WIN32 API detected. ])
+  WIN32_LIBS="-lws2_32"
+  AC_SUBST(WIN32_LIBS)
+fi
+
 ### Checks for libraries.
 
 ## Check for libconfig. Always required.
@@ -220,16 +230,19 @@ if test "x$enable_logging" != "xno" ; then
 		logging_dependencies_fullfilled="missing liblog4cxx " 
 	fi
 
-	PKG_CHECK_MODULES(APR, apr-1 > 1, , AC_MSG_RESULT([apache portable runtime apr library not found]))
-	if test "x$APR_PKG_ERRORS" != "x"; then
-		logging_dependencies_fullfilled="$logging_dependencies_fullfilled libapr " 
-	fi
-	
-	PKG_CHECK_MODULES(APRUTIL, apr-util-1 > 1, , AC_MSG_RESULT([apr utilities library not found]))
-	if test "x$APRUTIL_PKG_ERRORS" != "x"; then
-		logging_dependencies_fullfilled="$logging_dependencies_fullfilled libaprutil " 
-	fi
-	
+	# libapr / aprutils only for win32 build needed, dont ask me why
+	if test  "x$ac_cv_header_w32api_wtypes_h" = "xyes"; then
+		PKG_CHECK_MODULES(APR, apr-1 > 1, , AC_MSG_RESULT([apache portable runtime apr library not found]))
+		if test "x$APR_PKG_ERRORS" != "x"; then
+			logging_dependencies_fullfilled="$logging_dependencies_fullfilled libapr " 
+		fi
+		
+		PKG_CHECK_MODULES(APRUTIL, apr-util-1 > 1, , AC_MSG_RESULT([apr utilities library not found]))
+		if test "x$APRUTIL_PKG_ERRORS" != "x"; then
+			logging_dependencies_fullfilled="$logging_dependencies_fullfilled libaprutil " 
+		fi
+	fi	
+
 	if test "$logging_dependencies_fullfilled" != "missing" ; then
 		AC_MSG_NOTICE([liblog4cxx: Dependecy problem(s): $logging_dependencies_fullfilled])
 		enable_logging="no (dependency problem(s): $logging_dependencies_fullfilled)"
@@ -257,7 +270,8 @@ BOOST_ASIO()
 #Check for boost libraries
 BOOST_SYSTEM()
 BOOST_THREADS()
-BOOST_DATE_TIME()
+
+#BOOST_DATE_TIME()
 
 if test "x$enable_commandlineoptions" = "xyes"; then
 	BOOST_PROGRAM_OPTIONS
@@ -268,17 +282,6 @@ if test "x$enable_commandlineoptions" = "xyes"; then
 		AC_DEFINE([HAVE_CMDLINEOPTS], [1], [Use Boost for parsing command line options.])	
 	fi
 fi
-
-### Checks for header files.
-AC_CHECK_HEADER([w32api/wtypes.h],
- [AC_DEFINE([HAVE_WIN32_API], [1], [Windows API]) ])
-
-if test "x$ac_cv_header_w32api_wtypes_h" = "xyes"; then
-  AC_MSG_RESULT([WIN32 API detected. ])
-  WIN32_LIBS="-lws2_32"
-  AC_SUBST(WIN32_LIBS)
-fi
-
 
 ### Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL

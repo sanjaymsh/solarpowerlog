@@ -2,14 +2,24 @@ Source: solarpowerlog
 Section: utils
 Priority: extra
 Maintainer: Tobias Frost <tobi@coldtobi.de>
-Build-Depends: debhelper (>= 7), autotools-dev
+Build-Depends: debhelper (>= 7), autotools-dev, libtool, automake, autoconf, pkg-config, libconfig++8-dev, libboost-dev, libboost-system-dev, libboost-thread-dev, libboost-program-options-dev, liblog4cxx10-dev, libdbi-dev
 Standards-Version: 3.9.1
 Homepage: http://solarpowerlog.coldtobi.de
+Vcs-Browser: http://solarpowerlog.git.sourceforge.net/git/gitweb-index.cgi
+Vcs-git: git://solarpowerlog.git.sourceforge.net/gitroot/solarpowerlog/solarpowerlog
 
 Package: solarpowerlog
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: Logging photovoltaic data 
+Description: logging photovoltaic data 
  The program's purpose is to track and log data from photo-voltaic inverters, 
  collect power data and store them. Also a purpose is to provide an interface
  to extract these data, allowing applications like web site stats of the system.
+ .
+ Solarpowerlog supports at the moment Solarmax inverters, connected via ethernet
+ or serial interface, however it is programmed in a way to easy add support for
+ other inverters as well
+ . 
+ The program supports logging to the console, logging to CVS and writing HTML 
+ files to be serverd by a web server.
+ 

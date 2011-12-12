@@ -49,11 +49,11 @@ build-stamp:  config.status
 clean: 
 	dh_testdir
 	dh_testroot
-	rm -f build-stamp 
+	-rm -f build-stamp 
 
 	# Add here commands to clean up after the build process.
 	[ ! -f Makefile ] || $(MAKE) distclean
-	rm -f config.sub config.guess
+	-rm -rf config.sub config.guess config.log aclocal.m4 configure autom4te.cache config 
 
 	dh_clean 
 
@@ -65,10 +65,6 @@ install: build
 
 	# Add here commands to install the package into debian/solarpowerlog.
 	$(MAKE) DESTDIR=$(CURDIR)/debian/solarpowerlog install
-	pwd
-	ls
-	echo "####"
-	ls debian
 
 	mkdir -p debian/solarpowerlog/etc/solarpowerlog
 	cp example_confs/solarpowerlog.conf debian/solarpowerlog/etc/solarpowerlog

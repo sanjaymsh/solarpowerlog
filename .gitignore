@@ -37,3 +37,4 @@ extlibs/dbixx/libtool
 extlibs/dbixx/ltmain.sh
 extlibs/dbixx/missing
 
+documentation/doxygen/html

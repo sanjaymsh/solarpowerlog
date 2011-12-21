@@ -1,15 +1,2 @@
-
-The following files are lincensed under the terms of the
-GNU General Public License Version 2 (see GPL-2):
-
-    All *.cpp files
-
-    
-The following files are lincensed under the terms of the
-GNU Library General Public License (see LGPL):
-
-   All *.h files
-   
-
-NOTE: If any individual file has some extra licenscing information,
-the license information in the file should prevail over the information given here 
+Please see the file debian/copyright for details about the copyrights
+and licenses for the indivial files

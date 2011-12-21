@@ -1,4 +1,4 @@
-solarpowerlog (0.21-1) unstable; urgency=lowa
+solarpowerlog (0.21-1) unstable; urgency=low
 
   * Worked on the debian integration, package now build fine using
     pbuilder, is linitian warning free and hopefully will find a 

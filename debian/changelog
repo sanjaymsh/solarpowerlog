@@ -1,14 +1,23 @@
-solarpowerlog (0.21-1) unstable; urgency=low
-  * This is a placeholder until the next release is due.
-    (until then, take a look at the git repository
+solarpowerlog (0.21-1) unstable; urgency=lowa
 
- -- Tobias Frost <tobi@coldtobi.de>  Sat, 23 Oct 2010 17:36:55 +0200
-
+  * Worked on the debian integration, package now build fine using
+    pbuilder, is linitian warning free and hopefully will find a 
+    heartly welcome on debian so ITP can be closed. (Closes #652904)
+  * New feature since 0.20
+     - can be run as a dameon 
+     - serial communication is now implemented (like RS232, RS485)
+     - shared communication (like daisy-chain communication)
+       is implemented, howevers still "beta" state as it could use 
+       more testing. Therefore this is not yet enabled
+       by default (compiletime, set by ./configure option)
+  * Bugfixes like a memory leak or some not caught exceptions
+ 
+ Tobias Frost <tobi@coldtobi.de>  Wed, 21 Dec 2011 18:27:42 +0100
 
 solarpowerlog (0.20) unstable; urgency=low
 
    * [CSV Dumper] 
-    - can (as confiureable) now have a ISO 8601 timestamp (closing #2).
+    - can (as confiureable) now have a ISO 8601 timestamp ( solarpowerlog BTS 2).
       Defaults to ISO 8601, "yyyy-mm-dd hh:mm:ss" 
     - the files will be now more compact, as we are not writing spaces
       before and after the seperator

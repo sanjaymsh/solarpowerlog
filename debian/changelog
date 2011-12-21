@@ -3,7 +3,7 @@ solarpowerlog (0.21-1) unstable; urgency=low
   * Worked on the debian integration, package now build fine using
     pbuilder, is linitian warning free and hopefully will find a 
     heartly welcome on debian so ITP can be closed. (Closes #652904)
-  * New feature since 0.20
+  * New feature  
      - can be run as a dameon 
      - serial communication is now implemented (like RS232, RS485)
      - shared communication (like daisy-chain communication)
@@ -12,7 +12,8 @@ solarpowerlog (0.21-1) unstable; urgency=low
        by default (compiletime, set by ./configure option)
   * Bugfixes like a memory leak or some not caught exceptions
  
- Tobias Frost <tobi@coldtobi.de>  Wed, 21 Dec 2011 18:27:42 +0100
+ -- Tobias Frost <tobi@coldtobi.de>  Wed, 21 Dec 2011 18:27:42 +0100
+
 
 solarpowerlog (0.20) unstable; urgency=low
 

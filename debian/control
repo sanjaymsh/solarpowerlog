@@ -3,7 +3,7 @@ Section: utils
 Priority: extra
 Maintainer: Tobias Frost <tobi@coldtobi.de>
 Build-Depends: debhelper (>= 7), autotools-dev, libtool, automake, autoconf, pkg-config, libconfig++8-dev, libboost-dev, libboost-system-dev, libboost-thread-dev, libboost-program-options-dev, liblog4cxx10-dev, libdbi-dev, git
-Standards-Version: 3.9.1
+Standards-Version: 3.9.2
 Homepage: http://solarpowerlog.coldtobi.de
 Vcs-Browser: http://solarpowerlog.git.sourceforge.net/git/gitweb-index.cgi
 Vcs-git: git://solarpowerlog.git.sourceforge.net/gitroot/solarpowerlog/solarpowerlog

@@ -2,7 +2,7 @@ solarpowerlog (0.21-1) unstable; urgency=low
 
   * Worked on the debian integration, package now build fine using
     pbuilder, is linitian warning free and hopefully will find a 
-    heartly welcome on debian so ITP can be closed. (Closes #652904)
+    heartly welcome on debian so ITP can be closed. (Closes: #652904)
   * New feature  
      - can be run as a dameon 
      - serial communication is now implemented (like RS232, RS485)

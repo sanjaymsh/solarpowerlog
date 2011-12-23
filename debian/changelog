@@ -1,0 +1,105 @@
+solarpowerlog (0.21-1) unstable; urgency=low
+
+  * Worked on the debian integration, package now build fine using
+    pbuilder, is linitian warning free and hopefully will find a 
+    heartly welcome on debian so ITP can be closed. (Closes: #652904)
+  * New feature  
+     - can be run as a dameon 
+     - serial communication is now implemented (like RS232, RS485)
+     - shared communication (like daisy-chain communication)
+       is implemented, howevers still "beta" state as it could use 
+       more testing. Therefore this is not yet enabled
+       by default (compiletime, set by ./configure option)
+  * Bugfixes like a memory leak or some not caught exceptions
+ 
+ -- Tobias Frost <tobi@coldtobi.de>  Wed, 21 Dec 2011 18:27:42 +0100
+
+
+solarpowerlog (0.20) unstable; urgency=low
+
+   * [CSV Dumper] 
+    - can (as confiureable) now have a ISO 8601 timestamp ( solarpowerlog BTS 2).
+      Defaults to ISO 8601, "yyyy-mm-dd hh:mm:ss" 
+    - the files will be now more compact, as we are not writing spaces
+      before and after the seperator
+    - optionally, it will write "compacter" file, writing only if any data
+      actually changed. 
+    - also, if used as only CSV Logging, I/Os can be reduced by disabling
+      "flusing" after every write. (default is "off", as the previous 
+      behaviour.
+    - Preparing for plugins that make use of the CSV: Adding capabilites
+      what is logged and where the file is located. 
+    - Removed some checks from unused configuration parameters
+    - Rotate was not checked in CheckConfig()
+    - Added two capabilites, one telling the filename, the other telling what
+      we are currently logging (preparing for visualization)
+    - A little more RFC-something conform -- also in the header
+   * [HTMLWRITER]
+    - A new data filter. This is the reason why we release 0.20
+      This filter can write out HTML pages which show nice visualizations.
+    - Added examples for this writer
+   * [GENERAL] 
+    - Some typos in the Capabilites names fixed. 
+    - Added an external library, ctemplate, for HTML Writer. 
+    - Modified this library to emit smaller pages. 
+    
+ -- Tobias Frost <tobi@coldtobi.de>  Wed, 06 Jan 2010 20:50:35 +0200
+
+
+solarpowerlog (0.12) unstable; urgency=low
+
+   * Communication is now done asynchronous instead of polling.
+     This should improve the timing accuracy, as well laying the
+     preparing for a"daisy-chain-commmunications-module"
+   * Added a simple simulator to enable debugging at night
+   * FTBFS fixed when lib4logcxx was unavailable
+   * New parameter "--version"
+   * CVSDumper: Bugfix for Win32, "Won't open file"
+   * Fixing a build error on newer boost libraries
+   * Autotools: Fix for Win32: liblog4cxx depends on apr and needs also to 
+     link in this library. This was not seen on linux.
+   * Autotools: Added missing m4 macros
+   * Autotools fix: now autotools will also run under win32 to generate the
+     configure script
+   * Many other tweaks and code rewrites....
+
+ -- Tobias Frost <tobi@coldtobi.de>  Sun, 06 Dec 2009 16:11:25 +0200
+   
+    
+solarpowerlog (0.11-unreleased) unstable; urgency=low
+
+  * Sputniks' error recovery did not work sometimes 
+  * Components of the programm can now be selectivly choosen at compile time
+    to reduce the amount of required external libraries and memory footprint.
+  * Solved a bug with the logging levels.
+
+ -- Tobias Frost <tobi@coldtobi.de>  Sat, 26 Sep 2009 09:38:46 +0200
+
+solarpowerlog (0.10) unstable; urgency=low
+
+  * New Feature: CVSOutputFilter -- writes data to a CVS file
+  * New Feature: Config-File can be specified with command line option. 
+  * Many Fixes / Enhancements:
+  * autotools: boost detection was broken 
+  * avoiding dependency from boost::asio to boost::regex 
+  * new depedency on boost::progamm_options, used to parse program options
+    (parameters given on commmand line. Checkout solarpowerlog --help
+  * applied config.h inclusion to all files.
+  * Added some files for which autotools are needed to reconstruct.
+    This is, as I had problems recreating them under cygwin.
+  * ported to Win32. (Builds at least under XP and cygwin. ) 
+    (Closes BT-0000001)
+  * CTimedWork: Fixed a bug that only showed on Win32.
+  * Add CConfigHelper for easier Config-Handling.
+  * Lots of documentation added 
+  * Fixes a bug ("debug leftover") in the TCP (ASIO) class.
+  * Another bug in the tokenizer -- strangly did not show under eclipse,
+    but under "make" made executeables... 
+
+ -- Tobias Frost <tobi@coldtobi.de>  Wed, 15 Jul 2009 23:13:00 +0200
+
+solarpowerlog (0.01) unstable; urgency=low
+
+  * The first release!
+
+ -- Tobias Frost <tobi@coldtobi.de>  Mon, 15 Jun 2009 22:29:35 +0200

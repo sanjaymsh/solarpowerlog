@@ -76,8 +76,8 @@ install: build
 	mkdir -p debian/solarpowerlog/etc/solarpowerlog
 	cp example_confs/solarpowerlog.conf debian/solarpowerlog/etc/solarpowerlog
 	cp -r example_confs/htmlwritertemplate debian/solarpowerlog/etc/solarpowerlog
-	# remove the temporary files from the dbixx built 
-	rm -r debian/solarpowerlog/usr/lib debian/solarpowerlog/usr/include 
+	# remove the temporary files from the dbixx build
+	-rm -r debian/solarpowerlog/usr/lib debian/solarpowerlog/usr/include 
 
 
         

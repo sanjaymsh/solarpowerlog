@@ -1,2 +1,48 @@
-Please see the file debian/copyright for details about the copyrights
-and licenses for the indivial files
+Please see http://dev.debian.net/deps/dep5 for a description of this file format.
+
+Format: http://dep.debian.net/deps/dep5
+Upstream-Name: solarpowerlog
+Upstream-Contact: tobi@coldtobi.de
+Source: git://solarpowerlog.git.sourceforge.net/gitroot/solarpowerlog/solarpowerlog
+
+Files: *
+Copyright: 2009-2011 Tobias Frost <tobi@coldtobi.de>
+License: GPL-3.0+
+
+Files: src/*.h
+Copyright: 2009-2011 Tobias Frost <tobi@coldtobi.de>
+License: LGPL-3.0+
+
+Files: src/*.cpp
+Copyright: 2009-2011 Tobias Frost <tobi@coldtobi.de>
+License: GPL-3.0+
+
+Files: debian/*
+Copyright: 2011 Tobias Frost <tobi@coldtobi.de>
+License: GPL-3.0+
+
+Files: extlibs/ctemplate/*
+Copyright: 2009 Stephen C. Losen
+License: GPL
+Comment: See extlibs/README for details, modifcations, etc.
+
+Files: extlibs/dbixx/*
+Copyright: 2008 Artyom Tonkikh <artyomtnk@yahoo.com>
+License: LGPL-2.1+
+Comment: See extlibs/README for details, modifcations, etc.
+
+License: GPL-3.0+
+ On Debian see the license at /usr/share/common-licenses/GPL-3
+ or in solarpowerlog source package see at the root directory for the file GPL-3
+
+License: GPL
+ On Debian see the license at /usr/share/common-licenses/GPL
+ or in solarpowerlog source package see at the root directory for the file GPL
+
+License: LGPL-2.1+
+ On Debian see the license at /usr/share/common-licenses/LGPL-2.1
+ or in solarpowerlog source package see at the root directory for the file LGPL-2.1
+
+License: LGPL-3.0+
+ On Debian see the license at /usr/share/common-licenses/LGPL-3
+ or in solarpowerlog source package see at the root directory for the file LGPL-3

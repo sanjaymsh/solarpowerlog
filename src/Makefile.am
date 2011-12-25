@@ -38,7 +38,33 @@ Inverters/interfaces/CNestedCapaIterator.cpp \
 Inverters/interfaces/ICapaIterator.cpp Inverters/interfaces/InverterBase.cpp \
 patterns/ICommandTarget.cpp patterns/IValue.cpp patterns/ICommand.cpp \
 patterns/IObserverObserver.cpp patterns/IObserverSubject.cpp \
-configuration/CConfigHelper.cpp ctemplate/ctemplate.c
+configuration/CConfigHelper.cpp ctemplate/ctemplate.c \
+Inverters/BasicCommands.h \
+interfaces/CCapability.h interfaces/CMutexHelper.h \
+Inverters/factories/InverterFactoryFactory.h \
+Inverters/factories/IInverterFactory.h interfaces/CWorkScheduler.h \
+interfaces/CTimedWork.h Connections/interfaces/IConnect.h \
+DataFilters/interfaces/factories/IDataFilterFactory.h \
+DataFilters/HTMLWriter/formatter/IFormater.h \
+DataFilters/HTMLWriter/formatter/CFormaterWebRootStrip.h \
+DataFilters/HTMLWriter/formatter/CFormatterSearchCSVEntry.h \
+DataFilters/interfaces/IDataFilter.h DataFilters/CDumpOutputFilter.h \
+DataFilters/CCSVOutputFilter.h DataFilters/HTMLWriter/CHTMLWriter.h \
+configuration/Registry.h configuration/ILogger.h \
+Connections/CAsyncCommand.h Connections/CConnectDummy.h \
+Connections/CSharedConnection.h Connections/CSharedConnectionMaster.h \
+Connections/CSharedConnectionSlave.h Connections/CConnectSerialAsio.h \
+Connections/factories/IConnectFactory.h Connections/CConnectTCPAsio.h \
+Inverters/SputnikEngineering/CInverterFactorySputnik.h \
+Inverters/SputnikEngineering/CInverterSputnikSSeries.h \
+Inverters/DummyInverter/CInverterDummy.h  \
+Inverters/DummyInverter/CInverterFactoryDummy.h \
+Inverters/interfaces/CNestedCapaIterator.h \
+Inverters/interfaces/ICapaIterator.h Inverters/interfaces/InverterBase.h \
+patterns/ICommandTarget.h patterns/IValue.h patterns/ICommand.h \
+patterns/IObserverObserver.h patterns/IObserverSubject.h \
+configuration/CConfigHelper.h ctemplate/ctemplate.h porting.h \
+Inverters/Capabilites.h  patterns/CValue.h
 
 solarpowerlog_CPPFLAGS = $(CONFIG_CFLAGS) $(LOG4CXX_CFLAGS) $(APR_CFLAGS) \
 	$(APRUTIL_CFLAGS) $(CTEMPLATE_CFLAGS)

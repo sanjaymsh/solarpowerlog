@@ -11,7 +11,7 @@ Libconfig 1.3.2  (cygconfig+8.dll)
 
 Libconfig is distributed under the terms of the GNU Lesser General Public License. You can download the (unmodified) 
 sources from (which the library was built) from my site at http://frost.de/files/libconfig-1.3.2.tar.gz.
-The file is distributed in this file. It just have to be in the same directory as the program. 
+The library itself is distributed in the zip file of solarpowerlog. It just have to be in the same directory as the program. 
 
 Cygwin cygwin1.dll, cygexpat-0.dll 
 

@@ -1,13 +1,13 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(solarpowerlog, 0.21, tobi@coldtobi.de)
-AC_PREREQ(2.59)
+AC_INIT([solarpowerlog],[0.21],[tobi@coldtobi.de])
+AC_PREREQ([2.68])
 
 # use own directory for the autotools stuff
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
 
-AC_PROG_LIBTOOL
+LT_INIT
 
 CPPFLAGS="-Wall -Wextra"
 

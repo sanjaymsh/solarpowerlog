@@ -7,8 +7,10 @@ endif
 
 SUBDIRS=$(DBIXX_SUBDIRS) src
 
+EXTRA_DIST = tools example_confs
+
 # install some extras into the dist files...
-dist_doc_DATA = AUTHORS NEWS README ChangeLog example_confs/solarpowerlog.conf
+dist_doc_DATA = AUTHORS NEWS README ChangeLog
 
 dist-hook:
 	@if test -d "$(srcdir)/.git"; \
@@ -24,5 +26,4 @@ dist-hook:
 			echo A git clone is required to generate a ChangeLog >&2; \
 	fi
 
-	cp -r documentation tools example_confs extlibs  $(distdir)
-
+# dist: dist-bzip2

@@ -7,7 +7,7 @@ endif
 
 SUBDIRS=$(DBIXX_SUBDIRS) src
 
-EXTRA_DIST = tools example_confs
+EXTRA_DIST = tools example_confs bootstrap.sh
 
 # install some extras into the dist files...
 dist_doc_DATA = AUTHORS NEWS README

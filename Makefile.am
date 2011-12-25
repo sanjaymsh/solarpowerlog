@@ -20,7 +20,9 @@ dist-hook:
 		&& mv -f ChangeLog.tmp $(distdir)/ChangeLog \
 		|| ( rm -f ChangeLog.tmp ; \
 			echo Failed to generate ChangeLog >&2 ); \
-		else \
+	else \
 			echo A git clone is required to generate a ChangeLog >&2; \
-		fi
+	fi
+
+	cp -r documentation tools example_confs extlibs  $(distdir)
 

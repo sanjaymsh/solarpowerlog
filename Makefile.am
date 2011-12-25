@@ -10,7 +10,7 @@ SUBDIRS=$(DBIXX_SUBDIRS) src
 EXTRA_DIST = tools example_confs
 
 # install some extras into the dist files...
-dist_doc_DATA = AUTHORS NEWS README ChangeLog
+dist_doc_DATA = AUTHORS NEWS README
 
 dist-hook:
 	@if test -d "$(srcdir)/.git"; \

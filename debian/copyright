@@ -1,7 +1,7 @@
 Format: http://dep.debian.net/deps/dep5
 Upstream-Name: solarpowerlog
 Upstream-Contact: tobi@coldtobi.de
-Source: git://solarpowerlog.git.sourceforge.net/gitroot/solarpowerlog/solarpowerlog
+Source: http://solarpowerlog.git.sourceforge.net/git/gitweb-index.cgi
 
 Files: *
 Copyright: 2009-2011 Tobias Frost <tobi@coldtobi.de>
@@ -21,7 +21,7 @@ License: GPL-3.0+
 
 Files: src/ctemplate/*
 Copyright: 2009 Stephen C. Losen
-License: GPL
+License: GPL-1.0+
 
 Files: m4/boost.m4
 Copyright: 2007-2011  Benoit Sigoure <tsuna@lrde.epita.fr>
@@ -30,6 +30,14 @@ License: GPL-3.0-with-autoconf-exception
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation, either version 3 of the License, or
  (at your option) any later version.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  .
  Additional permission under section 7 of the GNU General Public
  License, version 3 ("GPLv3"):
@@ -44,19 +52,62 @@ License: GPL-3.0-with-autoconf-exception
  GNU General Public License for more details.
  You should have received a copy of the GNU General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+ .
+ On Debian systems, the full text of the GNU General Public
+ License version 3 can be found in the file
+ `/usr/share/common-licenses/GPL-3'.
+ 
 License: GPL-3.0+
- On Debian see the license at /usr/share/common-licenses/GPL-3
- or in solarpowerlog source package see at the root directory for the file GPL-3
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ .
+ On Debian systems, the full text of the GNU General Public
+ License version 3 can be found in the file
+ `/usr/share/common-licenses/GPL-3'.
 
-License: GPL
- On Debian see the license at /usr/share/common-licenses/GPL
- or in solarpowerlog source package see at the root directory for the file GPL
-
-License: LGPL-2.1+
- On Debian see the license at /usr/share/common-licenses/LGPL-2.1
- or in solarpowerlog source package see at the root directory for the file LGPL-2.1
+License: GPL-1.0+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 1, or (at your option)
+ any later version.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston MA  02110-1301 USA
+ .
+ On Debian systems, the full text of the GNU General Public
+ License version 3 can be found in the file
+ `/usr/share/common-licenses/GPL-1'.
 
 License: LGPL-3.0+
- On Debian see the license at /usr/share/common-licenses/LGPL-3
- or in solarpowerlog source package see at the root directory for the file LGPL-3
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU Lesser General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU Lesser General Public License for more details.
+ .
+ You should have received a copy of the GNU Lesser General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ .
+ On Debian systems, the full text of the GNU General Public
+ License version 3 can be found in the file
+ `/usr/share/common-licenses/LGPL-3'.

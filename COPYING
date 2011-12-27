@@ -1,13 +1,13 @@
 Solarpowerlog is free software.
 
-The individual source files are marked which license is to be applied, but here is 
-a general guidline.
+The individual source files containes a statement which license is to be applied, but here is 
+a general guideline:
 
 Files not marked (build system, debian packaging files, examples, tools ...) are to 
 be considered as GPL-3 (or later) licensed. 
 
 Every source file (*.cpp and *.c ), 
-is licensed using the GPL 3 (or later):
+is licensed using the GPL-3 (or later):
 
 This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

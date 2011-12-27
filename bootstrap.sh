@@ -1,5 +1,5 @@
 #!/bin/sh
-autoreconf --force --install -i --warnings=all
+autoreconf --force --install --warnings=all
 exit 0
 
 # generate everything for the autotools...

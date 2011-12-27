@@ -1,0 +1,4 @@
+tools
+example_confs/htmlwritertemplate
+example_confs/htmlwriter.conf
+example_confs/solarpowerlog_shared.conf

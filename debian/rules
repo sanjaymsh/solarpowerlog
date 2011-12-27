@@ -53,7 +53,7 @@ build-stamp:  config.status
 clean: 
 	dh_testdir
 	dh_testroot
-	$(RM) -f build-stamp
+	$(RM) build-stamp
 
 	# Add here commands to clean up after the build process.
 	[ ! -f Makefile ] || $(MAKE) distclean
@@ -79,10 +79,6 @@ install: build
 	mv debian/solarpowerlog/usr/share/doc/solarpowerlog/README debian/solarpowerlog/usr/share/doc/solarpowerlog/README.install
 	# remove the temporary files from the dbixx build
 	$(RM) -r debian/solarpowerlog/usr/lib debian/solarpowerlog/usr/include
-
-
-        
-
 
 # Build architecture-independent files here.
 binary-indep: install

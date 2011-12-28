@@ -371,7 +371,8 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		LOGTRACE(logger, "Sending: " << commstring << " Len: "<< commstring.size());
 
 		cmd = new ICommand(CMD_WAIT_SENT, this);
-		connection->Send(commstring, cmd);
+		cmd->addData(ICONN_TOKEN_SEND_STRING, commstring);
+		connection->Send(cmd);
 	}
 		break;
 

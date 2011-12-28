@@ -78,41 +78,29 @@ public:
 
 	virtual ~CSharedConnection();
 
-	virtual bool Connect(ICommand *callback)
+	virtual void Connect(ICommand *callback)
 	{
 		assert(concreteSharedConnection);
-		return concreteSharedConnection->Connect(callback);
+		concreteSharedConnection->Connect(callback);
 	}
 
-	virtual bool Disconnect(ICommand *callback)
+	virtual void Disconnect(ICommand *callback)
 	{
 		assert(concreteSharedConnection);
-		return concreteSharedConnection->Disconnect(callback);
+		concreteSharedConnection->Disconnect(callback);
 	}
 
 	virtual void SetupLogger(const string& parentlogger, const string & = "");
 
-	virtual bool Send(ICommand *cmd) {
+	virtual void Send(ICommand *cmd) {
 		assert(concreteSharedConnection);
-		return concreteSharedConnection->Send(cmd);
+		concreteSharedConnection->Send(cmd);
 	}
 
-	virtual bool Send(const char *tosend, unsigned int len, ICommand *callback)
+	virtual void Receive(ICommand *callback)
 	{
 		assert(concreteSharedConnection);
-		return concreteSharedConnection->Send(tosend, len, callback);
-	}
-
-	virtual bool Send(const string& tosend, ICommand *callback)
-	{
-		assert(concreteSharedConnection);
-		return concreteSharedConnection->Send(tosend, callback);
-	}
-
-	virtual bool Receive(ICommand *callback)
-	{
-		assert(concreteSharedConnection);
-		return concreteSharedConnection->Receive(callback);
+		concreteSharedConnection->Receive(callback);
 	}
 
 	virtual bool CheckConfig(void);

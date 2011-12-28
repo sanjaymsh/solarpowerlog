@@ -64,46 +64,31 @@ private:
 	 * If a user configured it, the config check of it will fail,
 	 * aborting the programm.
 	*/
-	virtual bool Dispatch_Error(ICommand *cmd) {
-
-		if (cmd) {
-			cmd->addData(ICMD_ERRNO, -EIO);
-			cmd->addData(ICMD_ERRNO_STR,std::string("CConnectDummy cannot communicate"));
-			Registry::GetMainScheduler()->ScheduleWork(cmd);
-			return true;
-		}
-		return false;
+	virtual void Dispatch_Error(ICommand *cmd)
+	{
+		assert(cmd);
+		cmd->addData(ICMD_ERRNO, -EIO);
+		cmd->addData(ICMD_ERRNO_STR,std::string("CConnectDummy cannot communicate"));
+		Registry::GetMainScheduler()->ScheduleWork(cmd);
 	}
 
 public:
 
-	/// Connect to something
-	/// NOTE: Needed to be overriden! ALWAYS Open in a NON_BLOCK way, or implement a worker thread
-	virtual bool Connect( ICommand *cmd )
+	virtual void Connect( ICommand *cmd )
 	{
-		return this->Dispatch_Error(cmd);
-	};
-	/// Tear down the connection.
-
-	virtual bool Disconnect( ICommand *cmd )
-	{
-		return this->Dispatch_Error(cmd);
+		this->Dispatch_Error(cmd);
 	};
 
-	virtual bool Send(ICommand *cmd) {
-		return Dispatch_Error(cmd);
+	virtual void Disconnect( ICommand *cmd )
+	{
+		this->Dispatch_Error(cmd);
+	};
+
+	virtual void Send(ICommand *cmd) {
+		Dispatch_Error(cmd);
 	}
-	/// Send a array of characters (can be used as binary transport, too)
-	virtual bool Send( const char */*tosend*/, unsigned int /*len*/,
-		ICommand *cmd )
-	{
-		this->Dispatch_Error(cmd); return false;
-	};
-	/// Send a string Standard implementation only wraps to above Send.
-	///
-	/// Receive a string. Do now get more than maxxsize (-1 == no limit)
-	/// NOTE:
-	virtual bool Receive( ICommand *cmd )
+
+	virtual void Receive( ICommand *cmd )
 	{
 		return this->Dispatch_Error(cmd);
 	};

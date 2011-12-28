@@ -58,42 +58,28 @@ CSharedConnectionSlave::~CSharedConnectionSlave()
 {
 }
 
-bool CSharedConnectionSlave::Connect(ICommand *callback)
+void CSharedConnectionSlave::Connect(ICommand *callback)
 {
 	assert(master);
-	return master->Connect(callback);
+	master->Connect(callback);
 }
 
-bool CSharedConnectionSlave::Disconnect(ICommand *callback)
+void CSharedConnectionSlave::Disconnect(ICommand *callback)
 {
 	// only the master will be allowed to disconnect for the time being.
 	assert(master);
 	callback->addData(ICMD_ERRNO, 0);
 	Registry::GetMainScheduler()->ScheduleWork(callback);
-	return true;
 }
 
-bool CSharedConnectionSlave::Send(ICommand *callback)
+void CSharedConnectionSlave::Send(ICommand *callback)
 {
 	assert(callback);
 	assert(master);
-	return master->Send(callback);
+	master->Send(callback);
 }
 
-bool CSharedConnectionSlave::Send(const char *tosend, unsigned int len,
-		ICommand *callback)
-{
-	assert(master);
-	return master->Send(tosend, len, callback);
-}
-
-bool CSharedConnectionSlave::Send(const string& tosend, ICommand *callback)
-{
-	assert(master);
-	return master->Send(tosend, callback);
-}
-
-bool CSharedConnectionSlave::Receive(ICommand *callback)
+void CSharedConnectionSlave::Receive(ICommand *callback)
 {
 	assert(master);
 
@@ -117,7 +103,7 @@ bool CSharedConnectionSlave::Receive(ICommand *callback)
 
 	// Now, tell the master to do the job.
 	// (The master will add the timestamp for timeout handling for us....)
-	return master->Receive(callback);
+	master->Receive(callback);
 }
 
 bool CSharedConnectionSlave::CheckConfig(void)

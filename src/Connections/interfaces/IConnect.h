@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
  solarpowerlog
- Copyright (C) 2009  Tobias Frost
+ Copyright (C) 2009-2011  Tobias Frost
 
  This file is part of solarpowerlog.
 
@@ -79,43 +79,30 @@ using namespace std;
  *
  * Anyway, it is intended, that the class is only created by the IConnectFactory.
  *
- * <b>Synchronous and asynchronous operations </b>
+ * <b>Asynchronous operations </b>
  *
- * \warning the synchronous interface is depreciated.
+ * The commands are dispatched using the ICommand interface. In the ICommand
+ * objects the data is placed, identification is possible using the token
  *
- * (Preliminary, as currently in development) FIXME Update docs when ready!
- * When the asynch operations are implemented, synchronous operations should
- * be depreciated, as the might infer with the timings of other inverters.
+ * The result is placed into the ICommand-data, also using the token system.
  *
- * The IConnect methods can be used synchronous and asyncronous,( if the
- * communication classes support this. But the plans are to make these all async-capable)
- *
- * The customers of the IConnect classes can choose if they want to use the
- * async or sync methods by specifying optional ICommand arguments. If they are
- * obmitted (and therefore defaulting to NULL pointers) the command will use
- * synchronous methods, so returning the result directly (boolean).
- * The booleans are used because of how solarpowerlog developed
- *
- * If the asynchronous commands are used, the result is placed into the ICommand-data
- * void pointer, which has to be casted to an int. Here "errno" conventions
- * are used. Negative numbers tell that an error occured, zero means success.
+ * For example, result codes are placed in the token "ICMD_ERRNO" with the data
+ * as "integer", using the "errno" conventions:
+ * Negative numbers indicates an error.
  * Please see the documentation of the methods for expected error codes.
- *
- * \note A convention developed during implemention of the first async classes,
- * is, when programming methods, only return errors if the
- * object cannot perform its function. So, for example, if the call requires
- * the object in a specific state, only return an error if this state cannot be
- * easily reache. For example, if Connect()-ing, don't return an error when already
- * connected, just return silently success.
+ * (Storage is done with the boost::any classes, see the ICommand interface)
  *
  * <b> ICommand ownership </b>
  * As usual, ICommands that are submitted to this class, will be owned by this class.
  * So do not delete them, as they will be automatically deleted by the WorkScheduler.
  *
- * \note If Async operations would be overkill, because the result is
- * immediatly known, one can also implement the async ops as synchronous
- * as long as it uses the async notification methods.
+ * \note If async operations would be overkill, because the result is
+ * immediately known, one can also implement the async commands synchronously,
+ * as long as it uses the ICommand for notification of the result.
  *
+ * This can be done by directly setting the result in the provided ICommand and
+ * call Registry::GetMainScheduler()->ScheduleWork(ICommand) afterward.
+ * CConnectDummy does this in its Dispatch_Error() routine.
  */
 class IConnect
 {
@@ -127,115 +114,64 @@ public:
 	///
 	IConnect(const string &configurationname);
 
-	/// Setupp the Logger.
+	/// Setup the Logger.
 	virtual void SetupLogger(const string& parentlogger, const string &spec =
 			"Comms");
 
-	/// Desctructor
 	virtual ~IConnect();
 
-	/// Connect to something
-	/// NOTE: Needed to be overriden! ALWAYS Open in a NON_BLOCK way, or implement a worker thread
-
-	/** Connect to the target, so comms can happen.
+	/** Connects to the target, establish communikation link.
 	 *
 	 * The target and the settings are retrieved out of the configuration.
 	 *
-	 * SYNCHRONOUNS OPERATION:
-	 * Connect and return if it has succeeded. May block, but should be limited
-	 * to some seconds.
-	 *
-	 * ASYNCHRONOUS OPERATION:
-	 * Connect async and use the ICommand to tell the result.
-	 *
-	 * \note If a connection is already up, return "true" or success (async)
-	 *
-	 * \note On asynch operation, the return can be ignored.
+	 * Connect async and use the ICommand to tell the result in ICMD_ERRNO
 	 *
 	 * \note If Async operations would be overkill, because the result is
 	 * immediatly known, one can also implement the async ops as synchronous
-	 * as long as it uses the async notification methods.
+	 * as long as it uses the ICommand as notification for the result.
 	 */
-	virtual bool Connect(ICommand *callback) = 0;
+	virtual void Connect(ICommand *callback) = 0;
 
 	/** Tear down the connection.
 	 *
-	 * SYNCHRONOUNS OPERATION:
-	 * Just Disconnect. If this could fail, return false on failure, else true.
-	 *
-	 * ASYNCHRONOUS OPERATION:
 	 * Disconnect async and use the ICommand to tell the result.
 	 *
-	 * \note If a connection is already up, return "true" or success (async)
-	 *
-	 * \returns true on successful reading (synchronous operation only),
-	 * will always return true on asynch operation, as error notification
-	 * solely to be done by the supplied cmd.
-	 *
-	 * ASYNCHRNOUNS ERROR CODES.
 	 * The result will be placed in the supplied ICommand's data field.
 	 *
-	 * The value will be usually EIO, as one hs to ask himself: What can go wrong here?
+	 * The value will be usually EIO, as one has to ask himself: What can go wrong here?
 	 *
 	 * \note Try hard to get the comm into a known state, where connect will
 	 * be able to recover, or reconnection might be futile as recovery strategy.
 	 *
 	 */
-	virtual bool Disconnect(ICommand *callback) = 0;
+	virtual void Disconnect(ICommand *callback) = 0;
 
 	/** Asynchronous send interface
-	 * The data needs now to be embedded as data into the ICOmmand using the
-	 * token ICONN_TOKEN_SEND_STRING
-	 * \returns true if the command has been accepted, response is done using the ICommand.*/
-	virtual bool Send(ICommand *cmd) = 0;
-
-#warning depreciate synchronous interface
-
-	/// Send a array of characters (can be used as binary transport, too)
-	///
-	/// \warning not all classes might understand binary transport. Check
-	/// the concrete implmentation for details!
-	/// \param tosend what to send
-	/// \param len how many bytes
-	/// \returns true on success, false on error.
-	virtual bool Send(const char *tosend, unsigned int len, ICommand *callback) = 0;
-
-	/// Send a string
-	/// \note Standard implementation only wraps to above Send-binray.
-	///
-	/// \param tosend std::string to send
-	/// \returns true on success, false on error.
-	/// Override for better performance!
-	virtual bool Send(const string& tosend, ICommand *callback)
-	{
-		return Send(tosend.c_str(), tosend.length(), callback);
-	}
+	 * The data needs now to be embedded as data into the ICommand using the
+	 * token ICONN_TOKEN_SEND_STRING.
+	 *
+	 * As usual, results are passed using the ICommand supplied.
+	*/
+	virtual void Send(ICommand *cmd) = 0;
 
 	/** Receive data from connection and place it into a std::string
 	 *
 	 * Try to receive data from the other end and place everything readed
 	 * into the supplied std::string.
 	 *
-	 * \param wheretoplace object for data storage.
 	 * \param cmd ICommand to be used for async notification.
 	 *
-	 * \note on async operation, where to place has to be valid until the
-	 * notification has been received.
+	 * The result is presented in the returned ICommand, using those TOKENs:
 	 *
-	 * \note When the read operation has failed, the contents of the
-	 * string-object is undefined.
-	 * (The class might alter it, even when the read fails.
+	 * ICMD_ERRNO  -- for errors: If you receive a value <0 -- error happened.
+	 * 	the type in this boost:any is integer.
+	 * ICMD_ERRNO_STR -- optional for an human readable error message.
+	 * 	However, it is recommended to set this token.
+	 * 	the boost:any type is std::string
+	 * ICONN_TOKEN_RECEIVE_STRING -- received data from communication.
+	 * 	the boost:any type is std::string
 	 *
-	 * \returns true on successful reading (synchronous operation only),
-	 * will always return true on asynch operation, as error notification
-	 * solely to be done by the supplied cmd.
-	 *
-	 * ASYNCHRONOUS ERRORS:
-	 * The implementation might use errors out of error.h to specify the cause
-	 * of the error.
-	 *
-	 * These error values are defined in their meaning:
-	 *
+	 * Regarding ICMD_ERRNO, this errorno are defined and should be used / evaluated
 	 * 	EIO	I/O Error on the comms. Reason unknown or something
 	 * 		unexpected happended. (one should close and reopen the connection)
 	 *
@@ -244,13 +180,10 @@ public:
 	 *
 	 *	ENOTCONN  Connection went down, e.g. eof received.
 	 */
-	// virtual bool Receive( string &wheretoplace, ICommand *cmd = NULL ) = 0;
 
-	virtual bool Receive(ICommand *cmd) = 0;
+	virtual void Receive(ICommand *cmd) = 0;
 
-public:
-
-	/// Check the configuration for validty. Retrurn false on config errors.
+	/// Check the configuration for validity. Return false on config errors.
 	/// (program will abort then!)
 	virtual bool CheckConfig(void) = 0;
 

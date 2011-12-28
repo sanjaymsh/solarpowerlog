@@ -71,23 +71,18 @@ protected:
 public:
 	virtual ~CConnectTCPAsio();
 
-	virtual bool Connect( ICommand *callback );
+	virtual void Connect( ICommand *callback );
 
-	virtual bool Disconnect( ICommand *callback );
+	virtual void Disconnect( ICommand *callback );
 
 	virtual void SetupLogger( const string& parentlogger, const string & = "" )
 	{
 		IConnect::SetupLogger(parentlogger, "Comms_TCP_ASIO");
 	}
 
-	virtual bool Send( ICommand *callback);
+	virtual void Send( ICommand *callback);
 
-	virtual bool Send( const char *tosend, unsigned int len,
-			ICommand *callback);
-
-	virtual bool Send( const string& tosend, ICommand *callback);
-
-	virtual bool Receive( ICommand *callback );
+	virtual void Receive( ICommand *callback );
 
 	virtual bool CheckConfig( void );
 

@@ -126,29 +126,11 @@ CConnectSerialAsio::~CConnectSerialAsio()
 }
 
 // TODO Extract to common base class (duplicate code here!!)
-bool CConnectSerialAsio::Connect(ICommand *callback)
+void CConnectSerialAsio::Connect(ICommand *callback)
 {
-	sem_t semaphore;
-
 	CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::CONNECT,
 			callback);
-
-	// if callback is NUll, fallback to synchronous operation.
-	if (!callback) {
-		sem_init(&semaphore, 0, 0);
-		commando->SetSemaphore(&semaphore);
-	}
-
 	PushWork(commando);
-
-	if (!callback) {
-		sem_wait(&semaphore);
-		LOGTRACE(logger, "destroying CAsyncCommando " << commando );
-		delete commando;
-		return IsConnected();
-	}
-
-	return true;
 }
 
 /* Disconnect
@@ -158,7 +140,7 @@ bool CConnectSerialAsio::Connect(ICommand *callback)
  * (If to be done synchronous, it is also dispatched to the worker thread and
  * directly waited for completion.)
  * */
-bool CConnectSerialAsio::Disconnect(ICommand *callback)
+void CConnectSerialAsio::Disconnect(ICommand *callback)
 {
 	// note: internally we still use the sync interface in the destructor!
 	// to ensure that the port is closed when we tear down everything.
@@ -182,70 +164,15 @@ bool CConnectSerialAsio::Disconnect(ICommand *callback)
 		LOGTRACE(logger, "destroying CAsyncCommando " << commando );
 		delete commando;
 	}
-	return true;
 }
 
-bool CConnectSerialAsio::Send(ICommand *callback)
+void CConnectSerialAsio::Send(ICommand *callback)
 {
 	// note, callback must not be null, and also already prepared
 	// e.g ICONN_TOKEN_SEND_STRING set.
 	assert(callback);
 	CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::SEND, callback);
-	return PushWork(commando);
-}
-
-// Send kept SYNC for the moment
-bool CConnectSerialAsio::Send(const char *tosend, unsigned int len,
-		ICommand *callback)
-{
-	sem_t semaphore;
-	bool ret;
-	std::string s;
-	s.assign(tosend, len);
-
-	CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::SEND, callback);
-	commando->callback->addData(ICONN_TOKEN_SEND_STRING, s);
-
-	if (callback) {
-		sem_init(&semaphore, 0, 0);
-		commando->SetSemaphore(&semaphore);
-	}
-
 	PushWork(commando);
-
-	if (!callback) {
-		int err;
-		// sync: wait for async job completion and check result.
-		sem_wait(&semaphore);
-		try {
-			err = boost::any_cast<int>(commando->callback->findData(
-				ICMD_ERRNO));
-			if (err < 0) {
-				ret = false;
-			} else {
-				ret = true;
-			}
-		} catch (std::invalid_argument &e) {
-			LOGDEBUG(logger,"ERR: unexpected exception while "
-					"receive-handling: Invalid argument " << e.what());
-			ret = false;
-		} catch (boost::bad_any_cast &e) {
-			LOGDEBUG(logger,"ERR: unexpected exception while "
-					"receive-handling: Bad cast " << e.what());
-			ret = false;
-		}
-
-		LOGTRACE(logger, "destroying CAsyncCommando " << commando );
-		delete commando;
-		return ret;
-	}
-	return true;
-}
-
-// Send kept SYNC for the moment
-bool CConnectSerialAsio::Send(const string & tosend, ICommand *callback)
-{
-	return Send(tosend.c_str(), tosend.length(), callback);
 }
 
 /* Receive bytes from the stream -- asynced.
@@ -253,66 +180,11 @@ bool CConnectSerialAsio::Send(const string & tosend, ICommand *callback)
  * As with all other methods, will be done by the worker thread, even if
  * synchronous operation is requested. In this case, we'll just wait for
  * completion.*/
-bool CConnectSerialAsio::Receive( ICommand *callback)
+void CConnectSerialAsio::Receive( ICommand *callback)
 {
-	// RECEIVE async Command:
-	// auxdata: pointer to std::string, where to place received data
-
-#if 0
-	sem_t semaphore;
-	bool ret;
-#endif
-
 	CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::RECEIVE,
 			callback);
-
-#if 0
-	if (!callback) {
-		sem_init(&semaphore, 0, 0);
-		commando->SetSemaphore(&semaphore);
-	}
-#endif
-
 	PushWork(commando);
-
-#if 0
-	if (!callback) {
-		int err;
-		// sync: wait for async job completion and check result.
-		sem_wait(&semaphore);
-		try {
-			err
-					= boost::any_cast<int>(commando->callback->findData(
-							ICMD_ERRNO));
-			if (err < 0) {
-				ret = false;
-				goto out;
-			} else {
-				ret = true;
-			}
-
-			wheretoplace = boost::any_cast<string>(
-					commando->callback->findData(ICONN_TOKEN_RECEIVE_STRING));
-
-		} catch (std::invalid_argument e) {
-			LOGDEBUG(logger,"ERR: unexpected exception while "
-					"receive-handling: Invalid arguement " << e.what());
-			ret = false;
-			goto out;
-		} catch (boost::bad_any_cast e) {
-			LOGDEBUG(logger,"ERR: unexpected exception while "
-					"receive-handling: Bad cast " << e.what());
-			ret = false;
-			goto out;
-		}
-
-		out:
-		LOGTRACE(logger, "destroying CAsyncCommando " << commando );
-		delete commando;
-		return ret;
-	}
-#endif
-	return true;
 }
 
 bool CConnectSerialAsio::IsConnected(void)
@@ -442,7 +314,6 @@ void CConnectSerialAsio::_main(void)
 		int syscallret;
 
 		// wait for work or signals.
-		// FIXME Test this if this works ;-)
 		LOGTRACE(logger, "Waiting for work");
 		syscallret = sem_wait(&cmdsemaphore);
 		if (syscallret == 0) {
@@ -452,7 +323,7 @@ void CConnectSerialAsio::_main(void)
 			if (!cmds.empty()) {
 				bool delete_cmd;
 				CAsyncCommand *donow = cmds.front();
-				// cache info if to delete the objet later,
+				// cache info if to delete the object later,
 				// as later it might be already gone.
 				delete_cmd = donow->IsAsynchronous();
 

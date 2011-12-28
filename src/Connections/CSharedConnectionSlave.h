@@ -59,17 +59,13 @@ public:
 
 protected:
 
-	virtual bool Connect(ICommand *callback);
+	virtual void Connect(ICommand *callback);
 
-	virtual bool Disconnect(ICommand *callback);
+	virtual void Disconnect(ICommand *callback);
 
-	virtual bool Send(ICommand *cmd);
+	virtual void Send(ICommand *cmd);
 
-	virtual bool Send(const char *tosend, unsigned int len, ICommand *callback);
-
-	virtual bool Send(const string& tosend, ICommand *callback);
-
-	virtual bool Receive(ICommand *callback);
+	virtual void Receive(ICommand *callback);
 
 	virtual bool CheckConfig(void);
 

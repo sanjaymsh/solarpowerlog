@@ -80,6 +80,8 @@ public:
 		IConnect::SetupLogger(parentlogger, "Comms_TCP_ASIO");
 	}
 
+	virtual bool Send( ICommand *callback);
+
 	virtual bool Send( const char *tosend, unsigned int len,
 			ICommand *callback);
 

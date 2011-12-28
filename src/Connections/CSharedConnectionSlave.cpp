@@ -73,6 +73,13 @@ bool CSharedConnectionSlave::Disconnect(ICommand *callback)
 	return true;
 }
 
+bool CSharedConnectionSlave::Send(ICommand *callback)
+{
+	assert(callback);
+	assert(master);
+	return master->Send(callback);
+}
+
 bool CSharedConnectionSlave::Send(const char *tosend, unsigned int len,
 		ICommand *callback)
 {

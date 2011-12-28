@@ -63,6 +63,8 @@ protected:
 
 	virtual bool Disconnect(ICommand *callback);
 
+	virtual bool Send(ICommand *cmd);
+
 	virtual bool Send(const char *tosend, unsigned int len, ICommand *callback);
 
 	virtual bool Send(const string& tosend, ICommand *callback);

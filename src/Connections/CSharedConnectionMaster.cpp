@@ -301,6 +301,12 @@ void CSharedConnectionMaster::SetupLogger(const string& parentlogger,
 		connection->SetupLogger(parentlogger, "");
 }
 
+bool CSharedConnectionMaster::Send(ICommand *callback) {
+	assert(callback);
+	assert(connection);
+	return connection->Send(callback);
+}
+
 bool CSharedConnectionMaster::Send(const char *tosend, unsigned int len,
 		ICommand *callback)
 {

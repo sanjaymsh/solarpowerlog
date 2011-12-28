@@ -183,6 +183,12 @@ public:
 	 */
 	virtual bool Disconnect(ICommand *callback) = 0;
 
+	/** Asynchronous send interface
+	 * The data needs now to be embedded as data into the ICOmmand using the
+	 * token ICONN_TOKEN_SEND_STRING
+	 * \returns true if the command has been accepted, response is done using the ICommand.*/
+	virtual bool Send(ICommand *cmd) = 0;
+
 #warning depreciate synchronous interface
 
 	/// Send a array of characters (can be used as binary transport, too)

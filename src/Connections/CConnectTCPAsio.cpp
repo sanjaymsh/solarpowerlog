@@ -169,6 +169,15 @@ bool CConnectTCPAsio::Disconnect( ICommand *callback )
 	return true;
 }
 
+bool CConnectTCPAsio::Send( ICommand *callback)
+{
+	// note, callback must not be null, and also already prepared
+	// e.g ICONN_TOKEN_SEND_STRING set.
+	assert(callback);
+	CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::SEND, callback);
+	return PushWork(commando);
+}
+
 // Send kept SYNC for the moment
 bool CConnectTCPAsio::Send( const char *tosend, unsigned int len,
 		ICommand *callback )

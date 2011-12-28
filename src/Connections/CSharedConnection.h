@@ -92,14 +92,13 @@ public:
 
 	virtual void SetupLogger(const string& parentlogger, const string & = "");
 
-	virtual bool Send(const char *tosend, unsigned int len, ICommand *callback =
-			NULL)
+	virtual bool Send(const char *tosend, unsigned int len, ICommand *callback)
 	{
 		assert(concreteSharedConnection);
 		return concreteSharedConnection->Send(tosend, len, callback);
 	}
 
-	virtual bool Send(const string& tosend, ICommand *callback = NULL)
+	virtual bool Send(const string& tosend, ICommand *callback)
 	{
 		assert(concreteSharedConnection);
 		return concreteSharedConnection->Send(tosend, callback);

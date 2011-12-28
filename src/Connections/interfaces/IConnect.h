@@ -74,14 +74,16 @@ using namespace std;
 #warning docs outdated!
 /** Interface for all communication classes
  *
- * This Interface is the API for all concrete comm methods.
- * The class is abstract, so it cannot be instanciated by itself.
+ * This Interface is the API for all concrete communication methods.
+ * The class is abstract, so it cannot be instantiated by itself.
  *
  * Anyway, it is intended, that the class is only created by the IConnectFactory.
  *
- * <b>Synchronous and asyncronous operations </b>
+ * <b>Synchronous and asynchronous operations </b>
  *
- * (Prelimiary, as currently in developement) FIXME Update docs when ready!
+ * \warning the synchronous interface is depreciated.
+ *
+ * (Preliminary, as currently in development) FIXME Update docs when ready!
  * When the asynch operations are implemented, synchronous operations should
  * be depreciated, as the might infer with the timings of other inverters.
  *
@@ -154,7 +156,7 @@ public:
 	 * immediatly known, one can also implement the async ops as synchronous
 	 * as long as it uses the async notification methods.
 	 */
-	virtual bool Connect(ICommand *callback = NULL) = 0;
+	virtual bool Connect(ICommand *callback) = 0;
 
 	/** Tear down the connection.
 	 *
@@ -179,10 +181,10 @@ public:
 	 * be able to recover, or reconnection might be futile as recovery strategy.
 	 *
 	 */
-	virtual bool Disconnect(ICommand *callback = NULL) = 0;
+	virtual bool Disconnect(ICommand *callback) = 0;
 
 #warning depreciate synchronous interface
-	// private:
+
 	/// Send a array of characters (can be used as binary transport, too)
 	///
 	/// \warning not all classes might understand binary transport. Check
@@ -190,8 +192,7 @@ public:
 	/// \param tosend what to send
 	/// \param len how many bytes
 	/// \returns true on success, false on error.
-	virtual bool Send(const char *tosend, unsigned int len, ICommand *callback =
-			NULL) = 0;
+	virtual bool Send(const char *tosend, unsigned int len, ICommand *callback) = 0;
 
 	/// Send a string
 	/// \note Standard implementation only wraps to above Send-binray.
@@ -199,7 +200,7 @@ public:
 	/// \param tosend std::string to send
 	/// \returns true on success, false on error.
 	/// Override for better performance!
-	virtual bool Send(const string& tosend, ICommand *callback = NULL)
+	virtual bool Send(const string& tosend, ICommand *callback)
 	{
 		return Send(tosend.c_str(), tosend.length(), callback);
 	}

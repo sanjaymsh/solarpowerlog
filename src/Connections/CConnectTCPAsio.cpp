@@ -144,6 +144,9 @@ bool CConnectTCPAsio::Connect( ICommand *callback )
  * */
 bool CConnectTCPAsio::Disconnect( ICommand *callback )
 {
+	// note: also here we are using the synchronous interface internally
+	// in the destructor...
+
 	sem_t semaphore;
 
 	CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::DISCONNECT,
@@ -289,6 +292,7 @@ bool CConnectTCPAsio::Receive( ICommand *callback )
 
 bool CConnectTCPAsio::IsConnected( void )
 {
+	if (!this->sockt) return false;
 	mutex.lock();
 	bool ret = sockt->is_open();
 	mutex.unlock();

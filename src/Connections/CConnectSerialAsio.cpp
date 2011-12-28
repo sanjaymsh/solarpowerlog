@@ -116,14 +116,13 @@ CConnectSerialAsio::CConnectSerialAsio(const string &configurationname) :
 CConnectSerialAsio::~CConnectSerialAsio()
 {
 	if (IsConnected()) {
-		Disconnect(NULL);
+		this->Disconnect(NULL);
 	}
 
 	if (port)
 		delete port;
 	if (ioservice)
 		delete ioservice;
-
 }
 
 // TODO Extract to common base class (duplicate code here!!)
@@ -161,6 +160,9 @@ bool CConnectSerialAsio::Connect(ICommand *callback)
  * */
 bool CConnectSerialAsio::Disconnect(ICommand *callback)
 {
+	// note: internally we still use the sync interface in the destructor!
+	// to ensure that the port is closed when we tear down everything.
+
 	sem_t semaphore;
 
 	CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::DISCONNECT,
@@ -207,19 +209,18 @@ bool CConnectSerialAsio::Send(const char *tosend, unsigned int len,
 		// sync: wait for async job completion and check result.
 		sem_wait(&semaphore);
 		try {
-			err
-					= boost::any_cast<int>(commando->callback->findData(
-							ICMD_ERRNO));
+			err = boost::any_cast<int>(commando->callback->findData(
+				ICMD_ERRNO));
 			if (err < 0) {
 				ret = false;
 			} else {
 				ret = true;
 			}
-		} catch (std::invalid_argument e) {
+		} catch (std::invalid_argument &e) {
 			LOGDEBUG(logger,"ERR: unexpected exception while "
 					"receive-handling: Invalid argument " << e.what());
 			ret = false;
-		} catch (boost::bad_any_cast e) {
+		} catch (boost::bad_any_cast &e) {
 			LOGDEBUG(logger,"ERR: unexpected exception while "
 					"receive-handling: Bad cast " << e.what());
 			ret = false;
@@ -248,8 +249,10 @@ bool CConnectSerialAsio::Receive( ICommand *callback)
 	// RECEIVE async Command:
 	// auxdata: pointer to std::string, where to place received data
 
+#if 0
 	sem_t semaphore;
 	bool ret;
+#endif
 
 	CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::RECEIVE,
 			callback);
@@ -305,6 +308,7 @@ bool CConnectSerialAsio::Receive( ICommand *callback)
 
 bool CConnectSerialAsio::IsConnected(void)
 {
+	if (!port) return false;
 	mutex.lock();
 	bool ret = port->is_open();
 	mutex.unlock();
@@ -664,10 +668,10 @@ bool CConnectSerialAsio::HandleReceive(CAsyncCommand *cmd)
 	try {
 		timeout = boost::any_cast<unsigned long>(cmd->callback->findData(
 				ICONN_TOKEN_TIMEOUT));
-	} catch (std::invalid_argument e) {
+	} catch (std::invalid_argument &e) {
 		CConfigHelper cfghelper(ConfigurationPath);
 		cfghelper.GetConfig("serial_timeout", timeout, TCP_ASIO_DEFAULT_TIMEOUT);
-	} catch (boost::bad_any_cast e) {
+	} catch (boost::bad_any_cast &e) {
 		LOGDEBUG(logger, "Unexpected exception in HandleReceive: Bad cast" << e.what());
 		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
 	}
@@ -721,7 +725,7 @@ bool CConnectSerialAsio::HandleReceive(CAsyncCommand *cmd)
 	try {
 		timeout = boost::any_cast<unsigned long>(cmd->callback->findData(
 				ICONN_TOKEN_INTERBYTETIMEOUT));
-	} catch (std::invalid_argument e) {
+	} catch (std::invalid_argument &e) {
 		CConfigHelper cfghelper(ConfigurationPath);
 		cfghelper.GetConfig("serial_interbytetimeout", timeout, 0UL);
 		if (timeout == 0) {
@@ -734,7 +738,7 @@ bool CConnectSerialAsio::HandleReceive(CAsyncCommand *cmd)
 			if (timeout <= TCP_ASIO_DEFAULT_INTERBYTETIMEOUT) timeout = TCP_ASIO_DEFAULT_INTERBYTETIMEOUT;
 		}
 
-	} catch (boost::bad_any_cast e) {
+	} catch (boost::bad_any_cast &e) {
 		LOGDEBUG(logger, "Unexpected exception in HandleReceive: Bad cast" << e.what());
 		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
 	}
@@ -817,10 +821,10 @@ bool CConnectSerialAsio::HandleSend(CAsyncCommand *cmd)
 				ICONN_TOKEN_SEND_STRING));
 	}
 #ifdef DEBUG_SERIALASIO
-	catch (std::invalid_argument e) {
+	catch (std::invalid_argument &e) {
 		LOGDEBUG(logger, "BUG: required " << ICONN_TOKEN_SEND_STRING << " argument not set");
 
-	} catch (boost::bad_any_cast e) {
+	} catch (boost::bad_any_cast &e) {
 		LOGDEBUG(logger, "Unexpected exception in HandleSend: Bad cast" << e.what());
 	}
 #else
@@ -832,10 +836,10 @@ bool CConnectSerialAsio::HandleSend(CAsyncCommand *cmd)
 				ICONN_TOKEN_TIMEOUT));
 	}
 #ifdef DEBUG_SERIALASIO
-	catch (std::invalid_argument e) {
+	catch (std::invalid_argument &e) {
 		CConfigHelper cfghelper(ConfigurationPath);
 		cfghelper.GetConfig("tcptimeout", timeout, 3000UL);
-	} catch (boost::bad_any_cast e) {
+	} catch (boost::bad_any_cast &e) {
 		LOGDEBUG(logger, "Unexpected exception in HandleSend: Bad cast" << e.what());
 		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
 	}

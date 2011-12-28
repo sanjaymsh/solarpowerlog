@@ -249,21 +249,28 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 	{
 		// DISCONNECTED: Error detected, the link to the com partner is down.
 		// Action: Schedule connection retry in xxx seconds
-		// Next-State: INIT (Try to connect)
+		// Next-State: CMD_DISCONNECTED_WAIT
+		// (Waiting for async disconnect to be completed)
 		LOGTRACE(logger, "new state: CMD_DISCONNECTED");
 
 		// Timeout on reception
 		// we assume that we are now disconnected.
 		// so lets schedule a reconnection.
 		// TODO this time should be configurable.
-		connection->Disconnect();
+		cmd = new ICommand(CMD_DISCONNECTED_WAIT, this);
+		connection->Disconnect(cmd);
 
 		// Tell everyone that all data is now invalid.
 		CCapability *c = GetConcreteCapability(CAPA_INVERTER_DATASTATE);
 		CValue<bool> *v = (CValue<bool> *) c->getValue();
 		v->Set(false);
 		c->Notify();
+		break;
+	}
 
+	case CMD_DISCONNECTED_WAIT:
+	{
+		LOGTRACE(logger, "new state: CMD_DISCONNECTED_WAIT");
 		cmd = new ICommand(CMD_INIT, this);
 		timespec ts;
 		ts.tv_sec = 15;
@@ -329,6 +336,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		pushinverterquery(TYP);
 		pushinverterquery(SWV);
 		pushinverterquery(BUILDVER);
+		/// this fall through is intended.
 
 	case CMD_QUERY_POLL:
 		LOGTRACE(logger, "new state: CMD_QUERY_POLL ");
@@ -353,6 +361,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		pushinverterquery(THR);
 		pushinverterquery(TNF);
 		pushinverterquery(SYS);
+		/// this fall through is intended.
 
 	case CMD_SEND_QUERIES:
 	{
@@ -489,7 +498,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 	default:
 		LOGFATAL(logger, "Unknown CMD received");
 		abort();
-
+		break; // to have one code-analysis warning less.
 	}
 
 }

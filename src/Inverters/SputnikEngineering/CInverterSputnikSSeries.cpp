@@ -147,7 +147,7 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	v = IValue::Factory(CAPA_INVERTER_MANUFACTOR_TYPE);
 	((CValue<string>*) v)->Set("Sputnik Engineering");
 	c = new CCapability(s, v, this);
-	AddCapability(s, c);
+	AddCapability(c);
 
 	// Add the request to initialize as soon as the system is up.
 	ICommand *cmd = new ICommand(CMD_INIT, this);
@@ -165,13 +165,13 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	v = IValue::Factory(CAPA_INVERTER_QUERYINTERVAL_TYPE);
 	((CValue<float>*) v)->Set(interval);
 	c = new CCapability(s, v, this);
-	AddCapability(s, c);
+	AddCapability(c);
 
 	s = CAPA_INVERTER_CONFIGNAME;
 	v = IValue::Factory(CAPA_INVERTER_CONFIGNAME_TYPE);
 	((CValue<std::string>*) v)->Set(name);
 	c = new CCapability(s, v, this);
-	AddCapability(s, c);
+	AddCapability(c);
 
 	LOGDEBUG(logger,"Inverter configuration:");
 	LOGDEBUG(logger,"class CInverterSputnikSSeries ");
@@ -1367,7 +1367,7 @@ bool CInverterSputnikSSeries::token_TYP(const vector<string> & tokens)
 		v = IValue::Factory(CAPA_INVERTER_MODEL_TYPE);
 		((CValue<string>*) v)->Set(model_lookup[i].description);
 		c = new CCapability(s, v, this);
-		AddCapability(s, c);
+		AddCapability(c);
 
 		// TODO: Check if we schould derefer (using a scheduled work) this.
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
@@ -1465,7 +1465,7 @@ bool CInverterSputnikSSeries::token_PAC(const vector<string> & tokens)
 		v = IValue::Factory(CAPA_INVERTER_ACPOWER_TOTAL_TYPE);
 		((CValue<float>*) v)->Set(fpac);
 		c = new CCapability(s, v, this);
-		AddCapability(s, c);
+		AddCapability(c);
 
 		// TODO: Check if we schould derefer (using a scheduled work) this.
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
@@ -1510,7 +1510,7 @@ bool CInverterSputnikSSeries::token_KHR(const vector<string> & tokens)
 		v = IValue::Factory(CAPA_INVERTER_PON_HOURS_TYPE);
 		((CValue<float>*) v)->Set(f);
 		c = new CCapability(s, v, this);
-		AddCapability(s, c);
+		AddCapability(c);
 
 		// TODO: Check if we schould derefer (using a scheduled work) this.
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
@@ -1571,7 +1571,7 @@ bool CInverterSputnikSSeries::token_KYR(const vector<string> & tokens)
 		v = IValue::Factory(CAPA_INVERTER_KWH_Y2D_TYPE);
 		((CValue<float>*) v)->Set(kwh);
 		c = new CCapability(s, v, this);
-		AddCapability(s, c);
+		AddCapability(c);
 
 		// TODO: Check if we schould derefer (using a scheduled work) this.
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
@@ -1615,7 +1615,7 @@ bool CInverterSputnikSSeries::token_KMT(const vector<string> & tokens)
 		v = IValue::Factory(CAPA_INVERTER_KWH_M2D_TYPE);
 		((CValue<float>*) v)->Set(kwh);
 		c = new CCapability(s, v, this);
-		AddCapability(s, c);
+		AddCapability(c);
 
 		// TODO: Check if we schould derefer (using a scheduled work) this.
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
@@ -1658,7 +1658,7 @@ bool CInverterSputnikSSeries::token_KDY(const vector<string> & tokens)
 		v = IValue::Factory(CAPA_INVERTER_KWH_2D_TYPE);
 		((CValue<float>*) v)->Set(kwh);
 		c = new CCapability(s, v, this);
-		AddCapability(s, c);
+		AddCapability(c);
 
 		// TODO: Check if we schould derefer (using a scheduled work) this.
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
@@ -1703,7 +1703,7 @@ bool CInverterSputnikSSeries::token_KT0(const vector<string> & tokens)
 		v = IValue::Factory(CAPA_INVERTER_KWH_TOTAL_TYPE);
 		((CValue<float>*) v)->Set(kwh);
 		c = new CCapability(s, v, this);
-		AddCapability(s, c);
+		AddCapability(c);
 
 		// TODO: Check if we schould derefer (using a scheduled work) this.
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
@@ -1747,7 +1747,7 @@ bool CInverterSputnikSSeries::token_PIN(const vector<string> & tokens)
 		v = IValue::Factory(CAPA_INVERTER_INSTALLEDPOWER_TYPE);
 		((CValue<float>*) v)->Set(f);
 		c = new CCapability(s, v, this);
-		AddCapability(s, c);
+		AddCapability(c);
 
 		// TODO: Check if we schould derefer (using a scheduled work) this.
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
@@ -1793,7 +1793,7 @@ bool CInverterSputnikSSeries::token_TNF(const vector<string> & tokens)
 		v = IValue::Factory(CAPA_INVERTER_NET_FREQUENCY_TYPE);
 		((CValue<float>*) v)->Set(f);
 		c = new CCapability(s, v, this);
-		AddCapability(s, c);
+		AddCapability(c);
 
 		// TODO: Check if we schould derefer (using a scheduled work) this.
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
@@ -1837,7 +1837,7 @@ bool CInverterSputnikSSeries::token_PRL(const vector<string> & tokens)
 		v = IValue::Factory(CAPA_INVERTER_RELPOWER_TYPE);
 		((CValue<float>*) v)->Set(f);
 		c = new CCapability(s, v, this);
-		AddCapability(s, c);
+		AddCapability(c);
 
 		// TODO: Check if we schould derefer (using a scheduled work) this.
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
@@ -1886,7 +1886,7 @@ bool CInverterSputnikSSeries::token_UDC(const vector<string> & tokens)
 		v = IValue::Factory(CAPA_INVERTER_INPUT_DC_VOLTAGE_TYPE);
 		((CValue<float>*) v)->Set(f);
 		c = new CCapability(s, v, this);
-		AddCapability(s, c);
+		AddCapability(c);
 
 		// TODO: Check if we schould derefer (using a scheduled work) this.
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
@@ -1930,7 +1930,7 @@ bool CInverterSputnikSSeries::token_UL1(const vector<string> & tokens)
 		v = IValue::Factory(CAPA_INVERTER_GRID_AC_VOLTAGE_TYPE);
 		((CValue<float>*) v)->Set(f);
 		c = new CCapability(s, v, this);
-		AddCapability(s, c);
+		AddCapability(c);
 
 		// TODO: Check if we schould derefer (using a scheduled work) this.
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
@@ -1988,7 +1988,7 @@ bool CInverterSputnikSSeries::token_IDC(const vector<string> & tokens)
 		v = IValue::Factory(CAPA_INVERTER_INPUT_DC_CURRENT_TYPE);
 		((CValue<float>*) v)->Set(f);
 		c = new CCapability(s, v, this);
-		AddCapability(s, c);
+		AddCapability(c);
 
 		// TODO: Check if we schould derefer (using a scheduled work) this.
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
@@ -2033,7 +2033,7 @@ bool CInverterSputnikSSeries::token_IL1(const vector<string> & tokens)
 		v = IValue::Factory(CAPA_INVERTER_GRID_AC_CURRENT_TYPE);
 		((CValue<float>*) v)->Set(f);
 		c = new CCapability(s, v, this);
-		AddCapability(s, c);
+		AddCapability(c);
 
 		// TODO: Check if we schould derefer (using a scheduled work) this.
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
@@ -2089,7 +2089,7 @@ bool CInverterSputnikSSeries::token_TKK(const vector<string> & tokens)
 		v = IValue::Factory(CAPA_INVERTER_TEMPERATURE_TYPE);
 		((CValue<float>*) v)->Set(f);
 		c = new CCapability(s, v, this);
-		AddCapability(s, c);
+		AddCapability(c);
 
 		// TODO: Check if we schould derefer (using a scheduled work) this.
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
@@ -2185,7 +2185,7 @@ bool CInverterSputnikSSeries::token_SYS(const vector<string> &tokens)
 		v = IValue::Factory(CAPA_INVERTER_STATUS_TYPE);
 		((CValue<int>*) v)->Set(statuscodes[i].status);
 		c = new CCapability(s, v, this);
-		AddCapability(s, c);
+		AddCapability(c);
 
 		// TODO: Check if we schould derefer (using a scheduled work) this.
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
@@ -2210,7 +2210,7 @@ bool CInverterSputnikSSeries::token_SYS(const vector<string> &tokens)
 		v = IValue::Factory(CAPA_INVERTER_STATUS_READABLE_TYPE);
 		((CValue<string>*) v)->Set(statuscodes[i].description);
 		c = new CCapability(s, v, this);
-		AddCapability(s, c);
+		AddCapability(c);
 
 		// TODO: Check if we schould derefer (using a scheduled work) this.
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
@@ -2270,7 +2270,7 @@ void CInverterSputnikSSeries::create_versioncapa(void)
 		v = IValue::Factory(CAPA_INVERTER_FIRMWARE_TYPE);
 		((CValue<string>*) v)->Set(ver);
 		c = new CCapability(s, v, this);
-		AddCapability(s, c);
+		AddCapability(c);
 
 		// TODO: Check if we schould derefer (using a scheduled work) this.
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);

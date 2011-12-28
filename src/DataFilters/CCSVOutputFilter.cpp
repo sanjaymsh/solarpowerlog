@@ -91,14 +91,14 @@ CCSVOutputFilter::CCSVOutputFilter( const string & name,
 	// However, to help following plugins, we will publish some data here:
 	// (this enables other plugins to use our files as data source)
 	c = new CCapability(CAPA_CSVDUMPER_FILENAME, CAPA_CSVDUMPER_FILENAME_TYPE, this);
-	AddCapability(CAPA_CSVDUMPER_FILENAME,c);
+	AddCapability(c);
 
 	// A comma-seperated list of parameters which are currently logged.
 	// note: This list might grow over time, so when parsing the CSV File,
 	// be prepared that there might be not all given from the beginning of the
 	// file
 	c = new CCapability(CAPA_CSVDUMPER_LOGGEDCAPABILITES, CAPA_CSVDUMPER_LOGGEDCAPABILITES_TYPE, this);
-	AddCapability(CAPA_CSVDUMPER_LOGGEDCAPABILITES,c);
+	AddCapability(c);
 }
 
 CCSVOutputFilter::~CCSVOutputFilter()

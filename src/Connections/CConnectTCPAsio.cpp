@@ -179,7 +179,7 @@ bool CConnectTCPAsio::Send( const char *tosend, unsigned int len,
 	s.assign(tosend, len);
 
 	CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::SEND, callback);
-	callback->addData(ICONN_TOKEN_SEND_STRING, s);
+	commando->callback->addData(ICONN_TOKEN_SEND_STRING, s);
 
 	if (callback) {
 		sem_init(&semaphore, 0, 0);

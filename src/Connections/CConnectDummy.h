@@ -90,6 +90,9 @@ public:
 		return this->Dispatch_Error(cmd);
 	};
 
+	virtual bool Send(ICommand *cmd) {
+		return Dispatch_Error(cmd);
+	}
 	/// Send a array of characters (can be used as binary transport, too)
 	virtual bool Send( const char */*tosend*/, unsigned int /*len*/,
 		ICommand *cmd )

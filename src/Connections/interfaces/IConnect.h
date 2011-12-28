@@ -71,7 +71,6 @@ using namespace std;
  *  Unit of the value by the token are ms.   */
 #define ICONN_TOKEN_INTERBYTETIMEOUT "ICON_INTERBYTE_TIMEOUT"
 
-#warning docs outdated!
 /** Interface for all communication classes
  *
  * This Interface is the API for all concrete communication methods.

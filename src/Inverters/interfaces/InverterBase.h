@@ -214,10 +214,10 @@ class ICapaIterator;
 
 using namespace std;
 
-/// connectiontimeout: Wait this long for the connectin attempt to time out
+/// connectiontimeout: Wait this long for the connection attempt to time out
 /// note: currently FIXME (not implemented in ASIO TCP)
 /// note: This tweak is optional. The Connection method needs not to honor
-/// this parameter (especially if the success/failure is immediatly known)
+/// this parameter (especially if the success/failure is immediately known)
 #define CONFIG_TWEAK_CONNECTION_TIMEOUT "option_connectiontimeout"
 #define CONFIG_TWEAK_CONNECTION_TIMEOUT_DEFAULT (15000)
 
@@ -312,8 +312,7 @@ protected:
 	// This keeps all informed!
 	// Class for handling capabilities.
 	// (Inverters can add capabilities at runtime, also can enhancement filters.
-	// (A Capabilites bundles on discret feature, reading of a inverter,
-	// like also current readings and so on...
+	// (A Capability bundles reading of a inverter with a tag describing the information
 
 	map<string, CCapability*> CapabilityMap;
 

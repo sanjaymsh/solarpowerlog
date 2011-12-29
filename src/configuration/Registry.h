@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
  solarpowerlog
- Copyright (C) 2009  Tobias Frost
+ Copyright (C) 2009-2011  Tobias Frost
 
  This file is part of solarpowerlog.
 
@@ -247,6 +247,10 @@ public:
 	}
 
 private:
+	/// keeps the object for the main scheduler
+	/// GetMainScheduler will create the object. (singleton)
+	/// note: cpptest detects a memory leak, which is not true. Check the
+	/// destructor in Registry.cpp
 	CWorkScheduler *mainscheduler;
 
 protected:

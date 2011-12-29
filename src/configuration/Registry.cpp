@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
  solarpowerlog
- Copyright (C) 2009  Tobias Frost
+ Copyright (C) 2009-2011  Tobias Frost
 
  This file is part of solarpowerlog.
 
@@ -49,8 +49,7 @@ using namespace std;
 Registry::Registry()
 {
 	Config = NULL;
-
-
+	mainscheduler = NULL;
 }
 
 bool Registry::LoadConfig( std::string name )

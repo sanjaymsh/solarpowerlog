@@ -11,6 +11,16 @@ energy generation systems.
 
 Solarpowerlog, even if already doing something, is still under heavy development
 
+
+GETTING SUPPORT
+===============
+
+For some online documentation please see: 
+http://sourceforge.net/apps/mediawiki/solarpowerlog/index.php
+
+Please also consider posting to the mailing lists if you need help:
+http://sourceforge.net/mail/?group_id=259217
+
 HELP WANTED
 ===========
 
@@ -22,17 +32,50 @@ Especially this fields needs support:
 - Support for other inverters that the sputnik ones (to test the code, you have to own them)
 - Programming for some tools making use of the data.
 - Documentation (manuals, code documentation, examples, ....)
-- and bug crushing.
+- and bug crushing. (not that I am aware of bugs)
 
+
+GETTING THE SOURCE
+==================
+
+You either need to grab the sources as tarball from http://sourceforge.net/projects/solarpowerlog/files/solarpowerlog/
+or you can use the git repository to get the latest source. 
+
+The repository is located at: git://solarpowerlog.git.sourceforge.net/gitroot/solarpowerlog/solarpowerlog and a 
+git clone git://solarpowerlog.git.sourceforge.net/gitroot/solarpowerlog/solarpowerlog should make you a copy
+
+solarpowerlog has currently those main branches:
+
+trunk		-- latest changes
+master  	-- (will probably removed soon), usually points to the last release. 
+		   However, this will be depreceated in favour of upstream/x.yy
+debian  	-- repository to store debian packaging files
+upstream/x.yy   -- snapshot for the releases (starting at 0.21)
+
+I recommend using the repository instead the relased tarballs.
 
 BUILDING
 ========
 
+Option a) "normal way" (autotools)
+
 To build solarpowerlog, just use the usual
+./bootstrap.sh
 ./configure
 make
 
-for a guide, please see the file INSTALL.
+for a guide, please see the file INSTALL. (which will be created by ./bootstrap)
+
+Option b) make a debian package
+
+Note: for this option you need the debian branch of the git repository. 
+
+b1) Checkout the debian branch, fast-forward the changes from the trunk branch (if wanted) and then build the package
+(as this version is less sensitive to errors, I recomment using this)
+
+git checkout debian
+git merge trunk  # merge latest changes (optional)
+dpkg-buildpackage 
 
 Build-dependencies:
 ===================

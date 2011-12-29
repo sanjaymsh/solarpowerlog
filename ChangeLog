@@ -1,1 +1,8 @@
-Please refer to debian/changelog.
+2011-12-24  Tobias Frost  <tobi@coldtobi.de>
+
+        * *: The ChangeLog is auto-generated when releasing. If you
+        are seeing this, use 'git log' for a detailed list of changes.
+	You can generate the ChangeLog by "make dist" when the git
+	repository is present.
+	For a condensed changelog, please see debian/changelog in 
+	the debian branch of the repository. 

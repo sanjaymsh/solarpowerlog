@@ -1,7 +1,7 @@
 
 /* ----------------------------------------------------------------------------
  solarpowerlog
- Copyright (C) 2009  Tobias Frost
+ Copyright (C) 2009-2011  Tobias Frost
 
  This file is part of solarpowerlog.
 
@@ -73,7 +73,7 @@ CWorkScheduler::~CWorkScheduler()
 bool CWorkScheduler::DoWork( bool block )
 {
 	if (!block) {
-		CMutexAutoLock(&(this->mut));
+		CMutexAutoLock mutex(&(this->mut));
 		if (CommandsDue.empty()) {
 			return false;
 		}

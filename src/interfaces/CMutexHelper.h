@@ -56,7 +56,18 @@ public:
 	CMutexAutoLock(boost::mutex * mutex);
 	virtual ~CMutexAutoLock();
 
+	void unlock(void) {
+		if (locked) mutex->unlock();
+		locked = false;
+	}
+
+	void lock(void) {
+		if (!locked) mutex->lock();
+		locked = true;
+	}
+
 private:
+	bool locked;
 	boost::mutex *mutex;
 
 };

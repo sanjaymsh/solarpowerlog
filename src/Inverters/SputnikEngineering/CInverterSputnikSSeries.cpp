@@ -249,11 +249,10 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 	{
 		// DISCONNECTED: Error detected, the link to the com partner is down.
 		// Action: Schedule connection retry in xxx seconds
-		// Next-State: CMD_DISCONNECTED_WAIT
-		// (Waiting for async disconnect to be completed)
-		LOGTRACE(logger, "new state: CMD_DISCONNECTED");
+		// Next-State: INIT (Try to connect)
+		LOGDEBUG(logger, "new state: CMD_DISCONNECTED");
 
-		// Timeout on reception
+        // Timeout on reception
 		// we assume that we are now disconnected.
 		// so lets schedule a reconnection.
 		// TODO this time should be configurable.
@@ -284,7 +283,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		// INIT: Try to connect to the comm partner
 		// Action Connection Attempt
 		// Next-State: Wait4Connection
-		LOGTRACE(logger, "new state: CMD_INIT");
+		LOGDEBUG(logger, "new state: CMD_INIT");
 
 		cmd = new ICommand(CMD_WAIT4CONNECTION, this);
 		connection->Connect(cmd);
@@ -297,7 +296,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 
 	case CMD_WAIT4CONNECTION:
 	{
-		LOGTRACE(logger, "new state: CMD_WAIT4CONNECTION");
+		LOGDEBUG(logger, "new state: CMD_WAIT4CONNECTION");
 
 		int err = -1;
 		// WAIT4CONNECTION: Wait until connection is up of failed to set up
@@ -331,7 +330,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		break;
 
 	case CMD_QUERY_IDENTIFY:
-		LOGTRACE(logger, "new state: CMD_QUERY_IDENTIFY ");
+		LOGDEBUG(logger, "new state: CMD_QUERY_IDENTIFY ");
 
 		pushinverterquery(TYP);
 		pushinverterquery(SWV);
@@ -339,7 +338,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		/// this fall through is intended.
 
 	case CMD_QUERY_POLL:
-		LOGTRACE(logger, "new state: CMD_QUERY_POLL ");
+		LOGDEBUG(logger, "new state: CMD_QUERY_POLL ");
 
 		pushinverterquery(PAC);
 		pushinverterquery(KHR);
@@ -365,7 +364,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 
 	case CMD_SEND_QUERIES:
 	{
-		LOGTRACE(logger, "new state: CMD_SEND_QUERIES ");
+		LOGDEBUG(logger, "new state: CMD_SEND_QUERIES ");
 
 		commstring = assemblequerystring();
 		LOGTRACE(logger, "Sending: " << commstring << " Len: "<< commstring.size());
@@ -378,7 +377,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 
 	case CMD_WAIT_SENT:
 	{
-		LOGTRACE(logger, "new state: CMD_WAIT_SENT");
+		LOGDEBUG(logger, "new state: CMD_WAIT_SENT");
 		int err;
 		try {
 			err = boost::any_cast<int>(Command->findData(ICMD_ERRNO));
@@ -397,7 +396,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 
 	case CMD_WAIT_RECEIVE:
 	{
-		LOGTRACE(logger, "new state: CMD_WAIT_RECEIVE");
+		LOGDEBUG(logger, "new state: CMD_WAIT_RECEIVE");
 
 		cmd = new ICommand(CMD_EVALUATE_RECEIVE, this);
 		connection->Receive(cmd);
@@ -406,7 +405,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 
 	case CMD_EVALUATE_RECEIVE:
 	{
-		LOGTRACE(logger, "new state: CMD_EVALUATE_RECEIVE");
+		LOGDEBUG(logger, "new state: CMD_EVALUATE_RECEIVE");
 
 		int err;
 		std::string s;

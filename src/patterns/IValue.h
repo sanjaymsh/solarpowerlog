@@ -39,9 +39,9 @@
 
 #include <string>
 
-/** IValue is the interface to abitrary value storage.
+/** IValue is the interface to arbitrary value storage.
  *
- * It is supposed to be derived, and the derived class is reponsible for
+ * It is supposed to be derived, and the derived class is responsible for
  * type-correct storage.
  *
  * In this interface, also the factory is embedded to create the concrete

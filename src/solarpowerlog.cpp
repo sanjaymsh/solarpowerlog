@@ -405,8 +405,7 @@ int main(int argc, char* argv[])
 	ILogger mainlogger;
 
 	/** bootstraping the system */
-	LOGDEBUG(mainlogger,
-			"Instanciating Inverter objects");
+	LOGDEBUG(mainlogger, "Instanciating Inverter objects");
 
 	/** create the inverters via its factories. */
 	{

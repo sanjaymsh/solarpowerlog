@@ -41,8 +41,9 @@
 CMutexAutoLock::CMutexAutoLock(boost::mutex *mutex) {
 	this->mutex = mutex;
 	mutex->lock();
+	locked = true;
 }
 
 CMutexAutoLock::~CMutexAutoLock() {
-	mutex->unlock();
+	if (locked) mutex->unlock();
 }

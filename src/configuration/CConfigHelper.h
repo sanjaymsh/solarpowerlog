@@ -110,7 +110,12 @@ using namespace std;
 class CConfigHelper
 {
 public:
-	/***/
+	/** Constructor
+	 *
+	 * \param configurationpath The path to the section of the
+	 * configuration file we want to evaluate.
+	 * (Usually you got this path by the factory generated your object)
+	*/
 	CConfigHelper( const string& configurationpath );
 	virtual ~CConfigHelper();
 

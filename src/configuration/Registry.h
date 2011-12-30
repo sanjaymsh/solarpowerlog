@@ -259,7 +259,7 @@ private:
 
 	// TODO generalize this interface, as we might also store
 	// other types of objects here.
-	list<IInverterBase*> inverters;
+	std::list<IInverterBase*> inverters;
 
 	ILogger l;
 

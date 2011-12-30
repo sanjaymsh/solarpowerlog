@@ -75,7 +75,7 @@
 
 #define LOGFATAL(logger, message)  do \
 	{\
-		if (logger.IsEnabled(ILogger::LL_FATAL)) { \
+		if ((logger).IsEnabled(ILogger::LL_FATAL)) { \
 			std::stringstream ss;\
 			ss << message;\
 			logger << ss;\
@@ -84,7 +84,7 @@
 
 #define LOGERROR(logger, message)  do \
 	{\
-		if (logger.IsEnabled(ILogger::LL_ERROR)) { \
+		if ((logger).IsEnabled(ILogger::LL_ERROR)) { \
 			std::stringstream ss;\
 			ss << message;\
 			logger << ss;\
@@ -93,7 +93,7 @@
 
 #define LOGWARN(logger, message)   do \
 	{\
-		if (logger.IsEnabled(ILogger::LL_WARN)) { \
+		if ((logger).IsEnabled(ILogger::LL_WARN)) { \
 			std::stringstream ss;\
 			ss << message;\
 			logger << ss;\
@@ -102,7 +102,7 @@
 
 #define LOGINFO(logger, message)   do \
 	{\
-		if (logger.IsEnabled(ILogger::LL_INFO)) { \
+		if ((logger).IsEnabled(ILogger::LL_INFO)) { \
 			std::stringstream ss;\
 			ss << message;\
 			logger << ss;\
@@ -111,7 +111,7 @@
 
 #define LOGDEBUG(logger, message)   do \
 	{\
-		if (logger.IsEnabled(ILogger::LL_DEBUG)) { \
+		if ((logger).IsEnabled(ILogger::LL_DEBUG)) { \
 			std::stringstream ss;\
 			ss << message;\
 			logger << ss;\
@@ -120,7 +120,7 @@
 
 #define LOGTRACE(logger, message)   do \
 	{\
-		if (logger.IsEnabled(ILogger::LL_TRACE)) { \
+		if ((logger).IsEnabled(ILogger::LL_TRACE)) { \
 			std::stringstream ss;\
 			ss << message;\
 			logger << ss;\
@@ -129,7 +129,7 @@
 
 #define LOGALL(logger, message)   do \
 	{\
-		if (logger.IsEnabled(ILogger::LL_ALL)) { \
+		if ((logger).IsEnabled(ILogger::LL_ALL)) { \
 			std::stringstream ss;\
 			ss << message;\
 			logger << ss;\

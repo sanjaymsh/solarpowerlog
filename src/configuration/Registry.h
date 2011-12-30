@@ -114,6 +114,8 @@
 
 #include "configuration/ILogger.h"
 
+#include "interfaces/CDebugHelper.h"
+
 class IInverterBase;
 
 using namespace std;
@@ -246,6 +248,29 @@ public:
 		return Registry::Instance().mainscheduler;
 	}
 
+	void AddDebugCollection(CDebugHelperCollection *obj) {
+	    debughelpercollection.push_back(obj);
+	}
+
+	void RemoveDebugCollection(CDebugHelperCollection *obj) {
+        debughelpercollection.remove(obj);
+    }
+
+	void DumpDebugCollection() {
+	    std::list<CDebugHelperCollection*>::iterator it =
+	        debughelpercollection.begin();
+
+        std::cerr << "--- cut here -----------------------------------------------"<< std::endl;
+	    std::cerr << "Starting DUMP "<< std::endl;
+	    while(it != debughelpercollection.end()) {
+	        (*it)->Dump();
+	        it++;
+	    }
+        std::cerr << "Done DUMP"<< std::endl;
+        std::cerr << "--- cut here -----------------------------------------------"<< std::endl;
+
+	}
+
 private:
 	CWorkScheduler *mainscheduler;
 
@@ -262,6 +287,8 @@ private:
 	std::list<IInverterBase*> inverters;
 
 	ILogger l;
+
+	std::list<CDebugHelperCollection *> debughelpercollection;
 
 };
 

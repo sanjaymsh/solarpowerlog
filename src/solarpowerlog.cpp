@@ -118,6 +118,8 @@ using namespace log4cxx::net;
 #include "DataFilters/interfaces/factories/IDataFilterFactory.h"
 #include "configuration/CConfigHelper.h"
 
+#include "interfaces/CDebugHelper.h"
+
 using namespace std;
 
 #ifdef HAVE_LIBLOG4CXX
@@ -206,23 +208,35 @@ volatile sig_atomic_t killsignal = false;
 
 void SignalHandler(int signal)
 {
-	switch (signal)
-	{
+    switch (signal) {
 
-	case SIGTERM:
-		// die.
-		if (!killsignal) {
-			killsignal = true;
-			LOGINFO(Registry::GetMainLogger(), progname << " Termination requested. Will terminate at next opportunity.");
-		} else {
-			LOGFATAL(Registry::GetMainLogger(), progname << " Termination signal received. Please be patient.");
-		}
-		break;
-	case SIGSEGV:
-		cerr << progname << " Segmentation fault. " << endl;
-		LOGFATAL(Registry::GetMainLogger(), progname << " Segmentation fault.");
-		exit(1);
-	}
+        case SIGTERM:
+            // die.
+            if (!killsignal) {
+                killsignal = true;
+                LOGINFO(
+                    Registry::GetMainLogger(),
+                    progname << " Termination requested. Will terminate at next opportunity.");
+            } else {
+                LOGFATAL(
+                    Registry::GetMainLogger(),
+                    progname << " Termination signal received. Please be patient.");
+            }
+        break;
+        case SIGSEGV:
+            cerr << progname << " Segmentation fault. " << endl;
+            cerr << "Trying to dump internal state information" << endl;
+            Registry::Instance().DumpDebugCollection();
+            LOGFATAL(Registry::GetMainLogger(),
+                progname << " Segmentation fault.");
+            exit(1);
+        case SIGUSR1: {
+            cerr << "SIGUSR1 received" << endl;
+            cerr << "Trying to dump internal state information" << endl;
+            Registry::Instance().DumpDebugCollection();
+            break;
+        }
+    }
 }
 
 void daemonize(void)
@@ -278,12 +292,22 @@ void daemonize(void)
 
 int main(int argc, char* argv[])
 {
+    CDebugHelperCollection dhc("main section");
+
 	bool error_detected = false;
 	bool dumpconfig = false;
 	bool background = false;
 	string configfile = "solarpowerlog.conf";
 
 	progname = argv[0];
+    dhc.Register(new CDebugObject<char*>("progname", progname));
+    dhc.Register(new CDebugObject<int>("argc", argc));
+    for (int i=0; i<argc; i++) {
+        char buf[10];
+        snprintf(buf,sizeof buf-1,"argv[%d]",i);
+        dhc.Register(new CDebugObject<char*>(buf, argv[i]));
+    }
+
 
 #ifdef  HAVE_CMDLINEOPTS
 	using namespace boost::program_options;
@@ -401,6 +425,8 @@ int main(int argc, char* argv[])
 	// register some signal handler to detect when we want to quit.
 	signal(SIGTERM, SignalHandler);
 	signal(SIGSEGV, SignalHandler);
+	signal(SIGUSR1, SignalHandler);
+
 
 	ILogger mainlogger;
 

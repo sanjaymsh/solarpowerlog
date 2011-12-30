@@ -39,6 +39,7 @@ Inverters/interfaces/ICapaIterator.cpp Inverters/interfaces/InverterBase.cpp \
 patterns/ICommandTarget.cpp patterns/IValue.cpp patterns/ICommand.cpp \
 patterns/IObserverObserver.cpp patterns/IObserverSubject.cpp \
 configuration/CConfigHelper.cpp ctemplate/ctemplate.c \
+interfaces/CDebugHelper.cpp \
 Inverters/BasicCommands.h \
 interfaces/CCapability.h interfaces/CMutexHelper.h \
 Inverters/factories/InverterFactoryFactory.h \
@@ -64,7 +65,7 @@ Inverters/interfaces/ICapaIterator.h Inverters/interfaces/InverterBase.h \
 patterns/ICommandTarget.h patterns/IValue.h patterns/ICommand.h \
 patterns/IObserverObserver.h patterns/IObserverSubject.h \
 configuration/CConfigHelper.h ctemplate/ctemplate.h porting.h \
-Inverters/Capabilites.h  patterns/CValue.h
+Inverters/Capabilites.h patterns/CValue.h interfaces/CDebugHelper.h
 
 solarpowerlog_CPPFLAGS = $(CONFIG_CFLAGS) $(LOG4CXX_CFLAGS) $(APR_CFLAGS) \
 	$(APRUTIL_CFLAGS) $(CTEMPLATE_CFLAGS)

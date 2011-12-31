@@ -203,13 +203,14 @@ public:
 
 		try {
 			store = set[setting][index];
-			return true;
-		} catch (libconfig::SettingNotFoundException e) {
+
+		} catch (libconfig::SettingNotFoundException &e) {
 			return false;
-		} catch (libconfig::SettingTypeException e) {
+		} catch (libconfig::SettingTypeException &e) {
 			// TODO: Assert here?
 			return false;
 		}
+		return true;
 	}
 
 
@@ -236,13 +237,13 @@ public:
 
 		try {
 			store = (const char *) set[setting][index];
-			return true;
-		} catch (libconfig::SettingNotFoundException e) {
+		} catch (libconfig::SettingNotFoundException &e) {
 			return false;
-		} catch (libconfig::SettingTypeException e) {
+		} catch (libconfig::SettingTypeException &e) {
 			// TODO: Assert here?
 			return false;
 		}
+        return true;
 	}
 
 	// this ugly helper is for the CHTHML Writer -- we are having there
@@ -262,9 +263,9 @@ template<class T>
 		try {
 			store = (const char *) set[i][index];
 			return true;
-		} catch (libconfig::SettingNotFoundException e) {
+		} catch (libconfig::SettingNotFoundException &e) {
 			return false;
-		} catch (libconfig::SettingTypeException e) {
+		} catch (libconfig::SettingTypeException &e) {
 			// TODO: Assert here?
 			return false;
 		}
@@ -277,13 +278,13 @@ bool GetConfigArray( const int i, int index, string &store )
 
 	try {
 		store = (const char *) set[i][index];
-		return true;
-	} catch (libconfig::SettingNotFoundException e) {
+	} catch (libconfig::SettingNotFoundException &e) {
 		return false;
-	} catch (libconfig::SettingTypeException e) {
+	} catch (libconfig::SettingTypeException &e) {
 		// TODO: Assert here?
 		return false;
 	}
+	return true;
 }
 
 

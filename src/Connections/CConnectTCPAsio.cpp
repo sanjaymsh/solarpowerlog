@@ -338,9 +338,9 @@ bool CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 	try {
 		timeout = boost::any_cast<long>(cmd->callback->findData(
 				ICONN_TOKEN_TIMEOUT));
-	} catch (std::invalid_argument e) {
+	} catch (std::invalid_argument &e) {
 		cfghelper.GetConfig("tcptimeout", timeout, TCP_ASIO_DEFAULT_TIMEOUT);
-	} catch (boost::bad_any_cast e) {
+	} catch (boost::bad_any_cast &e) {
 		LOGDEBUG(logger,
 				"BUG: Handling Connect: Bad cast for " << ICONN_TOKEN_TIMEOUT);
 		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
@@ -461,10 +461,10 @@ bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 	try {
 		timeout = boost::any_cast<unsigned long>(cmd->callback->findData(
 				ICONN_TOKEN_TIMEOUT));
-	} catch (std::invalid_argument e) {
+	} catch (std::invalid_argument &e) {
 		CConfigHelper cfghelper(ConfigurationPath);
 		cfghelper.GetConfig("tcptimeout", timeout, TCP_ASIO_DEFAULT_TIMEOUT);
-	} catch (boost::bad_any_cast e) {
+	} catch (boost::bad_any_cast &e) {
 		LOGDEBUG(logger, "Unexpected exception in HandleReceive: Bad cast" << e.what());
 		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
 	}
@@ -581,11 +581,11 @@ bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 		s = boost::any_cast<std::string>(cmd->callback->findData(ICONN_TOKEN_SEND_STRING));
 	}
 #ifdef DEBUG_TCPASIO
-	catch (std::invalid_argument e) {
+	catch (std::invalid_argument &e) {
 		LOGDEBUG(logger, "BUG: required " << ICONN_TOKEN_SEND_STRING << " argument not set");
 
 	}
-	catch (boost::bad_any_cast e)
+	catch (boost::bad_any_cast &e)
 	{
 		LOGDEBUG(logger, "Unexpected exception in HandleSend: Bad cast" << e.what());
 	}
@@ -598,10 +598,10 @@ bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 				ICONN_TOKEN_TIMEOUT));
 	}
 #ifdef DEBUG_TCPASIO
-		catch (std::invalid_argument e) {
+		catch (std::invalid_argument &e) {
 		CConfigHelper cfghelper(ConfigurationPath);
 		cfghelper.GetConfig("tcptimeout", timeout, 3000UL);
-	} catch (boost::bad_any_cast e) {
+	} catch (boost::bad_any_cast &e) {
 		LOGDEBUG(logger, "Unexpected exception in HandleSend: Bad cast" << e.what());
 		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
 	}

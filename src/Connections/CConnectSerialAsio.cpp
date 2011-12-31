@@ -199,7 +199,6 @@ bool CConnectSerialAsio::IsConnected(void)
 bool CConnectSerialAsio::CheckConfig(void)
 {
 	string setting;
-	int tmp;
 	bool fail = false;
 	bool portsetting_parseerr = false;
 
@@ -238,7 +237,7 @@ bool CConnectSerialAsio::CheckConfig(void)
 
 	if (setting.size() != 3) {
 		LOGERROR(logger,"serial_portparameters: Must be exactly three "
-				"character long)" );
+				"characters");
 	} else {
 
 		if (setting[0] >= '5' || setting[0] <= '9') {
@@ -275,6 +274,7 @@ bool CConnectSerialAsio::CheckConfig(void)
 			LOGERROR(logger, "serial_portparameter: Invalid parity. Your "
 					"choices are 'E'ven ,'O'dd or 'N'one");
 			fail = true;
+			break;
 		}
 
 		// If you are bored, you could implement 1.5 stop bits ;-)
@@ -427,7 +427,6 @@ bool CConnectSerialAsio::HandleConnect(CAsyncCommand *cmd)
 	assert(baudrate);
 
 	string portname;
-	unsigned long timeout = -1;
 	boost::system::error_code ec;
 
 	// if connected, ignore the commmand, pretend success.

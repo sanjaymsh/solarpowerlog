@@ -293,7 +293,6 @@ void daemonize(void)
 int main(int argc, char* argv[])
 {
     CDebugHelperCollection dhc("main section");
-
 	bool error_detected = false;
 	bool dumpconfig = false;
 	bool background = false;
@@ -525,7 +524,7 @@ int main(int argc, char* argv[])
 						<< previousfilter <<
 						" with Config-path " << rt[i].getPath());
 
-			} catch (libconfig::SettingNotFoundException e) {
+			} catch (libconfig::SettingNotFoundException &e) {
 				LOGFATAL(mainlogger,
 						"Configuration Error: Required Setting was not found in \""
 						<< e.getPath() << '\"' );

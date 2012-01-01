@@ -47,9 +47,12 @@
 
 /* Windows stuff : For building under cygwin. */
 #ifdef HAVE_WIN32_API
+#if 0
+// compiles using XP and latest cygwin without this tweaks.
 #define _POSIX_SOURCE
 #define _WIN32_WINNT 0x0501
 #define __USE_W32_SOCKETS 1
+#endif 
 #endif
 
 /** declare explicit if not understood by compiler */

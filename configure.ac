@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([solarpowerlog],[0.21],[tobi@coldtobi.de])
+AC_INIT([solarpowerlog],[0.21a],[tobi@coldtobi.de])
 AC_PREREQ([2.68])
 
 # use own directory for the autotools stuff
@@ -17,7 +17,7 @@ AC_CONFIG_HEADERS(src/config.h)
 # TODO
 #AC_COPYRIGHT (copyright-notice )
 
-AM_INIT_AUTOMAKE(solarpowerlog, 0.21)
+AM_INIT_AUTOMAKE(solarpowerlog, 0.21a)
 
 AC_CONFIG_SRCDIR([src/solarpowerlog.cpp])
 
@@ -266,7 +266,7 @@ else
 fi
 
 ## Check for Boost 
-BOOST_REQUIRE([1.38])
+BOOST_REQUIRE([1.48])
 
 # Add the option to statically link to the boost libraries 
 BOOST_STATIC()

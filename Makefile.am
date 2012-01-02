@@ -12,6 +12,8 @@ EXTRA_DIST = tools example_confs bootstrap.sh
 # install some extras into the dist files...
 dist_doc_DATA = AUTHORS NEWS README
 
+dist_man_MANS = solarpowerlog.1
+
 dist-hook:
 	@if test -d "$(srcdir)/.git"; \
 	then \

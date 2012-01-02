@@ -6,7 +6,7 @@ Build-Depends: autoconf,
                automake,
                autotools-dev,
                debhelper (>= 7),
-               libboost-dev,
+               libboost-dev (>=1.48),
                libboost-program-options-dev,
                libboost-system-dev,
                libboost-thread-dev,
@@ -21,7 +21,7 @@ Homepage: http://solarpowerlog.coldtobi.de
 Package: solarpowerlog
 Architecture: any
 Depends: ${misc:Depends}, ${shlibs:Depends}
-Description: logging photovoltaic data
+Description: photovoltaic data logging
  The program's purpose is to track and log data from photo-voltaic inverters,
  collect power data and store them. Also a purpose is to provide an interface
  to extract these data, allowing applications like web site stats of the system.

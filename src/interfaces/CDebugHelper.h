@@ -84,6 +84,11 @@ public:
         value = &v;
     }
 
+    CDebugObject(const char *identifier, void *v) {
+        id = identifier;
+        value = &v;
+    }
+
     virtual void Dump(void) {
         std::cerr << id << "=" << *value << std::endl;
     }

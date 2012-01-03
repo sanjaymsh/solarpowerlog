@@ -43,6 +43,8 @@
 
 #include <boost/thread.hpp>
 
+#include "interfaces/CDebugHelper.h"
+
 /** This class bundles a timed activity.
  *
  * Currently, activities are tasks, which when ending, will enque an immediatte action.
@@ -66,8 +68,8 @@ public:
 
 private:
 	CTimedWork()
-	{
-	}
+        : dhc("CTimedWork") {
+    };
 
 	void _main( void );
 
@@ -100,6 +102,21 @@ private:
 	boost::thread thread;
 
 	boost::mutex mut;
+
+private:
+	CDebugHelperCollection dhc;
+	int work_received, work_completed;
+	int thread_interrupts_count;
+	int thread_interrupts_sighandler;
+    int thread_interrupts_balance;
+    int works_pending;
+    int zero_waits;
+    int thread_at_wait_point;
+    int thread_wants_mutex;
+    int ctimedwork_wants_mutex;
+    int thread_has_mutex;
+    int ctimedwork_has_mutex;
+
 
 };
 

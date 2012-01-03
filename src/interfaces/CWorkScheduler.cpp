@@ -57,11 +57,23 @@
 using namespace std;
 
 CWorkScheduler::CWorkScheduler()
+    : dhc("CWorkScheduler")
 {
-	sem_init(&semaphore, 0, 0);
+
+    works_received=0;
+    works_completed=0;
+    works_timed_scheduled = 0;
+
+    dhc.Register(new CDebugObject<void*>("instance",this));
+    dhc.Register(new CDebugObject<int>("works_received",works_received));
+    dhc.Register(new CDebugObject<int>("works_completed",works_completed));
+    dhc.Register(new CDebugObject<int>("works_timed_scheduled",works_timed_scheduled));
+
+    sem_init(&semaphore, 0, 0);
 
 	// generate thread for the timed work facility.
 	timedwork = new CTimedWork(this);
+
 	timedwork->run();
 }
 
@@ -89,21 +101,26 @@ bool CWorkScheduler::DoWork( bool block )
 ICommand *CWorkScheduler::getnextcmd( void )
 {
 	// Obtain Mutex to make sure...
-	CMutexAutoLock CMutexHelper(&(this->mut));
+	this->mut.lock();
 	ICommand *cmd = CommandsDue.front();
 	CommandsDue.pop_front();
+	this->works_completed++;
+	this->mut.unlock();
 	return cmd;
 }
 
 void CWorkScheduler::ScheduleWork( ICommand *Command )
 {
-	CMutexAutoLock CMutexHelper(&(this->mut));
+	this->mut.lock();
 	CommandsDue.push_back(Command);
+	this->works_received++;
+	this->mut.unlock();
 	sem_post(&semaphore);
 }
 
 void CWorkScheduler::ScheduleWork( ICommand *Command, struct timespec ts )
 {
+    works_timed_scheduled++;
 	timedwork->ScheduleWork(Command, ts);
 }
 

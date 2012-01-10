@@ -34,6 +34,9 @@
 #include "config.h"
 #endif
 
+
+// #define CTIMEDWORK_DEBUG
+
 #include <iostream>
 #include <list>
 #include <time.h>
@@ -48,8 +51,15 @@
 
 #include "configuration/Registry.h"
 
-CTimedWork::CTimedWork( CWorkScheduler *sch ) : sch(sch), terminate(false), dhc("CTimedWork")
+
+CTimedWork::CTimedWork( CWorkScheduler *sch ) : sch(sch), terminate(false)
+#ifdef CTIMEDWORK_DEBUG
+, dhc("CTimedWork")
+#endif
 {
+
+#ifdef CTIMEDWORK_DEBUG
+
     this->work_completed=0; this->work_received=0;
     zero_waits = 0;
     dhc.Register(new CDebugObject<int>("work_received",work_received));
@@ -74,6 +84,8 @@ CTimedWork::CTimedWork( CWorkScheduler *sch ) : sch(sch), terminate(false), dhc(
     dhc.Register(new CDebugObject<int>("thread_has_mutex",thread_wants_mutex));
     dhc.Register(new CDebugObject<int>("ctimedwork_has_mutex",ctimedwork_wants_mutex));
 
+#endif
+
 }
 
 CTimedWork::~CTimedWork()
@@ -97,24 +109,35 @@ void CTimedWork::ScheduleWork( ICommand *Command, struct timespec ts )
 	boost::posix_time::millisec ms(ts.tv_nsec / (1000*1000));
 	n = n + s + ms;
 	{
+#ifdef CTIMEDWORK_DEBUG
 	    ctimedwork_wants_mutex=1;
+#endif
 		CMutexAutoLock m(&this->mut);
+#ifdef CTIMEDWORK_DEBUG
 		ctimedwork_wants_mutex=1;ctimedwork_has_mutex=1;
 		this->work_received++;
+#endif
 
 		TimedCommands.insert(
 			pair<boost::posix_time::ptime, ICommand*> (n, Command));
 
+#ifdef CTIMEDWORK_DEBUG
 		ctimedwork_wants_mutex=0;
+#endif
 		m.unlock(); // should not be needed, but paranoid me...
+#ifdef CTIMEDWORK_DEBUG
 		ctimedwork_has_mutex=0;
+#endif
 	}
 
+#ifdef CTIMEDWORK_DEBUG
 	(volatile int)thread_interrupts_balance++;
 	thread_interrupts_count++;
+#endif
 	thread.interrupt();
+#ifdef CTIMEDWORK_DEBUG
 	(volatile int)thread_interrupts_balance--;
-	// LOGDEBUG(Registry::GetMainLogger(),"CTimedWork scheduled, thread.interrupt returned");
+#endif
 }
 
 void CTimedWork::_main()
@@ -124,10 +147,13 @@ void CTimedWork::_main()
 
     while (!terminate) {
 
+#ifdef CTIMEDWORK_DEBUG
         this->thread_wants_mutex=1;
+#endif
         mut.lock();
+#ifdef CTIMEDWORK_DEBUG
         this->thread_has_mutex=1;
-
+#endif
         // get now
         n = boost::posix_time::microsec_clock::local_time();
 
@@ -143,7 +169,9 @@ void CTimedWork::_main()
         cerr << "TIMED WORKS LIST END" << endl;
 #endif
 
+#ifdef CTIMEDWORK_DEBUG
         this->works_pending = TimedCommands.size();
+#endif
 
         if (!TimedCommands.empty()) {
             w = (TimedCommands.begin())->first;
@@ -156,33 +184,48 @@ void CTimedWork::_main()
                 ICommand *cmd = (TimedCommands.begin())->second;
                 TimedCommands.erase(TimedCommands.begin());
 
+#ifdef CTIMEDWORK_DEBUG
                 this->works_pending = TimedCommands.size();
                 work_completed++;
-
                 this->thread_wants_mutex=0;
+#endif
                 mut.unlock();
+#ifdef CTIMEDWORK_DEBUG
                 this->thread_has_mutex=0;
+#endif
 
                 sch->ScheduleWork(cmd);
                 continue;
             }
         } else {
+#ifdef CTIMEDWORK_DEBUG
             this->zero_waits++; // wait requests for empty queues
+#endif
             s = boost::posix_time::hours(1);
         }
 
+#ifdef CTIMEDWORK_DEBUG
         this->thread_wants_mutex=0;
+#endif
         mut.unlock();
+#ifdef CTIMEDWORK_DEBUG
         this->thread_has_mutex=0;
+#endif
 
         try {
             // cerr << "sleeping for " << boost::posix_time::to_simple_string(s) << endl;
+#ifdef CTIMEDWORK_DEBUG
             this->thread_at_wait_point=1;
+#endif
             boost::this_thread::sleep(s);
+#ifdef CTIMEDWORK_DEBUG
             this->thread_at_wait_point=0;
+#endif
         } catch (boost::thread_interrupted &e) {
             // sleep was interrupted, probably by new work.
+#ifdef CTIMEDWORK_DEBUG
             thread_interrupts_sighandler++;
+#endif
         }
     }
 }

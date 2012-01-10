@@ -68,7 +68,10 @@ public:
 
 private:
 	CTimedWork()
-        : dhc("CTimedWork") {
+#ifdef CTIMEDWORK_DEBUG
+        : dhc("CTimedWork")
+#endif
+	{
     };
 
 	void _main( void );
@@ -103,6 +106,8 @@ private:
 
 	boost::mutex mut;
 
+
+#ifdef CTIMEDWORK_DEBUG
 private:
 	CDebugHelperCollection dhc;
 	int work_received, work_completed;
@@ -116,7 +121,7 @@ private:
     int ctimedwork_wants_mutex;
     int thread_has_mutex;
     int ctimedwork_has_mutex;
-
+#endif
 
 };
 

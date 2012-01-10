@@ -50,8 +50,8 @@
 
 #include "configuration/Registry.h"
 
-
-CTimedWork::CTimedWork( CWorkScheduler *sch ) : sch(sch), terminate(false)
+CTimedWork::CTimedWork( CWorkScheduler *sch ) :
+        sch(sch), terminate(false)
 #ifdef CTIMEDWORK_DEBUG
 , dhc("CTimedWork")
 #endif
@@ -89,75 +89,75 @@ CTimedWork::CTimedWork( CWorkScheduler *sch ) : sch(sch), terminate(false)
 
 CTimedWork::~CTimedWork()
 {
-	if (!terminate)
-		RequestTermination();
-	thread.join();
+    if (!terminate)
+        RequestTermination();
+    thread.join();
 }
 
 // Called on execution of the thread.
 void CTimedWork::run()
 {
-	thread = boost::thread(boost::bind(&CTimedWork::_main, this));
+    thread = boost::thread(boost::bind(&CTimedWork::_main, this));
 }
 
 void CTimedWork::ScheduleWork( ICommand *Command, struct timespec ts )
 {
-	bool need_interrupt = false;
-	boost::posix_time::ptime first;
-	boost::posix_time::ptime n =
-			boost::posix_time::microsec_clock::local_time();
-	LOGDEBUG(Registry::GetMainLogger(),"NOW:\t" << n);
+    bool need_interrupt = false;
+    boost::posix_time::ptime first;
+    boost::posix_time::ptime n =
+            boost::posix_time::microsec_clock::local_time();
+    LOGDEBUG(Registry::GetMainLogger(),"NOW:\t" << n);
 
-	boost::posix_time::seconds s(ts.tv_sec);
-	boost::posix_time::millisec ms(ts.tv_nsec / (1000*1000));
-	n = n + s + ms;
-	{
+    boost::posix_time::seconds s(ts.tv_sec);
+    boost::posix_time::millisec ms(ts.tv_nsec / (1000 * 1000));
+    n = n + s + ms;
+    {
 #ifdef CTIMEDWORK_DEBUG
-	    ctimedwork_wants_mutex=1;
+        ctimedwork_wants_mutex=1;
 #endif
-		CMutexAutoLock m(&this->mut);
+        CMutexAutoLock m(&this->mut);
 #ifdef CTIMEDWORK_DEBUG
-		ctimedwork_wants_mutex=1;ctimedwork_has_mutex=1;
-		this->work_received++;
+        ctimedwork_wants_mutex=1;ctimedwork_has_mutex=1;
+        this->work_received++;
 #endif
 
-		if (0 == TimedCommands.size()) {
-			LOGDEBUG(Registry::GetMainLogger(),"Q empty");
-			need_interrupt = true;
-		} else {
-			first = (TimedCommands.begin())->first;
-			LOGDEBUG(Registry::GetMainLogger(),"first\t" << first << "\tnew " << n << " \t\tdelta " << n-first );
-			if (first > n) {
-				need_interrupt = true;
-			}
-		}
+        if (0 == TimedCommands.size()) {
+            LOGDEBUG(Registry::GetMainLogger(),"Q empty");
+            need_interrupt = true;
+        } else {
+            first = (TimedCommands.begin())->first;
+            LOGDEBUG(Registry::GetMainLogger(),"first\t" << first << "\tnew " << n << " \t\tdelta " << n-first );
+            if (first > n) {
+                need_interrupt = true;
+            }
+        }
 
-		TimedCommands.insert(
-				pair<boost::posix_time::ptime, ICommand*>(n, Command));
+        TimedCommands.insert(
+                pair<boost::posix_time::ptime, ICommand*>(n, Command));
 
-		first = (TimedCommands.begin())->first;
-		if (need_interrupt)
-			LOGDEBUG(Registry::GetMainLogger(),"new 1st\t" << first );
+        first = (TimedCommands.begin())->first;
+        if (need_interrupt)
+            LOGDEBUG(Registry::GetMainLogger(),"new 1st\t" << first );
 
 #ifdef CTIMEDWORK_DEBUG
-		ctimedwork_wants_mutex=0;
+        ctimedwork_wants_mutex=0;
 #endif
-		m.unlock(); // should not be needed, but paranoid me...
+        m.unlock(); // should not be needed, but paranoid me...
 #ifdef CTIMEDWORK_DEBUG
-		ctimedwork_has_mutex=0;
+        ctimedwork_has_mutex=0;
 #endif
-	}
+    }
 
 #ifdef CTIMEDWORK_DEBUG
-	(volatile int)thread_interrupts_balance++;
-	thread_interrupts_count++;
+    (volatile int)thread_interrupts_balance++;
+    thread_interrupts_count++;
 #endif
-	if (need_interrupt) {
-		LOGDEBUG(Registry::GetMainLogger(),"interrupted");
-		thread.interrupt();
-	}
+    if (need_interrupt) {
+        LOGDEBUG(Registry::GetMainLogger(),"interrupted");
+        thread.interrupt();
+    }
 #ifdef CTIMEDWORK_DEBUG
-	(volatile int)thread_interrupts_balance--;
+    (volatile int)thread_interrupts_balance--;
 #endif
 }
 
@@ -198,9 +198,9 @@ void CTimedWork::_main()
             w = (TimedCommands.begin())->first;
             // cerr << "Waiting: " << to_simple_string(w) << endl;
 
-             if (w > n) {
+            if (w > n) {
                 s = w - n;
-               // cerr << "Difference: " << to_simple_string(s)  << endl;
+                // cerr << "Difference: " << to_simple_string(s)  << endl;
             } else {
                 ICommand *cmd = (TimedCommands.begin())->second;
                 TimedCommands.erase(TimedCommands.begin());
@@ -253,7 +253,7 @@ void CTimedWork::_main()
 
 void CTimedWork::RequestTermination( void )
 {
-	terminate = true;
-	thread.interrupt();
+    terminate = true;
+    thread.interrupt();
 }
 

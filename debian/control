@@ -1,11 +1,13 @@
 Source: solarpowerlog
 Section: utils
-Priority: extra
+Priority: optional
 Maintainer: Tobias Frost <tobi@coldtobi.de>
 Build-Depends: autoconf,
                automake,
                autotools-dev,
-               debhelper (>= 7),
+               debhelper (>= 9),
+               dh-autoreconf,
+               hardening-wrapper,
                libboost-dev (>=1.48),
                libboost-program-options-dev,
                libboost-system-dev,

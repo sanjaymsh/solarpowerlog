@@ -1,8 +1,5 @@
 solarpowerlog (0.21a-1) unstable; urgency=low
 
-  * Worked on the debian integration, package now build fine using
-    pbuilder, is linitian warning free and hopefully will find a
-    heartly welcome on debian so ITP can be closed. (Closes: #652904)
+  * Initial upload, (Closes: #652904)
 
- -- Tobias Frost <tobi@coldtobi.de>  Sun, 01 Jan 2012 19:41:30 +0100
-
+ -- Tobias Frost <tobi@coldtobi.de>  Sat, 11 Feb 2012 10:29:51 +0100

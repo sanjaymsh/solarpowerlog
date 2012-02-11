@@ -4,12 +4,12 @@ ACLOCAL_AMFLAGS = -I m4
 AM_CXXFLAGS = $(BOOST_CPPFLAGS)
 
 
-if MAKE_DBIXX 
-        DBIXX_LIB =-ldbixx
-	DBIXX_LIB_PATH=-L../extlibs/dbixx
-else
+#if MAKE_DBIXX 
+#        DBIXX_LIB =-ldbixx
+#	DBIXX_LIB_PATH=-L../extlibs/dbixx
+#else
 	DBIXX_LIB =
-endif
+#endif
 
 #DBIXX_LIB =-ldbixx
 

@@ -22,14 +22,16 @@ AM_INIT_AUTOMAKE(solarpowerlog, 0.22-dev)
 AC_CONFIG_SRCDIR([src/solarpowerlog.cpp])
 
 # configure extlibs
-AC_CHECK_FILE([extlibs/dbixx/configure])
 
-if test "x$ac_cv_file_extlibs_dbixx_configure" != "xno" ; then
-	AC_MSG_NOTICE([dbixx found and will be configured])
-	AC_CONFIG_SUBDIRS([extlibs/dbixx])
-fi
-AM_CONDITIONAL([MAKE_DBIXX],test "x$ac_cv_file_extlibs_dbixx_configure" != "xno")
-
+# commmented out, as currently dbixx is not used...
+#AC_CHECK_FILE([extlibs/dbixx/configure])
+#
+#if test "x$ac_cv_file_extlibs_dbixx_configure" != "xno" ; then
+#	AC_MSG_NOTICE([dbixx found and will be configured])
+#	AC_CONFIG_SUBDIRS([extlibs/dbixx])
+#fi
+#AM_CONDITIONAL([MAKE_DBIXX],test "x$ac_cv_file_extlibs_dbixx_configure" != "xno")
+#
 
 ### options for some features that might not always be needed
 ### (for shrinking the footprint)
@@ -207,6 +209,8 @@ AC_SUBST(CTEMPLATE_DEPS)
 AC_PROG_CC
 # C++ Compiler
 AC_PROG_CXX
+
+AM_PROG_CC_C_O
 # pkg-config
 PKG_CHECK_EXISTS
 

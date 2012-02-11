@@ -34,6 +34,8 @@
 #include "config.h"
 #endif
 
+// #define CTIMEDWORK_DEBUG
+
 #include <iostream>
 #include <list>
 #include <time.h>
@@ -46,105 +48,212 @@
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include "interfaces/CMutexHelper.h"
 
-CTimedWork::CTimedWork( CWorkScheduler *sch ) : sch(sch), terminate(false)
+#include "configuration/Registry.h"
+
+CTimedWork::CTimedWork( CWorkScheduler *sch ) :
+        sch(sch), terminate(false)
+#ifdef CTIMEDWORK_DEBUG
+, dhc("CTimedWork")
+#endif
 {
+
+#ifdef CTIMEDWORK_DEBUG
+
+    this->work_completed=0; this->work_received=0;
+    zero_waits = 0;
+    dhc.Register(new CDebugObject<int>("work_received",work_received));
+    dhc.Register(new CDebugObject<int>("work_completed",work_completed));
+
+    thread_interrupts_count = thread_interrupts_sighandler = thread_interrupts_balance = 0;
+    dhc.Register(new CDebugObject<int>("thread_interrupts_count",thread_interrupts_count));
+    dhc.Register(new CDebugObject<int>("thread_interrupts_sighandler",thread_interrupts_sighandler));
+    dhc.Register(new CDebugObject<int>("thread_interrupts_balance",thread_interrupts_balance));
+    dhc.Register(new CDebugObject<int>("works_pending",works_pending));
+    dhc.Register(new CDebugObject<int>("zero_waits",zero_waits));
+
+    thread_at_wait_point = 0;
+    thread_wants_mutex = 0;
+    thread_has_mutex = 0;
+    ctimedwork_has_mutex = 0;
+    ctimedwork_wants_mutex = 0;
+
+    dhc.Register(new CDebugObject<int>("thread_at_wait_point",thread_at_wait_point));
+    dhc.Register(new CDebugObject<int>("thread_wants_mutex",thread_wants_mutex));
+    dhc.Register(new CDebugObject<int>("ctimedwork_wants_mutex",ctimedwork_wants_mutex));
+    dhc.Register(new CDebugObject<int>("thread_has_mutex",thread_wants_mutex));
+    dhc.Register(new CDebugObject<int>("ctimedwork_has_mutex",ctimedwork_wants_mutex));
+
+#endif
+
 }
 
 CTimedWork::~CTimedWork()
 {
-	if (!terminate)
-		RequestTermination();
-	thread.join();
+    if (!terminate)
+        RequestTermination();
+    thread.join();
 }
 
 // Called on execution of the thread.
 void CTimedWork::run()
 {
-	thread = boost::thread(boost::bind(&CTimedWork::_main, this));
+    thread = boost::thread(boost::bind(&CTimedWork::_main, this));
 }
 
 void CTimedWork::ScheduleWork( ICommand *Command, struct timespec ts )
 {
-	boost::posix_time::ptime n =
-		boost::posix_time::microsec_clock::local_time();
-	boost::posix_time::seconds s(ts.tv_sec);
-	boost::posix_time::millisec ms(ts.tv_nsec / (1000*1000));
-	n = n + s + ms;
-	{
-		CMutexAutoLock lock(&mut);
-		TimedCommands.insert(
-			pair<boost::posix_time::ptime, ICommand*> (n, Command));
-	}
+    bool need_interrupt = false;
+    boost::posix_time::ptime first;
+    boost::posix_time::ptime n =
+            boost::posix_time::microsec_clock::local_time();
+    LOGDEBUG(Registry::GetMainLogger(),"NOW:\t" << n);
 
-	thread.interrupt();
+    boost::posix_time::seconds s(ts.tv_sec);
+    boost::posix_time::millisec ms(ts.tv_nsec / (1000 * 1000));
+    n = n + s + ms;
+    {
+#ifdef CTIMEDWORK_DEBUG
+        ctimedwork_wants_mutex=1;
+#endif
+        CMutexAutoLock m(&this->mut);
+#ifdef CTIMEDWORK_DEBUG
+        ctimedwork_wants_mutex=1;ctimedwork_has_mutex=1;
+        this->work_received++;
+#endif
+
+        if (0 == TimedCommands.size()) {
+            LOGDEBUG(Registry::GetMainLogger(),"Q empty");
+            need_interrupt = true;
+        } else {
+            first = (TimedCommands.begin())->first;
+            LOGDEBUG(Registry::GetMainLogger(),"first\t" << first << "\tnew " << n << " \t\tdelta " << n-first );
+            if (first > n) {
+                need_interrupt = true;
+            }
+        }
+
+        TimedCommands.insert(
+                pair<boost::posix_time::ptime, ICommand*>(n, Command));
+
+        first = (TimedCommands.begin())->first;
+        if (need_interrupt)
+            LOGDEBUG(Registry::GetMainLogger(),"new 1st\t" << first );
+
+#ifdef CTIMEDWORK_DEBUG
+        ctimedwork_wants_mutex=0;
+#endif
+        m.unlock(); // should not be needed, but paranoid me...
+#ifdef CTIMEDWORK_DEBUG
+        ctimedwork_has_mutex=0;
+#endif
+    }
+
+#ifdef CTIMEDWORK_DEBUG
+    (volatile int)thread_interrupts_balance++;
+    thread_interrupts_count++;
+#endif
+    if (need_interrupt) {
+        LOGDEBUG(Registry::GetMainLogger(),"interrupted");
+        thread.interrupt();
+    }
+#ifdef CTIMEDWORK_DEBUG
+    (volatile int)thread_interrupts_balance--;
+#endif
 }
 
 void CTimedWork::_main()
 {
-	boost::posix_time::ptime n, w;
-	boost::posix_time::time_duration s;
+    boost::posix_time::ptime n, w;
+    boost::posix_time::time_duration s;
 
-	while (!terminate) {
-		// get now
-		n = boost::posix_time::microsec_clock::local_time();
+    while (!terminate) {
+
+#ifdef CTIMEDWORK_DEBUG
+        this->thread_wants_mutex=1;
+#endif
+        mut.lock();
+#ifdef CTIMEDWORK_DEBUG
+        this->thread_has_mutex=1;
+#endif
+        // get now
+        n = boost::posix_time::microsec_clock::local_time();
 
 #if 0
-		cerr << "Now: " << n << endl;
+        cerr << "Now: " << (boost::posix_time::ptime)n << endl;
+#endif
+#if 0
+        cerr << "TIMED WORKS EXPIRATION" << endl;
+        multimap<boost::posix_time::ptime, ICommand*>::iterator it;
+        for (it = TimedCommands.begin(); it != TimedCommands.end(); it++) {
+            cerr << (*it).first << endl;
+        }
+        cerr << "TIMED WORKS LIST END" << endl;
 #endif
 
-		mut.lock();
-
-#if 0
-		cerr << "TIMED WORKS EXPIRATION" << endl;
-		multimap<boost::posix_time::ptime, ICommand*>::iterator it;
-		for (it = TimedCommands.begin(); it != TimedCommands.end(); it++) {
-			cerr << (*it).first << endl;
-		}
-		cerr << "TIMED WORKS LIST END" << endl;
+#ifdef CTIMEDWORK_DEBUG
+        this->works_pending = TimedCommands.size();
 #endif
 
-		if (!TimedCommands.empty()) {
-			w = (TimedCommands.begin())->first;
-#if 0
-			cerr << "Waiting: " << to_simple_string(w) << endl;
-#endif
-			if (w > n) {
-				s = w - n;
-#if 0
-				cerr << "Difference: " << to_simple_string(s)
-					<< endl;
-#endif
-			} else {
-				ICommand *cmd = (TimedCommands.begin())->second;
-				TimedCommands.erase(TimedCommands.begin());
-				mut.unlock();
-				sch->ScheduleWork(cmd);
-				continue;
-			}
-		} else {
-			s = boost::posix_time::hours(1);
-		}
+        if (!TimedCommands.empty()) {
+            w = (TimedCommands.begin())->first;
+            // cerr << "Waiting: " << to_simple_string(w) << endl;
 
-		mut.unlock();
+            if (w > n) {
+                s = w - n;
+                // cerr << "Difference: " << to_simple_string(s)  << endl;
+            } else {
+                ICommand *cmd = (TimedCommands.begin())->second;
+                TimedCommands.erase(TimedCommands.begin());
 
-		try {
-#if 0
-			cerr << "sleeping for "
-				<< boost::posix_time::to_simple_string(s)
-				<< endl;
+#ifdef CTIMEDWORK_DEBUG
+                this->works_pending = TimedCommands.size();
+                work_completed++;
+                this->thread_wants_mutex=0;
 #endif
-			boost::this_thread::sleep(s);
-		} catch (boost::thread_interrupted e) {
-#if 0
-			cerr << " Sleep interrupted " << endl;
+                mut.unlock();
+#ifdef CTIMEDWORK_DEBUG
+                this->thread_has_mutex=0;
 #endif
-		}
-	}
+
+                sch->ScheduleWork(cmd);
+                continue;
+            }
+        } else {
+#ifdef CTIMEDWORK_DEBUG
+            this->zero_waits++; // wait requests for empty queues
+#endif
+            s = boost::posix_time::hours(1);
+        }
+
+#ifdef CTIMEDWORK_DEBUG
+        this->thread_wants_mutex=0;
+#endif
+        mut.unlock();
+#ifdef CTIMEDWORK_DEBUG
+        this->thread_has_mutex=0;
+#endif
+
+        try {
+            // cerr << "sleeping for " << boost::posix_time::to_simple_string(s) << endl;
+#ifdef CTIMEDWORK_DEBUG
+            this->thread_at_wait_point=1;
+#endif
+            boost::this_thread::sleep(s);
+#ifdef CTIMEDWORK_DEBUG
+            this->thread_at_wait_point=0;
+#endif
+        } catch (boost::thread_interrupted &e) {
+            // sleep was interrupted, probably by new work.
+#ifdef CTIMEDWORK_DEBUG
+            thread_interrupts_sighandler++;
+#endif
+        }
+    }
 }
 
 void CTimedWork::RequestTermination( void )
 {
-	terminate = true;
-	thread.interrupt();
+    terminate = true;
+    thread.interrupt();
 }
 

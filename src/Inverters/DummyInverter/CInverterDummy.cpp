@@ -61,7 +61,7 @@ CInverterDummy::CInverterDummy(const string &name,
 	v = IValue::Factory(CAPA_INVERTER_MANUFACTOR_TYPE);
 	((CValue<string>*) v)->Set("Dummy Inverter");
 	c = new CCapability(s, v, this);
-	AddCapability(s, c);
+	AddCapability(c);
 
 	// add a bootstrap event to get called again ;-)
 	ICommand *cmd = new ICommand(CMD_INIT, this);

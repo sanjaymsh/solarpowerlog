@@ -50,6 +50,7 @@ CConnectDummy::~CConnectDummy() {
 
 bool CConnectDummy::CheckConfig(void)
 {
+	LOGERROR(this->logger, "Unknown communication method:. Please check your comms= setting.");
 	return false;
 }
 

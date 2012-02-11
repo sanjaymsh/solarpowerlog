@@ -27,9 +27,7 @@
 /** \file CCSVOutputFilter.h
  * \date Jul 1, 2009
  * \author Tobias Frost
-*/
-
-/**
+ *
  * \page CVSDataLogger [LOGGER] CVSDataLogger: Logging to CSV Files
  *
  * \section DLCSV_Description Overview
@@ -114,14 +112,19 @@
  * 	<td> flush_file_buffer_immediatly </td>
  * 	<td> bool  </td>
  * 	<td> &nbsp;</th>
- *  	<td> true  </td>
+ *  	<td> false  </td>
  *      <td> if true, do not cache information but immediately write to disk.
  *      If you are "only logging" this might be fine to set to false, if you do
- *      some kind of real-time data processing, make this false, as it might take
- *      some times for the data to enter the disk.
- *      (If unsure, say "true".)
- *      One use of this option disabled is if you log to flash memory or if you want to avoid spinning up disks.
- *      Be aware that you might lose some data if solarpowerlog crashes or power is lost.
+ *      some kind of real-time data processing, make this false, as it might
+ *      take some times for the data to enter the disk.
+ *      One use of this option disabled is if you log to flash memory or if
+ *      you want to avoid spinning up disks.
+ *      \note Solarpowerlog only hints the operating system to flush the file
+ *       buffers. The OS or hardware (harddisk) still might use some caching.
+ *      \note Even if this is setting is false, the operating system will still
+ *      take care that the data is written to the disk usually after a few
+ *      seconds.)
+ *      \note Up to version 0.21 including this setting was default set to true.
  *      </td>
  * </tr>
  * <tr>
@@ -213,12 +216,9 @@
 #include "DataFilters/interfaces/IDataFilter.h"
 
 
-/** This logger writes the data to a CSV File
- *
- *
+/** This class implements a logger to write the data to a CSV File
  *
  * Please see \ref DLCSV_Description for configuration, etc.
- *
  */
 
 class CCSVOutputFilter : public IDataFilter
@@ -287,13 +287,18 @@ private:
 	// Helpers to shrink some functions...
 	/** Check if any capas are now available which were not before
 	 * (but should be tracked)
+	 * Read from configuration which capabilities to be logged and
+	 * and assemble the std::list containing everything we want to log.
+	 * In case of dynamic logging ("the all feature") check for new features
+	 * and append them to the list to be logged (at the end of the list)
 	 *
 	 * The function will be called whenever the Capa-Updated event
 	 * is set via this->Update()
 	 *
 	 * \return true, if a new Capability was detected and a new CSV Header
 	 * should be generated. Otherwise false.
-	 * */
+	 *
+	*/
 	bool CMDCyclic_CheckCapas(void);
 
 	/**  search the CSVCapas for a named capa

@@ -111,28 +111,11 @@ CConnectTCPAsio::~CConnectTCPAsio()
 }
 
 // ASYNCED!!
-bool CConnectTCPAsio::Connect( ICommand *callback )
+void CConnectTCPAsio::Connect( ICommand *callback )
 {
-	sem_t semaphore;
-
+	assert(callback);
 	CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::CONNECT, callback);
-
-	// if callback is NUll, fallback to synchronous operation.
-	if (!callback) {
-		sem_init(&semaphore, 0, 0);
-		commando->SetSemaphore(&semaphore);
-	}
-
 	PushWork(commando);
-
-	if (!callback) {
-		sem_wait(&semaphore);
-		LOGTRACE(logger, "destroying CAsyncCommando " << commando );
-		delete commando;
-		return IsConnected();
-	}
-
-	return true;
 }
 
 /* Disconnect
@@ -142,8 +125,11 @@ bool CConnectTCPAsio::Connect( ICommand *callback )
  * (If to be done synchronous, it is also dispatched to the worker thread and
  * directly waited for completion.)
  * */
-bool CConnectTCPAsio::Disconnect( ICommand *callback )
+void CConnectTCPAsio::Disconnect( ICommand *callback )
 {
+	// note: internally we still use the sync interface in the destructor!
+	// to ensure that the port is closed when we tear down everything.
+
 	sem_t semaphore;
 
 	CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::DISCONNECT,
@@ -163,132 +149,32 @@ bool CConnectTCPAsio::Disconnect( ICommand *callback )
 		LOGTRACE(logger, "destroying CAsyncCommando " << commando );
 		delete commando;
 	}
-	return true;
 }
 
-// Send kept SYNC for the moment
-bool CConnectTCPAsio::Send( const char *tosend, unsigned int len,
-		ICommand *callback )
+void  CConnectTCPAsio::Send( ICommand *callback)
 {
-	sem_t semaphore;
-	bool ret;
-	std::string s(tosend, len);
-	s.assign(tosend, len);
-
+	assert(callback);
 	CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::SEND, callback);
-	callback->addData(ICONN_TOKEN_SEND_STRING, s);
-
-	if (callback) {
-		sem_init(&semaphore, 0, 0);
-		commando->SetSemaphore(&semaphore);
-	}
-
 	PushWork(commando);
-
-	if (!callback) {
-		int err;
-		// sync: wait for async job completion and check result.
-		sem_wait(&semaphore);
-		try {
-			err
-				= boost::any_cast<int>(commando->callback->findData(
-					ICMD_ERRNO));
-			if (err < 0) {
-				ret = false;
-			} else {
-				ret = true;
-			}
-		} catch (std::invalid_argument e) {
-			LOGDEBUG(logger,"ERR: unexpected exception while "
-					"receive-handling: Invalid argument " << e.what());
-			ret = false;
-		} catch (boost::bad_any_cast e) {
-			LOGDEBUG(logger,"ERR: unexpected exception while "
-					"receive-handling: Bad cast " << e.what());
-			ret = false;
-		}
-
-		LOGTRACE(logger, "destroying CAsyncCommando " << commando );
-		delete commando;
-		return ret;
-	}
-	return true;
-}
-
-// Send kept SYNC for the moment
-bool CConnectTCPAsio::Send( const string & tosend, ICommand *callback )
-{
-	return Send(tosend.c_str(), tosend.length(), callback);
 }
 
 /* Receive bytes from the stream -- asynced.
  *
- * As with all other methods, will be done by the worker thread, even if
- * synchronous operation is requested. In this case, we'll just wait for
- * completion.*/
-bool CConnectTCPAsio::Receive( ICommand *callback )
+ * As with all other methods, will be done by the worker thread
+*/
+void CConnectTCPAsio::Receive( ICommand *callback )
 {
 	// RECEIVE async Command:
 	// auxdata: pointer to std::string, where to place received data
 
 	assert(callback);
-
-	sem_t semaphore;
-	bool ret;
-
 	CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::RECEIVE, callback);
-
-#if 0
-	if (!callback) {
-		sem_init(&semaphore, 0, 0);
-		commando->SetSemaphore(&semaphore);
-	}
-#endif
-
 	PushWork(commando);
-
-#if 0
-	if (!callback) {
-		int err;
-		// sync: wait for async job completion and check result.
-		sem_wait(&semaphore);
-		try {
-			err
-					= boost::any_cast<int>(commando->callback->findData(
-							ICMD_ERRNO));
-			if (err < 0) {
-				ret = false;
-				goto out;
-			} else {
-				ret = true;
-			}
-
-			wheretoplace = boost::any_cast<string>(
-					commando->callback->findData(ICONN_TOKEN_RECEIVE_STRING));
-
-		} catch (std::invalid_argument e) {
-			LOGDEBUG(logger,"ERR: unexpected exception while "
-					"receive-handling: Invalid argument " << e.what());
-			ret = false;
-			goto out;
-		} catch (boost::bad_any_cast e) {
-			LOGDEBUG(logger,"ERR: unexpected exception while "
-					"receive-handling: Bad cast " << e.what());
-			ret = false;
-			goto out;
-		}
-
-		out:
-		LOGTRACE(logger, "destroying CAsyncCommando " << commando );
-		delete commando;
-		return ret;
-	}
-#endif
-	return true;
 }
 
 bool CConnectTCPAsio::IsConnected( void )
 {
+	if (!this->sockt) return false;
 	mutex.lock();
 	bool ret = sockt->is_open();
 	mutex.unlock();
@@ -452,9 +338,9 @@ bool CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 	try {
 		timeout = boost::any_cast<long>(cmd->callback->findData(
 				ICONN_TOKEN_TIMEOUT));
-	} catch (std::invalid_argument e) {
+	} catch (std::invalid_argument &e) {
 		cfghelper.GetConfig("tcptimeout", timeout, TCP_ASIO_DEFAULT_TIMEOUT);
-	} catch (boost::bad_any_cast e) {
+	} catch (boost::bad_any_cast &e) {
 		LOGDEBUG(logger,
 				"BUG: Handling Connect: Bad cast for " << ICONN_TOKEN_TIMEOUT);
 		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
@@ -575,10 +461,10 @@ bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 	try {
 		timeout = boost::any_cast<unsigned long>(cmd->callback->findData(
 				ICONN_TOKEN_TIMEOUT));
-	} catch (std::invalid_argument e) {
+	} catch (std::invalid_argument &e) {
 		CConfigHelper cfghelper(ConfigurationPath);
 		cfghelper.GetConfig("tcptimeout", timeout, TCP_ASIO_DEFAULT_TIMEOUT);
-	} catch (boost::bad_any_cast e) {
+	} catch (boost::bad_any_cast &e) {
 		LOGDEBUG(logger, "Unexpected exception in HandleReceive: Bad cast" << e.what());
 		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
 	}
@@ -695,11 +581,11 @@ bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 		s = boost::any_cast<std::string>(cmd->callback->findData(ICONN_TOKEN_SEND_STRING));
 	}
 #ifdef DEBUG_TCPASIO
-	catch (std::invalid_argument e) {
+	catch (std::invalid_argument &e) {
 		LOGDEBUG(logger, "BUG: required " << ICONN_TOKEN_SEND_STRING << " argument not set");
 
 	}
-	catch (boost::bad_any_cast e)
+	catch (boost::bad_any_cast &e)
 	{
 		LOGDEBUG(logger, "Unexpected exception in HandleSend: Bad cast" << e.what());
 	}
@@ -712,10 +598,10 @@ bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 				ICONN_TOKEN_TIMEOUT));
 	}
 #ifdef DEBUG_TCPASIO
-		catch (std::invalid_argument e) {
+		catch (std::invalid_argument &e) {
 		CConfigHelper cfghelper(ConfigurationPath);
 		cfghelper.GetConfig("tcptimeout", timeout, 3000UL);
-	} catch (boost::bad_any_cast e) {
+	} catch (boost::bad_any_cast &e) {
 		LOGDEBUG(logger, "Unexpected exception in HandleSend: Bad cast" << e.what());
 		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
 	}

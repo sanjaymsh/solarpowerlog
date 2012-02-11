@@ -134,8 +134,9 @@ CCapability *IInverterBase::GetConcreteCapability( const string &identifier )
 	return it->second;
 }
 
-void IInverterBase::AddCapability( const string &id, CCapability* capa )
+/// Add a Capability for the inverter.
+void IInverterBase::AddCapability(CCapability* capa)
 {
-	CapabilityMap.insert(pair<string, CCapability*> (id, capa));
-	LOGDEBUG(logger, "Added new Capability to " << name << ": " << id);
+	CapabilityMap.insert(pair<string, CCapability*> (capa->getDescription(), capa));
+	LOGDEBUG(logger, "Added new Capability to " << name << ": " << capa->getDescription());
 }

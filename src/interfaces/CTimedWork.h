@@ -43,6 +43,8 @@
 
 #include <boost/thread.hpp>
 
+#include "interfaces/CDebugHelper.h"
+
 /** This class bundles a timed activity.
  *
  * Currently, activities are tasks, which when ending, will enque an immediatte action.
@@ -50,56 +52,75 @@
 class CTimedWork
 {
 public:
-	/** Constructor: Takes the scheduler to inform, the command to execute and the time when.
-	 */
-	explicit CTimedWork( CWorkScheduler *sch );
+    /** Constructor: Takes the scheduler to inform, the command to execute and the time when.
+     */
+    explicit CTimedWork( CWorkScheduler *sch );
 
-	virtual ~CTimedWork();
+    virtual ~CTimedWork();
 
-	/// Thread entry point.
-	void run();
+    /// Thread entry point.
+    void run();
 
-	void ScheduleWork( ICommand *Command, struct timespec ts );
+    void ScheduleWork( ICommand *Command, struct timespec ts );
 
-	/// Ask thread to terminate.
-	void RequestTermination( void );
+    /// Ask thread to terminate.
+    void RequestTermination( void );
 
 private:
-	CTimedWork()
-	{
-	}
+    CTimedWork()
+#ifdef CTIMEDWORK_DEBUG
+    : dhc("CTimedWork")
+#endif
+    {
+    }
+    ;
 
-	void _main( void );
+    void _main( void );
 
 #if 1
-	struct time_compare
-	{
-		bool operator()( const boost::posix_time::ptime t1,
-			const boost::posix_time::ptime t2 ) const
-		{
-			if (t1 > t2)
-				return false;
-			return true;
-		}
-		;
-	};
+    struct time_compare
+    {
+        bool operator()( const boost::posix_time::ptime t1,
+                const boost::posix_time::ptime t2 ) const
+        {
+            if (t1 > t2)
+                return false;
+            return true;
+        }
+        ;
+    };
 
-	multimap<boost::posix_time::ptime, ICommand*, time_compare>
-		TimedCommands;
+    multimap<boost::posix_time::ptime, ICommand*, time_compare> TimedCommands;
 #endif
-	/** holds the commmand */
-	ICommand *cmd;
-	/** holds the timespec */
-	struct timespec ts;
-	/** it is attached to this scheduler.
-	 * (The scheduler keeps books of its processes)*/
-	CWorkScheduler *sch;
+    /** holds the commmand */
+    ICommand *cmd;
+    /** holds the timespec */
+    struct timespec ts;
+    /** it is attached to this scheduler.
+     * (The scheduler keeps books of its processes)*/
+    CWorkScheduler *sch;
 
-	volatile bool terminate;
+    volatile bool terminate;
 
-	boost::thread thread;
+    boost::thread thread;
 
-	boost::mutex mut;
+    boost::mutex mut;
+
+#ifdef CTIMEDWORK_DEBUG
+private:
+    CDebugHelperCollection dhc;
+    int work_received, work_completed;
+    int thread_interrupts_count;
+    int thread_interrupts_sighandler;
+    int thread_interrupts_balance;
+    int works_pending;
+    int zero_waits;
+    int thread_at_wait_point;
+    int thread_wants_mutex;
+    int ctimedwork_wants_mutex;
+    int thread_has_mutex;
+    int ctimedwork_has_mutex;
+#endif
 
 };
 

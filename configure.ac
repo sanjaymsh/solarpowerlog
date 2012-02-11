@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([solarpowerlog],[0.21a],[tobi@coldtobi.de])
+AC_INIT([solarpowerlog],[0.22],[tobi@coldtobi.de])
 AC_PREREQ([2.68])
 
 # use own directory for the autotools stuff
@@ -11,27 +11,29 @@ LT_INIT
 
 CPPFLAGS="-Wall -Wextra"
 
-# we want this header to be created. 
+# we want this header to be created.
 AC_CONFIG_HEADERS(src/config.h)
 
 # TODO
 #AC_COPYRIGHT (copyright-notice )
 
-AM_INIT_AUTOMAKE(solarpowerlog, 0.21a)
+AM_INIT_AUTOMAKE(solarpowerlog, 0.22)
 
 AC_CONFIG_SRCDIR([src/solarpowerlog.cpp])
 
-# configure extlibs 
-AC_CHECK_FILE([extlibs/dbixx/configure])
+# configure extlibs
 
-if test "x$ac_cv_file_extlibs_dbixx_configure" != "xno" ; then
-	AC_MSG_NOTICE([dbixx found and will be configured])
-	AC_CONFIG_SUBDIRS([extlibs/dbixx])
-fi 
-AM_CONDITIONAL([MAKE_DBIXX],test "x$ac_cv_file_extlibs_dbixx_configure" != "xno")
+# commmented out, as currently dbixx is not used...
+#AC_CHECK_FILE([extlibs/dbixx/configure])
+#
+#if test "x$ac_cv_file_extlibs_dbixx_configure" != "xno" ; then
+#	AC_MSG_NOTICE([dbixx found and will be configured])
+#	AC_CONFIG_SUBDIRS([extlibs/dbixx])
+#fi
+#AM_CONDITIONAL([MAKE_DBIXX],test "x$ac_cv_file_extlibs_dbixx_configure" != "xno")
+#
 
-
-### options for some features that might not always be needed 
+### options for some features that might not always be needed
 ### (for shrinking the footprint)
 
 ## option for disable logging (default: on)
@@ -58,7 +60,7 @@ else
 	enable_commandlineoptions=no
 fi
 
-### option to disable some modules. Default is to compile everything. 
+### option to disable some modules. Default is to compile everything.
 
 ## Inverters
 # Sputnik support.
@@ -69,7 +71,7 @@ AC_ARG_ENABLE([sputnik],
 )
 
 if test "x$enable_sputnik" != "xno" ; then
-	AC_DEFINE([HAVE_INV_SPUTNIK], [1], [Sputnik inverter support])	
+	AC_DEFINE([HAVE_INV_SPUTNIK], [1], [Sputnik inverter support])
 	enable_sputnik=yes
 else
 	AC_MSG_NOTICE([Support for Sputnik inverters disabled as requested.])
@@ -83,7 +85,7 @@ AC_ARG_ENABLE([dummyinverter],
 )
 
 if test "x$enable_dummyinverter" != "xno" ; then
-    AC_DEFINE([HAVE_INV_DUMMY], [1], [Dummy inverter support])  
+    AC_DEFINE([HAVE_INV_DUMMY], [1], [Dummy inverter support])
     enable_dummyinverter=yes
 else
     AC_MSG_NOTICE([Dummy inverter support disabled as requested.])
@@ -100,7 +102,7 @@ AC_ARG_ENABLE([csvlogger],
 )
 
 if test "x$enable_csvlogger" != "xno" ; then
-	AC_DEFINE([HAVE_FILTER_CSVDUMP], [1], [CSV Writer Support])	
+	AC_DEFINE([HAVE_FILTER_CSVDUMP], [1], [CSV Writer Support])
 	enable_csvlogger=yes
 else
 	AC_MSG_NOTICE([Support for CSV Writer disabled as requested.])
@@ -114,7 +116,7 @@ AC_ARG_ENABLE([dumbdumper],
 )
 
 if test "x$enable_dumbdumper" != "xno" ; then
-	AC_DEFINE([HAVE_FILTER_DUMBDUMP], [1], [Dumb Dumper Support])	
+	AC_DEFINE([HAVE_FILTER_DUMBDUMP], [1], [Dumb Dumper Support])
 	enable_dumbdumper=yes
 else
 	AC_MSG_NOTICE([Support for the Dumb Dumper disabled as requested.])
@@ -129,7 +131,7 @@ AC_ARG_ENABLE([csvlogger],
 )
 
 if test "x$enable_csvlogger" != "xno" ; then
-    AC_DEFINE([HAVE_FILTER_CSVDUMP], [1], [CSV Writer Support]) 
+    AC_DEFINE([HAVE_FILTER_CSVDUMP], [1], [CSV Writer Support])
     enable_csvlogger=yes
 else
     AC_MSG_NOTICE([Support for CSV Writer disabled as requested.])
@@ -143,7 +145,7 @@ AC_ARG_ENABLE([htmlwriter],
 )
 
 if test "x$enable_htmlwriter" != "xno" ; then
-    AC_DEFINE([HAVE_FILTER_HTMLWRITER], [1], [HTML Writer Support])   
+    AC_DEFINE([HAVE_FILTER_HTMLWRITER], [1], [HTML Writer Support])
     enable_htmlwriter=yes
     CTEMPLATE_LIB=-lctemplate
     CTEMPLATE_CFLAGS="-I ../extlibs"
@@ -154,7 +156,7 @@ fi
 
 ## Communication Methods
 
-# Boost::asio::tcpip connection 
+# Boost::asio::tcpip connection
 AC_ARG_ENABLE([tcpcomms],
     [AS_HELP_STRING([--disable-tcpcomms],
             [Do not support TCP/IP connections to the inverter.])
@@ -162,13 +164,13 @@ AC_ARG_ENABLE([tcpcomms],
 )
 
 if test "x$enable_tcpcomms" != "xno" ; then
-    AC_DEFINE([HAVE_COMMS_ASIOTCPIO], [1], [TCP/IP communication support]) 
+    AC_DEFINE([HAVE_COMMS_ASIOTCPIO], [1], [TCP/IP communication support])
     enable_tcpcomms=yes
 else
     AC_MSG_NOTICE([Support for TCP/IP Communications disabled as requested.])
 fi
 
-# Boost::asio::serial_port connection 
+# Boost::asio::serial_port connection
 AC_ARG_ENABLE([serialcomms],
     [AS_HELP_STRING([--disable-serialcomms],
             ["Do not support serial port -- like RS232 -- connections to the inverter."])
@@ -176,7 +178,7 @@ AC_ARG_ENABLE([serialcomms],
 )
 
 if test "x$enable_serialcomms" != "xno" ; then
-    AC_DEFINE([HAVE_COMMS_ASIOSERIAL], [1], [Serial port communication support]) 
+    AC_DEFINE([HAVE_COMMS_ASIOSERIAL], [1], [Serial port communication support])
     enable_serialcomms=yes
 else
     AC_MSG_NOTICE([Support for serial port communications disabled as requested.])
@@ -190,7 +192,7 @@ AC_ARG_ENABLE([sharedcomms],
 )
 
 if test "x$enable_sharedcomms" = "xyes" ; then
-    AC_DEFINE([HAVE_COMMS_SHAREDCONNECTION], [1], [Shared communication support]) 
+    AC_DEFINE([HAVE_COMMS_SHAREDCONNECTION], [1], [Shared communication support])
     enable_sharedcomms=yes
 else
     AC_MSG_NOTICE([Support for shared communications disabled as requested.])
@@ -207,6 +209,8 @@ AC_SUBST(CTEMPLATE_DEPS)
 AC_PROG_CC
 # C++ Compiler
 AC_PROG_CXX
+
+AM_PROG_CC_C_O
 # pkg-config
 PKG_CHECK_EXISTS
 
@@ -228,27 +232,27 @@ fi
 ## Check for libconfig. Always required.
 PKG_CHECK_MODULES(CONFIG, libconfig++ >= 1.3.1)
 
-## Check for library liblog4cxx. Can be turned off with --disable-logging.  
+## Check for library liblog4cxx. Can be turned off with --disable-logging.
 if test "x$enable_logging" != "xno" ; then
 	logging_dependencies_fullfilled="missing"
 
 	PKG_CHECK_MODULES(LOG4CXX, liblog4cxx >= 0.10.0, , AC_MSG_RESULT([LibLog4CXX not found]))
 	if test "x$LOG4CXX_PKG_ERRORS" != "x"; then
-		logging_dependencies_fullfilled="missing liblog4cxx " 
+		logging_dependencies_fullfilled="missing liblog4cxx "
 	fi
 
 	# libapr / aprutils only for win32 build needed, dont ask me why
 	if test  "x$ac_cv_header_w32api_wtypes_h" = "xyes"; then
 		PKG_CHECK_MODULES(APR, apr-1 > 1, , AC_MSG_RESULT([apache portable runtime apr library not found]))
 		if test "x$APR_PKG_ERRORS" != "x"; then
-			logging_dependencies_fullfilled="$logging_dependencies_fullfilled libapr " 
+			logging_dependencies_fullfilled="$logging_dependencies_fullfilled libapr "
 		fi
-		
+
 		PKG_CHECK_MODULES(APRUTIL, apr-util-1 > 1, , AC_MSG_RESULT([apr utilities library not found]))
 		if test "x$APRUTIL_PKG_ERRORS" != "x"; then
-			logging_dependencies_fullfilled="$logging_dependencies_fullfilled libaprutil " 
+			logging_dependencies_fullfilled="$logging_dependencies_fullfilled libaprutil "
 		fi
-	fi	
+	fi
 
 	if test "$logging_dependencies_fullfilled" != "missing" ; then
 		AC_MSG_NOTICE([liblog4cxx: Dependecy problem(s): $logging_dependencies_fullfilled])
@@ -257,7 +261,7 @@ if test "x$enable_logging" != "xno" ; then
 		APRUTIL_LIBS=""
 		LOG4CXX_LIBS=""
 	else
-		AC_DEFINE([HAVE_LIBLOG4CXX], [1], [Logging Library])	
+		AC_DEFINE([HAVE_LIBLOG4CXX], [1], [Logging Library])
 		enable_logging="yes"
 	fi
 
@@ -265,10 +269,10 @@ else
 	AC_MSG_NOTICE([Logging disabled as requested.])
 fi
 
-## Check for Boost 
+## Check for Boost
 BOOST_REQUIRE([1.48])
 
-# Add the option to statically link to the boost libraries 
+# Add the option to statically link to the boost libraries
 BOOST_STATIC()
 
 #Check for ASIO (header only file)
@@ -286,7 +290,7 @@ if test "x$enable_commandlineoptions" = "xyes"; then
 		AC_MSG_NOTICE([boost::program_options library $BOOST_PROGRAM_OPTIONS_LIBS not found ])
 		enable_commandlineoptions="no (dependency problem)"
 	else
-		AC_DEFINE([HAVE_CMDLINEOPTS], [1], [Use Boost for parsing command line options.])	
+		AC_DEFINE([HAVE_CMDLINEOPTS], [1], [Use Boost for parsing command line options.])
 	fi
 fi
 
@@ -300,15 +304,15 @@ AC_TYPE_SIZE_T
 ### Checks for library functions.
 #AC_CHECK_FUNCS([socket])
 
-# Cygwin has no open_memstream, at least not in the current stable version. 
+# Cygwin has no open_memstream, at least not in the current stable version.
 AC_CHECK_FUNC(open_memstream, AC_DEFINE(HAVE_OPEN_MEMSTREAM, 1, [1 if open_memstream is available]))
 
-# Lets check if we have a syslog here, as we want to prepare it if we run in background. 
+# Lets check if we have a syslog here, as we want to prepare it if we run in background.
 AC_CHECK_FUNC(openlog, [have_openlog=yes], [have_openlog=no])
 if test "$have_openlog" = "yes" ;then
  AC_DEFINE([HAVE_OPENLOG], [1], [Are the syslog-calls available on this system])
-fi  
-  
+fi
+
 AC_PROG_INSTALL
 
 AC_CONFIG_FILES(

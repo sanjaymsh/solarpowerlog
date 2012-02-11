@@ -51,7 +51,7 @@
 #define ICMD_ERRNO "ICMD_ERRNO"
 
 /// Error indicator.
-/// Optional, but if existant, contains human readable error message
+/// Optional, but if exists it contains human readable error message
 #define ICMD_ERRNO_STR "ICMD_ERRMSG"
 
 class ICommandTarget;

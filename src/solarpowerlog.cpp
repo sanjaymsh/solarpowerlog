@@ -126,6 +126,12 @@ using namespace std;
 using namespace log4cxx;
 #endif
 
+#ifdef  HAVE_CMDLINEOPTS
+std::string rundir("/");
+std::string daemon_stdout("/dev/null");
+std::string daemon_stderr("/dev/null");
+#endif
+
 char *progname;
 
 /** this array of string specifies which sections int the config file must be present.
@@ -244,7 +250,27 @@ void daemonize(void)
 	ILogger mainlogger;
 
 	// dameonize.
-	LOGDEBUG(mainlogger, "Rising a daemon.");
+	LOGDEBUG(mainlogger, "daemonize: Rising a daemon.");
+
+	// reopen stdxxx now, because afterwards we will loose our communication channel.
+	if ( daemon_stdout != "/dev/null" || daemon_stderr != "/dev/stderr" ) {
+		LOGDEBUG(mainlogger, "reopening stdout / stderr to log file");
+		if (!freopen("/dev/null", "r", stdin)) {
+			LOGWARN(mainlogger, "daemonize: Could not reopen stdin. errno=" << errno);
+		}
+		if (!freopen(daemon_stdout.c_str(), "a", stdout)) {
+			LOGFATAL(mainlogger, "daemonize: Could not reopen stdout. errno=" << errno);
+			// try to rectify things... a closed stdout might not be a good idea...
+			exit(1);
+		}
+		if (!freopen(daemon_stderr.c_str(), "a", stderr)) {
+			LOGFATAL(mainlogger, "daemonize: Could not reopen stdout. errno=" << errno);
+			// try to rectify things... a closed stdout might not be a good idea...
+			exit(1);
+		}
+	}
+
+	LOGDEBUG(mainlogger, "daemonize: logfiles redirected.");
 
 	pid_t pid, sid;
 	pid = fork();
@@ -282,12 +308,9 @@ void daemonize(void)
 	// change umask to 000, change dir to root dir to avoid locking the dir
 	// we started from
 	umask(0);
-	chdir("/");
-
-	// reopen stdio, stderr, stdin
-	freopen("/dev/null", "r", stdin);
-	freopen("/dev/null", "w", stdout);
-	freopen("/dev/null", "w", stderr);
+	if (0 != chdir(rundir.c_str())) {
+		LOGERROR(mainlogger, "Could not chdir() to " << rundir << " error=" <<errno);
+	}
 }
 
 int main(int argc, char* argv[])
@@ -312,21 +335,34 @@ int main(int argc, char* argv[])
 	using namespace boost::program_options;
 
 	options_description desc("Program Options");
-	desc.add_options()("help", "this message")("conf,c", value<string> (
-			&configfile), "specify configuration file")("version,v",
-			"display solarpowerlog version")("background,b", value<bool> (
-			&background)->zero_tokens(), "run in background.")("dumpcfg",
-			value<bool> (&dumpconfig)->zero_tokens(),
+	desc.add_options()("help", "this message");
+	desc.add_options()("conf,c", value<string>(&configfile),
+			"specify configuration file");
+	desc.add_options()("version,v", "display solarpowerlog version");
+	desc.add_options()("background,b", value<bool>(&background)->zero_tokens(),
+			"run in background.");
+	desc.add_options()("dumpcfg", value<bool>(&dumpconfig)->zero_tokens(),
 			"Dump configuration structure, then exit");
+	desc.add_options()(
+			"chdir",
+			value<string>(&rundir),
+			"working directory for daemon (only used when running as a daemon). Defaults to /");
+	desc.add_options()(
+			"stdout",
+			value<string>(&daemon_stdout),
+			"redirect stdout to this file (only used when running as a daemon). Defaults to /dev/null");
+	desc.add_options()(
+			"stderr",
+			value<string>(&daemon_stderr),
+			"redirect stderr to this file (only used when running as a daemon). Defaults to /dev/null");
 
 	variables_map vm;
 	try {
 		store(parse_command_line(argc, argv, desc), vm);
 		notify(vm);
 	} catch (exception &e) {
-		cerr << desc << "\n";
+		cerr << "commandlinge options problem:" << desc << "\n" << e.what() << "\n";
 		return 1;
-
 	}
 
 	if (vm.count("help")) {
@@ -361,8 +397,8 @@ int main(int argc, char* argv[])
 
 	// Note: As a limitation of libconfig, one cannot create the configs
 	// structure.
-	// Therefore we check here for the basic required sections and abort,
-	// if one is not existing.
+	// Therefore we check here for the basic required sections and abort
+	// if they are missing
 	{
 		libconfig::Config *cfg = Registry::Configuration();
 		libconfig::Setting &rt = cfg->getRoot();
@@ -381,13 +417,14 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 
+#if defined HAVE_LIBLOG4CXX
+
 #ifdef HAVE_OPENLOG
 	// prepare the syslog, needed if we gonna log to it
 	// (if the user configures this, as the liblog4cxx supports syslog as well)
 	openlog(progname, LOG_PID, LOG_USER);
 #endif
 
-#if defined HAVE_LIBLOG4CXX
 	// Activate Logging framework
 	{
 		string tmp;

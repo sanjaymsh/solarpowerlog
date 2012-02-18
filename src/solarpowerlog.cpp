@@ -236,7 +236,7 @@ void SignalHandler(int signal)
             LOGFATAL(Registry::GetMainLogger(),
                 progname << " Segmentation fault.");
             exit(1);
-        case SIGUSR1: {
+        case SIGUSR2: {
             cerr << "SIGUSR1 received" << endl;
             cerr << "Trying to dump internal state information" << endl;
             Registry::Instance().DumpDebugCollection();
@@ -461,8 +461,7 @@ int main(int argc, char* argv[])
 	// register some signal handler to detect when we want to quit.
 	signal(SIGTERM, SignalHandler);
 	signal(SIGSEGV, SignalHandler);
-	signal(SIGUSR1, SignalHandler);
-
+	signal(SIGUSR2, SignalHandler);
 
 	ILogger mainlogger;
 

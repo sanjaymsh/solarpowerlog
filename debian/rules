@@ -15,3 +15,7 @@ export DEB_BUILD_HARDENING=1
 %:
 	dh $@ --with autoreconf
 
+override_dh_autoreconf:
+	# needed when building directly from the git repository.
+	# otherwise some files are missing.
+	dh_autoreconf ./bootstrap.sh

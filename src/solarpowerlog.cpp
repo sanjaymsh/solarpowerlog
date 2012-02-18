@@ -126,11 +126,12 @@ using namespace std;
 using namespace log4cxx;
 #endif
 
-#ifdef  HAVE_CMDLINEOPTS
 std::string rundir("/");
 std::string daemon_stdout("/dev/null");
 std::string daemon_stderr("/dev/null");
-#endif
+
+volatile sig_atomic_t killsignal = false;
+volatile sig_atomic_t sigusr1 = false;
 
 char *progname;
 
@@ -210,8 +211,6 @@ void DumpSettings(libconfig::Setting &set)
 	}
 }
 
-volatile sig_atomic_t killsignal = false;
-
 void SignalHandler(int signal)
 {
     switch (signal) {
@@ -236,6 +235,13 @@ void SignalHandler(int signal)
             LOGFATAL(Registry::GetMainLogger(),
                 progname << " Segmentation fault.");
             exit(1);
+
+        case SIGUSR1: {
+            LOGINFO(Registry::GetMainLogger(),"SIGUSR1 received");
+            sigusr1 = true;
+            break;
+        }
+
         case SIGUSR2: {
             cerr << "SIGUSR1 received" << endl;
             cerr << "Trying to dump internal state information" << endl;
@@ -243,6 +249,37 @@ void SignalHandler(int signal)
             break;
         }
     }
+}
+
+
+void logreopen(bool rotate) {
+
+	ILogger mainlogger;
+
+	if (!rotate) {
+		if (!freopen("/dev/null", "r", stdin)) {
+			LOGWARN(mainlogger, "daemonize: Could not reopen stdin. errno=" << errno);
+		}
+	}
+
+	// do not rotate stdout when redirected to /dev/null
+	if (!rotate || daemon_stdout != "/dev/null" ) {
+		if (!freopen(daemon_stdout.c_str(), "a", stdout)) {
+			LOGFATAL(mainlogger, "daemonize: Could not reopen stdout. errno=" << errno);
+			// try to rectify things... a closed stdout might not be a good idea...
+			exit(1);
+		}
+	}
+
+	// also, do not rotate /dev/null on stderr
+	if (!rotate || daemon_stderr != "/dev/null" ) {
+		if (!freopen(daemon_stderr.c_str(), "a", stderr)) {
+			LOGFATAL(mainlogger, "daemonize: Could not reopen stdout. errno=" << errno);
+			// try to rectify things... a closed stdout might not be a good idea...
+			exit(1);
+		}
+	}
+
 }
 
 void daemonize(void)
@@ -253,22 +290,8 @@ void daemonize(void)
 	LOGDEBUG(mainlogger, "daemonize: Rising a daemon.");
 
 	// reopen stdxxx now, because afterwards we will loose our communication channel.
-	if ( daemon_stdout != "/dev/null" || daemon_stderr != "/dev/stderr" ) {
-		LOGDEBUG(mainlogger, "reopening stdout / stderr to log file");
-		if (!freopen("/dev/null", "r", stdin)) {
-			LOGWARN(mainlogger, "daemonize: Could not reopen stdin. errno=" << errno);
-		}
-		if (!freopen(daemon_stdout.c_str(), "a", stdout)) {
-			LOGFATAL(mainlogger, "daemonize: Could not reopen stdout. errno=" << errno);
-			// try to rectify things... a closed stdout might not be a good idea...
-			exit(1);
-		}
-		if (!freopen(daemon_stderr.c_str(), "a", stderr)) {
-			LOGFATAL(mainlogger, "daemonize: Could not reopen stdout. errno=" << errno);
-			// try to rectify things... a closed stdout might not be a good idea...
-			exit(1);
-		}
-	}
+	LOGDEBUG(mainlogger, "reopening stdout / stderr to log file");
+	logreopen(false);
 
 	LOGDEBUG(mainlogger, "daemonize: logfiles redirected.");
 
@@ -458,10 +481,11 @@ int main(int argc, char* argv[])
 	if (background)
 		daemonize();
 
-	// register some signal handler to detect when we want to quit.
-	signal(SIGTERM, SignalHandler);
-	signal(SIGSEGV, SignalHandler);
-	signal(SIGUSR2, SignalHandler);
+	// register some signal handlers.
+	signal(SIGTERM, SignalHandler); // to terminate
+	signal(SIGSEGV, SignalHandler); // dump before dying
+	signal(SIGUSR1, SignalHandler); // to rotate log files
+	signal(SIGUSR2, SignalHandler); // Debug-Aid.
 
 	ILogger mainlogger;
 
@@ -602,6 +626,15 @@ int main(int argc, char* argv[])
 	}
 
 	while (!killsignal) {
+
+		if (sigusr1) {
+			if (background ) {
+				logreopen(true);
+				LOGINFO(mainlogger, "Logfiles rotated");
+			}
+			sigusr1= false;
+		}
+
 		Registry::GetMainScheduler()->DoWork(true);
 	}
 

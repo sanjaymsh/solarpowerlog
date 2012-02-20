@@ -456,6 +456,8 @@ int main(int argc, char* argv[])
 		CConfigHelper global("application");
 		global.GetConfig("dbglevel", tmp, (std::string) "ERROR");
 		l->setLevel(Level::toLevel(tmp));
+		// Set the mainlogger priority to this prio as well.
+		Registry::Instance().GetMainLogger().SetLoggerLevel(Level::toLevel(tmp));
 
 		try {
 			// Choose your poison .. aem .. config file format

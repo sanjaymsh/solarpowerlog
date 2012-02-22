@@ -28,6 +28,6 @@ cp -r debian stagedir_debbuild/solarpowerlog-$VERSION
 
 # record that we are autobuilding.
 GIT_DESCRIBE=$(git describe)
-( cd stagedir_debbuild/solarpowerlog-$VERSION && dch -a "buildbot built. git-describe: $GIT_DESCRIBE" )
+( cd stagedir_debbuild/solarpowerlog-$VERSION && dch -M -a "buildbot built. git-describe: $GIT_DESCRIBE" )
 
 

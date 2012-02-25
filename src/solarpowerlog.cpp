@@ -537,11 +537,16 @@ int main(int argc, char* argv[])
 	if (background)
 		daemonize();
 
-	// register some signal handlers.
-	signal(SIGTERM, SignalHandler); // to terminate
-	signal(SIGSEGV, SignalHandler); // dump before dying
-	signal(SIGUSR1, SignalHandler); // to rotate log files
-	signal(SIGUSR2, SignalHandler); // Debug-Aid.
+	struct sigaction sa;
+	sa.sa_handler = SignalHandler;
+	sigfillset(&sa.sa_mask);
+	sa.sa_flags = SA_RESTART;
+	sigaction(SIGTERM, &sa, NULL);
+	sigaction(SIGUSR1, &sa, NULL);
+	sigaction(SIGUSR2, &sa, NULL);
+	// Sigsegv - after trigered, set to default behaviour.
+	sa.sa_flags = SA_RESETHAND;
+	sigaction(SIGSEGV, &sa, NULL);
 
 	ILogger mainlogger;
 

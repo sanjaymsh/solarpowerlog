@@ -25,13 +25,13 @@ Package: solarpowerlog
 Architecture: any
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: photovoltaic data logging
- The program's purpose is to track and log data from photo-voltaic inverters,
+ The program's purpose is to track and log data from photovoltaic inverters,
  collect power data and store them. Also a purpose is to provide an interface
  to extract these data, allowing applications like web site stats of the system.
  .
  Solarpowerlog supports at the moment Solarmax inverters, connected via ethernet
  or serial interface, however it is programmed in a way to easy add support for
- other inverters as well
+ other inverters as well.
  .
  The program supports logging to the console, logging to CVS and writing HTML
  files to be serverd by a web server.

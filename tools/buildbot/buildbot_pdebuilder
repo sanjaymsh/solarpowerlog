@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# buildpackge using pbuilder.
+
+# Prerequesite:
+# builbot_make_orig_source run
+# pbuilder setup.
+
+# you need to setup sudo to allow the buildbot user to running pdebuild.
+# you also need to allow sudo pbuilder update
+
+
+# Result:
+# hopfully a debian package...
+
+set -e
+
+VERSION=$(grep "PACKAGE_VERSION=" configure | cut -d"=" -f 2- | tr --delete "\'")
+
+sudo pbuilder update
+
+( cd stagedir_debbuild/solarpowerlog-$VERSION && dpkg-buildpackage -uc -us )
+
+

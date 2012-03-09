@@ -17,7 +17,7 @@ set -e
 
 VERSION=$(grep "PACKAGE_VERSION=" configure | cut -d"=" -f 2- | tr --delete "\'")
 
-sudo pbuilder update
+sudo /usr/sbin/pbuilder update
 
 ( cd stagedir_debbuild/solarpowerlog-$VERSION && dpkg-buildpackage -uc -us )
 

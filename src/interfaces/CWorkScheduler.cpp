@@ -34,13 +34,7 @@
 #include "config.h"
 #endif
 
-#include <boost/version.hpp>
-// exception.hpp is deprecated since 1.40
-#if BOOST_VERSION / 100 % 1000 < 40
-#include <boost/exception.hpp>
-#else
 #include <boost/exception/all.hpp>
-#endif
 
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>

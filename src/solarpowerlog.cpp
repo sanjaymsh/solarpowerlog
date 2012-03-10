@@ -98,6 +98,8 @@ using namespace log4cxx::net;
 #endif
 
 #include <sys/stat.h>
+#include <fcntl.h>
+
 #include <signal.h>
 
 #include "configuration/ILogger.h"
@@ -126,13 +128,35 @@ using namespace std;
 using namespace log4cxx;
 #endif
 
+std::string rundir("/");
+std::string daemon_stdout("/dev/null");
+std::string daemon_stderr("/dev/null");
+
+volatile sig_atomic_t killsignal = false;
+volatile sig_atomic_t sigusr1 = false;
+
+bool background = false;
+
+
+// Filedescriptor for pid-file
+/// Note: pid file will be closed right after generation, then this will be kept
+/// non-zero to indicate that we have a pid file and need to unlink it on exit.
+int pidfile_fd = 0;
+
 char *progname;
+std::string pidfile="";
 
 /** this array of string specifies which sections int the config file must be present.
  * The program will abort if any of these is missing.
  */
 static const char *required_sections[] = { "application", "inverter",
 		"inverter.inverters", "logger", "logger.loggers" };
+
+void cleanup() {
+	if (background && pidfile_fd) unlink(pidfile.c_str());
+	pidfile_fd=0;
+}
+
 
 /** Just dump the read config to cout.... (the values are automatically promoted to a string...)
 
@@ -204,8 +228,6 @@ void DumpSettings(libconfig::Setting &set)
 	}
 }
 
-volatile sig_atomic_t killsignal = false;
-
 void SignalHandler(int signal)
 {
     switch (signal) {
@@ -224,13 +246,21 @@ void SignalHandler(int signal)
             }
         break;
         case SIGSEGV:
+        	cleanup();
             cerr << progname << " Segmentation fault. " << endl;
             cerr << "Trying to dump internal state information" << endl;
             Registry::Instance().DumpDebugCollection();
             LOGFATAL(Registry::GetMainLogger(),
                 progname << " Segmentation fault.");
-            exit(1);
+            raise(signal);
+
         case SIGUSR1: {
+            LOGINFO(Registry::GetMainLogger(),"SIGUSR1 received");
+            sigusr1 = true;
+            break;
+        }
+
+        case SIGUSR2: {
             cerr << "SIGUSR1 received" << endl;
             cerr << "Trying to dump internal state information" << endl;
             Registry::Instance().DumpDebugCollection();
@@ -239,17 +269,70 @@ void SignalHandler(int signal)
     }
 }
 
+
+void logreopen(bool rotate) {
+
+	ILogger mainlogger;
+
+	if (!rotate) {
+		if (!freopen("/dev/null", "r", stdin)) {
+			LOGWARN(mainlogger, "daemonize: Could not reopen stdin. errno=" << errno);
+		}
+	}
+
+	// do not rotate stdout when redirected to /dev/null
+	if (!rotate || daemon_stdout != "/dev/null" ) {
+		if (!freopen(daemon_stdout.c_str(), "a", stdout)) {
+			LOGFATAL(mainlogger, "daemonize: Could not reopen stdout. errno=" << errno);
+			// try to rectify things... a closed stdout might not be a good idea...
+			exit(1);
+		}
+	}
+
+	// also, do not rotate /dev/null on stderr
+	if (!rotate || daemon_stderr != "/dev/null" ) {
+		if (!freopen(daemon_stderr.c_str(), "a", stderr)) {
+			LOGFATAL(mainlogger, "daemonize: Could not reopen stdout. errno=" << errno);
+			// try to rectify things... a closed stdout might not be a good idea...
+			exit(1);
+		}
+	}
+
+}
+
 void daemonize(void)
 {
 	ILogger mainlogger;
 
+	// generate pidfile
+	if (pidfile != "") {
+		LOGINFO(mainlogger, "Using PID file " << pidfile );
+		pidfile_fd = open(pidfile.c_str(),O_WRONLY | O_CREAT | O_EXCL,
+				S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+
+		if( pidfile_fd == -1) {
+			LOGFATAL(mainlogger,"Cannot generate pidfile " << pidfile <<" Reason: " << strerror(errno));
+			exit(1);
+		}
+	} else {
+		pidfile_fd = 0;
+	}
+
 	// dameonize.
-	LOGDEBUG(mainlogger, "Rising a daemon.");
+	LOGDEBUG(mainlogger, "daemonize: Rising a daemon.");
+
+	// reopen stdxxx now, because afterwards we will loose our communication channel.
+	LOGDEBUG(mainlogger, "reopening stdout / stderr to log file");
+	logreopen(false);
+
+	LOGDEBUG(mainlogger, "daemonize: logfiles redirected.");
+
 
 	pid_t pid, sid;
 	pid = fork();
 	if (pid < 0) {
 		LOGFATAL(mainlogger, "Could not dameonize. fork() error="<<errno );
+		cleanup();
 		exit(1);
 	}
 
@@ -260,6 +343,7 @@ void daemonize(void)
 
 	sid = setsid();
 	if (sid < 0) {
+		cleanup();
 		LOGFATAL(mainlogger, "Could not dameonize. setsid() error="<<errno );
 		exit(EXIT_FAILURE);
 	}
@@ -270,6 +354,7 @@ void daemonize(void)
 	// http://web.archive.org/web/20020416015637/www.whitefang.com/unix/faq_2.html#SEC16
 	pid = fork();
 	if (pid < 0) {
+		cleanup();
 		LOGFATAL(mainlogger, "Could not dameonize. 2nd fork() error="<<errno );
 		exit(1);
 	}
@@ -282,12 +367,18 @@ void daemonize(void)
 	// change umask to 000, change dir to root dir to avoid locking the dir
 	// we started from
 	umask(0);
-	chdir("/");
+	if (0 != chdir(rundir.c_str())) {
+		LOGERROR(mainlogger, "Could not chdir() to " << rundir << " error=" <<errno);
+	}
 
-	// reopen stdio, stderr, stdin
-	freopen("/dev/null", "r", stdin);
-	freopen("/dev/null", "w", stdout);
-	freopen("/dev/null", "w", stderr);
+	// write pid to pid file
+	if (pidfile_fd) {
+		char buf[64];
+		snprintf(buf,63,"%d\n",getpid());
+		write(pidfile_fd,buf,strlen(buf));
+		close(pidfile_fd);
+	}
+
 }
 
 int main(int argc, char* argv[])
@@ -295,7 +386,6 @@ int main(int argc, char* argv[])
     CDebugHelperCollection dhc("main section");
 	bool error_detected = false;
 	bool dumpconfig = false;
-	bool background = false;
 	string configfile = "solarpowerlog.conf";
 
 	progname = argv[0];
@@ -312,21 +402,44 @@ int main(int argc, char* argv[])
 	using namespace boost::program_options;
 
 	options_description desc("Program Options");
-	desc.add_options()("help", "this message")("conf,c", value<string> (
-			&configfile), "specify configuration file")("version,v",
-			"display solarpowerlog version")("background,b", value<bool> (
-			&background)->zero_tokens(), "run in background.")("dumpcfg",
-			value<bool> (&dumpconfig)->zero_tokens(),
+	desc.add_options()("help", "this message");
+	desc.add_options()("conf,c", value<string>(&configfile),
+			"specify configuration file");
+	desc.add_options()("version,v", "display solarpowerlog version");
+	desc.add_options()("background,b", value<bool>(&background)->zero_tokens(),
+			"run in background.");
+	desc.add_options()("dumpcfg", value<bool>(&dumpconfig)->zero_tokens(),
 			"Dump configuration structure, then exit");
+	desc.add_options()(
+			"chdir",
+			value<string>(&rundir),
+			"working directory for daemon (only used when running as a daemon). Defaults to /");
+	desc.add_options()(
+			"stdout",
+			value<string>(&daemon_stdout),
+			"redirect stdout to this file (only used when running as a daemon). Defaults to /dev/null");
+	desc.add_options()(
+			"stderr",
+			value<string>(&daemon_stderr),
+			"redirect stderr to this file (only used when running as a daemon). Defaults to /dev/null");
+
+	{
+		std::string pidfile_info = "create a pidfile after the daemon has been started. "
+				"(only used when running as a daemon. Default: no pid file";
+
+	desc.add_options()(
+			"pidfile",
+			value<string>(&pidfile),
+			pidfile_info.c_str());
+	}
 
 	variables_map vm;
 	try {
 		store(parse_command_line(argc, argv, desc), vm);
 		notify(vm);
 	} catch (exception &e) {
-		cerr << desc << "\n";
+		cerr << "commandlinge options problem:" << desc << "\n" << e.what() << "\n";
 		return 1;
-
 	}
 
 	if (vm.count("help")) {
@@ -361,8 +474,8 @@ int main(int argc, char* argv[])
 
 	// Note: As a limitation of libconfig, one cannot create the configs
 	// structure.
-	// Therefore we check here for the basic required sections and abort,
-	// if one is not existing.
+	// Therefore we check here for the basic required sections and abort
+	// if they are missing
 	{
 		libconfig::Config *cfg = Registry::Configuration();
 		libconfig::Setting &rt = cfg->getRoot();
@@ -381,13 +494,14 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 
+#if defined HAVE_LIBLOG4CXX
+
 #ifdef HAVE_OPENLOG
 	// prepare the syslog, needed if we gonna log to it
 	// (if the user configures this, as the liblog4cxx supports syslog as well)
 	openlog(progname, LOG_PID, LOG_USER);
 #endif
 
-#if defined HAVE_LIBLOG4CXX
 	// Activate Logging framework
 	{
 		string tmp;
@@ -396,6 +510,8 @@ int main(int argc, char* argv[])
 		CConfigHelper global("application");
 		global.GetConfig("dbglevel", tmp, (std::string) "ERROR");
 		l->setLevel(Level::toLevel(tmp));
+		// Set the mainlogger priority to this prio as well.
+		Registry::Instance().GetMainLogger().SetLoggerLevel(Level::toLevel(tmp));
 
 		try {
 			// Choose your poison .. aem .. config file format
@@ -421,11 +537,16 @@ int main(int argc, char* argv[])
 	if (background)
 		daemonize();
 
-	// register some signal handler to detect when we want to quit.
-	signal(SIGTERM, SignalHandler);
-	signal(SIGSEGV, SignalHandler);
-	signal(SIGUSR1, SignalHandler);
-
+	struct sigaction sa;
+	sa.sa_handler = SignalHandler;
+	sigfillset(&sa.sa_mask);
+	sa.sa_flags = SA_RESTART;
+	sigaction(SIGTERM, &sa, NULL);
+	sigaction(SIGUSR1, &sa, NULL);
+	sigaction(SIGUSR2, &sa, NULL);
+	// Sigsegv - after trigered, set to default behaviour.
+	sa.sa_flags = SA_RESETHAND;
+	sigaction(SIGSEGV, &sa, NULL);
 
 	ILogger mainlogger;
 
@@ -452,12 +573,14 @@ int main(int argc, char* argv[])
 				LOGFATAL(mainlogger,
 						"Configuration Error: Required Setting was not found in \""
 						<< e.getPath() << '\"');
+				cleanup();
 				exit(1);
 			}
 
 			if (Registry::Instance().GetInverter(name)) {
 				LOGFATAL(mainlogger, "Inverter " << name
 						<< " declared more than once");
+				cleanup();
 				exit(1);
 			}
 
@@ -467,6 +590,7 @@ int main(int argc, char* argv[])
 				LOGFATAL(mainlogger,
 						"Unknown inverter manufactor \""
 						<< manufactor << '\"');
+				cleanup();
 				exit(1);
 			}
 
@@ -482,6 +606,7 @@ int main(int argc, char* argv[])
 				LOGFATAL(mainlogger,
 						"Supported models are: "
 						<< factory->GetSupportedModels());
+				cleanup();
 				exit(1);
 			}
 
@@ -490,6 +615,7 @@ int main(int argc, char* argv[])
 						"Inverter " << name << " ( "
 						<< manufactor << ", " << model
 						<< ") reported configuration error");
+				cleanup();
 				exit(1);
 			}
 
@@ -528,6 +654,7 @@ int main(int argc, char* argv[])
 				LOGFATAL(mainlogger,
 						"Configuration Error: Required Setting was not found in \""
 						<< e.getPath() << '\"' );
+				cleanup();
 				exit(1);
 			}
 
@@ -537,6 +664,7 @@ int main(int argc, char* argv[])
 						"CONFIG ERROR: Inverter or Logger Nameclash: "
 						<< name << " declared more than once"
 				);
+				cleanup();
 				exit(1);
 			}
 
@@ -548,6 +676,7 @@ int main(int argc, char* argv[])
 						<< "(" << type << ") connecting to "
 						<< previousfilter << " Config-path " << rt[i].getPath()
 				);
+				cleanup();
 				exit(1);
 			}
 
@@ -556,6 +685,7 @@ int main(int argc, char* argv[])
 						"DataFilter " << name << "(" << type
 						<< ") reported config error"
 						<< previousfilter );
+				cleanup();
 				exit(1);
 			}
 
@@ -566,9 +696,20 @@ int main(int argc, char* argv[])
 	}
 
 	while (!killsignal) {
+
+		if (sigusr1) {
+			if (background ) {
+				logreopen(true);
+				LOGINFO(mainlogger, "Logfiles rotated");
+			}
+			sigusr1= false;
+		}
+
 		Registry::GetMainScheduler()->DoWork(true);
 	}
 
 	LOGINFO(Registry::GetMainLogger(), "Terminating.");
+
+	cleanup();
 	return 0;
 }

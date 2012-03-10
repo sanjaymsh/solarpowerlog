@@ -126,6 +126,12 @@ void ILogger::Setup( const string & name, const string & configuration,
 	currentloggerlevel_ = logger->getLevel()->toInt();
 }
 
+void ILogger::SetLoggerLevel(log4cxx::LevelPtr level) {
+	loggerptr_->setLevel(level);
+	currentloggerlevel_ = level->toInt();
+}
+
+
 ILogger::~ILogger()
 {
 	// TODO Auto-generated destructor stub

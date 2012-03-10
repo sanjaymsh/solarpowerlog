@@ -23,7 +23,7 @@ Homepage: http://solarpowerlog.coldtobi.de
 
 Package: solarpowerlog
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends}, lsb-base (>= 3.2-14)
 Description: photovoltaic data logging
  The program's purpose is to track and log data from photovoltaic inverters,
  collect power data and store them. Also a purpose is to provide an interface

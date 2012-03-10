@@ -15,10 +15,22 @@
 
 # PATH should only include /usr/* if it runs after the mountnfs.sh script
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
+
+# Preset options.
+USER=nobody
+GROUP=nogroup
+RUNDIR="/"
+
 DESC="solarpowerlog"
 NAME=solarpowerlog
 DAEMON=/usr/bin/$NAME
-PIDFILE=/var/run/$NAME.pid
+PIDDIR=/var/run/$NAME
+PIDFILE=$PIDDIR/$NAME.pid
+
+LOGDIR=/var/log/$NAME
+LOGSTD=$LOGDIR/$NAME.log
+LOGERR=$LOGDIR/$NAME.err
+
 SCRIPTNAME=/etc/init.d/$NAME
 
 # Exit if the package is not installed
@@ -43,14 +55,23 @@ SCRIPTNAME=/etc/init.d/$NAME
 #
 do_start()
 {
+	# As we want to run as non-privilegded user, we need to create a helper directory
+	[[ ! -e $PIDDIR ]] && mkdir -p $PIDDIR && chown $USER $PIDDIR
+
+	# The same applies to the programm logs. We need to ensure that solarpowerlog can
+	# access it.
+	[[ ! -e $LOGDIR ]] && mkdir -p $LOGDIR && chown $USER $LOGDIR
+
 	# Return
 	#   0 if daemon has been started
 	#   1 if daemon was already running
 	#   2 if daemon could not be started
 	start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \
 		|| return 1
-	start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON -u $USER -b -m -d $RUNDIR -- \
-		$DAEMON_ARGS \
+	start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON \
+		-u $USER -c $USER -g $GROUP -d $RUNDIR -- $DAEMON_ARGS -b \
+			--pidfile $PIDFILE --stdout $LOGSTD --stderr $LOGERR \
+			--chdir $RUNDIR \
 		|| return 2
 }
 
@@ -75,8 +96,9 @@ do_stop()
 	# sleep for some time.
 	start-stop-daemon --stop --quiet --oknodo --retry=0/30/KILL/5 --exec $DAEMON
 	[ "$?" = 2 ] && return 2
-	# Many daemons don't delete their pidfiles when they exit.
-	rm -f $PIDFILE
+
+	# Delete PIDDIR.
+	rm -rf $PIDDIR
 	return "$RETVAL"
 }
 
@@ -113,20 +135,7 @@ case "$1" in
   status)
        status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
        ;;
-  #reload|force-reload)
-	#
-	# If do_reload() is not implemented then leave this commented out
-	# and leave 'force-reload' as an alias for 'restart'.
-	#
-	#log_daemon_msg "Reloading $DESC" "$NAME"
-	#do_reload
-	#log_end_msg $?
-	#;;
   restart|force-reload)
-	#
-	# If the "reload" option is implemented then remove the
-	# 'force-reload' alias
-	#
 	log_daemon_msg "Restarting $DESC" "$NAME"
 	do_stop
 	case "$?" in
@@ -145,7 +154,6 @@ case "$1" in
 	esac
 	;;
   *)
-	#echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload}" >&2
 	echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2
 	exit 3
 	;;

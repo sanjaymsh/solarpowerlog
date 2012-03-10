@@ -12,6 +12,6 @@ set -e
 
 VERSION=$(grep "PACKAGE_VERSION=" configure | cut -d"=" -f 2- | tr --delete "\'")
 
-( cd stagedir_debbuild/solarpowerlog-$VERSION && lintian -IE --pedantic solarpowerlog_$VERSION*.changes )
+( cd stagedir_debbuild && lintian -IE --pedantic solarpowerlog_$VERSION*.changes )
 
 

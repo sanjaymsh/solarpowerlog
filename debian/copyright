@@ -1,4 +1,4 @@
-Format: http://anonscm.debian.org/viewvc/dep/web/deps/dep5.mdwn?revision=240
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: solarpowerlog
 Upstream-Contact: tobi@coldtobi.de
 Source: http://solarpowerlog.git.sourceforge.net/git/gitweb-index.cgi

@@ -41,7 +41,7 @@ echo "######## Stage #2: prepare staging directory for debian package build"
 echo "########  2a) prepare orig.tar"
 [[ ! -e ../stagedir_debbuild ]] && mkdir ../stagedir_debbuild
 # this archive could be uploaded to sf.net:
-cp solarpowerlog-$VERSION.tar.gz ../stagedir_debbuild/solarpowerlog_$VERSION.tar.gz
+cp solarpowerlog-$VERSION.tar.gz ../stagedir_debbuild/solarpowerlog-$VERSION.tar.gz
 # this is needed for the debian build
 mv solarpowerlog-$VERSION.tar.gz ../stagedir_debbuild/solarpowerlog_$VERSION.orig.tar.gz
 git status >>../stagedir_debbuild/build-time-branch.txt

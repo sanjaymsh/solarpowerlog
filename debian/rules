@@ -16,6 +16,13 @@ export DEB_BUILD_HARDENING=1
 	dh $@ --with autoreconf
 
 override_dh_autoreconf:
+	cp tools/solarpowerlog.init debian/
+	cp tools/solarpowerlog.default debian/
 	# needed when building directly from the git repository.
 	# otherwise some files are missing.
 	dh_autoreconf ./bootstrap.sh
+
+	
+override_dh_clean:
+	dh_clean
+	rm -f debian/solarpowerlog.init debian/solarpowerlog.default

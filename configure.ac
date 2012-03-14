@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([solarpowerlog],[0.24-dev],[tobi@coldtobi.de])
+AC_INIT([solarpowerlog],[0.23a-dev],[tobi@coldtobi.de])
 AC_PREREQ([2.68])
 
 # use own directory for the autotools stuff
@@ -17,7 +17,7 @@ AC_CONFIG_HEADERS(src/config.h)
 # TODO
 #AC_COPYRIGHT (copyright-notice )
 
-AM_INIT_AUTOMAKE(solarpowerlog, 0.24-dev)
+AM_INIT_AUTOMAKE(solarpowerlog, 0.23a-dev)
 
 AC_CONFIG_SRCDIR([src/solarpowerlog.cpp])
 

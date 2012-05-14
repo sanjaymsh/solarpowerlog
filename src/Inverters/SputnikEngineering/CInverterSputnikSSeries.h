@@ -22,7 +22,10 @@ Copyright (C) 2009-2012 Tobias Frost
 /** \file CInverterSputnikSSeries.h
  *
  *  Created on: May 21, 2009
- *      Author: tobi
+ *      Author: Tobias Frost
+ *
+ *      Contributors:
+ *      E.A.Neonakis <eaneonakis@freemail.gr>
  */
 
 #ifndef CINVERTERSPUTNIKSSERIES_H_
@@ -94,7 +97,8 @@ private:
 		KHR,	DYR,	DMT,	DDY,	KYR,	KMT,	KDY,
 		KT0,	PIN,	TNF,	PRL,	UDC,	UL1,	UL2,
 		UL3,	IDC,	IL1,	IL2,	IL3,	TKK,	TK2,
-		TK3,	TMI,	THR,	SYS
+		TK3,	TMI,	THR,	SYS,    IEE,    IEA,    IED,
+                PDC,    UGD,    KLD,    CAC
 	};
 
 	/// Add a inverter-query into the queue for later quering...
@@ -129,6 +133,7 @@ private:
 	bool token_BUILDVER(const vector<string> &tokens);
 	bool token_ECxx(const vector<string> &tokens);
 	bool token_PAC(const vector<string> &tokens);
+        bool token_PDC(const vector<string> &tokens);
 	bool token_KHR(const vector<string> &tokens);
 	bool token_DYR(const vector<string> &tokens);
 	bool token_DMT(const vector<string> &tokens);
@@ -154,6 +159,12 @@ private:
 	bool token_TMI(const vector<string> &tokens);
 	bool token_THR(const vector<string> &tokens);
 	bool token_SYS(const vector<string> &tokens);
+	bool token_IEE(const vector<string> &tokens);
+	bool token_IED(const vector<string> &tokens);
+	bool token_IEA(const vector<string> &tokens);
+        bool token_UGD(const vector<string> &tokens);
+        bool token_KLD(const vector<string> &tokens);
+        bool token_CAC(const vector<string> &tokens);
 
 	// a helper, as this is shared by two token parsers.
 	void create_versioncapa(void);

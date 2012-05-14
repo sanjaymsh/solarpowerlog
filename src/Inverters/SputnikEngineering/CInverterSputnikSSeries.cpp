@@ -32,7 +32,11 @@ Copyright (C) 2009-2012 Tobias Frost
 /** \file CInverterSputnikSSeries.cpp
  *
  *  Created on: May 21, 2009
- *      Author: tobi
+ *
+ *  Author: Tobias Frost
+ *
+ *  Contributors:
+ *      E.A.Neonakis <eaneonakis@freemail.gr>
  */
 
 #ifdef HAVE_CONFIG_H
@@ -336,6 +340,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		LOGDEBUG(logger, "new state: CMD_QUERY_POLL ");
 
 		pushinverterquery(PAC);
+                pushinverterquery(PDC);
 		pushinverterquery(KHR);
 		pushinverterquery(PIN);
 		pushinverterquery(KT0);
@@ -355,7 +360,12 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		pushinverterquery(THR);
 		pushinverterquery(TNF);
 		pushinverterquery(SYS);
-		/// this fall through is intended.
+		pushinverterquery(IEE);
+		pushinverterquery(IEA);
+		pushinverterquery(IED);
+		pushinverterquery(UGD);
+		pushinverterquery(CAC);
+		pushinverterquery(KLD);
 
 	case CMD_SEND_QUERIES:
 	{
@@ -681,6 +691,18 @@ string CInverterSputnikSSeries::assemblequerystring()
 			break;
 		}
 
+		case PDC:
+		{
+			if (currentport && currentport != QUERY) {
+				cont = false;
+				break;
+			}
+			currentport = QUERY;
+			nextcmd = "PDC";
+			expectedanswerlen += 9;
+			break;
+		}
+
 		case KHR:
 		{
 			if (currentport && currentport != QUERY) {
@@ -762,6 +784,18 @@ string CInverterSputnikSSeries::assemblequerystring()
 			}
 			currentport = QUERY;
 			nextcmd = "KDY";
+			expectedanswerlen += 10;
+			break;
+		}
+
+		case KLD:
+		{
+			if (currentport && currentport != QUERY) {
+				cont = false;
+				break;
+			}
+			currentport = QUERY;
+			nextcmd = "KLD";
 			expectedanswerlen += 10;
 			break;
 		}
@@ -998,6 +1032,71 @@ string CInverterSputnikSSeries::assemblequerystring()
 			break;
 		}
 
+		case IEE:
+		{
+			if (currentport && currentport != QUERY) {
+				cont = false;
+				break;
+			}
+			currentport = QUERY;
+			nextcmd = "IEE";
+			// TODO check answer len
+			expectedanswerlen += 10;
+			break;
+		}
+
+		case IEA:
+		{
+			if (currentport && currentport != QUERY) {
+				cont = false;
+				break;
+			}
+			currentport = QUERY;
+			nextcmd = "IEA";
+			// TODO check answer len
+			expectedanswerlen += 10;
+			break;
+		}
+
+		case IED:
+		{
+			if (currentport && currentport != QUERY) {
+				cont = false;
+				break;
+			}
+			currentport = QUERY;
+			nextcmd = "IED";
+			// TODO check answer len
+			expectedanswerlen += 10;
+			break;
+		}
+
+		case UGD:
+		{
+			if (currentport && currentport != QUERY) {
+				cont = false;
+				break;
+			}
+			currentport = QUERY;
+			nextcmd = "UGD";
+			// TODO check answer len
+			expectedanswerlen += 10;
+			break;
+		}
+
+		case CAC:
+		{
+			if (currentport && currentport != QUERY) {
+				cont = false;
+				break;
+			}
+			currentport = QUERY;
+			nextcmd = "CAC";
+			expectedanswerlen += 9;
+			break;
+		}
+
+
 		}
 
 		if (cont) {
@@ -1164,8 +1263,16 @@ bool CInverterSputnikSSeries::parsetoken(string token)
 		return token_PAC(subtokens);
 	}
 
+        if (subtokens[0] == "PDC") {
+		return token_PDC(subtokens);
+	}
+
 	if (subtokens[0] == "KHR") {
 		return token_KHR(subtokens);
+	}
+
+	if (subtokens[0] == "CAC") {
+		return token_CAC(subtokens);
 	}
 
 	if (subtokens[0] == "DYR") {
@@ -1190,6 +1297,10 @@ bool CInverterSputnikSSeries::parsetoken(string token)
 
 	if (subtokens[0] == "KDY") {
 		return token_KDY(subtokens);
+	}
+
+	if (subtokens[0] == "KLD") {
+		return token_KLD(subtokens);
 	}
 
 	if (subtokens[0] == "KT0") {
@@ -1259,6 +1370,19 @@ bool CInverterSputnikSSeries::parsetoken(string token)
 
 	if (subtokens[0] == "SYS") {
 		return token_SYS(subtokens);
+	}
+
+	if (subtokens[0] == "IEE") {
+		return token_IEE(subtokens);
+	}
+	if (subtokens[0] == "IEA") {
+		return token_IEA(subtokens);
+	}
+	if (subtokens[0] == "IED") {
+		return token_IED(subtokens);
+	}
+	if (subtokens[0] == "UGD") {
+		return token_UGD(subtokens);
 	}
 
 	return true;
@@ -1481,6 +1605,50 @@ bool CInverterSputnikSSeries::token_PAC(const vector<string> & tokens)
 	return true;
 }
 
+bool CInverterSputnikSSeries::token_PDC(const vector<string> & tokens)
+{
+	if (tokens.size() != 2)
+		return false;
+
+	unsigned int pdc;
+	float fpdc;
+	sscanf(tokens[1].c_str(), "%x", &pdc);
+
+	fpdc = pdc / 2.0;
+
+	// lookup if we already know that information.
+	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_DCPOWER_TOTAL);
+
+	if (!cap) {
+		string s;
+		IValue *v;
+		CCapability *c;
+		s = CAPA_INVERTER_DCPOWER_TOTAL;
+		v = IValue::Factory(CAPA_INVERTER_DCPOWER_TOTAL_TYPE);
+		((CValue<float>*) v)->Set(fpdc);
+		c = new CCapability(s, v, this);
+		AddCapability(c);
+
+		// TODO: Check if we schould derefer (using a scheduled work) this.
+		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
+		cap->Notify();
+	}
+	// Capa already in the list. Check if we need to update it.
+	else if (cap->getValue()->GetType() == CAPA_INVERTER_DCPOWER_TOTAL_TYPE) {
+		CValue<float> *val = (CValue<float>*) cap->getValue();
+
+		if (val -> Get() != fpdc) {
+			val->Set(fpdc);
+			cap->Notify();
+		}
+	} else {
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_DCPOWER_TOTAL
+				<< " not a float ");
+	}
+
+	return true;
+}
+
 bool CInverterSputnikSSeries::token_KHR(const vector<string> & tokens)
 {
 	// Power-On-Hours
@@ -1524,6 +1692,49 @@ bool CInverterSputnikSSeries::token_KHR(const vector<string> & tokens)
 	return true;
 }
 
+bool CInverterSputnikSSeries::token_CAC(const vector<string> & tokens)
+{
+	// Number of Startups
+	if (tokens.size() != 2)
+		return false;
+
+	unsigned int tmp;
+	float f;
+	sscanf(tokens[1].c_str(), "%x", &tmp);
+
+	f = tmp;
+
+	// lookup if we already know that information.
+	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_STARTUPS);
+
+	if (!cap) {
+		string s;
+		IValue *v;
+		CCapability *c;
+		s = CAPA_INVERTER_STARTUPS;
+		v = IValue::Factory(CAPA_INVERTER_STARTUPS_TYPE);
+		((CValue<float>*) v)->Set(f);
+		c = new CCapability(s, v, this);
+		AddCapability(c);
+
+		// TODO: Check if we schould derefer (using a scheduled work) this.
+		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
+		cap->Notify();
+	}
+	// Capa already in the list. Check if we need to update it.
+	else if (cap->getValue()->GetType() == CAPA_INVERTER_STARTUPS_TYPE) {
+		CValue<float> *val = (CValue<float>*) cap->getValue();
+		if (val -> Get() != f) {
+			val->Set(f);
+			cap->Notify();
+		}
+	} else {
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_STARTUPS << " not a float ");
+	}
+
+	return true;
+}
+
 bool CInverterSputnikSSeries::token_DYR(const vector<string> & tokens)
 {
 	// FIXME TODO Implement me!
@@ -1544,7 +1755,7 @@ bool CInverterSputnikSSeries::token_DDY(const vector<string> & tokens)
 
 bool CInverterSputnikSSeries::token_KYR(const vector<string> & tokens)
 {
-	// Unit kwH
+	// Unit kWh
 	if (tokens.size() != 2)
 		return false;
 
@@ -1672,6 +1883,50 @@ bool CInverterSputnikSSeries::token_KDY(const vector<string> & tokens)
 
 	return true;
 }
+
+bool CInverterSputnikSSeries::token_KLD(const vector<string> & tokens)
+{
+	// Unit 0.1 kwH
+	if (tokens.size() != 2)
+		return false;
+
+	unsigned int raw;
+	float kwh;
+	sscanf(tokens[1].c_str(), "%x", &raw);
+
+	kwh = raw / 10.0;
+
+	// lookup if we already know that information.
+	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_KWH_YD);
+	if (!cap) {
+		string s;
+		IValue *v;
+		CCapability *c;
+		s = CAPA_INVERTER_KWH_YD;
+		v = IValue::Factory(CAPA_INVERTER_KWH_YD_TYPE);
+		((CValue<float>*) v)->Set(kwh);
+		c = new CCapability(s, v, this);
+		AddCapability(c);
+
+		// TODO: Check if we schould derefer (using a scheduled work) this.
+		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
+		cap->Notify();
+	}
+	// Capa already in the list. Check if we need to update it.
+	else if (cap->getValue()->GetType() == CAPA_INVERTER_KWH_YD_TYPE) {
+		CValue<float> *val = (CValue<float>*) cap->getValue();
+
+		if (val -> Get() != kwh) {
+			val->Set(kwh);
+			cap->Notify();
+		}
+	} else {
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_YD << " not a float ");
+	}
+
+	return true;
+}
+
 
 bool CInverterSputnikSSeries::token_KT0(const vector<string> & tokens)
 {
@@ -2222,6 +2477,185 @@ bool CInverterSputnikSSeries::token_SYS(const vector<string> &tokens)
 
 	return true;
 }
+// IEE IED IEA UGD START
+
+bool CInverterSputnikSSeries::token_IEE(const vector<string> & tokens)
+{ // Unit 0.1mA 
+	if (tokens.size() != 2)
+		return false;
+
+	unsigned int raw;
+	float f;
+	sscanf(tokens[1].c_str(), "%x", &raw);
+
+	f = raw/10.; //????
+	// lookup if we already know that information.
+	CCapability *cap = GetConcreteCapability(
+			CAPA_INVERTER_ERROR_CURRENT_NAME);
+
+	if (!cap) {
+		string s;
+		IValue *v;
+		CCapability *c;
+		s = CAPA_INVERTER_ERROR_CURRENT_NAME;
+		v = IValue::Factory(CAPA_INVERTER_ERROR_CURRENT_TYPE);
+		((CValue<float>*) v)->Set(f);
+		c = new CCapability(s, v, this);
+		AddCapability(c);
+
+		// TODO: Check if we schould derefer (using a scheduled work) this.
+		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
+		cap->Notify();
+	}
+	// Capa already in the list. Check if we need to update it.
+	else if (cap->getValue()->GetType() == CAPA_INVERTER_ERROR_CURRENT_TYPE) {
+		CValue<float> *val = (CValue<float>*) cap->getValue();
+
+		if (val -> Get() != f) {
+			val->Set(f);
+			cap->Notify();
+		}
+	} else {
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_ERROR_CURRENT_NAME
+				<< " not a float");
+	}
+
+	return true;
+}
+
+bool CInverterSputnikSSeries::token_IED(const vector<string> & tokens)
+{ // Unit 0.1mA
+	if (tokens.size() != 2)
+		return false;
+
+	unsigned int raw;
+	float f;
+	sscanf(tokens[1].c_str(), "%x", &raw);
+
+	f = raw/10. ; //????
+	// lookup if we already know that information.
+	CCapability *cap = GetConcreteCapability(
+			CAPA_INVERTER_DC_ERROR_CURRENT_NAME);
+
+	if (!cap) {
+		string s;
+		IValue *v;
+		CCapability *c;
+		s = CAPA_INVERTER_DC_ERROR_CURRENT_NAME;
+		v = IValue::Factory(CAPA_INVERTER_DC_ERROR_CURRENT_TYPE);
+		((CValue<float>*) v)->Set(f);
+		c = new CCapability(s, v, this);
+		AddCapability(c);
+
+		// TODO: Check if we schould derefer (using a scheduled work) this.
+		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
+		cap->Notify();
+	}
+	// Capa already in the list. Check if we need to update it.
+	else if (cap->getValue()->GetType() == CAPA_INVERTER_DC_ERROR_CURRENT_TYPE) {
+		CValue<float> *val = (CValue<float>*) cap->getValue();
+
+		if (val -> Get() != f) {
+			val->Set(f);
+			cap->Notify();
+		}
+	} else {
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_DC_ERROR_CURRENT_NAME
+				<< " not a float");
+	}
+
+	return true;
+}
+
+bool CInverterSputnikSSeries::token_IEA(const vector<string> & tokens)
+{ // Unit 0.1mA
+	if (tokens.size() != 2)
+		return false;
+
+	unsigned int raw;
+	float f;
+	sscanf(tokens[1].c_str(), "%x", &raw);
+
+	f = raw/10. ; //????
+	// lookup if we already know that information.
+	CCapability *cap = GetConcreteCapability(
+			CAPA_INVERTER_AC_ERROR_CURRENT_NAME);
+
+	if (!cap) {
+		string s;
+		IValue *v;
+		CCapability *c;
+		s = CAPA_INVERTER_AC_ERROR_CURRENT_NAME;
+		v = IValue::Factory(CAPA_INVERTER_AC_ERROR_CURRENT_TYPE);
+		((CValue<float>*) v)->Set(f);
+		c = new CCapability(s, v, this);
+		AddCapability(c);
+
+		// TODO: Check if we schould derefer (using a scheduled work) this.
+		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
+		cap->Notify();
+	}
+	// Capa already in the list. Check if we need to update it.
+	else if (cap->getValue()->GetType() == CAPA_INVERTER_AC_ERROR_CURRENT_TYPE) {
+		CValue<float> *val = (CValue<float>*) cap->getValue();
+
+		if (val -> Get() != f) {
+			val->Set(f);
+			cap->Notify();
+		}
+	} else {
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_AC_ERROR_CURRENT_NAME
+				<< " not a float");
+	}
+
+	return true;
+}
+
+bool CInverterSputnikSSeries::token_UGD(const vector<string> & tokens)
+{ // Unit 0.1V
+	if (tokens.size() != 2)
+		return false;
+
+	unsigned int raw;
+	float f;
+	sscanf(tokens[1].c_str(), "%x", &raw);
+
+	f = raw/10. ; //????
+	// lookup if we already know that information.
+	CCapability *cap = GetConcreteCapability(
+			CAPA_INVERTER_GROUND_VOLTAGE_NAME);
+
+	if (!cap) {
+		string s;
+		IValue *v;
+		CCapability *c;
+		s = CAPA_INVERTER_GROUND_VOLTAGE_NAME;
+		v = IValue::Factory(CAPA_INVERTER_GROUND_VOLTAGE_TYPE);
+		((CValue<float>*) v)->Set(f);
+		c = new CCapability(s, v, this);
+		AddCapability(c);
+
+		// TODO: Check if we schould derefer (using a scheduled work) this.
+		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
+		cap->Notify();
+	}
+	// Capa already in the list. Check if we need to update it.
+	else if (cap->getValue()->GetType() == CAPA_INVERTER_GROUND_VOLTAGE_TYPE) {
+		CValue<float> *val = (CValue<float>*) cap->getValue();
+
+		if (val -> Get() != f) {
+			val->Set(f);
+			cap->Notify();
+		}
+	} else {
+		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_GROUND_VOLTAGE_NAME
+				<< " not a float");
+	}
+
+	return true;
+}
+
+// IEE IED IEA UGD END
 
 /** helper that builds the firmware version capability.
  *

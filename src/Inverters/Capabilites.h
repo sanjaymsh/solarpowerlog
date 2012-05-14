@@ -30,7 +30,10 @@ Copyright (C) 2009-2012 Tobias Frost
  *
  *
  *  Created on: May 22, 2009
- *      Author: tobi
+ *      Author: Tobias Frost
+ *
+ *      Contributors:
+ *         E.A.Neonakis <eaneonakis@freemail.gr>
  */
 
 #ifndef CAPABILITES_H_
@@ -151,7 +154,7 @@ Copyright (C) 2009-2012 Tobias Frost
 #define CAPA_INVERTER_FIRMWARE_TYPE IValue::string_type
 
 
-/** Total power feeding
+/** Total power feeding AC,DC
  *
  * On inverters which feeds more than one phase, this is the
  * sum of all phases.
@@ -162,6 +165,8 @@ Copyright (C) 2009-2012 Tobias Frost
 */
 #define CAPA_INVERTER_ACPOWER_TOTAL "Current Grid Feeding Power"
 #define CAPA_INVERTER_ACPOWER_TOTAL_TYPE IValue::float_type
+#define CAPA_INVERTER_DCPOWER_TOTAL "DC Power"
+#define CAPA_INVERTER_DCPOWER_TOTAL_TYPE IValue::float_type
 
 /** Power On Hours
  *
@@ -174,6 +179,16 @@ Copyright (C) 2009-2012 Tobias Frost
 #define CAPA_INVERTER_PON_HOURS "Inverter Power On Hours"
 #define CAPA_INVERTER_PON_HOURS_TYPE IValue::float_type
 
+/** Total Inverter Startups
+ *
+ * Counts inverter startups
+ *
+ * Type: Integer
+ *
+ * Optional.
+*/
+#define CAPA_INVERTER_STARTUPS "Inverter Startups"
+#define CAPA_INVERTER_STARTUPS_TYPE IValue::float_type
 
 
 /** Feeded Energy Y2D
@@ -199,7 +214,7 @@ Copyright (C) 2009-2012 Tobias Frost
 #define CAPA_INVERTER_KWH_M2D "Energy produced this month (kWh)"
 #define CAPA_INVERTER_KWH_M2D_TYPE IValue::float_type
 
-/** Feeded Energy Today
+/** Feeded Energy Today,Yesterday
  *
  * Today the inverter has produced this amount of energy. (kWh)
  *
@@ -209,6 +224,8 @@ Copyright (C) 2009-2012 Tobias Frost
 */
 #define CAPA_INVERTER_KWH_2D "Energy produced today (kWh)"
 #define CAPA_INVERTER_KWH_2D_TYPE IValue::float_type
+#define CAPA_INVERTER_KWH_YD "Energy produced yesterday (kWh)"
+#define CAPA_INVERTER_KWH_YD_TYPE IValue::float_type
 
 /** Feeded Energy Total
  *
@@ -328,6 +345,26 @@ Copyright (C) 2009-2012 Tobias Frost
  * */
 #define CAPA_INVERTER_TEMPERATURE_NAME "Inverter Temperature (C)"
 #define CAPA_INVERTER_TEMPERATURE_TYPE IValue::float_type
+
+// IEE IEA IED
+
+/** Error Currents +Ground Voltage
+ *
+ * 
+ *
+ * Type: Float
+ *
+ * Optional.
+ *
+ * */
+#define CAPA_INVERTER_ERROR_CURRENT_NAME "Error current in (mA)"
+#define CAPA_INVERTER_ERROR_CURRENT_TYPE IValue::float_type
+#define CAPA_INVERTER_DC_ERROR_CURRENT_NAME "DC Error current in (mA)"
+#define CAPA_INVERTER_DC_ERROR_CURRENT_TYPE IValue::float_type
+#define CAPA_INVERTER_AC_ERROR_CURRENT_NAME "AC Error current in (mA)"
+#define CAPA_INVERTER_AC_ERROR_CURRENT_TYPE IValue::float_type
+#define CAPA_INVERTER_GROUND_VOLTAGE_NAME "Voltage to Ground (V)"
+#define CAPA_INVERTER_GROUND_VOLTAGE_TYPE IValue::float_type
 
 /** Inverter Status Codes
  *

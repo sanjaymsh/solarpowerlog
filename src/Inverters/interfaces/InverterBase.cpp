@@ -62,24 +62,23 @@ IInverterBase::IInverterBase( const string& name,
 	string s;
 	CCapability *c;
 
-	// Add the "must have" capabilites.
-	c = new CCapability(CAPA_CAPAS_UPDATED, CAPA_CAPAS_UPDATED_TYPE, this);
-	b = CapabilityMap.insert(pair<string, CCapability*> (
-		CAPA_CAPAS_UPDATED, c));
-	assert( b.second );
+    // Add the "must have" capabilites.
+    c = new CCapability(CAPA_CAPAS_UPDATED, new CValue<CAPA_CAPAS_UPDATED_TYPE>,
+        this);
+    b = CapabilityMap.insert(pair<string, CCapability*>(CAPA_CAPAS_UPDATED, c));
+    assert( b.second);
 
-	c = new CCapability(CAPA_CAPAS_REMOVEALL, CAPA_CAPAS_REMOVEALL_TYPE,
-		this);
-	b = CapabilityMap.insert(pair<string, CCapability*> (
-		CAPA_CAPAS_REMOVEALL, c));
-	assert( b.second );
+    c = new CCapability(CAPA_CAPAS_REMOVEALL,
+        new CValue<CAPA_CAPAS_REMOVEALL_TYPE>, this);
+    b = CapabilityMap.insert(
+        pair<string, CCapability*>(CAPA_CAPAS_REMOVEALL, c));
+    assert( b.second);
 
-	c = new CCapability(CAPA_INVERTER_DATASTATE,
-		CAPA_INVERTER_DATASTATE_TYPE, this);
-	b = CapabilityMap.insert(pair<string, CCapability*> (
-		CAPA_INVERTER_DATASTATE, c));
-	assert( b.second );
-
+    c = new CCapability(CAPA_INVERTER_DATASTATE,
+        new CValue<CAPA_INVERTER_DATASTATE_TYPE>, this);
+    b = CapabilityMap.insert(
+        pair<string, CCapability*>(CAPA_INVERTER_DATASTATE, c));
+    assert( b.second);
 }
 
 IInverterBase::~IInverterBase()

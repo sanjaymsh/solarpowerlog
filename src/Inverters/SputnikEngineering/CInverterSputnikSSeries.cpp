@@ -96,8 +96,8 @@ static struct
 				{ 100, "SolarMax 100 C" },
 				{ 300, "SolarMax 300 C" },
 				{
-						-1,
-						"UKNOWN MODEL. PLEASE FILE A BUG WITH THE REPORTED ID, ALONG WITH ALL INFOS YOU HAVE" } };
+					-1,
+					"UKNOWN MODEL. PLEASE FILE A BUG WITH THE REPORTED ID, ALONG WITH ALL INFOS YOU HAVE" } };
 
 static struct
 {
@@ -143,7 +143,7 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	IValue *v;
 	CCapability *c;
 	s = CAPA_INVERTER_MANUFACTOR_NAME;
-	v = IValue::Factory(CAPA_INVERTER_MANUFACTOR_TYPE);
+	v = CValueFactory::Factory<CAPA_INVERTER_MANUFACTOR_TYPE>();
 	((CValue<string>*) v)->Set("Sputnik Engineering");
 	c = new CCapability(s, v, this);
 	AddCapability(c);
@@ -161,13 +161,13 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	cfghlp.GetConfig("commadr", commadr, 0x01u);
 
 	s = CAPA_INVERTER_QUERYINTERVAL;
-	v = IValue::Factory(CAPA_INVERTER_QUERYINTERVAL_TYPE);
+	v = CValueFactory::Factory<CAPA_INVERTER_QUERYINTERVAL_TYPE>();
 	((CValue<float>*) v)->Set(interval);
 	c = new CCapability(s, v, this);
 	AddCapability(c);
 
 	s = CAPA_INVERTER_CONFIGNAME;
-	v = IValue::Factory(CAPA_INVERTER_CONFIGNAME_TYPE);
+	v = CValueFactory::Factory<CAPA_INVERTER_CONFIGNAME_TYPE>();
 	((CValue<std::string>*) v)->Set(name);
 	c = new CCapability(s, v, this);
 	AddCapability(c);
@@ -219,7 +219,7 @@ bool CInverterSputnikSSeries::CheckConfig()
  * the checksum.
  *
  * This routine assumes, that you give it the complete
- * telegram, and only the checkszum and the } is missing.
+ * telegram, and only the checksum and the } is missing.
  */
 unsigned int CInverterSputnikSSeries::CalcChecksum(const char *str, int len)
 {
@@ -234,8 +234,6 @@ unsigned int CInverterSputnikSSeries::CalcChecksum(const char *str, int len)
 
 void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 {
-	bool dbg = true;
-
 	string commstring = "";
 	string reccomm = "";
 	ICommand *cmd;
@@ -340,7 +338,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		LOGDEBUG(logger, "new state: CMD_QUERY_POLL ");
 
 		pushinverterquery(PAC);
-                pushinverterquery(PDC);
+        pushinverterquery(PDC);
 		pushinverterquery(KHR);
 		pushinverterquery(PIN);
 		pushinverterquery(KT0);
@@ -1375,12 +1373,15 @@ bool CInverterSputnikSSeries::parsetoken(string token)
 	if (subtokens[0] == "IEE") {
 		return token_IEE(subtokens);
 	}
+
 	if (subtokens[0] == "IEA") {
 		return token_IEA(subtokens);
 	}
+
 	if (subtokens[0] == "IED") {
 		return token_IED(subtokens);
 	}
+
 	if (subtokens[0] == "UGD") {
 		return token_UGD(subtokens);
 	}
@@ -1482,7 +1483,7 @@ bool CInverterSputnikSSeries::token_TYP(const vector<string> & tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_MODEL;
-		v = IValue::Factory(CAPA_INVERTER_MODEL_TYPE);
+		v = CValueFactory::Factory<CAPA_INVERTER_MODEL_TYPE>();
 		((CValue<string>*) v)->Set(model_lookup[i].description);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
@@ -1492,10 +1493,9 @@ bool CInverterSputnikSSeries::token_TYP(const vector<string> & tokens)
 		cap->Notify();
 	}
 	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_MODEL_TYPE) {
+	else if ( CValue<CAPA_INVERTER_MODEL_TYPE>::IsType(cap->getValue())) {
 		CValue<string> *val = (CValue<string>*) cap->getValue();
 		if (model_lookup[i].description != val->Get()) {
-
 			LOGDEBUG(logger, "WEIRD: Updating inverter type from "
 					<< val->Get() << " to "
 					<< model_lookup[i].description);
@@ -1580,7 +1580,7 @@ bool CInverterSputnikSSeries::token_PAC(const vector<string> & tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_ACPOWER_TOTAL;
-		v = IValue::Factory(CAPA_INVERTER_ACPOWER_TOTAL_TYPE);
+		v = CValueFactory::Factory<CAPA_INVERTER_ACPOWER_TOTAL_TYPE>();
 		((CValue<float>*) v)->Set(fpac);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
@@ -1589,18 +1589,19 @@ bool CInverterSputnikSSeries::token_PAC(const vector<string> & tokens)
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
 		cap->Notify();
 	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_ACPOWER_TOTAL_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
+    // Capa already in the list. Check if we need to update it.
+    else if (CValue<CAPA_INVERTER_ACPOWER_TOTAL_TYPE>::IsType(
+        cap->getValue())) {
+        CValue<float> *val = (CValue<float>*)cap->getValue();
 
-		if (val -> Get() != fpac) {
-			val->Set(fpac);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_ACPOWER_TOTAL
-				<< " not a float ");
-	}
+        if (val->Get() != fpac) {
+            val->Set(fpac);
+            cap->Notify();
+        }
+    } else {
+        LOGDEBUG(logger,
+            "BUG: " << CAPA_INVERTER_ACPOWER_TOTAL << " not a float ");
+    }
 
 	return true;
 }
@@ -1624,7 +1625,7 @@ bool CInverterSputnikSSeries::token_PDC(const vector<string> & tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_DCPOWER_TOTAL;
-		v = IValue::Factory(CAPA_INVERTER_DCPOWER_TOTAL_TYPE);
+		v = CValueFactory::Factory<CAPA_INVERTER_DCPOWER_TOTAL_TYPE>();
 		((CValue<float>*) v)->Set(fpdc);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
@@ -1633,18 +1634,19 @@ bool CInverterSputnikSSeries::token_PDC(const vector<string> & tokens)
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
 		cap->Notify();
 	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_DCPOWER_TOTAL_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
+    // Capa already in the list. Check if we need to update it.
+    else if (CValue<CAPA_INVERTER_DCPOWER_TOTAL_TYPE>::IsType(
+        cap->getValue())) {
+        CValue<float> *val = (CValue<float>*)cap->getValue();
 
-		if (val -> Get() != fpdc) {
-			val->Set(fpdc);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_DCPOWER_TOTAL
-				<< " not a float ");
-	}
+        if (val->Get() != fpdc) {
+            val->Set(fpdc);
+            cap->Notify();
+        }
+    } else {
+        LOGDEBUG(logger,
+            "BUG: " << CAPA_INVERTER_DCPOWER_TOTAL << " not a float ");
+    }
 
 	return true;
 }
@@ -1669,7 +1671,7 @@ bool CInverterSputnikSSeries::token_KHR(const vector<string> & tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_PON_HOURS;
-		v = IValue::Factory(CAPA_INVERTER_PON_HOURS_TYPE);
+		v = CValueFactory::Factory<CAPA_INVERTER_PON_HOURS_TYPE>();
 		((CValue<float>*) v)->Set(f);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
@@ -1679,7 +1681,7 @@ bool CInverterSputnikSSeries::token_KHR(const vector<string> & tokens)
 		cap->Notify();
 	}
 	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_PON_HOURS_TYPE) {
+	else if (CValue<CAPA_INVERTER_PON_HOURS_TYPE>::IsType(cap->getValue())) {
 		CValue<float> *val = (CValue<float>*) cap->getValue();
 		if (val -> Get() != f) {
 			val->Set(f);
@@ -1698,12 +1700,8 @@ bool CInverterSputnikSSeries::token_CAC(const vector<string> & tokens)
 	if (tokens.size() != 2)
 		return false;
 
-	unsigned int tmp;
-	float f;
+	long tmp;
 	sscanf(tokens[1].c_str(), "%x", &tmp);
-
-	f = tmp;
-
 	// lookup if we already know that information.
 	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_STARTUPS);
 
@@ -1712,8 +1710,8 @@ bool CInverterSputnikSSeries::token_CAC(const vector<string> & tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_STARTUPS;
-		v = IValue::Factory(CAPA_INVERTER_STARTUPS_TYPE);
-		((CValue<float>*) v)->Set(f);
+		v = CValueFactory::Factory<CAPA_INVERTER_STARTUPS_TYPE>();
+		((CValue<CAPA_INVERTER_STARTUPS_TYPE>*) v)->Set(tmp);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
 
@@ -1721,16 +1719,16 @@ bool CInverterSputnikSSeries::token_CAC(const vector<string> & tokens)
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
 		cap->Notify();
 	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_STARTUPS_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
-		if (val -> Get() != f) {
-			val->Set(f);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_STARTUPS << " not a float ");
-	}
+    // Capa already in the list. Check if we need to update it.
+    else if (CValue<CAPA_INVERTER_STARTUPS_TYPE>::IsType(cap->getValue())) {
+        CValue<CAPA_INVERTER_STARTUPS_TYPE> *val = (CValue<CAPA_INVERTER_STARTUPS_TYPE>*)cap->getValue();
+        if (val->Get() != tmp) {
+            val->Set(tmp);
+            cap->Notify();
+        }
+    } else {
+        LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_STARTUPS << " not a long ");
+    }
 
 	return true;
 }
@@ -1773,7 +1771,7 @@ bool CInverterSputnikSSeries::token_KYR(const vector<string> & tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_KWH_Y2D;
-		v = IValue::Factory(CAPA_INVERTER_KWH_Y2D_TYPE);
+		v = CValueFactory::Factory<CAPA_INVERTER_KWH_Y2D_TYPE>();
 		((CValue<float>*) v)->Set(kwh);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
@@ -1782,17 +1780,17 @@ bool CInverterSputnikSSeries::token_KYR(const vector<string> & tokens)
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
 		cap->Notify();
 	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_KWH_Y2D_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
+    // Capa already in the list. Check if we need to update it.
+    else if (CValue<CAPA_INVERTER_KWH_Y2D_TYPE>::IsType(cap->getValue())) {
+        CValue<float> *val = (CValue<float>*)cap->getValue();
 
-		if (val -> Get() != kwh) {
-			val->Set(kwh);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_Y2D << " not a float ");
-	}
+        if (val->Get() != kwh) {
+            val->Set(kwh);
+            cap->Notify();
+        }
+    } else {
+        LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_Y2D << " not a float ");
+    }
 
 	return true;
 }
@@ -1817,7 +1815,7 @@ bool CInverterSputnikSSeries::token_KMT(const vector<string> & tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_KWH_M2D;
-		v = IValue::Factory(CAPA_INVERTER_KWH_M2D_TYPE);
+		v = CValueFactory::Factory<CAPA_INVERTER_KWH_M2D_TYPE>();
 		((CValue<float>*) v)->Set(kwh);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
@@ -1826,17 +1824,17 @@ bool CInverterSputnikSSeries::token_KMT(const vector<string> & tokens)
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
 		cap->Notify();
 	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_KWH_M2D_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
+    // Capa already in the list. Check if we need to update it.
+    else if (CValue<CAPA_INVERTER_KWH_M2D_TYPE>::IsType(cap->getValue())) {
+        CValue<float> *val = (CValue<float>*)cap->getValue();
 
-		if (val -> Get() != kwh) {
-			val->Set(kwh);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_M2D << " not a float ");
-	}
+        if (val->Get() != kwh) {
+            val->Set(kwh);
+            cap->Notify();
+        }
+    } else {
+        LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_M2D << " not a float ");
+    }
 
 	return true;
 }
@@ -1860,7 +1858,7 @@ bool CInverterSputnikSSeries::token_KDY(const vector<string> & tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_KWH_2D;
-		v = IValue::Factory(CAPA_INVERTER_KWH_2D_TYPE);
+		v = CValueFactory::Factory<CAPA_INVERTER_KWH_2D_TYPE>();
 		((CValue<float>*) v)->Set(kwh);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
@@ -1869,17 +1867,16 @@ bool CInverterSputnikSSeries::token_KDY(const vector<string> & tokens)
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
 		cap->Notify();
 	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_KWH_2D_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
-
-		if (val -> Get() != kwh) {
-			val->Set(kwh);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_2D << " not a float ");
-	}
+    // Capa already in the list. Check if we need to update it.
+    else if (CValue<CAPA_INVERTER_KWH_2D_TYPE>::IsType(cap->getValue())) {
+        CValue<float> *val = (CValue<float>*)cap->getValue();
+        if (val->Get() != kwh) {
+            val->Set(kwh);
+            cap->Notify();
+        }
+    } else {
+        LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_2D << " not a float ");
+    }
 
 	return true;
 }
@@ -1903,7 +1900,7 @@ bool CInverterSputnikSSeries::token_KLD(const vector<string> & tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_KWH_YD;
-		v = IValue::Factory(CAPA_INVERTER_KWH_YD_TYPE);
+		v = CValueFactory::Factory<CAPA_INVERTER_KWH_YD_TYPE>();
 		((CValue<float>*) v)->Set(kwh);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
@@ -1912,21 +1909,20 @@ bool CInverterSputnikSSeries::token_KLD(const vector<string> & tokens)
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
 		cap->Notify();
 	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_KWH_YD_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
+    // Capa already in the list. Check if we need to update it.
+    else if (CValue<CAPA_INVERTER_KWH_YD_TYPE>::IsType(cap->getValue())) {
+        CValue<float> *val = (CValue<float>*)cap->getValue();
 
-		if (val -> Get() != kwh) {
-			val->Set(kwh);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_YD << " not a float ");
-	}
+        if (val->Get() != kwh) {
+            val->Set(kwh);
+            cap->Notify();
+        }
+    } else {
+        LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_YD << " not a float ");
+    }
 
 	return true;
 }
-
 
 bool CInverterSputnikSSeries::token_KT0(const vector<string> & tokens)
 {
@@ -1949,7 +1945,7 @@ bool CInverterSputnikSSeries::token_KT0(const vector<string> & tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_KWH_TOTAL_NAME;
-		v = IValue::Factory(CAPA_INVERTER_KWH_TOTAL_TYPE);
+		v = CValueFactory::Factory<CAPA_INVERTER_KWH_TOTAL_TYPE>();
 		((CValue<float>*) v)->Set(kwh);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
@@ -1959,7 +1955,7 @@ bool CInverterSputnikSSeries::token_KT0(const vector<string> & tokens)
 		cap->Notify();
 	}
 	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_KWH_TOTAL_TYPE) {
+	else if (CValue<CAPA_INVERTER_KWH_TOTAL_TYPE>::IsType(cap->getValue())) {
 		CValue<float> *val = (CValue<float>*) cap->getValue();
 
 		if (val -> Get() != kwh) {
@@ -1993,7 +1989,7 @@ bool CInverterSputnikSSeries::token_PIN(const vector<string> & tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_INSTALLEDPOWER_NAME;
-		v = IValue::Factory(CAPA_INVERTER_INSTALLEDPOWER_TYPE);
+		v = CValueFactory::Factory<CAPA_INVERTER_INSTALLEDPOWER_TYPE>();
 		((CValue<float>*) v)->Set(f);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
@@ -2003,7 +1999,7 @@ bool CInverterSputnikSSeries::token_PIN(const vector<string> & tokens)
 		cap->Notify();
 	}
 	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_INSTALLEDPOWER_TYPE) {
+	else if ( CValue<CAPA_INVERTER_INSTALLEDPOWER_TYPE>::IsType(cap->getValue())) {
 		CValue<float> *val = (CValue<float>*) cap->getValue();
 
 		if (val -> Get() != f) {
@@ -2039,7 +2035,7 @@ bool CInverterSputnikSSeries::token_TNF(const vector<string> & tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_NET_FREQUENCY_NAME;
-		v = IValue::Factory(CAPA_INVERTER_NET_FREQUENCY_TYPE);
+		v = CValueFactory::Factory<CAPA_INVERTER_NET_FREQUENCY_TYPE>();
 		((CValue<float>*) v)->Set(f);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
@@ -2048,14 +2044,15 @@ bool CInverterSputnikSSeries::token_TNF(const vector<string> & tokens)
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
 		cap->Notify();
 	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_NET_FREQUENCY_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
+    // Capa already in the list. Check if we need to update it.
+    else if (CValue<CAPA_INVERTER_NET_FREQUENCY_TYPE>::IsType(
+        cap->getValue())) {
+        CValue<float> *val = (CValue<float>*)cap->getValue();
 
-		if (val -> Get() != f) {
-			val->Set(f);
-			cap->Notify();
-		}
+        if (val->Get() != f) {
+            val->Set(f);
+            cap->Notify();
+        }
 	} else {
 		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_NET_FREQUENCY_NAME
 				<< " not a float ");
@@ -2083,7 +2080,7 @@ bool CInverterSputnikSSeries::token_PRL(const vector<string> & tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_RELPOWER_NAME;
-		v = IValue::Factory(CAPA_INVERTER_RELPOWER_TYPE);
+		v = CValueFactory::Factory<CAPA_INVERTER_RELPOWER_TYPE>();
 		((CValue<float>*) v)->Set(f);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
@@ -2093,7 +2090,7 @@ bool CInverterSputnikSSeries::token_PRL(const vector<string> & tokens)
 		cap->Notify();
 	}
 	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_RELPOWER_TYPE) {
+	else if (CValue<CAPA_INVERTER_RELPOWER_TYPE>::IsType(cap->getValue())) {
 		CValue<float> *val = (CValue<float>*) cap->getValue();
 
 		if (val -> Get() != f) {
@@ -2132,7 +2129,7 @@ bool CInverterSputnikSSeries::token_UDC(const vector<string> & tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_INPUT_DC_VOLTAGE_NAME;
-		v = IValue::Factory(CAPA_INVERTER_INPUT_DC_VOLTAGE_TYPE);
+		v = CValueFactory::Factory<CAPA_INVERTER_INPUT_DC_VOLTAGE_TYPE>();
 		((CValue<float>*) v)->Set(f);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
@@ -2142,13 +2139,13 @@ bool CInverterSputnikSSeries::token_UDC(const vector<string> & tokens)
 		cap->Notify();
 	}
 	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_INPUT_DC_VOLTAGE_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
+	else if (CValue<CAPA_INVERTER_INPUT_DC_VOLTAGE_TYPE>::IsType(cap->getValue())) {
+        CValue<float> *val = (CValue<float>*)cap->getValue();
 
-		if (val -> Get() != f) {
-			val->Set(f);
-			cap->Notify();
-		}
+        if (val->Get() != f) {
+            val->Set(f);
+            cap->Notify();
+        }
 	} else {
 		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_INPUT_DC_VOLTAGE_NAME
 				<< " not a float ");
@@ -2176,7 +2173,7 @@ bool CInverterSputnikSSeries::token_UL1(const vector<string> & tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_GRID_AC_VOLTAGE_NAME;
-		v = IValue::Factory(CAPA_INVERTER_GRID_AC_VOLTAGE_TYPE);
+		v = CValueFactory::Factory<CAPA_INVERTER_GRID_AC_VOLTAGE_TYPE>();
 		((CValue<float>*) v)->Set(f);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
@@ -2185,14 +2182,15 @@ bool CInverterSputnikSSeries::token_UL1(const vector<string> & tokens)
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
 		cap->Notify();
 	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_GRID_AC_VOLTAGE_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
+    // Capa already in the list. Check if we need to update it.
+    else if (CValue<CAPA_INVERTER_GRID_AC_VOLTAGE_TYPE>::IsType(
+        cap->getValue())) {
+        CValue<float> *val = (CValue<float>*)cap->getValue();
 
-		if (val -> Get() != f) {
-			val->Set(f);
-			cap->Notify();
-		}
+        if (val->Get() != f) {
+            val->Set(f);
+            cap->Notify();
+        }
 	} else {
 		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_GRID_AC_VOLTAGE_NAME
 				<< " not a float");
@@ -2234,7 +2232,7 @@ bool CInverterSputnikSSeries::token_IDC(const vector<string> & tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_INPUT_DC_CURRENT_NAME;
-		v = IValue::Factory(CAPA_INVERTER_INPUT_DC_CURRENT_TYPE);
+		v = CValueFactory::Factory<CAPA_INVERTER_INPUT_DC_CURRENT_TYPE>();
 		((CValue<float>*) v)->Set(f);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
@@ -2244,17 +2242,18 @@ bool CInverterSputnikSSeries::token_IDC(const vector<string> & tokens)
 		cap->Notify();
 	}
 	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_INPUT_DC_CURRENT_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
+    else if (CValue<CAPA_INVERTER_INPUT_DC_CURRENT_TYPE>::IsType(
+        cap->getValue())) {
+        CValue<float> *val = (CValue<float>*)cap->getValue();
 
-		if (val -> Get() != f) {
-			val->Set(f);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_INPUT_DC_CURRENT_NAME
-				<< " not a float");
-	}
+        if (val->Get() != f) {
+            val->Set(f);
+            cap->Notify();
+        }
+    } else {
+        LOGDEBUG(logger,
+            "BUG: " << CAPA_INVERTER_INPUT_DC_CURRENT_NAME << " not a float");
+    }
 
 	return true;
 }
@@ -2279,7 +2278,7 @@ bool CInverterSputnikSSeries::token_IL1(const vector<string> & tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_GRID_AC_CURRENT_NAME;
-		v = IValue::Factory(CAPA_INVERTER_GRID_AC_CURRENT_TYPE);
+		v = CValueFactory::Factory<CAPA_INVERTER_GRID_AC_CURRENT_TYPE>();
 		((CValue<float>*) v)->Set(f);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
@@ -2289,7 +2288,7 @@ bool CInverterSputnikSSeries::token_IL1(const vector<string> & tokens)
 		cap->Notify();
 	}
 	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_GRID_AC_CURRENT_TYPE) {
+	else if ( CValue<CAPA_INVERTER_GRID_AC_CURRENT_TYPE>::IsType(cap->getValue())) {
 		CValue<float> *val = (CValue<float>*) cap->getValue();
 
 		if (val -> Get() != f) {
@@ -2335,7 +2334,7 @@ bool CInverterSputnikSSeries::token_TKK(const vector<string> & tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_TEMPERATURE_NAME;
-		v = IValue::Factory(CAPA_INVERTER_TEMPERATURE_TYPE);
+		v = CValueFactory::Factory<CAPA_INVERTER_TEMPERATURE_TYPE>();
 		((CValue<float>*) v)->Set(f);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
@@ -2345,7 +2344,7 @@ bool CInverterSputnikSSeries::token_TKK(const vector<string> & tokens)
 		cap->Notify();
 	}
 	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_TEMPERATURE_TYPE) {
+	else if ( CValue<CAPA_INVERTER_TEMPERATURE_TYPE>::IsType(cap->getValue())) {
 		CValue<float> *val = (CValue<float>*) cap->getValue();
 
 		if (val -> Get() != f) {
@@ -2397,7 +2396,7 @@ bool CInverterSputnikSSeries::token_SYS(const vector<string> &tokens)
 	if (tokens[2] != "0") {
 		LOGINFO(logger, "Received an unknown SYS response. Please file a bug"
 				<< " along with the following: " << tokens[0] << ","
-				<< tokens[1] << "," << tokens[2]);
+				<< tokens[1] << "," << tokens[2] << " and check the Inverter's display for more information.");
 	}
 
 	unsigned int code;
@@ -2431,16 +2430,16 @@ bool CInverterSputnikSSeries::token_SYS(const vector<string> &tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_STATUS_NAME;
-		v = IValue::Factory(CAPA_INVERTER_STATUS_TYPE);
-		((CValue<int>*) v)->Set(statuscodes[i].status);
+		v = CValueFactory::Factory<CAPA_INVERTER_STATUS_TYPE>();
+		((CValue<long>*) v)->Set(statuscodes[i].status);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
 
 		// TODO: Check if we schould derefer (using a scheduled work) this.
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
 		cap->Notify();
-	} else if (cap->getValue()->GetType() == CAPA_INVERTER_STATUS_TYPE) {
-		CValue<int> * val = (CValue<int> *) cap->getValue();
+	} else if (CValue<CAPA_INVERTER_STATUS_TYPE>::IsType(cap->getValue())) {
+		CValue<long> * val = (CValue<long> *) cap->getValue();
 		if (val->Get() != statuscodes[i].status) {
 			val->Set(statuscodes[i].status);
 			cap->Notify();
@@ -2456,7 +2455,7 @@ bool CInverterSputnikSSeries::token_SYS(const vector<string> &tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_STATUS_READABLE_NAME;
-		v = IValue::Factory(CAPA_INVERTER_STATUS_READABLE_TYPE);
+		v = CValueFactory::Factory<CAPA_INVERTER_STATUS_READABLE_TYPE>();
 		((CValue<string>*) v)->Set(statuscodes[i].description);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
@@ -2464,7 +2463,7 @@ bool CInverterSputnikSSeries::token_SYS(const vector<string> &tokens)
 		// TODO: Check if we schould derefer (using a scheduled work) this.
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
 		cap->Notify();
-	} else if (cap->getValue()->GetType() == CAPA_INVERTER_STATUS_READABLE_TYPE) {
+	} else if (CValue<CAPA_INVERTER_STATUS_READABLE_TYPE>::IsType(cap->getValue())) {
 		CValue<string> * val = (CValue<string> *) cap->getValue();
 		if (val->Get() != statuscodes[i].description) {
 			val->Set(statuscodes[i].description);
@@ -2498,7 +2497,7 @@ bool CInverterSputnikSSeries::token_IEE(const vector<string> & tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_ERROR_CURRENT_NAME;
-		v = IValue::Factory(CAPA_INVERTER_ERROR_CURRENT_TYPE);
+		v = CValueFactory::Factory<CAPA_INVERTER_ERROR_CURRENT_TYPE>();
 		((CValue<float>*) v)->Set(f);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
@@ -2508,7 +2507,7 @@ bool CInverterSputnikSSeries::token_IEE(const vector<string> & tokens)
 		cap->Notify();
 	}
 	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_ERROR_CURRENT_TYPE) {
+	else if (CValue<CAPA_INVERTER_ERROR_CURRENT_TYPE>::IsType(cap->getValue())) {
 		CValue<float> *val = (CValue<float>*) cap->getValue();
 
 		if (val -> Get() != f) {
@@ -2542,7 +2541,7 @@ bool CInverterSputnikSSeries::token_IED(const vector<string> & tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_DC_ERROR_CURRENT_NAME;
-		v = IValue::Factory(CAPA_INVERTER_DC_ERROR_CURRENT_TYPE);
+		v = CValueFactory::Factory<CAPA_INVERTER_DC_ERROR_CURRENT_TYPE>();
 		((CValue<float>*) v)->Set(f);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
@@ -2551,18 +2550,19 @@ bool CInverterSputnikSSeries::token_IED(const vector<string> & tokens)
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
 		cap->Notify();
 	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_DC_ERROR_CURRENT_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
+    // Capa already in the list. Check if we need to update it.
+    else if (CValue<CAPA_INVERTER_DC_ERROR_CURRENT_TYPE>::IsType(
+        cap->getValue())) {
+        CValue<float> *val = (CValue<float>*)cap->getValue();
 
-		if (val -> Get() != f) {
-			val->Set(f);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_DC_ERROR_CURRENT_NAME
-				<< " not a float");
-	}
+        if (val->Get() != f) {
+            val->Set(f);
+            cap->Notify();
+        }
+    } else {
+        LOGDEBUG(logger,
+            "BUG: " << CAPA_INVERTER_DC_ERROR_CURRENT_NAME << " not a float");
+    }
 
 	return true;
 }
@@ -2586,7 +2586,7 @@ bool CInverterSputnikSSeries::token_IEA(const vector<string> & tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_AC_ERROR_CURRENT_NAME;
-		v = IValue::Factory(CAPA_INVERTER_AC_ERROR_CURRENT_TYPE);
+		v = CValueFactory::Factory<CAPA_INVERTER_AC_ERROR_CURRENT_TYPE>();
 		((CValue<float>*) v)->Set(f);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
@@ -2596,7 +2596,7 @@ bool CInverterSputnikSSeries::token_IEA(const vector<string> & tokens)
 		cap->Notify();
 	}
 	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_AC_ERROR_CURRENT_TYPE) {
+	else if (CValue<CAPA_INVERTER_AC_ERROR_CURRENT_TYPE>::IsType(cap->getValue())) {
 		CValue<float> *val = (CValue<float>*) cap->getValue();
 
 		if (val -> Get() != f) {
@@ -2630,7 +2630,7 @@ bool CInverterSputnikSSeries::token_UGD(const vector<string> & tokens)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_GROUND_VOLTAGE_NAME;
-		v = IValue::Factory(CAPA_INVERTER_GROUND_VOLTAGE_TYPE);
+		v = CValueFactory::Factory<CAPA_INVERTER_GROUND_VOLTAGE_TYPE>();
 		((CValue<float>*) v)->Set(f);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
@@ -2640,7 +2640,7 @@ bool CInverterSputnikSSeries::token_UGD(const vector<string> & tokens)
 		cap->Notify();
 	}
 	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_GROUND_VOLTAGE_TYPE) {
+	else if (CValue<CAPA_INVERTER_GROUND_VOLTAGE_TYPE>::IsType(cap->getValue())) {
 		CValue<float> *val = (CValue<float>*) cap->getValue();
 
 		if (val -> Get() != f) {
@@ -2695,7 +2695,7 @@ void CInverterSputnikSSeries::create_versioncapa(void)
 		IValue *v;
 		CCapability *c;
 		s = CAPA_INVERTER_FIRMWARE;
-		v = IValue::Factory(CAPA_INVERTER_FIRMWARE_TYPE);
+		v = CValueFactory::Factory<CAPA_INVERTER_FIRMWARE_TYPE>();
 		((CValue<string>*) v)->Set(ver);
 		c = new CCapability(s, v, this);
 		AddCapability(c);
@@ -2703,7 +2703,7 @@ void CInverterSputnikSSeries::create_versioncapa(void)
 		// TODO: Check if we schould derefer (using a scheduled work) this.
 		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
 		cap->Notify();
-	} else if (cap->getValue()->GetType() == IValue::string_type) {
+	} else if ( CValue<CAPA_INVERTER_FIRMWARE_TYPE>::IsType(cap->getValue())) {
 		CValue<string> *val = (CValue<string>*) cap->getValue();
 		if (ver != val->Get()) {
 			val->Set(ver);

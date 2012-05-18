@@ -158,10 +158,6 @@ public:
 	CCapability( const string& descr, IValue *val, IInverterBase *datasrc =
 		NULL );
 
-	/** Convenience-Constructor: Make a Capabilty and also create the value-object. */
-	CCapability( const string &descr, IValue::factory_types type,
-		IInverterBase *datasrc = NULL );
-
 	/** Destructor. Deletes the value object as well. (See CCapability for details)*/
 	virtual ~CCapability();
 

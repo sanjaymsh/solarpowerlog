@@ -98,9 +98,6 @@ using namespace std;
  * 	- easier checking of types
  * 	- easier access of values,
  * 	- easier access of optional values (by setting default values)
- *
- *
- *
  */
 class CConfigHelper
 {

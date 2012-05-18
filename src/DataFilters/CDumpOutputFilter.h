@@ -149,8 +149,6 @@ private:
 
 	void DoCyclicWork(void);
 
-	string DumpValue(IValue *value);
-
 	enum Commands
 	{
 		CMD_INIT, CMD_CYCLIC, CMD_UNSUBSCRIBE, CMD_ADDED_CAPAS

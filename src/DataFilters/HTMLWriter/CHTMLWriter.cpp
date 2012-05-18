@@ -73,27 +73,27 @@ void CHTMLWriter::ScheduleCyclicEvent(enum Commands cmd)
 	CCapability *c;
 	struct timespec ts;
 
-	if (derivetiming) {
-		c = GetConcreteCapability(CAPA_INVERTER_QUERYINTERVAL);
-		if (c && c->getValue()->GetType() == IValue::float_type) {
-			CValue<float> *v = (CValue<float> *) c->getValue();
-			ts.tv_sec = v->Get();
-			ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
-		} else {
-			LOGINFO(logger,
-					"INFO: The associated inverter does not specify the "
-					"queryinterval. Defaulting to 300 seconds. Consider specifying writeevery");
-			ts.tv_sec = 300;
-			ts.tv_nsec = 0;
-		}
-	} else if (writeevery > 0.0001) {
-		ts.tv_sec = writeevery;
-		ts.tv_nsec = ((long) (writeevery - ts.tv_sec)) * 1e9;
-	} else {
-		// writevery 0.
-		ts.tv_sec = 300;
-		ts.tv_nsec = 0;
-	}
+    if (derivetiming) {
+        c = GetConcreteCapability(CAPA_INVERTER_QUERYINTERVAL);
+        if (c && CValue<float>::IsType(c->getValue())) {
+            CValue<float> *v = (CValue<float> *)c->getValue();
+            ts.tv_sec = v->Get();
+            ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
+        } else {
+            LOGINFO(logger,
+                "INFO: The associated inverter does not specify the "
+                "queryinterval. Defaulting to 300 seconds. Consider specifying writeevery");
+            ts.tv_sec = 300;
+            ts.tv_nsec = 0;
+        }
+    } else if (writeevery > 0.0001) {
+        ts.tv_sec = writeevery;
+        ts.tv_nsec = ((long)(writeevery - ts.tv_sec)) * 1e9;
+    } else {
+        // writevery 0.
+        ts.tv_sec = 300;
+        ts.tv_nsec = 0;
+    }
 
 	Registry::GetMainScheduler()->ScheduleWork(ncmd, ts);
 }
@@ -199,8 +199,8 @@ void CHTMLWriter::Update(const IObserverSubject *subject)
 		// but -- to be nice -- update the value first
 		ourcap = IInverterBase::GetConcreteCapability(CAPA_CAPAS_REMOVEALL);
 		assert (ourcap);
-		assert (ourcap->getValue()->GetType() == CAPA_CAPAS_REMOVEALL_TYPE);
-		assert (parentcap->getValue()->GetType() == CAPA_CAPAS_REMOVEALL_TYPE);
+		assert (CValue<CAPA_CAPAS_REMOVEALL_TYPE>::IsType(ourcap->getValue()));
+		assert (CValue<CAPA_CAPAS_REMOVEALL_TYPE>::IsType(parentcap->getValue()));
 
 		CValue<bool> *a, *b;
 		a = (CValue<bool> *) (ourcap->getValue());

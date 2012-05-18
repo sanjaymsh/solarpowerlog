@@ -162,9 +162,9 @@ private:
 	bool token_IEE(const vector<string> &tokens);
 	bool token_IED(const vector<string> &tokens);
 	bool token_IEA(const vector<string> &tokens);
-        bool token_UGD(const vector<string> &tokens);
-        bool token_KLD(const vector<string> &tokens);
-        bool token_CAC(const vector<string> &tokens);
+    bool token_UGD(const vector<string> &tokens);
+    bool token_KLD(const vector<string> &tokens);
+    bool token_CAC(const vector<string> &tokens);
 
 	// a helper, as this is shared by two token parsers.
 	void create_versioncapa(void);

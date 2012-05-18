@@ -53,7 +53,7 @@ CInverterDummy::CInverterDummy(const string &name,
 	IValue *v;
 	CCapability *c;
 	s = CAPA_INVERTER_MANUFACTOR_NAME;
-	v = IValue::Factory(CAPA_INVERTER_MANUFACTOR_TYPE);
+	v = CValueFactory::Factory<CAPA_INVERTER_MANUFACTOR_TYPE>();
 	((CValue<string>*) v)->Set("Dummy Inverter");
 	c = new CCapability(s, v, this);
 	AddCapability(c);

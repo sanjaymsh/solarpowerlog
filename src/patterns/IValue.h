@@ -22,11 +22,11 @@ Copyright (C) 2009-2012 Tobias Frost
 /** \file IValue.h
  *
  *  \date May 13, 2009
- *   \Author: Tobias Frost (coldtobi)
+ *  \Author: Tobias Frost (coldtobi)
  */
 
-#ifndef ICAPABILITY_H_
-#define ICAPABILITY_H_
+#ifndef IVALUE_H_
+#define IVALUE_H_
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -39,8 +39,6 @@ Copyright (C) 2009-2012 Tobias Frost
  * It is supposed to be derived, and the derived class is responsible for
  * type-correct storage.
  *
- * In this interface, also the factory is embedded to create the concrete
- * values.
  *
  * \ingroup factories
  */
@@ -48,37 +46,23 @@ class IValue
 {
 public:
 
-	/** This enumeration specifies the type of the storage.
-	 * It can be used as parameter for the factory. */
-	enum factory_types
-	{
-		bool_type, ///< boolean storage
-		int_type, ///< integer (signed)
-		float_type, ///< float storage
-		string_type
-	///< string type
-	};
-
-	/** Factory method to generate desired concrete Value */
-	static IValue* Factory( const factory_types typedescriptor );
-
-	/** Interface method to check the type of the value */
-	virtual factory_types GetType( void ) const;
-
-	// virtual std::string string GetValueAsString();
+protected:
+    template<class T>
+    friend class CValue;
+	virtual int GetInternalType( void ) const {return type_;}
 
 public:
-	/** Inteface method for easier transfer to strings. */
+	/** Interface method for easier transfer to strings. */
 	virtual operator std::string() = 0;
 
 protected:
-	IValue();
+	IValue() {}
 public:
-	virtual ~IValue();
+	virtual ~IValue() {}
 
 protected:
-	factory_types type;
+	int type_;
 
 };
 
-#endif /* ICAPABILITY_H_ */
+#endif /* IVALUE_H_ */

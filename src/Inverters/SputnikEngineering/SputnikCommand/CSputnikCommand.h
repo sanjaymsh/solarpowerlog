@@ -38,7 +38,7 @@
 #include <stdlib.h>
 
 #include "Inverters/interfaces/InverterBase.h"
-#include "Inverters/SputnikEngineering/ISputnikCommand.h"
+#include "Inverters/SputnikEngineering/SputnikCommand/ISputnikCommand.h"
 #include "patterns/CValue.h"
 #include "Inverters/Capabilites.h"
 #include "configuration/ILogger.h"

@@ -32,9 +32,9 @@ Connections/CSharedConnectionSlave.cpp Connections/CConnectSerialAsio.cpp \
 Connections/factories/IConnectFactory.cpp Connections/CConnectTCPAsio.cpp \
 solarpowerlog.cpp Inverters/SputnikEngineering/CInverterFactorySputnik.cpp \
 Inverters/SputnikEngineering/CInverterSputnikSSeries.cpp \
-Inverters/SputnikEngineering/CSputnikCommand.cpp \
-Inverters/SputnikEngineering/ISputnikCommand.cpp \
-Inverters/SputnikEngineering/CSputnikCommandSoftwareVersion.cpp \
+Inverters/SputnikEngineering/SputnikCommand/CSputnikCommand.cpp \
+Inverters/SputnikEngineering/SputnikCommand/ISputnikCommand.cpp \
+Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSoftwareVersion.cpp \
 Inverters/DummyInverter/CInverterDummy.cpp  \
 Inverters/DummyInverter/CInverterFactoryDummy.cpp \
 Inverters/interfaces/CNestedCapaIterator.cpp \
@@ -61,9 +61,9 @@ Connections/CSharedConnectionSlave.h Connections/CConnectSerialAsio.h \
 Connections/factories/IConnectFactory.h Connections/CConnectTCPAsio.h \
 Inverters/SputnikEngineering/CInverterFactorySputnik.h \
 Inverters/SputnikEngineering/CInverterSputnikSSeries.h \
-Inverters/SputnikEngineering/CSputnikCommand.h \
-Inverters/SputnikEngineering/ISputnikCommand.h \
-Inverters/SputnikEngineering/CSputnikCommandSoftwareVersion.h \
+Inverters/SputnikEngineering/SputnikCommand/CSputnikCommand.h \
+Inverters/SputnikEngineering/SputnikCommand/ISputnikCommand.h \
+Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSoftwareVersion.h \
 Inverters/DummyInverter/CInverterDummy.h  \
 Inverters/DummyInverter/CInverterFactoryDummy.h \
 Inverters/interfaces/CNestedCapaIterator.h \

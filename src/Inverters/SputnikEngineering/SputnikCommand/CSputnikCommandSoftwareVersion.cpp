@@ -42,7 +42,7 @@ static const std::string BDN("BDN");
 
 
 int CSputnikCommandSoftwareVersion::GetMaxAnswerLen(void) {
-    if ( ! this->got_swversion ) return 9;
+    if ( !got_swversion ) return 9;
     return 7;
 }
 
@@ -58,7 +58,7 @@ bool CSputnikCommandSoftwareVersion::IsHandled(const std::string& token) {
 }
 
 bool CSputnikCommandSoftwareVersion::ConsiderCommand() {
-    if (!this->got_buildversion || !this->got_swversion) return true;
+    if (!got_buildversion || !got_swversion) return true;
 #warning implement backoff algorithm!
     // temporary: fixed backoff. Later, a algorithm should consider when
     // its time to do the next command.
@@ -95,5 +95,5 @@ void CSputnikCommandSoftwareVersion::handle_token(
         strsw += "Build " + build;
     }
 
-    this->CapabilityHandling<std::string>(strsw);
+    CapabilityHandling<std::string>(strsw);
 }

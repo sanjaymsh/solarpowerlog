@@ -41,14 +41,8 @@ Copyright (C) 2009-2012 Tobias Frost
  *      Author: tobi
  */
 
-#include "CSputnikCommand.h"
-#include "Inverters/interfaces/InverterBase.h"
-//
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
-IInverterBase *base;
-
-void test() {
-  //  CSputnikCommand<long,long> c("ABC",3,2);
-    CSputnikCommand<float> d("ABC",3,2,base,"CDEF");
-
-}
+// currently empty.

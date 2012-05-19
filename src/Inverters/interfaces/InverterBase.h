@@ -311,6 +311,8 @@ protected:
 
 	map<string, CCapability*> CapabilityMap;
 
+	// Allow sub-objects of the inverter accessing the logger.
+public:
 	/// The Logger Class for Debugging, Error reporting etc...
 	ILogger logger;
 };

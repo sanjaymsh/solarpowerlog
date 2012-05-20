@@ -42,9 +42,9 @@
  */
 class CSputnikCommandSoftwareVersion : public ISputnikCommand
 {
-    CSputnikCommandSoftwareVersion(const std::string &cmd,
-        IInverterBase *inv, const std::string & capname)
-        : ISputnikCommand(cmd, 0, inv, capname), got_buildversion(false), got_swversion(false), backoff(10) {
+public:
+    CSputnikCommandSoftwareVersion(IInverterBase *inv, const std::string & capname)
+        : ISputnikCommand("", 0, inv, capname), got_buildversion(false), got_swversion(false), backoff(10) {
     }
 
     virtual bool ConsiderCommand();

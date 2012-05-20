@@ -91,7 +91,7 @@ public:
 
     /// handles the parsing, and handles the capability then.
     /// must bei implemented in the derived class.
-    virtual void handle_token(const std::vector<std::string> & tokens) = 0;
+    virtual void handle_token(const std::vector<std::string> & tokens) {};
 
 protected:
     /** Update / Register capability, if needed */

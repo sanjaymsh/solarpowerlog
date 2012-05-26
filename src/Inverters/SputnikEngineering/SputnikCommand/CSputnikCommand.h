@@ -103,9 +103,15 @@ public:
     /// Caller gives us a already tokenized response, where tokens[0] is the
     /// command (echoed by the inverter) and tokens[1] is the value is hex
     /// format. (without 0x, always integer.)
-    virtual void handle_token(const std::vector<std::string> & tokens) {
-        T temp = this->convert(tokens);
-        this->CapabilityHandling<T>(temp);
+    virtual bool handle_token(const std::vector<std::string> & tokens) {
+        if (tokens.size() != 2) return false;
+        try {
+            T temp = this->convert(tokens);
+            CapabilityHandling<T>(temp);
+        } catch (...) {
+            return false;
+        }
+        return true;
     }
 
 private:

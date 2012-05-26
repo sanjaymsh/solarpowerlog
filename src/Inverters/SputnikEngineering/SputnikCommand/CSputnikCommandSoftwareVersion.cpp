@@ -80,8 +80,11 @@ bool CSputnikCommandSoftwareVersion::ConsiderCommand() {
 }
 
 
-void CSputnikCommandSoftwareVersion::handle_token(
+bool CSputnikCommandSoftwareVersion::handle_token(
     const std::vector<std::string>& tokens) {
+
+    if ( tokens.size() != 2)
+        return false;
 
     if ( tokens[0] == SWV ) {
         sw = strtoul(tokens[1].c_str(), NULL, 16);
@@ -96,7 +99,7 @@ void CSputnikCommandSoftwareVersion::handle_token(
         LOGDEBUG(inverter->logger,
             "CSputnikCommandSoftwareVersion::handle_token() unexpected call "
                 << tokens[0]);
-        return;
+        return false;
     }
 
     std::string strsw;

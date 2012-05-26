@@ -61,12 +61,12 @@ static const struct
             "ALONG WITH ALL INFOS YOU HAVE" }
     };
 
-void CSputnikCommandTYP::handle_token(const std::vector<std::string>& tokens) {
+bool CSputnikCommandTYP::handle_token(const std::vector<std::string>& tokens) {
     string strmodel;
     unsigned int i = 0;
 
     // Check syntax
-    if (tokens.size() != 2) return;
+    if (tokens.size() != 2) return false;
 
     int model = strtoul(tokens[1].c_str(), NULL, 16);
 
@@ -82,4 +82,5 @@ void CSputnikCommandTYP::handle_token(const std::vector<std::string>& tokens) {
     }
 
     CapabilityHandling<CAPA_INVERTER_MODEL_TYPE>(model_lookup[i].description);
+    return true;
 }

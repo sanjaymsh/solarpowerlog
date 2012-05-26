@@ -57,7 +57,7 @@ public:
 
     virtual bool IsHandled(const std::string &token);
 
-    virtual void handle_token(const std::vector<std::string> & tokens);
+    virtual bool handle_token(const std::vector<std::string> & tokens);
 
 private:
     bool got_buildversion;

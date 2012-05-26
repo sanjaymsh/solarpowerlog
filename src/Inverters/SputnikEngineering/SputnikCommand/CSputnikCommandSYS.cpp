@@ -35,9 +35,9 @@ static const struct
                     STATUS_UNAVAILABLE,
                     "Unknown Statuscode -- PLEASE FILE A BUG WITH AS MUCH INFOS AS YOU CAN FIND OUT -- BEST, READ THE DISPLAY OF THE INVERTER." }, };
 
-void CSputnikCommandSYS::handle_token(const std::vector<std::string>& tokens) {
+bool CSputnikCommandSYS::handle_token(const std::vector<std::string>& tokens) {
 
-    if (tokens.size() != 2) return;
+    if (tokens.size() != 2) return false;
 
     int status = strtoul(tokens[1].c_str(), NULL, 16);
 
@@ -64,4 +64,5 @@ void CSputnikCommandSYS::handle_token(const std::vector<std::string>& tokens) {
     CapabilityHandling<CAPA_INVERTER_STATUS_READABLE_TYPE>(
         statuscodes[i].description, CAPA_INVERTER_STATUS_READABLE_NAME);
 
+    return true;
 }

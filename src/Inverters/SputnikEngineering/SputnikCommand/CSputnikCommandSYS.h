@@ -40,7 +40,7 @@ public:
 
     virtual ~CSputnikCommandSYS() {}
 
-    virtual void handle_token(const std::vector<std::string> & tokens);
+    virtual bool handle_token(const std::vector<std::string> & tokens);
 
 private:
     unsigned int laststatuscode;

@@ -39,7 +39,7 @@ public:
 
     virtual ~CSputnikCommandTYP() {}
 
-    virtual void handle_token(const std::vector<std::string> & tokens);
+    virtual bool handle_token(const std::vector<std::string> & tokens);
 };
 
 #endif /* CSPUTNIKCOMMANDTYP_H_ */

@@ -127,6 +127,23 @@ static const struct
 
 using namespace std;
 
+#define DEBUG_TOKENIZER
+// Debug: Print all received tokens
+#if defined DEBUG_TOKENIZER
+void DEBUG_tokenprinter(ILogger &logger, std::vector<std::string> tokens) {
+    int i;
+    if (logger.IsEnabled(ILogger::LL_TRACE)) {
+        std::stringstream ss;
+        vector<string>::iterator it;
+        for (i = 0, it = tokens.begin(); it != tokens.end() - 1; it++) {
+            ss << i++ << ": " << (*it) << "\tlen: " << (*it).length() << endl;
+        }
+        LOGTRACE(logger, ss);
+    }
+
+}
+#endif
+
 CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 		const string & configurationpath) :
 	IInverterBase::IInverterBase(name, configurationpath, "inverter")
@@ -624,7 +641,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 			break;
 		}
 
-#warning needs rework.
+#ifndef SPUTNIK_USE_NEW_COMMAND_HANDLING
 		// check if there are queries left in this cycle.
 		if (!cmdqueue.empty()) {
 			cmd = new ICommand(CMD_SEND_QUERIES, this);
@@ -632,6 +649,15 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 			Registry::GetMainScheduler()->ScheduleWork(cmd);
 			break;
 		}
+#else
+		// if there are still pending commands, issue them first before
+		// filling the queue again.
+		if (!pendingcommands.empty()) {
+			cmd = new ICommand(CMD_SEND_QUERIES, this);
+			Registry::GetMainScheduler()->ScheduleWork(cmd);
+			break;
+		}
+#endif
 
 		// TODO differenciate between identify query and "normal" runtime queries
 		cmd = new ICommand(CMD_QUERY_POLL, this);
@@ -1349,7 +1375,89 @@ string CInverterSputnikSSeries::assemblequerystring()
 
 #ifdef SPUTNIK_USE_NEW_COMMAND_HANDLING
 int CInverterSputnikSSeries::parsereceivedstring(const string & s) {
-#error not implemented
+
+    unsigned int i;
+
+    // check for basic constraints...
+    if (s[0] != '{' || s[s.length() - 1] != '}') return -1;
+    // tokenizer (taken from
+    // http://oopweb.com/CPP/Documents/CPPHOWTO/Volume/C++Programming-HOWTO-7.html
+    // but  modified.
+
+    // we take the received string and "split" it into smaller pieces.
+    // the pieces ("tokens") then assemble one single information to be
+    // for this, we split by:
+    // ";" "|" ":" (and "{}")
+
+    vector<string> tokens;
+    {
+        char delimiters[] = "{;|:}";
+        tokenizer(delimiters, s, tokens);
+    }
+    // Debug: Print all received tokens
+#if defined DEBUG_TOKENIZER
+    DEBUG_tokenprinter(this->logger, tokens);
+#endif
+
+    unsigned int tmp;
+    if (1 != sscanf(tokens.back().c_str(), "%x", &tmp)) {
+        LOGDEBUG(logger, "could not parse checksum. Token was:");
+        return -1;
+    }
+
+    if (tmp != CalcChecksum(s.c_str(), s.length() - 6)) {
+        LOGDEBUG(logger, "Checksum error on received telegram");
+        return -1;
+    }
+
+    if (1 != sscanf(tokens[0].c_str(), "%x", &tmp)) {
+        LOGDEBUG(logger, " could not parse from address");
+        return -1;
+    }
+
+    if (tmp != commadr) {
+        LOGDEBUG(logger, "Received string is not for us: Wrong Sender");
+        return 0;
+    }
+
+    if (1 != sscanf(tokens[1].c_str(), "%x", &tmp)) {
+        LOGDEBUG(logger, "could not parse to-address");
+        return -1;
+    }
+
+    if (tmp != ownadr) {
+        LOGDEBUG(logger, "Received string is not for us: Wrong receiver");
+        return 0;
+    }
+
+    if (1 != sscanf(tokens[2].c_str(), "%x", &tmp)) {
+        LOGDEBUG(logger, "could not parse telegram length");
+        return -1;
+    }
+
+    if (tmp != s.length()) {
+        LOGDEBUG(logger, "wrong telegram length ");
+        return -1;
+    }
+
+    {
+        int ret = 1;
+        const char delimiters[] = "=,";
+        for (i = 4; i < tokens.size() - 1; i++) {
+            vector<std::string> subtokens;
+            tokenizer(delimiters, tokens[i], subtokens);
+            if (subtokens.empty()) continue;
+            vector<ISputnikCommand*>::iterator it;
+            for (it = commands.begin(); it != commands.end(); it++) {
+                if ((*it)->IsHandled(subtokens[0])) {
+                    bool result = (*it)->handle_token(subtokens);
+                    if (!result) ret = -1;
+                    break;
+                }
+            }
+        }
+        return ret;
+    }
 }
 #endif
 
@@ -1437,13 +1545,14 @@ int CInverterSputnikSSeries::parsereceivedstring(const string & s) {
 		if (!parsetoken(tokens[i])) {
 			LOGDEBUG(logger,
 					"BUG: Parse Error at token " << tokens[i]
-					<< ". Received: " << s << "If the token is unknown or you subject a bug, please report it giving the  token ans received string"
+					<< ". Received: " << s << "If the token is unknown or you subject a bug, please report it giving the token and received string"
 			);
 			ret = -1;
 		}
 	}
 	return ret;
 }
+#endif
 
 bool CInverterSputnikSSeries::parsetoken(string token)
 {
@@ -1602,7 +1711,6 @@ bool CInverterSputnikSSeries::parsetoken(string token)
 
 	return true;
 }
-#endif
 
 void CInverterSputnikSSeries::tokenizer(const char *delimiters,
 		const string& s, vector<string> &tokens)

@@ -79,6 +79,11 @@ public:
         return command;
     }
 
+    /** Helper: Return the length of the command to be issued. */
+    virtual unsigned int GetCommandLen(void) {
+        return command.length();
+    }
+
     /** Check if the token is handled by this instance.
      * \returns true if it is, else false
      *
@@ -105,6 +110,35 @@ protected:
            IValue *v = new CValue<T>;
            ((CValue<T>*)v)->Set(value);
            cap = new CCapability(capaname,v,inverter);
+           inverter->GetConcreteCapability(CAPA_CAPAS_UPDATED)->Notify();
+           return;
+        }
+
+        // Check for the type and throw an exception if not equal.
+        // (as capabilites are created by this class, this should be not hapen)
+         if ( CValue<T>::IsType(cap->getValue())) {
+            CValue<T> *v = (CValue<T> *)cap->getValue();
+            v->Set(value);
+            cap->Notify();
+            return;
+        } else {
+            std::bad_cast e;
+            LOGERROR(inverter->logger,"Bad cast for command " + command);
+            throw e;
+        }
+    };
+
+    /// Alternative implementation to sepcify also the capability to be updated.
+    /// (For example if more than one capability is attached to this command)
+    template <class T>
+    void CapabilityHandling(T value, std::string capname) throw() {
+        assert(inverter);
+        CCapability *cap = inverter->GetConcreteCapability(capname);
+
+        if (!cap) {
+           IValue *v = new CValue<T>;
+           ((CValue<T>*)v)->Set(value);
+           cap = new CCapability(capname,v,inverter);
            inverter->GetConcreteCapability(CAPA_CAPAS_UPDATED)->Notify();
            return;
         }

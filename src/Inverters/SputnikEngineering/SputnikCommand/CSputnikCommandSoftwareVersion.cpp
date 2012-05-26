@@ -39,16 +39,25 @@ Copyright (C) 2009-2012 Tobias Frost
 static const std::string SWV("SWV");
 /// command string for BuildVersion
 static const std::string BDN("BDN");
+/// command string for both
+static const std::string BDNSWV("BDN;SWV");
+
 
 
 int CSputnikCommandSoftwareVersion::GetMaxAnswerLen(void) {
-    if ( !got_swversion ) return 9;
+    if ( !got_swversion && ! got_buildversion ) return 9+7;
+    if ( !got_swversion) return 9;
     return 7;
 }
 
 const std::string& CSputnikCommandSoftwareVersion::GetCommand(void) {
-    if ( !got_swversion) return SWV;
+    if ( !got_swversion && ! got_buildversion ) return BDNSWV;
+    if ( !got_swversion) return (SWV);
     return BDN;
+}
+
+unsigned int CSputnikCommandSoftwareVersion::GetCommandLen(void) {
+    return GetCommand().length();
 }
 
 bool CSputnikCommandSoftwareVersion::IsHandled(const std::string& token) {
@@ -69,6 +78,7 @@ bool CSputnikCommandSoftwareVersion::ConsiderCommand() {
     backoff = 10;
     return true;
 }
+
 
 void CSputnikCommandSoftwareVersion::handle_token(
     const std::vector<std::string>& tokens) {

@@ -53,6 +53,8 @@ public:
 
     virtual const std::string& GetCommand(void);
 
+    virtual unsigned int GetCommandLen(void);
+
     virtual bool IsHandled(const std::string &token);
 
     virtual void handle_token(const std::vector<std::string> & tokens);

@@ -37,8 +37,13 @@ Copyright (C) 2009-2012 Tobias Frost
 
 #if defined HAVE_INV_SPUTNIK
 
+// Experimental -- currently being coded.
+// #define SPUTNIK_USE_NEW_COMMAND_HANDLING
+
 #include "Inverters/interfaces/InverterBase.h"
 #include "Inverters/BasicCommands.h"
+
+#include "Inverters/SputnikEngineering/SputnikCommand/ISputnikCommand.h"
 
 #include <queue>
 
@@ -133,7 +138,7 @@ private:
 	bool token_BUILDVER(const vector<string> &tokens);
 	bool token_ECxx(const vector<string> &tokens);
 	bool token_PAC(const vector<string> &tokens);
-        bool token_PDC(const vector<string> &tokens);
+	bool token_PDC(const vector<string> &tokens);
 	bool token_KHR(const vector<string> &tokens);
 	bool token_DYR(const vector<string> &tokens);
 	bool token_DMT(const vector<string> &tokens);
@@ -183,6 +188,14 @@ private:
 
 	/// helper for Execute Command to store error detection / recovery (errorcounter)
 	unsigned int errcnt_;
+
+#ifdef SPUTNIK_USE_NEW_COMMAND_HANDLING
+    /// stores supported commands.
+    vector<ISputnikCommand*> commands;
+
+    /// stores pending commmands.
+    vector<ISputnikCommand*> pendingcommands;
+#endif
 };
 
 #endif

@@ -64,7 +64,9 @@ Copyright (C) 2009-2012 Tobias Frost
 
 #include "configuration/ILogger.h"
 
-#include <cstring>
+#include "Inverters/SputnikEngineering/SputnikCommand/CSputnikCommand.h"
+#include "Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSoftwareVersion.h"
+#include "Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSYS.h"
 
 using namespace libconfig;
 
@@ -99,7 +101,7 @@ static struct
 					-1,
 					"UKNOWN MODEL. PLEASE FILE A BUG WITH THE REPORTED ID, ALONG WITH ALL INFOS YOU HAVE" } };
 
-static struct
+static const struct
 {
 	unsigned int code;
 	enum InverterStatusCodes status;
@@ -179,11 +181,141 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	cfghlp.GetConfig("comms", s, (string) "unset");
 	LOGDEBUG(logger,"Communication: " << s);
 
+#ifdef SPUTNIK_USE_NEW_COMMAND_HANDLING
+
+	// Initialize vector of supported commands.
+// needs override 	this->commands.push_back(CSputnikCommand<unsigned long>("TYP",9,0));
+    commands.push_back(
+        new CSputnikCommandSoftwareVersion(this, CAPA_INVERTER_FIRMWARE));
+
+//	needs special handling this->commands.push_back(CSputnikCommand<unsigned long>("EC*",27,0));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_ACPOWER_TOTAL_TYPE>("PAC", 9, 2.0,
+            this, CAPA_INVERTER_ACPOWER_TOTAL));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_DCPOWER_TOTAL_TYPE>("PDC", 9, 2.0,
+            this, CAPA_INVERTER_DCPOWER_TOTAL));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_PON_HOURS_TYPE>("KHR", 9, 1.0, this,
+            CAPA_INVERTER_PON_HOURS));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_STARTUPS_TYPE>("CAC", 9, 0, this,
+            CAPA_INVERTER_STARTUPS));
+
+// not implemented  this->commands.push_back(CSputnikCommand<unsigned long>("DYR",7,0));
+// not implemented	this->commands.push_back(CSputnikCommand<unsigned long>("DDY",7,0));
+// not implemented  this->commands.push_back(CSputnikCommand<unsigned long>("DMT",7,0));
+
+	commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_KWH_Y2D_TYPE>("KYR", 9, 1.0, this,
+            CAPA_INVERTER_KWH_Y2D));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_KWH_M2D_TYPE>("KMT", 7, 1.0, this,
+            CAPA_INVERTER_KWH_M2D));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_KWH_2D_TYPE>("KDY", 10, 10.0, this,
+            CAPA_INVERTER_KWH_2D));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_KWH_YD_TYPE>("KLD", 10, 10, this,
+            CAPA_INVERTER_KWH_YD));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_KWH_TOTAL_TYPE>("KT0", 10, 1.0, this,
+            CAPA_INVERTER_KWH_TOTAL_NAME));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_INSTALLEDPOWER_TYPE>("PIN", 9, 0.5,
+            this, CAPA_INVERTER_INSTALLEDPOWER_NAME));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_NET_FREQUENCY_TYPE>("TNF", 10, 0.01,
+            this, CAPA_INVERTER_NET_FREQUENCY_NAME));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_RELPOWER_TYPE>("PRL", 10, 1.0, this,
+            CAPA_INVERTER_RELPOWER_NAME));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_INPUT_DC_VOLTAGE_TYPE>("UDC", 10, 0.1,
+            this, CAPA_INVERTER_INPUT_DC_VOLTAGE_NAME));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGE_TYPE>("UL1", 10, 0.1,
+            this, CAPA_INVERTER_GRID_AC_VOLTAGE_NAME));
+
+    // not implemented    this->commands.push_back(CSputnikCommand<float>("UL2",10,0.1));
+    // not implemented    this->commands.push_back(CSputnikCommand<float>("UL3",10,0.1));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_INPUT_DC_CURRENT_TYPE>("IDC", 10,
+            0.01, this, CAPA_INVERTER_INPUT_DC_CURRENT_NAME));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_TYPE>("IL1", 10, 0.01,
+            this, CAPA_INVERTER_GRID_AC_CURRENT_NAME));
+
+    // not implemented
+    // this->commands.push_back(CSputnikCommand<float>("IL2",10,0.01));
+
+    // not implemented
+    //   this->commands.push_back(CSputnikCommand<float>("IL3",10,0.01));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_TYPE>("TKK", 10, 1.0,
+            this, CAPA_INVERTER_TEMPERATURE_NAME));
+
+    // not implemented
+    //    this->commands.push_back(CSputnikCommand<unsigned long>("TK2",10,0));
+
+    // not implemented
+    //    this->commands.push_back(CSputnikCommand<unsigned long>("TK3",10,0));
+
+    // not implemented
+    // this->commands.push_back(CSputnikCommand<unsigned long>("TMI",10,0));
+
+    // not implemented
+    // this->commands.push_back(CSputnikCommand<unsigned long>("THR",10,0));
+
+    // Handles the SYS Command, which handles the CAPA_INVERTER_STATUS_NAME
+    // and CAPA_INVERTER_STATUS_READABLE_NAME capabilities.
+    commands.push_back(new CSputnikCommandSYS(this));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_ERROR_CURRENT_TYPE>("IEE", 10, 0.1,
+            this, CAPA_INVERTER_ERROR_CURRENT_NAME));
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_DC_ERROR_CURRENT_TYPE>("IED", 10, 0.1,
+            this, CAPA_INVERTER_DC_ERROR_CURRENT_NAME));
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_AC_ERROR_CURRENT_TYPE>("IEA", 10, 0.1,
+            this, CAPA_INVERTER_AC_ERROR_CURRENT_NAME));
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_GROUND_VOLTAGE_TYPE>("UGD", 10, 0.1,
+            this, CAPA_INVERTER_GROUND_VOLTAGE_NAME));
+
+#endif
+
 }
 
 CInverterSputnikSSeries::~CInverterSputnikSSeries()
 {
-	// TODO Auto-generated destructor stub
+#ifdef SPUTNIK_USE_NEW_COMMAND_HANDLING
+    /* delete all commands allocated in the constructor. */
+	vector<ISputnikCommand*>::iterator it;
+	for (it=commands.begin(); it!=commands.end(); it++) {
+	    delete *it;
+	    *it= NULL;
+	}
+	commands.clear();
+#endif
+
 }
 
 bool CInverterSputnikSSeries::CheckConfig()
@@ -329,14 +461,18 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 	case CMD_QUERY_IDENTIFY:
 		LOGDEBUG(logger, "new state: CMD_QUERY_IDENTIFY ");
 
+#ifndef SPUTNIK_USE_NEW_COMMAND_HANDLING
 		pushinverterquery(TYP);
 		pushinverterquery(SWV);
 		pushinverterquery(BUILDVER);
 		/// this fall through is intended.
+#endif
 
 	case CMD_QUERY_POLL:
+	{
 		LOGDEBUG(logger, "new state: CMD_QUERY_POLL ");
 
+#ifndef SPUTNIK_USE_NEW_COMMAND_HANDLING
 		pushinverterquery(PAC);
         pushinverterquery(PDC);
 		pushinverterquery(KHR);
@@ -364,11 +500,20 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		pushinverterquery(UGD);
 		pushinverterquery(CAC);
 		pushinverterquery(KLD);
+#else
+		// Collect all queries to be issued.
+		std::vector<ISputnikCommand*>::iterator it;
+		for (it=commands.begin(); it!= commands.end(); it++) {
+		    if ((*it)->ConsiderCommand()) {
+		        pendingcommands.push_back(*it);
+		    }
+		}
+#endif
+	}
 
 	case CMD_SEND_QUERIES:
 	{
 		LOGDEBUG(logger, "new state: CMD_SEND_QUERIES ");
-
 		commstring = assemblequerystring();
 		LOGTRACE(logger, "Sending: " << commstring << " Len: "<< commstring.size());
 
@@ -420,7 +565,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		}
 
 		if (err < 0) {
-			// we do not differenziate the error here, a error is a error....
+			// we do not differentiate the error here, an error is an error....
 			cmd = new ICommand(CMD_DISCONNECTED, this);
 			Registry::GetMainScheduler()->ScheduleWork(cmd);
 			try {
@@ -456,6 +601,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 			LOGTRACE(logger, "Received in hex: "<< st );
 		}
 
+#ifndef SPUTNIK_USE_NEW_COMMAND_HANDLING
 		int parseresult = parsereceivedstring(s);
 		if (0 > parseresult ) {
 			// Reconnect on parse errors.
@@ -473,6 +619,9 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 			connection->Receive(cmd);
 			break;
 		}
+#else
+#warning implement me
+#endif
 
 		// check if there are queries left in this cycle.
 		if (!cmdqueue.empty()) {
@@ -511,6 +660,62 @@ void CInverterSputnikSSeries::pushinverterquery(enum query q)
 	cmdqueue.push(q);
 }
 
+#ifdef SPUTNIK_USE_NEW_COMMAND_HANDLING
+string CInverterSputnikSSeries::assemblequerystring()
+{
+
+    // ensure two things:
+    // - telegram len does not exceed 255 bytes in total,
+    // while there are 16 header bytes and 6 trailing bytes to be considered.
+    // - answer is not exceeding 255 bytes
+    // (here, we reserve a saftey of 10 bytes additionally).
+    int telegramlen = 254-22;
+    int expectedanswerlen = 255-31;
+    int currentport = QUERY; // At the moment only QUERY's are supported.
+    std::string telegram;
+
+    if (pendingcommands.empty()) return "";
+    // assemble string to send out of pending commands.
+
+    // get the max amount of commands up to the max size
+    // (we also ensure max answer len, as on observations fragmentation of
+    // the telgramm does break it -- at least on my inverters' firmware.
+    std::vector<ISputnikCommand*>::iterator it = pendingcommands.begin();
+    while (it != pendingcommands.end()) {
+        int alen = (*it)->GetMaxAnswerLen();
+        int clen = (*it)->GetCommandLen();
+        if ( alen < expectedanswerlen && clen < telegramlen ) {
+            if (!telegram.empty()) {
+                // Add seperator if this is not the first command in the string.
+                telegram += ";";
+                telegramlen--;
+            }
+            telegram += (*it)->GetCommand();
+            telegramlen -= clen;
+            expectedanswerlen -=alen;
+            it = pendingcommands.erase(it);
+        }
+        else
+        {
+            it++;
+        }
+    }
+
+    int len = 0;
+    char buf[32];
+    snprintf(buf, 32,"%X:", currentport);
+    len = strlen(buf) + telegram.length() + 10 + 6;
+    snprintf(buf, 32, "{%02X;%02X;%02X|%X:", ownadr, commadr, len,
+            currentport);
+    // Insert header at beginning, add trailing "|"
+    telegram.insert(0,buf);
+    telegram.append("|");
+    snprintf(buf,32,"%04X}", CalcChecksum(telegram.c_str(),
+        telegram.length()));
+    telegram.append(buf);
+    return telegram;
+}
+#else
 string CInverterSputnikSSeries::assemblequerystring()
 {
 	if (cmdqueue.empty()) {
@@ -1138,9 +1343,16 @@ string CInverterSputnikSSeries::assemblequerystring()
 	querystring += formatbuffer;
 	return querystring;
 }
+#endif
 
-int CInverterSputnikSSeries::parsereceivedstring(const string & s)
-{
+#ifdef SPUTNIK_USE_NEW_COMMAND_HANDLING
+int CInverterSputnikSSeries::parsereceivedstring(const string & s) {
+#error not implemented
+}
+#endif
+
+#ifndef SPUTNIK_USE_NEW_COMMAND_HANDLING
+int CInverterSputnikSSeries::parsereceivedstring(const string & s) {
 
 	unsigned int i;
 
@@ -1388,6 +1600,7 @@ bool CInverterSputnikSSeries::parsetoken(string token)
 
 	return true;
 }
+#endif
 
 void CInverterSputnikSSeries::tokenizer(const char *delimiters,
 		const string& s, vector<string> &tokens)

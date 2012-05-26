@@ -67,6 +67,7 @@ Copyright (C) 2009-2012 Tobias Frost
 #include "Inverters/SputnikEngineering/SputnikCommand/CSputnikCommand.h"
 #include "Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSoftwareVersion.h"
 #include "Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSYS.h"
+#include "Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandTYP.h"
 
 using namespace libconfig;
 
@@ -184,8 +185,12 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 #ifdef SPUTNIK_USE_NEW_COMMAND_HANDLING
 
 	// Initialize vector of supported commands.
-// needs override 	this->commands.push_back(CSputnikCommand<unsigned long>("TYP",9,0));
-    commands.push_back(
+	// Handles the "TYP" command, which will identifiy the model
+	// and handles CAPA_INVERTER_MODEL.
+	commands.push_back(
+	    new CSputnikCommandTYP(this));
+
+	commands.push_back(
         new CSputnikCommandSoftwareVersion(this, CAPA_INVERTER_FIRMWARE));
 
 //	needs special handling this->commands.push_back(CSputnikCommand<unsigned long>("EC*",27,0));
@@ -601,7 +606,6 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 			LOGTRACE(logger, "Received in hex: "<< st );
 		}
 
-#ifndef SPUTNIK_USE_NEW_COMMAND_HANDLING
 		int parseresult = parsereceivedstring(s);
 		if (0 > parseresult ) {
 			// Reconnect on parse errors.
@@ -619,10 +623,8 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 			connection->Receive(cmd);
 			break;
 		}
-#else
-#warning implement me
-#endif
 
+#warning needs rework.
 		// check if there are queries left in this cycle.
 		if (!cmdqueue.empty()) {
 			cmd = new ICommand(CMD_SEND_QUERIES, this);

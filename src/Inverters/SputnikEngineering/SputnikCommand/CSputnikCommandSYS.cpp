@@ -37,6 +37,8 @@ static const struct
 
 void CSputnikCommandSYS::handle_token(const std::vector<std::string>& tokens) {
 
+    if (tokens.size() != 2) return;
+
     int status = strtoul(tokens[1].c_str(), NULL, 16);
 
     int i = 0;

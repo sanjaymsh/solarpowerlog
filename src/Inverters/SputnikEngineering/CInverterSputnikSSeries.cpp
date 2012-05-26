@@ -71,6 +71,7 @@ Copyright (C) 2009-2012 Tobias Frost
 
 using namespace libconfig;
 
+#ifndef SPUTNIK_USE_NEW_COMMAND_HANDLING
 static struct
 {
 	unsigned int typ;
@@ -124,6 +125,7 @@ static const struct
 						-1,
 						STATUS_UNAVAILABLE,
 						"Unknown Statuscode -- PLEASE FILE A BUG WITH AS MUCH INFOS AS YOU CAN FIND OUT -- BEST, READ THE DISPLAY OF THE INVERTER." }, };
+#endif
 
 using namespace std;
 
@@ -149,11 +151,12 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	IInverterBase::IInverterBase(name, configurationpath, "inverter")
 {
 
+#ifndef SPUTNIK_USE_NEW_COMMAND_HANDLING
 	swversion = swbuild = 0;
+	laststatuscode = (unsigned int) -1;
+#endif
 	ownadr = 0xfb;
 	commadr = 0x01;
-	laststatuscode = (unsigned int) -1;
-	errcnt_ = 0;
 
 	// Add the capabilites that this inverter has
 	// Note: The "must-have" ones CAPA_CAPAS_REMOVEALL and CAPA_CAPAS_UPDATED are already instanciated by the base class constructor.
@@ -1554,6 +1557,7 @@ int CInverterSputnikSSeries::parsereceivedstring(const string & s) {
 }
 #endif
 
+#ifndef SPUTNIK_USE_NEW_COMMAND_HANDLING
 bool CInverterSputnikSSeries::parsetoken(string token)
 {
 
@@ -1711,6 +1715,7 @@ bool CInverterSputnikSSeries::parsetoken(string token)
 
 	return true;
 }
+#endif
 
 void CInverterSputnikSSeries::tokenizer(const char *delimiters,
 		const string& s, vector<string> &tokens)
@@ -1776,6 +1781,7 @@ void CInverterSputnikSSeries::tokenizer(const char *delimiters,
 	}
 }
 
+#ifndef SPUTNIK_USE_NEW_COMMAND_HANDLING
 bool CInverterSputnikSSeries::token_TYP(const vector<string> & tokens)
 {
 
@@ -2799,6 +2805,7 @@ bool CInverterSputnikSSeries::token_SYS(const vector<string> &tokens)
 
 	return true;
 }
+
 // IEE IED IEA UGD START
 
 bool CInverterSputnikSSeries::token_IEE(const vector<string> & tokens)
@@ -3034,5 +3041,7 @@ void CInverterSputnikSSeries::create_versioncapa(void)
 		}
 	}
 }
+
+#endif
 
 #endif

@@ -109,4 +109,5 @@ bool CSputnikCommandSoftwareVersion::handle_token(
     }
 
     CapabilityHandling<std::string>(strsw);
+    return true;
 }

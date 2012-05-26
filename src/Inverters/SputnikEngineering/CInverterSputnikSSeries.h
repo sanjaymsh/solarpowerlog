@@ -130,6 +130,7 @@ private:
 	void tokenizer(const char *delimiters, const string& s,
 			vector<string> &tokens);
 
+#ifndef SPUTNIK_USE_NEW_COMMAND_HANDLING
 	// token handlers
 	// they all will take its tokens and do whatever required, usually
 	// updating Capabilities.
@@ -177,17 +178,14 @@ private:
 	///  some internal infos we cache....
 	int swversion;
 	int swbuild;
+	/// helper to detect status code changes.
+	unsigned int laststatuscode;
 
+#endif
 	/// cache for inverters comm adr.
 	unsigned int commadr;
 	/// cache for own adr
 	unsigned int ownadr;
-
-	/// helper to detect status code changes.
-	unsigned int laststatuscode;
-
-	/// helper for Execute Command to store error detection / recovery (errorcounter)
-	unsigned int errcnt_;
 
 #ifdef SPUTNIK_USE_NEW_COMMAND_HANDLING
     /// stores supported commands.
@@ -195,6 +193,7 @@ private:
 
     /// stores pending commmands.
     vector<ISputnikCommand*> pendingcommands;
+
 #endif
 };
 

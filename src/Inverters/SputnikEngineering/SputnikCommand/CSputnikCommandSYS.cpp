@@ -20,20 +20,49 @@ static const struct
     const char *description;
 }
         statuscodes[] = {
-                { 20002, NOT_FEEDING_OK, "Solar radiation too low" },
-                { 20003, NOT_FEEDING_OK, "Inverter Starting up" },
-                { 20004, FEEDING_MPP, "Feeding on MPP" },
+            { 20001, FEEDING, "Operating" },
+            { 20002, NOT_FEEDING_OK, "Solar radiation too low" },
+            { 20003, NOT_FEEDING_OK, "Inverter starting up" },
+            { 20004, FEEDING_MPP, "Feeding on MPP" },
+            { 20005, FEEDING, "Feeding. Fan on" },
+            { 20006, FEEDING_MAXPOWER, "Feeding. Inverter at power limit" },
+            { 20008, FEEDING, "Feeding" },
+            { 20009, FEEDING_MAXPOWER, "Feeding. Current limitation (DC)" },
+            { 20010, FEEDING_MAXPOWER, "Feeding. Current limitation (AC)" },
+            { 20011, FEEDING_WARNING, "Testmode" },
+            { 20012, FEEDING_WARNING, "Remotely controlled" },
+            { 20013, NOT_FEEDING_OK, "Restart delay" },
 
-                { 20006, FEEDING_MAXPOWER, "Feeding. Inverter at power limit" },
-                { 20008, FEEDING, "Feeding" },
+            { 20110, NOT_FEEDING_ERROR, "Internal voltage too high." },
+            { 20111, NOT_FEEDING_ERROR, "Surge" },
+            { 20112, NOT_FEEDING_ERROR, "Overload." },
 
-                { 20115, NOT_FEEDING_EXTEVENT, "Off-grid" },
-                { 20116, NOT_FEEDING_EXTEVENT, "Grid Frequency too high" },
-                { 20117, NOT_FEEDING_EXTEVENT, "Grid Frequency too low" },
+            { 20114, NOT_FEEDING_ERROR, "Error current too high." },
+            { 20115, NOT_FEEDING_EXTEVENT, "Off-grid" },
+            { 20116, NOT_FEEDING_EXTEVENT, "Grid frequency too high" },
+            { 20117, NOT_FEEDING_EXTEVENT, "Grid frequency too low" },
+            { 20118, FEEDING_WARNING, "Islanding -- Operating in island mode." },
+            { 20119, NOT_FEEDING_EXTEVENT, "Grid quality too low" },
 
-                { 1,
-                    STATUS_UNAVAILABLE,
-                    "Unknown Statuscode -- PLEASE FILE A BUG WITH AS MUCH INFOS AS YOU CAN FIND OUT -- BEST, READ THE DISPLAY OF THE INVERTER." }, };
+            { 20122, NOT_FEEDING_EXTEVENT, "Grid voltage too high" },
+            { 20123, NOT_FEEDING_EXTEVENT, "Grid voltage too low" },
+            { 20124, NOT_FEEDING_EXTEVENT, "Overtemperature" },
+            { 20125, STATUS_UNAVAILABLE, "Assymtetric Currents" },
+            { 20126, STATUS_UNAVAILABLE, "Error external input 1" },
+            { 20127, STATUS_UNAVAILABLE, "Error external input 2" },
+            { 20129, STATUS_UNAVAILABLE, "Phase sequence wrong" },
+            { 20130, STATUS_UNAVAILABLE, "Wrong Device" },
+            { 20131, STATUS_UNAVAILABLE, "Main switch off" },
+            { 20132, STATUS_UNAVAILABLE, "Diode overtemperature" },
+            { 20133, STATUS_UNAVAILABLE, "Fan broken" },
+
+            { 20166, NOT_FEEDING_EXTEVENT, "Grid frequency too high (20166)" },
+            { 20167, NOT_FEEDING_EXTEVENT, "Grid frequency too low (20167)" },
+
+
+            { 1,
+                STATUS_UNAVAILABLE, "UNKNOWN -- Please file a bug "
+                "with as much information as you have, and please read the display of your inverter." }, };
 
 bool CSputnikCommandSYS::handle_token(const std::vector<std::string>& tokens) {
 

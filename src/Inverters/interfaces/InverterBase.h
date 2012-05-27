@@ -279,6 +279,7 @@ public:
 
 protected:
 	/// Add a Capability for the inverter.
+	friend class ISputnikCommand;
 	virtual void AddCapability(CCapability* capa);
 
 	/** returns a iterator of the Capabilties. The iterator is inizialized at the begin of the map.*/

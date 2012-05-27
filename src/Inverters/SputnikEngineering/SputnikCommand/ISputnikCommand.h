@@ -110,6 +110,7 @@ protected:
            IValue *v = new CValue<T>;
            ((CValue<T>*)v)->Set(value);
            cap = new CCapability(capaname,v,inverter);
+           inverter->AddCapability(cap);
            inverter->GetConcreteCapability(CAPA_CAPAS_UPDATED)->Notify();
            return;
         }
@@ -139,6 +140,7 @@ protected:
            IValue *v = new CValue<T>;
            ((CValue<T>*)v)->Set(value);
            cap = new CCapability(capname,v,inverter);
+           inverter->AddCapability(cap);
            inverter->GetConcreteCapability(CAPA_CAPAS_UPDATED)->Notify();
            return;
         }

@@ -207,20 +207,19 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	// Initialize vector of supported commands.
 	// Handles the "TYP" command, which will identifiy the model
 	// and handles CAPA_INVERTER_MODEL.
-	commands.push_back(
-	    new CSputnikCommandTYP(this));
+    commands.push_back(new CSputnikCommandTYP(this));
 
-	commands.push_back(
+    commands.push_back(
         new CSputnikCommandSoftwareVersion(this, CAPA_INVERTER_FIRMWARE));
 
 //	needs special handling this->commands.push_back(CSputnikCommand<unsigned long>("EC*",27,0));
 
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_ACPOWER_TOTAL_TYPE>("PAC", 9, 2.0,
+        new CSputnikCommand<CAPA_INVERTER_ACPOWER_TOTAL_TYPE>("PAC", 9, 0.5,
             this, CAPA_INVERTER_ACPOWER_TOTAL));
 
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_DCPOWER_TOTAL_TYPE>("PDC", 9, 2.0,
+        new CSputnikCommand<CAPA_INVERTER_DCPOWER_TOTAL_TYPE>("PDC", 9, 0.5,
             this, CAPA_INVERTER_DCPOWER_TOTAL));
 
     commands.push_back(
@@ -228,14 +227,14 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
             CAPA_INVERTER_PON_HOURS));
 
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_STARTUPS_TYPE>("CAC", 9, 0, this,
+        new CSputnikCommand<CAPA_INVERTER_STARTUPS_TYPE>("CAC", 9, 1.0, this,
             CAPA_INVERTER_STARTUPS));
 
 // not implemented  this->commands.push_back(CSputnikCommand<unsigned long>("DYR",7,0));
 // not implemented	this->commands.push_back(CSputnikCommand<unsigned long>("DDY",7,0));
 // not implemented  this->commands.push_back(CSputnikCommand<unsigned long>("DMT",7,0));
 
-	commands.push_back(
+    commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_KWH_Y2D_TYPE>("KYR", 9, 1.0, this,
             CAPA_INVERTER_KWH_Y2D));
 
@@ -244,11 +243,11 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
             CAPA_INVERTER_KWH_M2D));
 
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_KWH_2D_TYPE>("KDY", 10, 10.0, this,
+        new CSputnikCommand<CAPA_INVERTER_KWH_2D_TYPE>("KDY", 10, 0.1, this,
             CAPA_INVERTER_KWH_2D));
 
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_KWH_YD_TYPE>("KLD", 10, 10, this,
+        new CSputnikCommand<CAPA_INVERTER_KWH_YD_TYPE>("KLD", 10, 0.1, this,
             CAPA_INVERTER_KWH_YD));
 
     commands.push_back(

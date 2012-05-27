@@ -129,7 +129,7 @@ static const struct
 
 using namespace std;
 
-#define DEBUG_TOKENIZER
+#undef DEBUG_TOKENIZER
 // Debug: Print all received tokens
 #if defined DEBUG_TOKENIZER
 void DEBUG_tokenprinter(ILogger &logger, std::vector<std::string> tokens) {
@@ -1453,8 +1453,12 @@ int CInverterSputnikSSeries::parsereceivedstring(const string & s) {
             vector<ISputnikCommand*>::iterator it;
             for (it = commands.begin(); it != commands.end(); it++) {
                 if ((*it)->IsHandled(subtokens[0])) {
+                    LOGTRACE(logger,"Now handling: " << tokens[i] << " ret=" << ret);
                     bool result = (*it)->handle_token(subtokens);
-                    if (!result) ret = -1;
+                    if (!result)  {
+                        LOGTRACE(logger,"failed parsing " + tokens[i]);
+                        ret = -1;
+                    }
                     break;
                 }
             }

@@ -37,9 +37,20 @@ static const struct
 
 bool CSputnikCommandSYS::handle_token(const std::vector<std::string>& tokens) {
 
-    if (tokens.size() != 2) return false;
+    if (tokens.size() != 3) return false;
+    char *ptmp = NULL;
 
-    int status = strtoul(tokens[1].c_str(), NULL, 16);
+    int status = strtoul(tokens[1].c_str(), &ptmp, 16);
+    if (!status || status == ULONG_MAX || ptmp == tokens[1].c_str()) return false;
+    int status2 = strtoul(tokens[2].c_str(), &ptmp, 16);
+    if (ptmp == tokens[1].c_str()) return false;
+
+    if (status2 && status2 != secondparm_sys) {
+        secondparm_sys = status2;
+        LOGINFO(inverter->logger, "Received an unknown SYS response. Please file a bug"
+                << " along with the following: " << tokens[0] << ","
+                << tokens[1] << "," << tokens[2] << " and check the Inverter's display for more information.");
+    }
 
     int i = 0;
     do {

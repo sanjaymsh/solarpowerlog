@@ -36,7 +36,7 @@ class CSputnikCommandSYS : public ISputnikCommand
 {
 public:
     CSputnikCommandSYS(IInverterBase *inv)
-    : ISputnikCommand("SYS", 10, inv, ""), laststatuscode(0) {}
+    : ISputnikCommand("SYS", 10, inv, ""), laststatuscode(0), secondparm_sys(0) {}
 
     virtual ~CSputnikCommandSYS() {}
 
@@ -44,7 +44,7 @@ public:
 
 private:
     unsigned int laststatuscode;
-
+    unsigned int secondparm_sys;
 };
 
 #endif /* CSPUTNIKCOMMANDSYS_H_ */

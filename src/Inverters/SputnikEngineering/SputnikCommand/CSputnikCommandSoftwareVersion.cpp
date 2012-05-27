@@ -102,6 +102,9 @@ bool CSputnikCommandSoftwareVersion::handle_token(
         return false;
     }
 
+    // do not assemble the capability without the sw version.
+    if (!got_swversion) return true;
+
     std::string strsw;
     strsw = sw/10 + "." + sw%10;
     if ( got_buildversion ) {

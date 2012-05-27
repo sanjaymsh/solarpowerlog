@@ -38,7 +38,7 @@ Copyright (C) 2009-2012 Tobias Frost
 #if defined HAVE_INV_SPUTNIK
 
 // Experimental -- currently being coded.
-// #define SPUTNIK_USE_NEW_COMMAND_HANDLING
+#define SPUTNIK_USE_NEW_COMMAND_HANDLING
 
 #include "Inverters/interfaces/InverterBase.h"
 #include "Inverters/BasicCommands.h"

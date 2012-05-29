@@ -23,11 +23,16 @@
  * \file ISputnikCommandBackoffStrategy.h
  *
  * The backoff strategies decided how often a command will be issued
- * due to some compile-time selected algorithgms.
+ * due to some compile-time selected algorithms.
  *
  * Also (they will) determine if a command is at all supported and if
- * necessary will cease this command completly. (and hinting the calling
- * inverter object to remove the command completly to free memory)
+ * necessary will cease this command completely. (
+ *
+ * This class defines the interface for the algorithms.
+ *
+ * Note that Backoff-Stragetgies can be staggered (similar to the
+ * decorator Pattern), therefore derived classes needs always to call
+ * the interface method.
  *
  *  Created on: 28.05.2012
  *      Author: tobi
@@ -36,11 +41,37 @@
 #ifndef ISPUTNIKCOMMANDBACKOFFSTRATEGY_H_
 #define ISPUTNIKCOMMANDBACKOFFSTRATEGY_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <stddef.h>
+
 class ISputnikCommandBackoffStrategy
 {
 public:
-    ISputnikCommandBackoffStrategy();
-    virtual ~ISputnikCommandBackoffStrategy();
+    ISputnikCommandBackoffStrategy(ISputnikCommandBackoffStrategy *next = NULL) {
+        this->next = next;
+    }
+
+    virtual ~ISputnikCommandBackoffStrategy() {};
+
+    /// Should the command be considered?
+    bool ConsiderCommand();
+
+    /// The command has been issued
+    /// Note: If "Command Issued" is followed by "Command Answered"
+    void CommandIssued() ;
+
+    /// The command has been answered.
+    void CommandAnswered();
+
+    /// Inverter disconnected.
+    void Reset();
+
+protected:
+    ISputnikCommandBackoffStrategy *next;
+
 };
 
 #endif /* ISPUTNIKCOMMANDBACKOFFSTRATEGY_H_ */

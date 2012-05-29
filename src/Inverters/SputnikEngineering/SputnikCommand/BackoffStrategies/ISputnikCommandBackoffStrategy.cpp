@@ -20,20 +20,45 @@
  */
 
 /*
- * ISputnikCommandBackoffStrategy.cpp
+ * \file ISputnikCommandBackoffStrategy.cpp
  *
  *  Created on: 28.05.2012
  *      Author: tobi
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "ISputnikCommandBackoffStrategy.h"
 
-ISputnikCommandBackoffStrategy::ISputnikCommandBackoffStrategy() {
-    // TODO Auto-generated constructor stub
-
+    /// Should the command be considered?
+bool ISputnikCommandBackoffStrategy::ConsiderCommand()
+{
+    bool ret = true;
+    if (next)
+        ret = next->ConsiderCommand();
+    return ret;
 }
 
-ISputnikCommandBackoffStrategy::~ISputnikCommandBackoffStrategy() {
-    // TODO Auto-generated destructor stub
+/// The command has been issued
+/// Note: If "Command Issued" is followed by "Command Answered"
+void ISputnikCommandBackoffStrategy::CommandIssued()
+{
+    if (next)
+        next->CommandIssued();
 }
 
+/// The command has been answered.
+void ISputnikCommandBackoffStrategy::CommandAnswered()
+{
+    if (next)
+        next->CommandAnswered();
+}
+
+/// Inverter disconnected.
+void ISputnikCommandBackoffStrategy::Reset()
+{
+    if (next)
+        next->Reset();
+}

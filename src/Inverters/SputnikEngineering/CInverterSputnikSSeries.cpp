@@ -274,8 +274,16 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
         new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGE_TYPE>("UL1", 10, 0.1,
             this, CAPA_INVERTER_GRID_AC_VOLTAGE_NAME));
 
-    // not implemented    this->commands.push_back(CSputnikCommand<float>("UL2",10,0.1));
-    // not implemented    this->commands.push_back(CSputnikCommand<float>("UL3",10,0.1));
+#if 0
+    // First, implement the "this command is not supported" scheme.
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE2_TYPE>("UL2", 10, 0.1,
+            this, CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE2_NAME));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGEP_HASE3_TYPE>("UL3", 10, 0.1,
+            this, CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE3_NAME));
+#endif
 
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_INPUT_DC_CURRENT_TYPE>("IDC", 10,
@@ -284,26 +292,39 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_TYPE>("IL1", 10, 0.01,
             this, CAPA_INVERTER_GRID_AC_CURRENT_NAME));
+#if 0
+    // First, implement the "this command is not supported" scheme.
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_PHASE2_TYPE>("IL2", 10, 0.1,
+            this, CAPA_INVERTER_GRID_AC_CURRENT_PHASE2_NAME));
 
-    // not implemented
-    // this->commands.push_back(CSputnikCommand<float>("IL2",10,0.01));
-
-    // not implemented
-    //   this->commands.push_back(CSputnikCommand<float>("IL3",10,0.01));
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_PHASE3_TYPE>("IL3", 10, 0.1,
+            this, CAPA_INVERTER_GRID_AC_CURRENT_PHASE3_NAME));
+#endif
 
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_TYPE>("TKK", 10, 1.0,
             this, CAPA_INVERTER_TEMPERATURE_NAME));
 
-    // not implemented
-    //    this->commands.push_back(CSputnikCommand<unsigned long>("TK2",10,0));
+#if 0
+    // First, implement the "this command is not supported" scheme.
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_PHASE2_TYPE>("TK2",10,1.0, this,
+            CAPA_INVERTER_TEMPERATURE_PHASE2_NAME));
 
-    // not implemented
-    //    this->commands.push_back(CSputnikCommand<unsigned long>("TK3",10,0));
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_PHASE3_TYPE>("TK3",10,1.0, this,
+            CAPA_INVERTER_TEMPERATURE_PHASE3_NAME));
+#endif
 
+    // Get Inverter Timestamp / (Hour:Minute)
+    // Should be s special implementation!
+    // But the clock is rather inaccurate, so the compuiter's timestamp is
+    // far more precice.
+    // Note: It is possible to set the time/hour via the interface, but
     // not implemented
     // this->commands.push_back(CSputnikCommand<unsigned long>("TMI",10,0));
-
     // not implemented
     // this->commands.push_back(CSputnikCommand<unsigned long>("THR",10,0));
 

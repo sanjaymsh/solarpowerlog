@@ -34,7 +34,7 @@
 
 static const struct
 {
-    int typ;
+    const int typ;
     const char *description;
 } model_lookup[] =
     { { 2001, "SolarMax 2000 E" },

@@ -26,12 +26,44 @@
 #include "patterns/CValue.h"
 #include "Inverters/Capabilites.h"
 #include "Inverters/interfaces/InverterBase.h"
-/*
- * ISputnikCommand.h
+
+/**
+ * \file ISputnikCommand.h
  *
- *  Created on: 19.05.2012
- *      Author: tobi
+ *  Abstracts the defintion and handling of a single commmand for the Sputnik Inverter.
+ *
+ *  The past implementation had a function for every command the inverter
+ *  understands, consisting some thousand lines of basically idenetical code.
+ *  To add one command the file had to be edited on several page.
+ *
+ *  To fight this and increase maintainability along reducing code complexity this
+ *  "strategy" pattern has been implemented.
+ *  Using this pattern the inverter has (except for the creation of the
+ *  CSputnikCommand) no special knowledge about the commands it will issue.
+ *
+ *  The objects encapsulates all information needed to handle the command
+ *   - information about the "command token" (token itself, lenght, max answer
+ *     length)
+ *   - information about the data we receive (type, capabilty name)
+ *   - handles the registration of this data with the inverter.
+ *
+ *  This interface is the base class for the commands. There are two basic
+ *  variantes of derived classes:
+ *  - Most of the commands use simple datatype (integer, float, boolean ...)
+ *  - Some commands needs special implementation (for example the Software-
+ *    Version needs to assemble the information from two inverter queries)
+ *
+ *  For the first category, the templated "CSputnikCommand<type>" can be used,
+ *  for the others derived classes like the "CSputnikCommandSoftwareVersion"
+ *  come into the game.
  */
+
+/*
+ *
+ * Created on: 19.05.2012
+ *      Author: tobi
+*/
+
 
 #ifndef ISPUTNIKCOMMAND_H_
 #define ISPUTNIKCOMMAND_H_

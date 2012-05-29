@@ -19,22 +19,16 @@ Copyright (C) 2009-2012 Tobias Frost
  ----------------------------------------------------------------------------
 */
 
-/*
+/**
  * \file CSputnikCommand.cpp
  *
- *  Defines and handles a single commmand the Sputnik Inverter.
  *
  *  Plans are that the CSC will take over the logic in the Inverter code step by step.
- *  1- CSC will know about the command token, expected telegram length, do the parsing and return the raw value
- *  2- CSC will be able to "scale" values with an factor.
+ *  1- (done) CSC will know about the command token, expected telegram length, do the parsing and return the raw value
+ *  2- (done) CSC will be able to "scale" values with an factor.
  *  2- CSC will keep track if a command is supported by the Inverter and cease issuing command if not.
  *  3- (Specialisations of CSCs might handle for some commands more often than others.)
- *  4- CSC will take the Capabilities handling: creating the Capabilities, updating the values, notfiing subscribers
- *
- *  Strategy:
- *  - CSCs are kept in a list attached to the Inverters Object
- *  - The CSCS are instanciated on construction time of the Inverter's object with all the information they need to operate.
- *  5- CSC will be registered by the Inverter at Instanciation time by key parameters-
+ *  4- (done) CSC will take the Capabilities handling: creating the Capabilities, updating the values, notfiing subscribers
 
  *
  *  Created on: 14.05.2012

@@ -20,51 +20,31 @@
  */
 
 /*
- * \file ISputnikCommandBackoffStrategy.cpp
+ * CSputnikCmdBOOnce.cpp
  *
- *  Created on: 28.05.2012
+ *  Created on: 30.05.2012
  *      Author: tobi
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "CSputnikCmdBOOnce.h"
 
-#include "ISputnikCommandBackoffStrategy.h"
 
-/// Should the command be considered?
-bool ISputnikCommandBackoffStrategy::ConsiderCommand()
+bool CSputnikCmdBOOnce::ConsiderCommand()
 {
-    bool ret = true;
-    if (next)
-        ret = next->ConsiderCommand();
+    bool ret = ISputnikCommandBackoffStrategy::ConsiderCommand();
+    if (!ret) return this->issued;
     return ret;
 }
 
-/// The command has been issued
-/// Note: If "Command Issued" is followed by "Command Answered"
-void ISputnikCommandBackoffStrategy::CommandIssued()
+void CSputnikCmdBOOnce::CommandAnswered()
 {
-    if (next)
-        next->CommandIssued();
+    ISputnikCommandBackoffStrategy::CommandAnswered();
+    issued = true;
 }
 
-/// The command has been answered.
-void ISputnikCommandBackoffStrategy::CommandAnswered()
+void CSputnikCmdBOOnce::Reset()
 {
-    if (next)
-        next->CommandAnswered();
+    ISputnikCommandBackoffStrategy::Reset();
+    this->issued=false;
 }
 
-void ISputnikCommandBackoffStrategy::CommandNotAnswered()
-{
-    if (next)
-        next->CommandNotAnswered();
-}
-
-/// Inverter disconnected.
-void ISputnikCommandBackoffStrategy::Reset()
-{
-    if (next)
-        next->Reset();
-}

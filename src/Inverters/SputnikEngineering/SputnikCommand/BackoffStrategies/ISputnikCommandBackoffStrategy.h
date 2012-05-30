@@ -57,17 +57,23 @@ public:
     virtual ~ISputnikCommandBackoffStrategy() {};
 
     /// Should the command be considered?
-    bool ConsiderCommand();
+    /// return false if not, true if yes.
+    /// Call Interface first. If Interface returns "false", also return false.
+    virtual bool ConsiderCommand();
 
     /// The command has been issued
-    /// Note: If "Command Issued" is followed by "Command Answered"
-    void CommandIssued() ;
+    /// Note: If "Command Issued" is followed by "Command Answered" or
+    /// a "CommandNotAnswered".
+    virtual void CommandIssued() ;
 
     /// The command has been answered.
-    void CommandAnswered();
+    virtual void CommandAnswered();
 
-    /// Inverter disconnected.
-    void Reset();
+    /// The command has not been answered.
+    virtual void CommandNotAnswered();
+
+    /// Inverter disconnected, reset state.
+    virtual void Reset();
 
 protected:
     ISputnikCommandBackoffStrategy *next;

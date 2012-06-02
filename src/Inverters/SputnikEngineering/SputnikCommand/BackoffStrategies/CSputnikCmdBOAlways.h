@@ -31,34 +31,21 @@
 
 #include "ISputnikCommandBackoffStrategy.h"
 
-/// Backoff Algortitm which "always" will issue a command.
+/// Backoff Algorithm which "always" will issue a command.
 /// (note: implementation example -- a bare ISputnikCommandBackoffStrategy
 /// will behave the same.
 
-class CSputnikCmdBOAlways: public ISputnikCommandBackoffStrategy
+class CSputnikCmdBOAlways : public ISputnikCommandBackoffStrategy
 {
 public:
-    CSputnikCmdBOAlways(ISputnikCommandBackoffStrategy *next = NULL)
-    : ISputnikCommandBackoffStrategy(next) {}
+    virtual ~CSputnikCmdBOAlways() {}
 
-    virtual ~CSputnikCmdBOAlways();
+    CSputnikCmdBOAlways( ISputnikCommandBackoffStrategy *next = NULL ) :
+            ISputnikCommandBackoffStrategy(next)
+    { }
 
     /// Should the command be considered?
-    bool ConsiderCommand();
-
-    /// The command has been issued
-    /// Note: If "Command Issued" is followed by "Command Answered"
-    /// not overriden void CommandIssued() ;
-
-    /// The command has been answered.
-    //// not overriden void CommandAnswered();
-
-    /// The command has not been answered.
-    //// not overriden void CommandNotAnswered();
-
-    /// Inverter disconnected.
-    /// not overriden void Reset();
-
+    virtual bool ConsiderCommand();
 };
 
 #endif /* CSPUTNIKCMDBOALWAYS_H_ */

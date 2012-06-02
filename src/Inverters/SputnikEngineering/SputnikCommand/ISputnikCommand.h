@@ -26,6 +26,7 @@
 #include "patterns/CValue.h"
 #include "Inverters/Capabilites.h"
 #include "Inverters/interfaces/InverterBase.h"
+#include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/ISputnikCommandBackoffStrategy.h"
 
 /**
  * \file ISputnikCommand.h
@@ -75,46 +76,39 @@ class ISputnikCommand
 {
 
 public:
+    /// Constructs the ISputnikCommand.
+    /// If given, backoffstrategy will be then owned by this object and also
+    /// freed on destruction.
+    ISputnikCommand( const std::string &command, int max_answer_len,
+            IInverterBase *inv, const std::string & capaname,
+            ISputnikCommandBackoffStrategy *backoffstrategy = NULL );
 
-    ISputnikCommand() {
-    }
-
-    ISputnikCommand(const std::string &command,
-        int max_answer_len , IInverterBase *inv, const std::string & capaname)
-        : command(command), max_answer_len(max_answer_len),inverter(inv), capaname(capaname) {
-    }
-
-    virtual ~ISputnikCommand() {
-    }
+    virtual ~ISputnikCommand();
 
     /** Returnes the maximium expected length (usually set at compile time) */
     virtual int GetMaxAnswerLen(void) {
         return max_answer_len;
     }
+
     /** Setter for the Max Answer Len, if needed*/
     virtual void SetMaxAnswerLen(int max) {
         max_answer_len = max;
     }
 
     /** Should we consider this command to be issued?
-     *
+     * Note: If this function is overriden in your class, call
+     * strat->ConsiderCommand -- if it returns false, you also return false.
      * \returns true if so, else do not issue command at this time. */
-    virtual bool ConsiderCommand() {
-        return true;
-    }
+    virtual bool ConsiderCommand();
 
     /** Returns a const reference to the token string to be used for the communication
      * when requesting the data from the inverter.
      * (note: can be overriden for complex datas, for example if more than one command is
      * required to get thw whole set. */
-    virtual const std::string& GetCommand(void) {
-        return command;
-    }
+    virtual const std::string& GetCommand(void);
 
     /** Helper: Return the length of the command to be issued. */
-    virtual unsigned int GetCommandLen(void) {
-        return command.length();
-    }
+    virtual unsigned int GetCommandLen(void);
 
     /** Check if the token is handled by this instance.
      * \returns true if it is, else false
@@ -122,49 +116,40 @@ public:
      * For complex data, which is assembled from more than one command, this
      * needs be overridden.
     */
-    virtual bool IsHandled(const std::string &token) {
-        return (token == command);
-    }
+    virtual bool IsHandled(const std::string &token);
 
     /// handles the parsing, and handles the capability then.
-    /// must bei implemented in the derived class.
-    virtual bool handle_token(const std::vector<std::string> &){ return false;}
+    /// must be implemented in the derived class.
+    /// NOTE: You must call strat->CommandAnswered in your derived class.
+    virtual bool handle_token(const std::vector<std::string> &) = 0;
 
 protected:
-    /** Update / Register capability, if needed */
 
+    /** Makes the complete capability handling:
+     *
+     * Please see the overridden version (with capaname as parameter)
+     * for details.
+     */
     template <class T>
-    void CapabilityHandling(T value) throw() {
-        assert(inverter);
-        CCapability *cap = inverter->GetConcreteCapability(capaname);
-
-        if (!cap) {
-           IValue *v = new CValue<T>;
-           ((CValue<T>*)v)->Set(value);
-           cap = new CCapability(capaname,v,inverter);
-           inverter->AddCapability(cap);
-           inverter->GetConcreteCapability(CAPA_CAPAS_UPDATED)->Notify();
-           return;
-        }
-
-        // Check for the type and throw an exception if not equal.
-        // (as capabilites are created by this class, this should be not hapen)
-         if ( CValue<T>::IsType(cap->getValue())) {
-            CValue<T> *v = (CValue<T> *)cap->getValue();
-            v->Set(value);
-            cap->Notify();
-            return;
-        } else {
-            std::bad_cast e;
-            LOGERROR(inverter->logger,"Bad cast for command " + command);
-            throw e;
-        }
+    void CapabilityHandling(T value) const throw() {
+        this->CapabilityHandling<T>(value, this->capaname);
     };
 
-    /// Alternative implementation to sepcify also the capability to be updated.
-    /// (For example if more than one capability is attached to this command)
+    /** Makes the complete capability handling:
+     * - Registers capability if not existing (incl. notifyng of the observers)
+     * - Updates capability with new value (incl. notifying of observers.)
+     * - Notifcation is only done when the value actually changes.
+     * - Type-check of capabilities (throws if not) (only happens if capability
+     *   handling is not done consequently, that is using types-defines in
+     *   Capabilites.h)
+     *
+     *   \param value Value to be stored
+     *   \param capname Capability-name.
+     *
+     *   \throw exception if types are mismatching.
+     */
     template <class T>
-    void CapabilityHandling(T value, std::string capname) throw() {
+    void CapabilityHandling(T value, const std::string &capname) const throw() {
         assert(inverter);
         CCapability *cap = inverter->GetConcreteCapability(capname);
 
@@ -174,6 +159,7 @@ protected:
            cap = new CCapability(capname,v,inverter);
            inverter->AddCapability(cap);
            inverter->GetConcreteCapability(CAPA_CAPAS_UPDATED)->Notify();
+           cap->Notify();
            return;
         }
 
@@ -181,21 +167,24 @@ protected:
         // (as capabilites are created by this class, this should be not hapen)
          if ( CValue<T>::IsType(cap->getValue())) {
             CValue<T> *v = (CValue<T> *)cap->getValue();
-            v->Set(value);
-            cap->Notify();
+            if (value != v->Get()) {
+                v->Set(value);
+                cap->Notify();
+            }
             return;
         } else {
             std::bad_cast e;
             LOGERROR(inverter->logger,"Bad cast for command " + command);
             throw e;
         }
-    };
+    }
 
 protected:
     std::string command;
     int max_answer_len;
     IInverterBase *inverter;
     std::string capaname;
+    ISputnikCommandBackoffStrategy *strat;
 };
 
 #endif /* ISPUTNIKCOMMAND_H_ */

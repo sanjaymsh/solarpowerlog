@@ -83,5 +83,6 @@ bool CSputnikCommandTYP::handle_token(const std::vector<std::string>& tokens) {
     }
 
     CapabilityHandling<CAPA_INVERTER_MODEL_TYPE>(model_lookup[i].description);
+    this->strat->CommandAnswered();
     return true;
 }

@@ -38,7 +38,8 @@ class CSputnikCmdBOOnce: public ISputnikCommandBackoffStrategy
 {
 public:
     CSputnikCmdBOOnce( ISputnikCommandBackoffStrategy *next = NULL ) :
-            ISputnikCommandBackoffStrategy(next), issued(false) { }
+            ISputnikCommandBackoffStrategy(next), issued(false)
+    { }
 
     virtual ~CSputnikCmdBOOnce() {};
 
@@ -53,7 +54,6 @@ public:
 
 private:
     bool issued;
-
 };
 
 #endif /* CSPUTNIKCMDBOONCE_H_ */

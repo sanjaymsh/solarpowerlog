@@ -30,13 +30,13 @@ Copyright (C) 2009-2012 Tobias Frost
 #define CSPUTNIKCOMMANDSYS_H_
 
 #include "ISputnikCommand.h"
-#include "Inverters/Capabilites.h"
+#include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/ISputnikCommandBackoffStrategy.h"
 
 class CSputnikCommandSYS : public ISputnikCommand
 {
 public:
-    CSputnikCommandSYS(IInverterBase *inv)
-    : ISputnikCommand("SYS", 10, inv, ""), laststatuscode(0), secondparm_sys(0) {}
+    CSputnikCommandSYS( IInverterBase *inv,
+            ISputnikCommandBackoffStrategy *backoff = NULL );
 
     virtual ~CSputnikCommandSYS() {}
 

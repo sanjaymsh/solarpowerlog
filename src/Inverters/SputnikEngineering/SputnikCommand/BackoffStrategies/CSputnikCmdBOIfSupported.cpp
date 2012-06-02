@@ -28,12 +28,13 @@
 
 #include "CSputnikCmdBOIfSupported.h"
 
-
 bool CSputnikCmdBOIfSupported::ConsiderCommand()
 {
     bool ret = ISputnikCommandBackoffStrategy::ConsiderCommand();
-    if (!ret) return ret;
-    if (triesleft || supported) return true;
+    if (!ret)
+        return ret;
+    if (triesleft || supported)
+        return true;
     return false;
 }
 
@@ -42,7 +43,6 @@ void CSputnikCmdBOIfSupported::CommandAnswered()
     ISputnikCommandBackoffStrategy::CommandAnswered();
     supported = true;
 }
-
 
 void CSputnikCmdBOIfSupported::CommandNotAnswered()
 {
@@ -58,5 +58,3 @@ void CSputnikCmdBOIfSupported::Reset()
     triesleft = triesleft_orig;
     supported = false;
 }
-
-

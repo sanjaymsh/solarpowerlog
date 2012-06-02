@@ -42,7 +42,13 @@ static const std::string BDN("BDN");
 /// command string for both
 static const std::string BDNSWV("BDN;SWV");
 
-
+CSputnikCommandSoftwareVersion::CSputnikCommandSoftwareVersion(
+        IInverterBase *inv, const std::string & capname,
+        ISputnikCommandBackoffStrategy *backoff ) :
+        ISputnikCommand("", 0, inv, capname, backoff), got_buildversion(false), got_swversion(
+                false)
+{
+}
 
 int CSputnikCommandSoftwareVersion::GetMaxAnswerLen(void) {
     if ( !got_swversion && ! got_buildversion ) return 9+7;
@@ -67,16 +73,8 @@ bool CSputnikCommandSoftwareVersion::IsHandled(const std::string& token) {
 }
 
 bool CSputnikCommandSoftwareVersion::ConsiderCommand() {
-    if (!got_buildversion || !got_swversion) return true;
-#warning implement backoff algorithm!
-    // temporary: fixed backoff. Later, a algorithm should consider when
-    // its time to do the next command.
-    // In this case, only once per connection.
-    if (backoff-- > 0) return false;
-    got_buildversion = false;
-    got_swversion = false;
-    backoff = 10;
-    return true;
+#warning this should be completly done by the backoff algo...
+    return (strat->ConsiderCommand() && (!got_buildversion || !got_swversion));
 }
 
 
@@ -94,11 +92,7 @@ bool CSputnikCommandSoftwareVersion::handle_token(
         build = strtoul(tokens[1].c_str(), NULL, 16);
         got_buildversion = true;
     }
-    else
-    {
-        LOGDEBUG(inverter->logger,
-            "CSputnikCommandSoftwareVersion::handle_token() unexpected call "
-                << tokens[0]);
+    else {
         return false;
     }
 
@@ -112,5 +106,13 @@ bool CSputnikCommandSoftwareVersion::handle_token(
     }
 
     CapabilityHandling<std::string>(strsw);
+
+    // only tell the backoff strategy that we have been answered if we got
+    // both information.
+    // The Inverter will tell it later, if one sub-command is not available
+    // (as this will be reissued and then detected as not answered.
+    // This will catch also if we make "progress", but never getting the full
+    // information (However, all Inverters I know support this command...)
+    if (got_swversion && got_buildversion) this->strat->CommandAnswered();
     return true;
 }

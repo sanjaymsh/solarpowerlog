@@ -26,4 +26,41 @@ Copyright (C) 2009-2012 Tobias Frost
  *      Author: tobi
  */
 
-// currently empty.
+#include "ISputnikCommand.h"
+#include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOAlways.h"
+
+ ISputnikCommand::ISputnikCommand( const std::string &command,
+        int max_answer_len, IInverterBase *inv, const std::string & capaname,
+        ISputnikCommandBackoffStrategy *backoffstrategy ) :
+        command(command), max_answer_len(max_answer_len), inverter(inv), capaname(
+                capaname)
+{
+    if (backoffstrategy) {
+        this->strat = backoffstrategy;
+    } else {
+        this->strat = new CSputnikCmdBOAlways(NULL);
+    }
+}
+
+ISputnikCommand::~ISputnikCommand()
+{
+    delete strat;
+}
+
+bool ISputnikCommand::ConsiderCommand()
+{
+    return strat->ConsiderCommand();
+}
+
+const std::string & ISputnikCommand::GetCommand( void )
+{
+    return command;
+}
+
+unsigned int ISputnikCommand::GetCommandLen(void) {
+    return command.length();
+}
+
+bool ISputnikCommand::IsHandled(const std::string &token) {
+     return (token == command);
+ }

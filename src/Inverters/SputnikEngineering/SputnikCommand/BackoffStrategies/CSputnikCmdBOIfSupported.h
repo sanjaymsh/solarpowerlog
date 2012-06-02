@@ -45,8 +45,7 @@ public:
             ISputnikCommandBackoffStrategy *next = NULL ) :
             ISputnikCommandBackoffStrategy(next), triesleft(retries),
             triesleft_orig(retries), supported(false)
-    {
-    }
+    { }
 
     virtual ~CSputnikCmdBOIfSupported() {};
 

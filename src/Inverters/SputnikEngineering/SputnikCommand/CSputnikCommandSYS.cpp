@@ -64,6 +64,13 @@ static const struct
                 STATUS_UNAVAILABLE, "UNKNOWN -- Please file a bug "
                 "with as much information as you have, and please read the display of your inverter." }, };
 
+CSputnikCommandSYS::CSputnikCommandSYS( IInverterBase *inv,
+        ISputnikCommandBackoffStrategy *backoff ) :
+        ISputnikCommand("SYS", 10, inv, "", backoff), laststatuscode(0), secondparm_sys(
+                0)
+{
+}
+
 bool CSputnikCommandSYS::handle_token(const std::vector<std::string>& tokens) {
 
     if (tokens.size() != 3) return false;
@@ -104,5 +111,6 @@ bool CSputnikCommandSYS::handle_token(const std::vector<std::string>& tokens) {
     CapabilityHandling<CAPA_INVERTER_STATUS_READABLE_TYPE>(
         statuscodes[i].description, CAPA_INVERTER_STATUS_READABLE_NAME);
 
+    this->strat->CommandAnswered();
     return true;
 }

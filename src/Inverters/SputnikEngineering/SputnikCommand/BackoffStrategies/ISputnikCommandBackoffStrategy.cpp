@@ -32,7 +32,6 @@
 
 #include "ISputnikCommandBackoffStrategy.h"
 
-/// Should the command be considered?
 bool ISputnikCommandBackoffStrategy::ConsiderCommand()
 {
     bool ret = true;
@@ -41,15 +40,12 @@ bool ISputnikCommandBackoffStrategy::ConsiderCommand()
     return ret;
 }
 
-/// The command has been issued
-/// Note: If "Command Issued" is followed by "Command Answered"
 void ISputnikCommandBackoffStrategy::CommandIssued()
 {
     if (next)
         next->CommandIssued();
 }
 
-/// The command has been answered.
 void ISputnikCommandBackoffStrategy::CommandAnswered()
 {
     if (next)
@@ -62,7 +58,6 @@ void ISputnikCommandBackoffStrategy::CommandNotAnswered()
         next->CommandNotAnswered();
 }
 
-/// Inverter disconnected.
 void ISputnikCommandBackoffStrategy::Reset()
 {
     if (next)

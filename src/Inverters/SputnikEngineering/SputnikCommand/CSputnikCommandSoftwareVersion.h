@@ -34,6 +34,7 @@
 #endif
 
 #include "ISputnikCommand.h"
+#include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/ISputnikCommandBackoffStrategy.h"
 
 /** Special implementation for the Inverter's Firmware Version property.
  *
@@ -43,9 +44,9 @@
 class CSputnikCommandSoftwareVersion : public ISputnikCommand
 {
 public:
-    CSputnikCommandSoftwareVersion(IInverterBase *inv, const std::string & capname)
-        : ISputnikCommand("", 0, inv, capname), got_buildversion(false), got_swversion(false), backoff(10) {
-    }
+    CSputnikCommandSoftwareVersion( IInverterBase *inv,
+            const std::string & capname,
+            ISputnikCommandBackoffStrategy *backoff = NULL );
 
     virtual bool ConsiderCommand();
 

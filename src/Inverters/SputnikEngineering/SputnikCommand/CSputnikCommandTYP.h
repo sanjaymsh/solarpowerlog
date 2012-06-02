@@ -30,12 +30,16 @@ Copyright (C) 2009-2012 Tobias Frost
 #define CSPUTNIKCOMMANDTYP_H_
 
 #include "ISputnikCommand.h"
+#include "Inverters/Capabilites.h"
+#include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/ISputnikCommandBackoffStrategy.h"
 
 class CSputnikCommandTYP : public ISputnikCommand
 {
 public:
-    CSputnikCommandTYP(IInverterBase *inv)
-    : ISputnikCommand("TYP", 9, inv, CAPA_INVERTER_MODEL) {}
+    CSputnikCommandTYP( IInverterBase *inv,
+            ISputnikCommandBackoffStrategy *backoff = NULL ) :
+            ISputnikCommand("TYP", 9, inv, CAPA_INVERTER_MODEL, backoff)
+    { }
 
     virtual ~CSputnikCommandTYP() {}
 

@@ -50,6 +50,7 @@
 class ISputnikCommandBackoffStrategy
 {
 public:
+
     ISputnikCommandBackoffStrategy(ISputnikCommandBackoffStrategy *next = NULL) {
         this->next = next;
     }
@@ -77,7 +78,6 @@ public:
 
 protected:
     ISputnikCommandBackoffStrategy *next;
-
 };
 
 #endif /* ISPUTNIKCOMMANDBACKOFFSTRATEGY_H_ */

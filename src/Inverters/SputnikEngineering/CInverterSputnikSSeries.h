@@ -46,6 +46,7 @@ Copyright (C) 2009-2012 Tobias Frost
 #include "Inverters/SputnikEngineering/SputnikCommand/ISputnikCommand.h"
 
 #include <queue>
+#include <set>
 
 /** \fixme Implements the Inverter Interface for the Sputnik S Series
  *
@@ -193,6 +194,9 @@ private:
 
     /// stores pending commmands.
     vector<ISputnikCommand*> pendingcommands;
+
+    /// stores not answered commands (by removing the ansewered ones)
+    set<ISputnikCommand*> notansweredcommands;
 
 #endif
 };

@@ -123,6 +123,17 @@ public:
     /// NOTE: You must call strat->CommandAnswered in your derived class.
     virtual bool handle_token(const std::vector<std::string> &) = 0;
 
+    /// command was sent, but no answer received
+    /// (will only be called when there was no other error, like communication
+    /// etc)
+    virtual void CommandNotAnswered() {
+        this->strat->CommandNotAnswered();
+    }
+
+    virtual void InverterDisconnected() {
+        this->strat->Reset();
+    }
+
 protected:
 
     /** Makes the complete capability handling:

@@ -438,6 +438,15 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		CValue<bool> *v = (CValue<bool> *) c->getValue();
 		v->Set(false);
 		c->Notify();
+
+		// reset the backoff algorithms for the commands.
+		this->pendingcommands.clear();
+		this->notansweredcommands.clear();
+		vector<ISputnikCommand *>::iterator it;
+		for (it=this->commands.begin(); it!=commands.end(); it++) {
+		    (*it)->InverterDisconnected();
+		}
+
 		break;
 	}
 
@@ -673,6 +682,15 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 			break;
 		}
 #else
+        // all issued commands should have been answered,
+        // those in the notanswered set, have not been answered and we notfify
+        // the commands to pass that information to their backoff algorithms.
+        std::set<ISputnikCommand*>::iterator it;
+        for (it=notansweredcommands.begin();it!=notansweredcommands.end();it++) {
+            (*it)->CommandNotAnswered();
+        }
+        notansweredcommands.clear();
+
 		// if there are still pending commands, issue them first before
 		// filling the queue again.
 		if (!pendingcommands.empty()) {
@@ -744,6 +762,7 @@ string CInverterSputnikSSeries::assemblequerystring()
             telegram += (*it)->GetCommand();
             telegramlen -= clen;
             expectedanswerlen -=alen;
+            notansweredcommands.insert(*it);
             it = pendingcommands.erase(it);
         }
         else
@@ -1478,6 +1497,9 @@ int CInverterSputnikSSeries::parsereceivedstring(const string & s) {
                     if (!result)  {
                         LOGTRACE(logger,"failed parsing " + tokens[i]);
                         ret = -1;
+                    }
+                    else {
+                        notansweredcommands.erase(*it);
                     }
                     break;
                 }
@@ -2833,7 +2855,7 @@ bool CInverterSputnikSSeries::token_SYS(const vector<string> &tokens)
 // IEE IED IEA UGD START
 
 bool CInverterSputnikSSeries::token_IEE(const vector<string> & tokens)
-{ // Unit 0.1mA 
+{ // Unit 0.1mA
 	if (tokens.size() != 2)
 		return false;
 

@@ -34,14 +34,11 @@ Copyright (C) 2009-2012 Tobias Frost
 #include <list>
 #include <time.h>
 
-#include "CTimedWork.h"
-
-#include "interfaces/CMutexHelper.h"
-
 #include <boost/thread.hpp>
-#include "boost/date_time/posix_time/posix_time.hpp"
-#include "interfaces/CMutexHelper.h"
+#include <boost/date_time/posix_time/posix_time.hpp>
 
+#include "CTimedWork.h"
+#include "interfaces/CMutexHelper.h"
 #include "configuration/Registry.h"
 
 CTimedWork::CTimedWork( CWorkScheduler *sch ) :

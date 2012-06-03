@@ -37,9 +37,6 @@ Copyright (C) 2009-2012 Tobias Frost
 
 #if defined HAVE_INV_SPUTNIK
 
-// Experimental -- currently being coded.
-#define SPUTNIK_USE_NEW_COMMAND_HANDLING
-
 #include "Inverters/interfaces/InverterBase.h"
 #include "Inverters/BasicCommands.h"
 
@@ -131,64 +128,11 @@ private:
 	void tokenizer(const char *delimiters, const string& s,
 			vector<string> &tokens);
 
-#ifndef SPUTNIK_USE_NEW_COMMAND_HANDLING
-	// token handlers
-	// they all will take its tokens and do whatever required, usually
-	// updating Capabilities.
-	bool token_TYP(const vector<string> &tokens);
-	bool token_SWVER(const vector<string> &tokens);
-	bool token_BUILDVER(const vector<string> &tokens);
-	bool token_ECxx(const vector<string> &tokens);
-	bool token_PAC(const vector<string> &tokens);
-	bool token_PDC(const vector<string> &tokens);
-	bool token_KHR(const vector<string> &tokens);
-	bool token_DYR(const vector<string> &tokens);
-	bool token_DMT(const vector<string> &tokens);
-	bool token_DDY(const vector<string> &tokens);
-	bool token_KYR(const vector<string> &tokens);
-	bool token_KMT(const vector<string> &tokens);
-	bool token_KDY(const vector<string> &tokens);
-	bool token_KT0(const vector<string> &tokens);
-	bool token_PIN(const vector<string> &tokens);
-	bool token_TNF(const vector<string> &tokens);
-	bool token_PRL(const vector<string> &tokens);
-	bool token_UDC(const vector<string> &tokens);
-	bool token_UL1(const vector<string> &tokens);
-	bool token_UL2(const vector<string> &tokens);
-	bool token_UL3(const vector<string> &tokens);
-	bool token_IDC(const vector<string> &tokens);
-	bool token_IL1(const vector<string> &tokens);
-	bool token_IL2(const vector<string> &tokens);
-	bool token_IL3(const vector<string> &tokens);
-	bool token_TKK(const vector<string> &tokens);
-	bool token_TK2(const vector<string> &tokens);
-	bool token_TK3(const vector<string> &tokens);
-	bool token_TMI(const vector<string> &tokens);
-	bool token_THR(const vector<string> &tokens);
-	bool token_SYS(const vector<string> &tokens);
-	bool token_IEE(const vector<string> &tokens);
-	bool token_IED(const vector<string> &tokens);
-	bool token_IEA(const vector<string> &tokens);
-    bool token_UGD(const vector<string> &tokens);
-    bool token_KLD(const vector<string> &tokens);
-    bool token_CAC(const vector<string> &tokens);
-
-	// a helper, as this is shared by two token parsers.
-	void create_versioncapa(void);
-
-	///  some internal infos we cache....
-	int swversion;
-	int swbuild;
-	/// helper to detect status code changes.
-	unsigned int laststatuscode;
-
-#endif
 	/// cache for inverters comm adr.
 	unsigned int commadr;
 	/// cache for own adr
 	unsigned int ownadr;
 
-#ifdef SPUTNIK_USE_NEW_COMMAND_HANDLING
     /// stores supported commands.
     vector<ISputnikCommand*> commands;
 
@@ -197,8 +141,6 @@ private:
 
     /// stores not answered commands (by removing the ansewered ones)
     set<ISputnikCommand*> notansweredcommands;
-
-#endif
 };
 
 #endif

@@ -81,7 +81,7 @@ public:
     /// freed on destruction.
     ISputnikCommand( const std::string &command, int max_answer_len,
             IInverterBase *inv, const std::string & capaname,
-            ISputnikCommandBackoffStrategy *backoffstrategy = NULL );
+            ISputnikCommandBackoffStrategy *backoffstrategy);
 
     virtual ~ISputnikCommand();
 
@@ -120,7 +120,8 @@ public:
 
     /// handles the parsing, and handles the capability then.
     /// must be implemented in the derived class.
-    /// NOTE: You must call strat->CommandAnswered in your derived class.
+    /// NOTE: You must call strat->CommandAnswered() in your derived class before
+    /// you return true.
     virtual bool handle_token(const std::vector<std::string> &) = 0;
 
     /// command was sent, but no answer received

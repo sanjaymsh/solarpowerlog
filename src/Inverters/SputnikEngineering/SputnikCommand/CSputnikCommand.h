@@ -79,9 +79,10 @@ class CSputnikCommand : public ISputnikCommand
 public:
 
     CSputnikCommand(const std::string &cmd, int max_answer_len, T scale,
-        IInverterBase *inv, const std::string & capname)
-        : ISputnikCommand(cmd, max_answer_len, inv, capname), scale(scale) {
-    }
+        IInverterBase *inv, const std::string & capname,
+        ISputnikCommandBackoffStrategy *backoff = NULL)
+        : ISputnikCommand(cmd, max_answer_len, inv, capname, backoff), scale(
+            scale) { }
 
 private:
     /// convert the hex answer to a long variable.
@@ -111,6 +112,7 @@ public:
         } catch (...) {
             return false;
         }
+        this->strat->CommandAnswered();
         return true;
     }
 

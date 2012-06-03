@@ -55,7 +55,9 @@ public:
         this->next = next;
     }
 
-    virtual ~ISputnikCommandBackoffStrategy() {};
+    virtual ~ISputnikCommandBackoffStrategy() {
+        if (next) delete next;
+    };
 
     /// Should the command be considered?
     /// return false if not, true if yes.

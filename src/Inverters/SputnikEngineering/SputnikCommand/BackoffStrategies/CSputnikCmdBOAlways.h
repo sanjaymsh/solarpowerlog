@@ -43,9 +43,6 @@ public:
     CSputnikCmdBOAlways( ISputnikCommandBackoffStrategy *next = NULL ) :
             ISputnikCommandBackoffStrategy(next)
     { }
-
-    /// Should the command be considered?
-    virtual bool ConsiderCommand();
 };
 
 #endif /* CSPUTNIKCMDBOALWAYS_H_ */

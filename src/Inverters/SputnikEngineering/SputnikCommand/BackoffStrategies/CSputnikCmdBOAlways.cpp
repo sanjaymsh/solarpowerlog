@@ -26,12 +26,7 @@
  *      Author: tobi
  */
 
-#include "CSputnikCmdBOAlways.h"
+//#include "CSputnikCmdBOAlways.h"
 
-bool CSputnikCmdBOAlways::ConsiderCommand()
-{
-    bool ret = ISputnikCommandBackoffStrategy::ConsiderCommand();
-    if (!ret)
-        return true;
-    return false;
-}
+// currently empty.
+

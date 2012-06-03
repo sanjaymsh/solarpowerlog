@@ -41,6 +41,7 @@ Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/ISputnikCommandBac
 Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOAlways.cpp \
 Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOOnce.cpp \
 Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOIfSupported.cpp \
+Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOTimed.cpp \
 Inverters/DummyInverter/CInverterDummy.cpp  \
 Inverters/DummyInverter/CInverterFactoryDummy.cpp \
 Inverters/interfaces/CNestedCapaIterator.cpp \
@@ -76,6 +77,7 @@ Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/ISputnikCommandBac
 Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOAlways.h \
 Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOOnce.h \
 Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOIfSupported.h \
+Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOTimed.h \
 Inverters/DummyInverter/CInverterDummy.h  \
 Inverters/DummyInverter/CInverterFactoryDummy.h \
 Inverters/interfaces/CNestedCapaIterator.h \

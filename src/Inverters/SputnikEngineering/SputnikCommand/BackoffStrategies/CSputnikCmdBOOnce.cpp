@@ -31,8 +31,8 @@
 bool CSputnikCmdBOOnce::ConsiderCommand()
 {
     bool ret = ISputnikCommandBackoffStrategy::ConsiderCommand();
-    if (!ret)
-        return this->issued;
+    if (ret)
+        return !issued;
     return ret;
 }
 
@@ -45,5 +45,5 @@ void CSputnikCmdBOOnce::CommandAnswered()
 void CSputnikCmdBOOnce::Reset()
 {
     ISputnikCommandBackoffStrategy::Reset();
-    this->issued = false;
+    issued = false;
 }

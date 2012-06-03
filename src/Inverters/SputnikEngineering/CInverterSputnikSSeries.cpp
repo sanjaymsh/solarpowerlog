@@ -68,6 +68,9 @@ Copyright (C) 2009-2012 Tobias Frost
 #include "Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSoftwareVersion.h"
 #include "Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSYS.h"
 #include "Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandTYP.h"
+#include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOOnce.h"
+#include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOTimed.h"
+#include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOIfSupported.h"
 
 using namespace libconfig;
 
@@ -144,56 +147,74 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	// Initialize vector of supported commands.
 	// Handles the "TYP" command, which will identifiy the model
 	// and handles CAPA_INVERTER_MODEL.
-    commands.push_back(new CSputnikCommandTYP(this));
+    commands.push_back(new CSputnikCommandTYP(this, new CSputnikCmdBOOnce));
 
+    // Gets SW version
     commands.push_back(
-        new CSputnikCommandSoftwareVersion(this, CAPA_INVERTER_FIRMWARE));
+        new CSputnikCommandSoftwareVersion(this, CAPA_INVERTER_FIRMWARE,new CSputnikCmdBOOnce));
 
 //	needs special handling this->commands.push_back(CSputnikCommand<unsigned long>("EC*",27,0));
 
+    // AC Power
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_ACPOWER_TOTAL_TYPE>("PAC", 9, 0.5,
             this, CAPA_INVERTER_ACPOWER_TOTAL));
 
+    // DC Power
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_DCPOWER_TOTAL_TYPE>("PDC", 9, 0.5,
             this, CAPA_INVERTER_DCPOWER_TOTAL));
 
+    // On Time inverter in hours.
+    boost::posix_time::time_duration time_between(boost::posix_time::hours(0)+boost::posix_time::minutes(1));;
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_PON_HOURS_TYPE>("KHR", 9, 1.0, this,
-            CAPA_INVERTER_PON_HOURS));
+            CAPA_INVERTER_PON_HOURS,
+            new CSputnikCmdBOTimed(time_between)));
 
+    // Number of startups -- only once per conncetion.
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_STARTUPS_TYPE>("CAC", 9, 1.0, this,
-            CAPA_INVERTER_STARTUPS));
+            CAPA_INVERTER_STARTUPS, new CSputnikCmdBOOnce));
 
 // not implemented  this->commands.push_back(CSputnikCommand<unsigned long>("DYR",7,0));
 // not implemented	this->commands.push_back(CSputnikCommand<unsigned long>("DDY",7,0));
 // not implemented  this->commands.push_back(CSputnikCommand<unsigned long>("DMT",7,0));
 
+    // Number of kwH this year.
+    // as the unit is one kWh, we can reduce the query time to e.g two times a minute
+    // (which would need 120kW feeding power ;-)
+    time_between = boost::posix_time::seconds(30);
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_KWH_Y2D_TYPE>("KYR", 9, 1.0, this,
-            CAPA_INVERTER_KWH_Y2D));
+            CAPA_INVERTER_KWH_Y2D, new CSputnikCmdBOTimed(time_between)));
 
+    // Number of kwH today. Same logic as for KYR, limiting to 2 times a minute.
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_KWH_M2D_TYPE>("KMT", 7, 1.0, this,
-            CAPA_INVERTER_KWH_M2D));
+            CAPA_INVERTER_KWH_M2D, new CSputnikCmdBOTimed(time_between)));
 
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_KWH_2D_TYPE>("KDY", 10, 0.1, this,
             CAPA_INVERTER_KWH_2D));
 
+    // kwH produced yesterday.
+    // Only once a session.
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_KWH_YD_TYPE>("KLD", 10, 0.1, this,
-            CAPA_INVERTER_KWH_YD));
+            CAPA_INVERTER_KWH_YD, new CSputnikCmdBOOnce));
 
+    // All-time kwH
+    // also only 2 times a minute.
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_KWH_TOTAL_TYPE>("KT0", 10, 1.0, this,
-            CAPA_INVERTER_KWH_TOTAL_NAME));
+            CAPA_INVERTER_KWH_TOTAL_NAME,
+            new CSputnikCmdBOTimed(time_between)));
 
+    // Installed power .. will not change over a session.
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_INSTALLEDPOWER_TYPE>("PIN", 9, 0.5,
-            this, CAPA_INVERTER_INSTALLEDPOWER_NAME));
+            this, CAPA_INVERTER_INSTALLEDPOWER_NAME, new CSputnikCmdBOOnce));
 
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_NET_FREQUENCY_TYPE>("TNF", 10, 0.01,
@@ -211,16 +232,16 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
         new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGE_TYPE>("UL1", 10, 0.1,
             this, CAPA_INVERTER_GRID_AC_VOLTAGE_NAME));
 
-#if 0
     // First, implement the "this command is not supported" scheme.
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE2_TYPE>("UL2", 10, 0.1,
-            this, CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE2_NAME));
+        new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE2_TYPE>("UL2",
+            10, 0.1, this, CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE2_NAME,
+            new CSputnikCmdBOIfSupported));
 
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGEP_HASE3_TYPE>("UL3", 10, 0.1,
-            this, CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE3_NAME));
-#endif
+        new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE3_TYPE>("UL3",
+            10, 0.1, this, CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE3_NAME,
+            new CSputnikCmdBOIfSupported));
 
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_INPUT_DC_CURRENT_TYPE>("IDC", 10,
@@ -229,31 +250,28 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_TYPE>("IL1", 10, 0.01,
             this, CAPA_INVERTER_GRID_AC_CURRENT_NAME));
-#if 0
+
     // First, implement the "this command is not supported" scheme.
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_PHASE2_TYPE>("IL2", 10, 0.1,
-            this, CAPA_INVERTER_GRID_AC_CURRENT_PHASE2_NAME));
+            this, CAPA_INVERTER_GRID_AC_CURRENT_PHASE2_NAME, new CSputnikCmdBOIfSupported));
 
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_PHASE3_TYPE>("IL3", 10, 0.1,
-            this, CAPA_INVERTER_GRID_AC_CURRENT_PHASE3_NAME));
-#endif
+            this, CAPA_INVERTER_GRID_AC_CURRENT_PHASE3_NAME, new CSputnikCmdBOIfSupported));
 
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_TYPE>("TKK", 10, 1.0,
             this, CAPA_INVERTER_TEMPERATURE_NAME));
 
-#if 0
     // First, implement the "this command is not supported" scheme.
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_PHASE2_TYPE>("TK2",10,1.0, this,
-            CAPA_INVERTER_TEMPERATURE_PHASE2_NAME));
+            CAPA_INVERTER_TEMPERATURE_PHASE2_NAME, new CSputnikCmdBOIfSupported));
 
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_PHASE3_TYPE>("TK3",10,1.0, this,
-            CAPA_INVERTER_TEMPERATURE_PHASE3_NAME));
-#endif
+            CAPA_INVERTER_TEMPERATURE_PHASE3_NAME, new CSputnikCmdBOIfSupported));
 
     // Get Inverter Timestamp / (Hour:Minute)
     // Should be s special implementation!

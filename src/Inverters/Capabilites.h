@@ -318,6 +318,12 @@ Copyright (C) 2009-2012 Tobias Frost
 #define CAPA_INVERTER_GRID_AC_VOLTAGE_NAME "AC grid voltage (V)"
 #define CAPA_INVERTER_GRID_AC_VOLTAGE_TYPE float
 
+#define CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE2_NAME "AC grid L2 voltage (V)"
+#define CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE2_TYPE float
+
+#define CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE3_NAME "AC grid L3 voltage (V)"
+#define CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE3_TYPE float
+
 /** AC Grid Current
  *
  * For single-phase inverters: Grid voltage of the (single) phase.
@@ -329,6 +335,12 @@ Copyright (C) 2009-2012 Tobias Frost
  * */
 #define CAPA_INVERTER_GRID_AC_CURRENT_NAME "AC grid feeding current (A)"
 #define CAPA_INVERTER_GRID_AC_CURRENT_TYPE float
+
+#define CAPA_INVERTER_GRID_AC_CURRENT_PHASE2_NAME "AC grid L2 feeding current (A)"
+#define CAPA_INVERTER_GRID_AC_CURRENT_PHASE2_TYPE float
+
+#define CAPA_INVERTER_GRID_AC_CURRENT_PHASE3_NAME "AC grid L3 feeding current (A)"
+#define CAPA_INVERTER_GRID_AC_CURRENT_PHASE3_TYPE float
 
 /** Inverter internal temperature
  *
@@ -345,6 +357,13 @@ Copyright (C) 2009-2012 Tobias Frost
  * */
 #define CAPA_INVERTER_TEMPERATURE_NAME "Inverter Temperature (C)"
 #define CAPA_INVERTER_TEMPERATURE_TYPE float
+
+#define CAPA_INVERTER_TEMPERATURE_PHASE2_NAME "Inverter Temperature 2 (C)"
+#define CAPA_INVERTER_TEMPERATURE_PHASE2_TYPE float
+
+#define CAPA_INVERTER_TEMPERATURE_PHASE3_NAME "Inverter Temperature 3 (C)"
+#define CAPA_INVERTER_TEMPERATURE_PHASE3_TYPE float
+
 
 // IEE IEA IED
 

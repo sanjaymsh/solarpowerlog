@@ -456,14 +456,11 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 			cmd = new ICommand(CMD_DISCONNECTED, this);
 			Registry::GetMainScheduler()->ScheduleWork(cmd);
 		} else {
-			cmd = new ICommand(CMD_QUERY_IDENTIFY, this);
+			cmd = new ICommand(CMD_QUERY_POLL, this);
 			Registry::GetMainScheduler()->ScheduleWork(cmd);
 		}
 	}
 		break;
-
-	case CMD_QUERY_IDENTIFY:
-		LOGDEBUG(logger, "new state: CMD_QUERY_IDENTIFY ");
 
 	case CMD_QUERY_POLL:
 	{

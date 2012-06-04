@@ -63,7 +63,7 @@ public:
 	virtual void ExecuteCommand(const ICommand *Command);
 
 protected:
-	/** calculate the checksum for the telegramm stored in str */
+	/** calculate the checksum for the telegram stored in str */
 	static unsigned int CalcChecksum(const char* str, int len);
 
 private:
@@ -78,7 +78,6 @@ private:
 		CMD_WAIT_RECEIVE,
 		CMD_DISCONNECTED,
 		CMD_DISCONNECTED_WAIT,
-		CMD_QUERY_IDENTIFY,
 		CMD_EVALUATE_RECEIVE,
 		CMD_WAIT_SENT,
 		CMD_SEND_QUERIES,

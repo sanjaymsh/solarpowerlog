@@ -147,34 +147,34 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	// Initialize vector of supported commands.
 	// Handles the "TYP" command, which will identifiy the model
 	// and handles CAPA_INVERTER_MODEL.
-    commands.push_back(new CSputnikCommandTYP(this, new CSputnikCmdBOOnce));
+    commands.push_back(new CSputnikCommandTYP(logger, this, new CSputnikCmdBOOnce));
 
     // Gets SW version
     commands.push_back(
-        new CSputnikCommandSoftwareVersion(this, CAPA_INVERTER_FIRMWARE,new CSputnikCmdBOOnce));
+        new CSputnikCommandSoftwareVersion(logger, this, CAPA_INVERTER_FIRMWARE,new CSputnikCmdBOOnce));
 
 //	needs special handling this->commands.push_back(CSputnikCommand<unsigned long>("EC*",27,0));
 
     // AC Power
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_ACPOWER_TOTAL_TYPE>("PAC", 9, 0.5,
+        new CSputnikCommand<CAPA_INVERTER_ACPOWER_TOTAL_TYPE>(logger, "PAC", 9, 0.5,
             this, CAPA_INVERTER_ACPOWER_TOTAL));
 
     // DC Power
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_DCPOWER_TOTAL_TYPE>("PDC", 9, 0.5,
+        new CSputnikCommand<CAPA_INVERTER_DCPOWER_TOTAL_TYPE>(logger, "PDC", 9, 0.5,
             this, CAPA_INVERTER_DCPOWER_TOTAL));
 
     // On Time inverter in hours.
     boost::posix_time::time_duration time_between(boost::posix_time::hours(0)+boost::posix_time::minutes(1));;
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_PON_HOURS_TYPE>("KHR", 9, 1.0, this,
+        new CSputnikCommand<CAPA_INVERTER_PON_HOURS_TYPE>(logger, "KHR", 9, 1.0, this,
             CAPA_INVERTER_PON_HOURS,
             new CSputnikCmdBOTimed(time_between)));
 
     // Number of startups -- only once per conncetion.
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_STARTUPS_TYPE>("CAC", 9, 1.0, this,
+        new CSputnikCommand<CAPA_INVERTER_STARTUPS_TYPE>(logger, "CAC", 9, 1.0, this,
             CAPA_INVERTER_STARTUPS, new CSputnikCmdBOOnce));
 
 // not implemented  this->commands.push_back(CSputnikCommand<unsigned long>("DYR",7,0));
@@ -186,91 +186,91 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
     // (which would need 120kW feeding power ;-)
     time_between = boost::posix_time::seconds(30);
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_KWH_Y2D_TYPE>("KYR", 9, 1.0, this,
+        new CSputnikCommand<CAPA_INVERTER_KWH_Y2D_TYPE>(logger, "KYR", 9, 1.0, this,
             CAPA_INVERTER_KWH_Y2D, new CSputnikCmdBOTimed(time_between)));
 
     // Number of kwH today. Same logic as for KYR, limiting to 2 times a minute.
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_KWH_M2D_TYPE>("KMT", 7, 1.0, this,
+        new CSputnikCommand<CAPA_INVERTER_KWH_M2D_TYPE>(logger, "KMT", 7, 1.0, this,
             CAPA_INVERTER_KWH_M2D, new CSputnikCmdBOTimed(time_between)));
 
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_KWH_2D_TYPE>("KDY", 10, 0.1, this,
+        new CSputnikCommand<CAPA_INVERTER_KWH_2D_TYPE>(logger, "KDY", 10, 0.1, this,
             CAPA_INVERTER_KWH_2D));
 
     // kwH produced yesterday.
     // Only once a session.
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_KWH_YD_TYPE>("KLD", 10, 0.1, this,
+        new CSputnikCommand<CAPA_INVERTER_KWH_YD_TYPE>(logger, "KLD", 10, 0.1, this,
             CAPA_INVERTER_KWH_YD, new CSputnikCmdBOOnce));
 
     // All-time kwH
     // also only 2 times a minute.
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_KWH_TOTAL_TYPE>("KT0", 10, 1.0, this,
+        new CSputnikCommand<CAPA_INVERTER_KWH_TOTAL_TYPE>(logger, "KT0", 10, 1.0, this,
             CAPA_INVERTER_KWH_TOTAL_NAME,
             new CSputnikCmdBOTimed(time_between)));
 
     // Installed power .. will not change over a session.
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_INSTALLEDPOWER_TYPE>("PIN", 9, 0.5,
+        new CSputnikCommand<CAPA_INVERTER_INSTALLEDPOWER_TYPE>(logger, "PIN", 9, 0.5,
             this, CAPA_INVERTER_INSTALLEDPOWER_NAME, new CSputnikCmdBOOnce));
 
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_NET_FREQUENCY_TYPE>("TNF", 10, 0.01,
+        new CSputnikCommand<CAPA_INVERTER_NET_FREQUENCY_TYPE>(logger, "TNF", 10, 0.01,
             this, CAPA_INVERTER_NET_FREQUENCY_NAME));
 
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_RELPOWER_TYPE>("PRL", 10, 1.0, this,
+        new CSputnikCommand<CAPA_INVERTER_RELPOWER_TYPE>(logger, "PRL", 10, 1.0, this,
             CAPA_INVERTER_RELPOWER_NAME));
 
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_INPUT_DC_VOLTAGE_TYPE>("UDC", 10, 0.1,
+        new CSputnikCommand<CAPA_INVERTER_INPUT_DC_VOLTAGE_TYPE>(logger, "UDC", 10, 0.1,
             this, CAPA_INVERTER_INPUT_DC_VOLTAGE_NAME));
 
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGE_TYPE>("UL1", 10, 0.1,
+        new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGE_TYPE>(logger, "UL1", 10, 0.1,
             this, CAPA_INVERTER_GRID_AC_VOLTAGE_NAME));
 
     // First, implement the "this command is not supported" scheme.
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE2_TYPE>("UL2",
+        new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE2_TYPE>(logger, "UL2",
             10, 0.1, this, CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE2_NAME,
             new CSputnikCmdBOIfSupported));
 
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE3_TYPE>("UL3",
+        new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE3_TYPE>(logger, "UL3",
             10, 0.1, this, CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE3_NAME,
             new CSputnikCmdBOIfSupported));
 
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_INPUT_DC_CURRENT_TYPE>("IDC", 10,
+        new CSputnikCommand<CAPA_INVERTER_INPUT_DC_CURRENT_TYPE>(logger, "IDC", 10,
             0.01, this, CAPA_INVERTER_INPUT_DC_CURRENT_NAME));
 
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_TYPE>("IL1", 10, 0.01,
+        new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_TYPE>(logger, "IL1", 10, 0.01,
             this, CAPA_INVERTER_GRID_AC_CURRENT_NAME));
 
     // First, implement the "this command is not supported" scheme.
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_PHASE2_TYPE>("IL2", 10, 0.1,
+        new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_PHASE2_TYPE>(logger, "IL2", 10, 0.1,
             this, CAPA_INVERTER_GRID_AC_CURRENT_PHASE2_NAME, new CSputnikCmdBOIfSupported));
 
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_PHASE3_TYPE>("IL3", 10, 0.1,
+        new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_PHASE3_TYPE>(logger, "IL3", 10, 0.1,
             this, CAPA_INVERTER_GRID_AC_CURRENT_PHASE3_NAME, new CSputnikCmdBOIfSupported));
 
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_TYPE>("TKK", 10, 1.0,
+        new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_TYPE>(logger, "TKK", 10, 1.0,
             this, CAPA_INVERTER_TEMPERATURE_NAME));
 
     // First, implement the "this command is not supported" scheme.
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_PHASE2_TYPE>("TK2",10,1.0, this,
+        new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_PHASE2_TYPE>(logger, "TK2",10,1.0, this,
             CAPA_INVERTER_TEMPERATURE_PHASE2_NAME, new CSputnikCmdBOIfSupported));
 
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_PHASE3_TYPE>("TK3",10,1.0, this,
+        new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_PHASE3_TYPE>(logger, "TK3",10,1.0, this,
             CAPA_INVERTER_TEMPERATURE_PHASE3_NAME, new CSputnikCmdBOIfSupported));
 
     // Get Inverter Timestamp / (Hour:Minute)
@@ -285,19 +285,19 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 
     // Handles the SYS Command, which handles the CAPA_INVERTER_STATUS_NAME
     // and CAPA_INVERTER_STATUS_READABLE_NAME capabilities.
-    commands.push_back(new CSputnikCommandSYS(this));
+    commands.push_back(new CSputnikCommandSYS(logger, this));
 
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_ERROR_CURRENT_TYPE>("IEE", 10, 0.1,
+        new CSputnikCommand<CAPA_INVERTER_ERROR_CURRENT_TYPE>(logger, "IEE", 10, 0.1,
             this, CAPA_INVERTER_ERROR_CURRENT_NAME));
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_DC_ERROR_CURRENT_TYPE>("IED", 10, 0.1,
+        new CSputnikCommand<CAPA_INVERTER_DC_ERROR_CURRENT_TYPE>(logger, "IED", 10, 0.1,
             this, CAPA_INVERTER_DC_ERROR_CURRENT_NAME));
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_AC_ERROR_CURRENT_TYPE>("IEA", 10, 0.1,
+        new CSputnikCommand<CAPA_INVERTER_AC_ERROR_CURRENT_TYPE>(logger, "IEA", 10, 0.1,
             this, CAPA_INVERTER_AC_ERROR_CURRENT_NAME));
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_GROUND_VOLTAGE_TYPE>("UGD", 10, 0.1,
+        new CSputnikCommand<CAPA_INVERTER_GROUND_VOLTAGE_TYPE>(logger, "UGD", 10, 0.1,
             this, CAPA_INVERTER_GROUND_VOLTAGE_NAME));
 
 }
@@ -402,7 +402,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 
 	case CMD_DISCONNECTED_WAIT:
 	{
-		LOGTRACE(logger, "new state: CMD_DISCONNECTED_WAIT");
+		LOGDEBUG(logger, "new state: CMD_DISCONNECTED_WAIT");
 		cmd = new ICommand(CMD_INIT, this);
 		timespec ts;
 		ts.tv_sec = 15;
@@ -473,8 +473,16 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		std::vector<ISputnikCommand*>::iterator it;
 		for (it=commands.begin(); it!= commands.end(); it++) {
 		    if ((*it)->ConsiderCommand()) {
+#ifdef DEBUG_BACKOFFSTRATEGIES
+		        LOGTRACE(logger,"Considering Command " << (*it)->command );
+#endif
 		        pendingcommands.push_back(*it);
 		    }
+#ifdef DEBUG_BACKOFFSTRATEGIES
+		    else {
+		        LOGTRACE(logger," Command " << (*it)->command << " not to be considered.");
+		    }
+#endif
 		}
 	}
 
@@ -512,7 +520,6 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 	case CMD_WAIT_RECEIVE:
 	{
 		LOGDEBUG(logger, "new state: CMD_WAIT_RECEIVE");
-
 		cmd = new ICommand(CMD_EVALUATE_RECEIVE, this);
 		connection->Receive(cmd);
 	}

@@ -31,11 +31,12 @@ Copyright (C) 2009-2012 Tobias Frost
 
 #include "ISputnikCommand.h"
 #include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/ISputnikCommandBackoffStrategy.h"
+#include "configuration/ILogger.h"
 
 class CSputnikCommandSYS : public ISputnikCommand
 {
 public:
-    CSputnikCommandSYS( IInverterBase *inv,
+    CSputnikCommandSYS( ILogger &logger, IInverterBase *inv,
             ISputnikCommandBackoffStrategy *backoff = NULL );
 
     virtual ~CSputnikCommandSYS() {}

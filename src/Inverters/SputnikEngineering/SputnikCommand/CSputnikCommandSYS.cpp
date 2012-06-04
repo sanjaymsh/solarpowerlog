@@ -9,9 +9,11 @@
 #include "config.h"
 #endif
 
+#include <string>
+
 #include "CSputnikCommandSYS.h"
 #include "Inverters/Capabilites.h"
-#include <string>
+
 
 static const struct
 {
@@ -64,12 +66,11 @@ static const struct
                 STATUS_UNAVAILABLE, "UNKNOWN -- Please file a bug "
                 "with as much information as you have, and please read the display of your inverter." }, };
 
-CSputnikCommandSYS::CSputnikCommandSYS( IInverterBase *inv,
+CSputnikCommandSYS::CSputnikCommandSYS( ILogger &logger, IInverterBase *inv,
         ISputnikCommandBackoffStrategy *backoff ) :
-        ISputnikCommand("SYS", 10, inv, "", backoff), laststatuscode(0), secondparm_sys(
+        ISputnikCommand(logger, "SYS", 10, inv, "", backoff), laststatuscode(0), secondparm_sys(
                 0)
-{
-}
+{ }
 
 bool CSputnikCommandSYS::handle_token(const std::vector<std::string>& tokens) {
 

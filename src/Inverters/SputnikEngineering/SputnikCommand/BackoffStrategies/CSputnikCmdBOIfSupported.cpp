@@ -33,8 +33,17 @@ bool CSputnikCmdBOIfSupported::ConsiderCommand()
     bool ret = ISputnikCommandBackoffStrategy::ConsiderCommand();
     if (!ret)
         return ret;
-    if (triesleft || supported)
+    if (triesleft || supported){
+#ifdef DEBUG_BACKOFFSTRATEGIES
+        if (triesleft != triesleft_orig) {
+            LOGTRACE(logger, "BO-IfSupported: triesleft=" << triesleft << " supported=" << supported);
+        }
+#endif
         return true;
+    }
+#ifdef DEBUG_BACKOFFSTRATEGIES
+    LOGTRACE(logger,"BO-IfSupported: Not supported.");
+#endif
     return false;
 }
 

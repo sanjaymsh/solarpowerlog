@@ -41,23 +41,31 @@
 #ifndef ISPUTNIKCOMMANDBACKOFFSTRATEGY_H_
 #define ISPUTNIKCOMMANDBACKOFFSTRATEGY_H_
 
+// undefine this to disable the debugging code (mostly logger usage)
+#undef DEBUG_BACKOFFSTRATEGIES
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
 #include <stddef.h>
 
+#include "configuration/ILogger.h"
+
 class ISputnikCommandBackoffStrategy
 {
 public:
 
-    ISputnikCommandBackoffStrategy(ISputnikCommandBackoffStrategy *next = NULL) {
-        this->next = next;
-    }
+    ISputnikCommandBackoffStrategy(ISputnikCommandBackoffStrategy *next = NULL);
 
-    virtual ~ISputnikCommandBackoffStrategy() {
-        if (next) delete next;
-    };
+#ifdef DEBUG_BACKOFFSTRATEGIES
+    virtual void SetLogger(ILogger &newlogger) {
+        logger = newlogger;
+        if (next) next->SetLogger(newlogger);
+    }
+#endif
+
+    virtual ~ISputnikCommandBackoffStrategy();
 
     /// Should the command be considered?
     /// return false if not, true if yes.
@@ -80,6 +88,9 @@ public:
 
 protected:
     ISputnikCommandBackoffStrategy *next;
+#ifdef DEBUG_BACKOFFSTRATEGIES
+    ILogger &logger;
+#endif
 };
 
 #endif /* ISPUTNIKCOMMANDBACKOFFSTRATEGY_H_ */

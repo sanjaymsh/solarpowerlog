@@ -31,6 +31,21 @@
 #endif
 
 #include "ISputnikCommandBackoffStrategy.h"
+#include "configuration/Registry.h"
+
+ISputnikCommandBackoffStrategy::ISputnikCommandBackoffStrategy(
+    ISputnikCommandBackoffStrategy *next)
+    : next(next)
+#ifdef DEBUG_BACKOFFSTRATEGIES
+    , logger(Registry::GetMainLogger())
+#endif
+{
+}
+
+ISputnikCommandBackoffStrategy::~ISputnikCommandBackoffStrategy() {
+     if (next) delete next;
+ };
+
 
 bool ISputnikCommandBackoffStrategy::ConsiderCommand()
 {

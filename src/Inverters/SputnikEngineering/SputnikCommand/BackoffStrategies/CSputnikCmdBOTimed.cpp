@@ -40,6 +40,9 @@ bool CSputnikCmdBOTimed::ConsiderCommand() {
         return true;
     }
 
+#ifdef DEBUG_BACKOFFSTRATEGIES
+    LOGTRACE(logger,"BO-Timed: not yet due. Due at " << (last+interval));
+#endif
     return false;
 }
 

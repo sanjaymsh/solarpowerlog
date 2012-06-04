@@ -44,9 +44,9 @@
 class CSputnikCommandSoftwareVersion : public ISputnikCommand
 {
 public:
-    CSputnikCommandSoftwareVersion( IInverterBase *inv,
-            const std::string & capname,
-            ISputnikCommandBackoffStrategy *backoff = NULL );
+    CSputnikCommandSoftwareVersion(ILogger &logger, IInverterBase *inv,
+        const std::string & capname, ISputnikCommandBackoffStrategy *backoff =
+            NULL);
 
     virtual bool ConsiderCommand();
 

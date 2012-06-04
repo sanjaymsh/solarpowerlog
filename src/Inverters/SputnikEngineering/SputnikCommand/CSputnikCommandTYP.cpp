@@ -62,6 +62,11 @@ static const struct
             "ALONG WITH ALL INFOS YOU HAVE" }
     };
 
+CSputnikCommandTYP::CSputnikCommandTYP(ILogger &logger, IInverterBase *inv,
+    ISputnikCommandBackoffStrategy *backoff)
+    : ISputnikCommand(logger, "TYP", 9, inv, CAPA_INVERTER_MODEL, backoff) {
+}
+
 bool CSputnikCommandTYP::handle_token(const std::vector<std::string>& tokens) {
     string strmodel;
     unsigned int i = 0;

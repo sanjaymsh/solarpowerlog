@@ -31,8 +31,14 @@
 bool CSputnikCmdBOOnce::ConsiderCommand()
 {
     bool ret = ISputnikCommandBackoffStrategy::ConsiderCommand();
-    if (ret)
+    if (ret) {
+#ifdef DEBUG_BACKOFFSTRATEGIES
+        if (issued) {
+            LOGTRACE(logger,"BO-Once: Already issued.");
+        }
+#endif
         return !issued;
+    }
     return ret;
 }
 

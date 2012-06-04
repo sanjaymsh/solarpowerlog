@@ -42,10 +42,10 @@ static const std::string BDN("BDN");
 /// command string for both
 static const std::string BDNSWV("BDN;SWV");
 
-CSputnikCommandSoftwareVersion::CSputnikCommandSoftwareVersion(
+CSputnikCommandSoftwareVersion::CSputnikCommandSoftwareVersion(ILogger &logger,
         IInverterBase *inv, const std::string & capname,
         ISputnikCommandBackoffStrategy *backoff ) :
-        ISputnikCommand("", 0, inv, capname, backoff), got_buildversion(false), got_swversion(
+        ISputnikCommand(logger, "SWVERSION", 0, inv, capname, backoff), got_buildversion(false), got_swversion(
                 false)
 {
 }
@@ -73,8 +73,7 @@ bool CSputnikCommandSoftwareVersion::IsHandled(const std::string& token) {
 }
 
 bool CSputnikCommandSoftwareVersion::ConsiderCommand() {
-#warning this should be completly done by the backoff algo...
-    return (strat->ConsiderCommand() && (!got_buildversion || !got_swversion));
+    return strat->ConsiderCommand();
 }
 
 

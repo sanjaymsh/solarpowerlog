@@ -32,14 +32,13 @@ Copyright (C) 2009-2012 Tobias Frost
 #include "ISputnikCommand.h"
 #include "Inverters/Capabilites.h"
 #include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/ISputnikCommandBackoffStrategy.h"
+#include "configuration/ILogger.h"
 
 class CSputnikCommandTYP : public ISputnikCommand
 {
 public:
-    CSputnikCommandTYP( IInverterBase *inv,
-            ISputnikCommandBackoffStrategy *backoff = NULL ) :
-            ISputnikCommand("TYP", 9, inv, CAPA_INVERTER_MODEL, backoff)
-    { }
+    CSputnikCommandTYP(ILogger &logger, IInverterBase *inv,
+        ISputnikCommandBackoffStrategy *backoff = NULL);
 
     virtual ~CSputnikCommandTYP() {}
 

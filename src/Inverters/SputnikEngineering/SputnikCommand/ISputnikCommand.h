@@ -19,6 +19,9 @@
  ----------------------------------------------------------------------------
  */
 
+#ifndef ISPUTNIKCOMMAND_H_
+#define ISPUTNIKCOMMAND_H_
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -27,6 +30,7 @@
 #include "Inverters/Capabilites.h"
 #include "Inverters/interfaces/InverterBase.h"
 #include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/ISputnikCommandBackoffStrategy.h"
+#include "configuration/ILogger.h"
 
 /**
  * \file ISputnikCommand.h
@@ -65,10 +69,6 @@
  *      Author: tobi
 */
 
-
-#ifndef ISPUTNIKCOMMAND_H_
-#define ISPUTNIKCOMMAND_H_
-
 /** Interface Class for the Commands.
  *
  * Implements also the common storage and methods */
@@ -79,7 +79,7 @@ public:
     /// Constructs the ISputnikCommand.
     /// If given, backoffstrategy will be then owned by this object and also
     /// freed on destruction.
-    ISputnikCommand( const std::string &command, int max_answer_len,
+    ISputnikCommand( ILogger &logger, const std::string &command, int max_answer_len,
             IInverterBase *inv, const std::string & capaname,
             ISputnikCommandBackoffStrategy *backoffstrategy);
 
@@ -190,13 +190,18 @@ protected:
             throw e;
         }
     }
-
+#ifdef DEBUG_BACKOFFSTRATEGIES
+public: // only for debugging public.
+#else
 protected:
+#endif
     std::string command;
+protected:
     int max_answer_len;
     IInverterBase *inverter;
     std::string capaname;
     ISputnikCommandBackoffStrategy *strat;
+    ILogger &logger;
 };
 
 #endif /* ISPUTNIKCOMMAND_H_ */

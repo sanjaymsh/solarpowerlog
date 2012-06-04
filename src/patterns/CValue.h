@@ -43,6 +43,7 @@ Copyright (C) 2009-2012 Tobias Frost
 
 #include <iostream>
 #include <sstream>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 /** This helper class allows type-identificatino without RTTI.
  * See http://ciaranm.wordpress.com/2010/05/24/runtime-type-checking-in-c-without-rtti/
@@ -74,8 +75,6 @@ protected:
 template<class T>
 class CValue : public IValue
 {
-
-
 public:
 
     CValue() {
@@ -85,9 +84,11 @@ public:
     CValue(const T &set) {
         IValue::type_ = MagicNumbers::magic_number_for<T>();
         value = set;
+        timestamp = boost::posix_time::second_clock::local_time();
     }
 
-    void Set(T value) {
+    void Set(T value, boost::posix_time::ptime timestamp = boost::posix_time::second_clock::local_time()) {
+        this->timestamp = timestamp;
         this->value = value;
     }
 
@@ -96,11 +97,17 @@ public:
     }
 
     virtual void operator=(const T& val) {
+        timestamp = boost::posix_time::second_clock::local_time();
         value = val;
     }
 
     virtual void operator=(const CValue<T> &val) {
+        timestamp = val.GetTimestamp();
         value = val.Get();
+    }
+
+    virtual boost::posix_time::ptime GetTimestamp(void) const {
+        return timestamp;
     }
 
     virtual operator std::string() {
@@ -129,6 +136,7 @@ public:
 
 private:
     T value;
+    boost::posix_time::ptime timestamp;
 
 };
 

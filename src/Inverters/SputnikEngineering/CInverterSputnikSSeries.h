@@ -104,9 +104,6 @@ private:
                 PDC,    UGD,    KLD,    CAC
 	};
 
-	/// Add a inverter-query into the queue for later quering...
-	void pushinverterquery(enum query q);
-
 	/// Build up the communication string
 	///
 	/// \returns the string created, or "" if nothing to do.

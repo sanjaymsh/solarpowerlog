@@ -634,11 +634,6 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 
 }
 
-void CInverterSputnikSSeries::pushinverterquery(enum query q)
-{
-	cmdqueue.push(q);
-}
-
 string CInverterSputnikSSeries::assemblequerystring()
 {
 

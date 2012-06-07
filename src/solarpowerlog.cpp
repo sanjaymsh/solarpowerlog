@@ -117,6 +117,8 @@ using namespace log4cxx::net;
 
 #include "interfaces/CDebugHelper.h"
 
+#include <execinfo.h>
+
 using namespace std;
 
 #ifdef HAVE_LIBLOG4CXX
@@ -241,14 +243,24 @@ void SignalHandler(int signal)
             }
         break;
         case SIGSEGV:
+        {
         	cleanup();
             cerr << progname << " Segmentation fault. " << endl;
             cerr << "Trying to dump internal state information" << endl;
             Registry::Instance().DumpDebugCollection();
             LOGFATAL(Registry::GetMainLogger(),
                 progname << " Segmentation fault.");
-            raise(signal);
+            // try to print a backtrace.
+            LOGFATAL(Registry::GetMainLogger(),"Trying a backtrace to stderr:");
+            {
+                void *trace[64];
+                int count = backtrace( trace, 64 );
+                backtrace_symbols_fd(trace, count, 2);
+            }
 
+            raise(signal);
+            break;
+        }
         case SIGUSR1: {
             LOGINFO(Registry::GetMainLogger(),"SIGUSR1 received");
             sigusr1 = true;

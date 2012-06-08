@@ -84,6 +84,13 @@ public:
 
 	virtual bool IsConnected( void );
 
+	virtual bool Accept(ICommand *cmd);
+
+	virtual bool CanAccept()
+    {
+        return this->configured_as_server;
+    }
+
 private:
 	boost::asio::io_service *ioservice;
 	boost::asio::ip::tcp::socket *sockt;
@@ -132,8 +139,12 @@ private:
 
 	bool HandleSend( CAsyncCommand *cmd );
 
+    bool HandleAccept( CAsyncCommand *cmd );
+
 	list<CAsyncCommand*> cmds;
 	sem_t cmdsemaphore;
+
+	bool configured_as_server;
 
 };
 

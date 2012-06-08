@@ -88,6 +88,7 @@ CConnectTCPAsio::CConnectTCPAsio( const string &configurationname ) :
 {
 	// Generate our own asio ioservice
 	// TODO check if one central would do that too...
+    configured_as_server = false;
 	ioservice = new io_service;
 	sockt = new ip::tcp::socket(*ioservice);
 	sem_init(&cmdsemaphore, 0, 0);
@@ -181,13 +182,22 @@ bool CConnectTCPAsio::CheckConfig( void )
 {
 	string setting;
 	bool fail = false;
-
 	CConfigHelper cfghelper(ConfigurationPath);
 
-	fail |= !cfghelper.CheckConfig("tcpadr", libconfig::Setting::TypeString);
-	fail |= !cfghelper.CheckConfig("tcpport", libconfig::Setting::TypeString);
-	fail |= !cfghelper.CheckConfig("tcptimeout", libconfig::Setting::TypeInt,
-			false);
+	if (cfghelper.GetConfig("tcpmode",setting)) {
+	    if (setting == "server") {
+	        fail |= !cfghelper.CheckConfig("tcpadr", libconfig::Setting::TypeString,true);
+	        fail |= !cfghelper.CheckConfig("tcpport", libconfig::Setting::TypeInt);
+	        if (!fail) this->configured_as_server = true;
+	    }
+	}
+
+	if (!configured_as_server) {
+        fail |= !cfghelper.CheckConfig("tcpadr", libconfig::Setting::TypeString);
+        fail |= !cfghelper.CheckConfig("tcpport", libconfig::Setting::TypeString);
+        fail |= !cfghelper.CheckConfig("tcptimeout", libconfig::Setting::TypeInt,
+                false);
+	}
 
 	if (!fail) {
 		StartWorkerThread();
@@ -226,9 +236,7 @@ void CConnectTCPAsio::_main( void )
 				switch (donow->c) {
 				case CAsyncCommand::CONNECT:
 					if (HandleConnect(donow)) {
-						LOGTRACE(logger, "Check command " << donow << " with callback " << donow->callback );
 						mutex.lock();
-						LOGTRACE(logger, "Front is " <<cmds.front() );
 						cmds.pop_front();
 						// check if we have to delete the object
 						// or -- in case of sync operation --
@@ -242,7 +250,7 @@ void CConnectTCPAsio::_main( void )
 						}
 						mutex.unlock();
 					}
-					break;
+				break;
 
 				case CAsyncCommand::DISCONNECT:
 					if (HandleDisConnect(donow)) {
@@ -281,6 +289,21 @@ void CConnectTCPAsio::_main( void )
 					}
 				}
 				break;
+
+                case CAsyncCommand::ACCEPT:
+                {
+                    if (HandleAccept(donow)) {
+                        mutex.lock();
+                        cmds.pop_front();
+                        if (delete_cmd) {
+                            LOGTRACE(logger, "Deleting " << donow);
+                            delete donow;
+                        }
+                        mutex.unlock();
+                    }
+                }
+                    break;
+
 
 				default:
 				{
@@ -322,6 +345,13 @@ bool CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 		cmd->HandleCompletion();
 		return true;
 	}
+
+	// fail, if we are configured for inbound connections.
+    if (configured_as_server) {
+        cmd->callback->addData(ICMD_ERRNO,-EPERM);
+        cmd->HandleCompletion();
+        return true;
+    }
 
 	CConfigHelper cfghelper(ConfigurationPath);
 
@@ -561,6 +591,15 @@ bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 }
 
 
+bool CConnectTCPAsio::Accept(ICommand *callback)
+{
+    assert(callback); // does not support sync operation!
+    CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::ACCEPT,
+            callback);
+    PushWork(commando);
+    return true;
+}
+
 /** handles async sending */
 bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 
@@ -661,6 +700,69 @@ bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 	cmd->callback->addData(ICMD_ERRNO, 0);
 	cmd->HandleCompletion();
 	return true;
+}
+
+// Server mode. Listen to incoming connections.
+
+bool CConnectTCPAsio::HandleAccept(CAsyncCommand *cmd)
+{
+    int port;
+    std::string ipadr;
+    // Do not accept if already connected.
+    if (IsConnected()) {
+        cmd->callback->addData(ICMD_ERRNO, -EBUSY);
+        cmd->HandleCompletion();
+        return true;
+    }
+
+    // Fail if this is not configured as a server.
+    if (!configured_as_server) {
+        cmd->callback->addData(ICMD_ERRNO,-EPERM);
+        cmd->HandleCompletion();
+        return true;
+    }
+
+    CConfigHelper cfghelper(ConfigurationPath);
+
+    cfghelper.GetConfig("tcpadr", ipadr,std::string("any"));
+    cfghelper.GetConfig("tcpport", port);
+
+    ip::tcp::endpoint *endpoint;
+
+    if (ipadr == "any") {
+        endpoint = new ip::tcp::endpoint(ip::tcp::v4(),port);
+    } else if ( ipadr == "any_v6")
+    {
+        endpoint = new ip::tcp::endpoint(ip::tcp::v6(),port);
+    } else {
+        ip::address adr = ip::address::from_string(ipadr);
+        endpoint = new ip::tcp::endpoint(adr,port);
+    }
+
+    LOGDEBUG(logger,"Waiting for inbound connection");
+    ip::tcp::acceptor acceptor(*ioservice, *endpoint);
+    boost::system::error_code ec;
+    acceptor.accept(*sockt, ec);
+
+    if (ec) {
+        int eval = -ec.value();
+        if (!eval) { eval = -1; }
+        cmd->callback->addData(ICMD_ERRNO, eval);
+        if (!ec.message().empty()) {
+            cmd->callback->addData(ICMD_ERRNO_STR, ec.message());
+        }
+        cmd->HandleCompletion();
+        LOGDEBUG( logger,
+                "Connection failed. Error " << eval <<
+                "(" << ec.message() << ")");
+        return true;
+    }
+
+    delete endpoint;
+    LOGTRACE(logger, "Connected.");
+    cmd->callback->addData(ICMD_ERRNO, 0);
+    cmd->HandleCompletion();
+    return true;
 }
 
 #endif /* HAVE_COMMS_ASIOTCPIO */

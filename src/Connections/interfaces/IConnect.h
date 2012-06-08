@@ -114,16 +114,17 @@ public:
 
 	virtual ~IConnect();
 
-	/** Connects to the target, establish communikation link.
-	 *
-	 * The target and the settings are retrieved out of the configuration.
-	 *
-	 * Connect async and use the ICommand to tell the result in ICMD_ERRNO
-	 *
-	 * \note If Async operations would be overkill, because the result is
-	 * immediatly known, one can also implement the async ops as synchronous
-	 * as long as it uses the ICommand as notification for the result.
-	 */
+	/** Connects to the target, establish communication link.
+     *
+     * The target and the settings are retrieved out of the configuration.
+     *
+     * Connect asynchronous and use the ICommand to tell the result in ICMD_ERRNO
+     *
+     * \note If asynchronous operations would be overkill, because the result is
+     * immediately known, one can also implement the asynchronsous operations
+     * as synchronous ones as long as it uses the ICommand as notification
+     * for the result.
+     */
 	virtual void Connect(ICommand *callback) = 0;
 
 	/** Tear down the connection.
@@ -174,12 +175,19 @@ public:
 	 *
 	 *	ENOTCONN  Connection went down, e.g. eof received.
 	 */
-
 	virtual void Receive(ICommand *cmd) = 0;
 
 	/// Check the configuration for validity. Return false on config errors.
 	/// (program will abort then!)
 	virtual bool CheckConfig(void) = 0;
+
+	/// Check at runtime if the communication class supports the "Accept"
+	/// method.
+	/// \returns true if Accept() works, false if not.
+
+	virtual bool CanAccept(void) {
+	    return false;
+	}
 
 	/// Check if we believe the connection is still active
 	/// Note: if the concrete implementation cannot tell,
@@ -188,6 +196,18 @@ public:
 	virtual bool IsConnected(void)
 	{
 		return true;
+	}
+
+	/// Accept an inbound connection to be used for the communication.
+	/// (if supported by the underlaying transport mechanism.)
+	/// \param cmd Callback object to be used after completiion.
+	/// \note cmd must be provided (non-NULL)
+	/// \returns false if Accept is not supported.
+	/// \sa CanAccept
+	/// \warning If you use Accept() and Connect() on the same object,
+	/// the behaviour is undefined.
+	virtual bool Accept(ICommand *cmd) {
+	    return false;
 	}
 
 protected:

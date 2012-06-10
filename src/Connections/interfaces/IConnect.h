@@ -55,7 +55,8 @@ using namespace std;
 /// This allows fine-grade timeouts for any operation
 /// Note: If not specified, the implementation will
 /// either use a default value
-/// or retrieve a configuration value
+/// or retrieve a configuration value.
+/// unit is ms.
 #define ICONN_TOKEN_TIMEOUT "ICON_TIMEOUT"
 
 /** Timeout specifier -- this (optional) parameter sets the timeout between two

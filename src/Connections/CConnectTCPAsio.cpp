@@ -477,8 +477,8 @@ bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 	boost::system::error_code ec, handlerec;
 
 	volatile int result_timer = 0;
-	size_t bytes;
-	unsigned long timeout;
+	size_t bytes = 0;
+	unsigned long timeout = 0;
 	char buf[2];
 	struct asyncASIOCompletionHandler read_handler(&bytes, &handlerec);
 	// timeout setup
@@ -505,9 +505,24 @@ bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 	//  async_read. However, boost:asio seems not to allow auto-buffers,
 	// so we will just read one byte and when this is available, we'll
 	// check for if there are some others left
-	sockt->async_read_some(boost::asio::buffer(&buf, 1), read_handler);
 
-	size_t num = ioservice->run_one(ec);
+	// seen when connecting to localhost: ioservice returns, with ec = eof,
+	// but still connected. So if retry to async_read_some as long as timeout
+	// not expired.
+	size_t num = 0;
+    do {
+        bool sleep = false;
+        if (!sleep) {
+            boost::posix_time::time_duration td2 = boost::posix_time::millisec(50);
+            deadline_timer timer(*ioservice,td2);
+            try {
+              timer.wait();
+            } catch (...) {}
+        }
+        sleep = true;
+        sockt->async_read_some(boost::asio::buffer(&buf, 1), read_handler);
+        num = ioservice->run_one(ec);
+    } while (num == 1 && !result_timer && 0 == read_handler.bytes);
 
 	// ioservice error or timeout
 	if (num == 0 || result_timer) {
@@ -605,7 +620,7 @@ bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 
 	boost::system::error_code ec, handlerec;
 	volatile int result_timer = 0;
-	size_t bytes;
+	size_t bytes = 0;
 	unsigned long timeout;
 	struct asyncASIOCompletionHandler write_handler(&bytes, &handlerec);
 	// timeout setup

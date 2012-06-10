@@ -62,7 +62,7 @@ static const struct
             { 20167, NOT_FEEDING_EXTEVENT, "Grid frequency too low (20167)" },
 
 
-            { 1,
+            { -1,
                 STATUS_UNAVAILABLE, "UNKNOWN -- Please file a bug "
                 "with as much information as you have, and please read the display of your inverter." }, };
 

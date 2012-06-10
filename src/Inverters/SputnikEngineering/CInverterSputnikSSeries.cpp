@@ -50,11 +50,6 @@ Copyright (C) 2009-2012 Tobias Frost
 
 #include "CInverterSputnikSSeries.h"
 
-#include <libconfig.h++>
-#include <iostream>
-#include <sstream>
-#include <cstring>
-
 #include "patterns/ICommand.h"
 
 #include "interfaces/CWorkScheduler.h"
@@ -71,10 +66,6 @@ Copyright (C) 2009-2012 Tobias Frost
 #include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOOnce.h"
 #include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOTimed.h"
 #include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOIfSupported.h"
-
-using namespace libconfig;
-
-using namespace std;
 
 #undef DEBUG_TOKENIZER
 // Debug: Print all received tokens
@@ -321,13 +312,13 @@ bool CInverterSputnikSSeries::CheckConfig()
 	bool fail = false;
 
 	CConfigHelper hlp(configurationpath);
-	fail |= (true != hlp.CheckConfig("comms", Setting::TypeString));
+	fail |= (true != hlp.CheckConfig("comms", libconfig::Setting::TypeString));
 	// Note: Queryinterval is optional. But CConfigHelper handle also opt.
 	// parameters and checks for type.
 	fail
-			|= (true != hlp.CheckConfig("queryinterval", Setting::TypeFloat,
+			|= (true != hlp.CheckConfig("queryinterval", libconfig::Setting::TypeFloat,
 					true));
-	fail |= (true != hlp.CheckConfig("commadr", Setting::TypeInt));
+	fail |= (true != hlp.CheckConfig("commadr", libconfig::Setting::TypeInt));
 
 	// Check config of the component, if already instanciated.
 	if (connection) {
@@ -447,7 +438,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 
 		if (err < 0) {
 			try {
-				LOGERROR(logger, "Error while connecting: " <<
+				LOGERROR(logger, "Error while connecting: (" << -err << ") " <<
 						boost::any_cast<string>(Command->findData(ICMD_ERRNO_STR)));
 			} catch (...) {
 				LOGERROR(logger, "Unknown error while connecting.");
@@ -507,9 +498,15 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		}
 
 		if (err < 0) {
-			cmd = new ICommand(CMD_DISCONNECTED, this);
-			Registry::GetMainScheduler()->ScheduleWork(cmd);
-			break;
+	        try {
+                LOGERROR( logger, "Error while sending: (" << -err << ") " <<
+                        boost::any_cast<string>(Command->findData(ICMD_ERRNO_STR)));
+            } catch (...) {
+                LOGERROR(logger, "Error while sending. (" << -err << ")");
+            }
+            cmd = new ICommand(CMD_DISCONNECTED, this);
+            Registry::GetMainScheduler()->ScheduleWork(cmd);
+            break;
 		}
 	}
 	// Fall through ok.
@@ -542,7 +539,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 			try {
 				s = boost::any_cast<std::string>(Command->findData(
 						ICMD_ERRNO_STR));
-				LOGERROR(logger, "Receive Error: " << s);
+				LOGERROR(logger, "Receive Error: (" <<-err <<") "<< s);
 			} catch (...) {
 				LOGERROR(logger, "Receive Error: " << strerror(-err));
 			}
@@ -553,7 +550,9 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 			s = boost::any_cast<std::string>(Command->findData(
 					ICONN_TOKEN_RECEIVE_STRING));
 		} catch (...) {
-			LOGDEBUG(logger, "Unexpected Exception");
+			LOGERROR(logger, "Retrieving string: Unexpected Exception");
+			cmd = new ICommand(CMD_DISCONNECTED,this);
+			Registry::GetMainScheduler()->ScheduleWork(cmd);
 			break;
 		}
 
@@ -575,8 +574,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		int parseresult = parsereceivedstring(s);
 		if (0 > parseresult ) {
 			// Reconnect on parse errors.
-			LOGERROR(logger, "Parse error while receiving.");
-			LOGDEBUG(logger, "Received: " << s);
+			LOGERROR(logger, "Parse error while receiving: \""<< s <<"\"");
 			cmd = new ICommand(CMD_DISCONNECTED, this);
 			Registry::GetMainScheduler()->ScheduleWork(cmd);
 			break;
@@ -711,6 +709,9 @@ int CInverterSputnikSSeries::parsereceivedstring(const string & s) {
 #if defined DEBUG_TOKENIZER
     DEBUG_tokenprinter(this->logger, tokens);
 #endif
+
+        // Minimum tokens are {<from>;<to>;<len>|<port>: .... |<chksum>} - 5 tokens
+    if (tokens.size() <= 5 ) return -1;
 
     unsigned int tmp;
     if (1 != sscanf(tokens.back().c_str(), "%x", &tmp)) {

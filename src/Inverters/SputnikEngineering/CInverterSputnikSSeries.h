@@ -42,7 +42,6 @@ Copyright (C) 2009-2012 Tobias Frost
 
 #include "Inverters/SputnikEngineering/SputnikCommand/ISputnikCommand.h"
 
-#include <queue>
 #include <set>
 
 /** \fixme Implements the Inverter Interface for the Sputnik S Series
@@ -91,18 +90,6 @@ private:
 		INTERFACE = 1000
 	};
 
-	/// known queries
-	enum query
-	{
-		TYP,	SWV,	BUILDVER,	EC00,	EC01,	EC02,
-		EC03,	EC04,	EC05,	EC06,	EC07,	EC08,	PAC,
-		KHR,	DYR,	DMT,	DDY,	KYR,	KMT,	KDY,
-		KT0,	PIN,	TNF,	PRL,	UDC,	UL1,	UL2,
-		UL3,	IDC,	IL1,	IL2,	IL3,	TKK,	TK2,
-		TK3,	TMI,	THR,	SYS,    IEE,    IEA,    IED,
-                PDC,    UGD,    KLD,    CAC
-	};
-
 	/// Build up the communication string
 	///
 	/// \returns the string created, or "" if nothing to do.
@@ -113,9 +100,6 @@ private:
 
 	/// helper for parsereceivedstring()
 	bool parsetoken(string token);
-
-	/// FIFO for commands to be transmitted.
-	queue<enum query> cmdqueue;
 
 	/// Adress to use as "our" adress for communication
 	/// This can be set by the conffile and the parameter ownadr

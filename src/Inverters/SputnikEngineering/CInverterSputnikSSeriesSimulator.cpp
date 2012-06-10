@@ -264,8 +264,9 @@ bool CInverterSputnikSSeriesSimulator::CheckConfig()
 
 	std::string ctrl_cfg = configurationpath + ".ctrl_comms";
 	CConfigHelper ch(ctrl_cfg);
-	if (!ch.GetConfig("comms", setting)) {
+	if (ch.GetConfig("comms", setting)) {
 	    ctrlserver = IConnectFactory::Factory(ctrl_cfg);
+	    ctrlserver->SetupLogger(configurationpath,"ctrl-server");
 	    if (!ctrlserver->CheckConfig()) {
 	        LOGFATAL(logger,"Ctrl-Server communication method configuration error");
 	        return false;
@@ -468,6 +469,8 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 
         LOGDEBUG(logger, "new state: CMD_CTRL_INIT");
 
+        LOGINFO(logger,"Sputnik-Simulator control server ready.");
+
            cmd = new ICommand(CMD_CTRL_CONNECTED, this);
            if (ctrlserver->IsConnected()) ctrlserver->Disconnect(NULL);
            ctrlserver->Accept(cmd);
@@ -505,16 +508,19 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
         } else {
             cmd = new ICommand(CMD_CTRL_PARSERECEIVE, this);
             cmd->addData(ICONN_TOKEN_TIMEOUT,(unsigned long)3600*1000);
-            connection->Receive(cmd);
+            ctrlserver->Receive(cmd);
             break;
         }
         break;
     }
 
+    case CMD_CTRL_PARSERECEIVE_RETRY:
+        LOGDEBUG(logger, "new state: CMD_CTRL_PARSERECEIVE_RETRY");
     case CMD_CTRL_PARSERECEIVE:
     {
-#warning todo
         LOGDEBUG(logger, "new state: CMD_CTRL_PARSERECEIVE");
+
+        LOGTRACE(logger, this->ctrlserver->IsConnected());
 
         int err;
         std::string s;
@@ -526,6 +532,12 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
         }
 
         if (err < 0) {
+            if ((Commands) Command->getCmd() == CMD_CTRL_PARSERECEIVE ) {
+                cmd = new ICommand(CMD_CTRL_PARSERECEIVE_RETRY, this);
+                cmd->addData(ICONN_TOKEN_TIMEOUT, (unsigned long)3600 * 1000);
+                ctrlserver->Receive(cmd);
+                break;
+            }
             // we do not differentiate the error here, an error is an error....
             cmd = new ICommand(CMD_CTRL_INIT, this);
             Registry::GetMainScheduler()->ScheduleWork(cmd);
@@ -568,7 +580,7 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
         LOGTRACE(logger, "Response (ctrl-server):" << s << "len: " << s.size());
         cmd = new ICommand(CMD_CTRL_WAIT_SENT,this);
         cmd->addData(ICONN_TOKEN_SEND_STRING, s);
-        connection->Send(cmd);
+        ctrlserver->Send(cmd);
         break;
     }
 
@@ -592,7 +604,7 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 
         cmd = new ICommand(CMD_CTRL_PARSERECEIVE, this);
         cmd->addData(ICONN_TOKEN_TIMEOUT, (unsigned long) 3600 * 1000);
-        connection->Receive(cmd);
+        ctrlserver->Receive(cmd);
         break;
     }
 
@@ -766,7 +778,6 @@ std::string CInverterSputnikSSeriesSimulator::parsereceivedstring_ctrlserver(std
     // now go through the tokens.
     vector<string>::iterator it;
     vector<string> subtokens;
-    int count = 0;
     for (it = tokens.begin(); it != tokens.end(); it++) {
         subtokens.clear();
         boost::algorithm::trim(*it);
@@ -792,17 +803,16 @@ std::string CInverterSputnikSSeriesSimulator::parsereceivedstring_ctrlserver(std
                 if (!ret1 || !ret2) {
                     LOGDEBUG(logger, "Parse error on token "<<*it);
                     s += "ERR: Parse error on " + * it + ". ";
-                } else {
-                    count++;
                 }
                 break;
             }
         }
+        if (!scommands[i].token) {
+            s += "ERR: " + *it + " not found.\n";
+        }
 
     }
-    s= s + "OK:";
-    s+= count + " tokens parsed ok\n";
-
+    s= s + "DONE\n";
     return s;
 }
 

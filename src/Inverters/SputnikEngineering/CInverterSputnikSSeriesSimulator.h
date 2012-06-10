@@ -91,6 +91,7 @@ private:
         CMD_CTRL_INIT, ///< Wait for incoming connections (cmd-server).
         CMD_CTRL_CONNECTED, ///< Wait for incoming data (cmd-server).
         CMD_CTRL_PARSERECEIVE, ///< Parse incoming data (cmd-server) and send response.
+        CMD_CTRL_PARSERECEIVE_RETRY,
         CMD_CTRL_WAIT_SENT
     ///< Wait till response sent.
 

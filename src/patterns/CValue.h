@@ -87,6 +87,12 @@ public:
         timestamp = boost::posix_time::second_clock::local_time();
     }
 
+    /// Serves as a virtual copy constructor.
+    virtual CValue<T>* clone() {
+        return new CValue<T>(*this);
+    }
+
+
     void Set(T value, boost::posix_time::ptime timestamp = boost::posix_time::second_clock::local_time()) {
         this->timestamp = timestamp;
         this->value = value;

@@ -55,6 +55,9 @@ public:
 	/** Interface method for easier transfer to strings. */
 	virtual operator std::string() = 0;
 
+    /// Serves as a virtual copy constructor.
+	virtual IValue* clone() = 0;
+
 protected:
 	IValue() {}
 public:

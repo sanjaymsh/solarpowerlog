@@ -54,7 +54,9 @@ Copyright (C) 2009-2012 Tobias Frost
 #include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOOnce.h"
 #include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOTimed.h"
 #include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOIfSupported.h"
+#include "Connections/factories/IConnectFactory.h"
 
+#include <boost/algorithm/string.hpp>
 
 struct CInverterSputnikSSeriesSimulator::simulator_commands simcommands[] = {
         { "PAC", 0.5, new CValue<float>(42), 0, NULL },
@@ -92,8 +94,42 @@ struct CInverterSputnikSSeriesSimulator::simulator_commands simcommands[] = {
 { NULL , 0  , NULL, 0, NULL}
 };
 
-// helper to convert the values to suitable strings
-// Implemented for float, long and int
+
+/// helper to convert a string to a CValue
+/// ivalue -> will be updated.
+/// valur -> stringvalue
+/// scale -> applied to the decoded value, if sputnikmode=true
+/// sputnikmode -> if true, expect hexvalues, raw.
+/// returns false if string did not convert.
+static bool converttovalue(IValue *ivalue, std::string value, float scale=1.0, bool sputnikmode = false) {
+    float tmp;
+    if (!sputnikmode) {
+       if ( 1 != sscanf(value.c_str(), "%f",&tmp)) return false;
+    }
+    else {
+       long ltmp;
+       if ( 1 != sscanf(value.c_str(), "%ld",&ltmp)) return false;
+       tmp = ltmp * scale;
+    }
+
+    if (CValue<float>::IsType(ivalue)) {
+        ((CValue<float>*) ivalue)->Set(tmp);
+    } else if (CValue<long>::IsType(ivalue)) {
+        ((CValue<long>*) ivalue)->Set(tmp+0.5);
+    } else if (CValue<int>::IsType(ivalue)) {
+        ((CValue<int>*) ivalue)->Set(tmp+0.5);
+    } else if (CValue<bool>::IsType(ivalue)) {
+        ((CValue<bool>*) ivalue)->Set(tmp>0.5 ? true : false );
+    } else {
+        LOGERROR(Registry::GetMainLogger(),"converttovalue -- not implemented  CValue<type>");
+        return false;
+    }
+
+    return true;
+}
+
+/// helper to convert the values to suitable strings
+/// Implemented for float, long and int
 static std::string convert2sputnikhex(IValue *value, float scale) {
     char buf[32];
     unsigned long tmp;
@@ -106,11 +142,11 @@ static std::string convert2sputnikhex(IValue *value, float scale) {
     } else if (CValue<int>::IsType(value)) {
         float ftmp = ((CValue<int>*) value)->Get() / scale + 0.5;
         tmp = (long) ftmp;
-    } else if (CValue<int>::IsType(value)) {
+    } else if (CValue<bool>::IsType(value)) {
         bool btmp = ((CValue<bool>*) value)->Get();
         tmp = (long) btmp;
     } else {
-        LOGERROR(Registry::GetMainLogger(),"convert2sputnikhex -- unknown CValue<type>");
+        LOGERROR(Registry::GetMainLogger(),"convert2sputnikhex -- not implemented CValue<type>");
         return "";
     }
 
@@ -124,6 +160,8 @@ CInverterSputnikSSeriesSimulator::CInverterSputnikSSeriesSimulator(const string 
 	IInverterBase::IInverterBase(name, configurationpath, "inverter")
 {
 	commadr = 0x01;
+	// will be initialized later.
+	ctrlserver = NULL;
 
 	// Add the capabilites that this inverter has
 	// Note: The "must-have" ones CAPA_CAPAS_REMOVEALL and CAPA_CAPAS_UPDATED are already instanciated by the base class constructor.
@@ -162,6 +200,8 @@ CInverterSputnikSSeriesSimulator::CInverterSputnikSSeriesSimulator(const string 
 	this->scommands = new struct simulator_commands[sizeof(simcommands)
             / sizeof(struct simulator_commands)];
 
+	// copy the lookup table to have an working copy available (to be able to
+	// modify the values with the control server)
 	int i=0;
 	do {
 	    scommands[i].token  = simcommands[i].token;
@@ -171,11 +211,14 @@ CInverterSputnikSSeriesSimulator::CInverterSputnikSSeriesSimulator(const string 
 	    scommands[i].value2 = NULL;
 	    if (simcommands[i].value) scommands[i].value  = simcommands[i].value->clone();
 	    if (simcommands[i].value2) scommands[i].value2  = simcommands[i].value2->clone();
+#if 0
+	    // dump lookuptable .
 	    LOGTRACE( logger,
                 "scommmand["<<i<<"]:"
                 " token=" << scommands[i].token <<
                 " value="<< (void*)scommands[i].value <<
                 " value2=" << (void*)scommands[i].value2);
+#endif
 	} while (simcommands[i++].token);
 }
 
@@ -187,6 +230,9 @@ CInverterSputnikSSeriesSimulator::~CInverterSputnikSSeriesSimulator()
        if (scommands[i].value2) delete scommands[i].value2;
     } while (scommands[++i].token);
     delete[] scommands;
+
+    if (ctrlserver) delete ctrlserver;
+
 }
 
 bool CInverterSputnikSSeriesSimulator::CheckConfig()
@@ -214,6 +260,22 @@ bool CInverterSputnikSSeriesSimulator::CheckConfig()
 	    LOGFATAL(logger,"Configuration Error: Communication method supports not "
 	            "server-mode or is not configured accordingly.");
 	    fail = true;
+	}
+
+	std::string ctrl_cfg = configurationpath + ".ctrl_comms";
+	CConfigHelper ch(ctrl_cfg);
+	if (!ch.GetConfig("comms", setting)) {
+	    ctrlserver = IConnectFactory::Factory(ctrl_cfg);
+	    if (!ctrlserver->CheckConfig()) {
+	        LOGFATAL(logger,"Ctrl-Server communication method configuration error");
+	        return false;
+	    }
+	    if (!ctrlserver->CanAccept()) {
+	        LOGFATAL(logger, "Ctrl-Server communication method cannot act as a server");
+	        return false;
+	    }
+	} else {
+	    LOGINFO(logger,"Simulator: control server disables as config not found.");
 	}
 
 	LOGTRACE(logger, "Check Configuration result: " << !fail);
@@ -254,9 +316,13 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 	{
 		LOGDEBUG(logger, "new state: CMD_INIT");
 
-		cmd = new ICommand(CMD_CONNECTED, this);
-		if (connection->IsConnected()) connection->Disconnect(NULL);
-		connection->Accept(cmd);
+		cmd = new ICommand(CMD_SIM_INIT, this);
+		Registry::GetMainScheduler()->ScheduleWork(cmd);
+
+		if (ctrlserver) {
+		    cmd = new ICommand(CMD_CTRL_INIT, this);
+            Registry::GetMainScheduler()->ScheduleWork(cmd);
+		}
 		break;
 
 		// storage of objects in boost::any
@@ -264,16 +330,28 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 		//cmd = boost::any_cast<ICommand*>(cmd->findData("TEST"));
 	}
 
-	case CMD_CONNECTED:
+	case CMD_SIM_INIT: // Wait for incoming connections.
 	{
-		LOGDEBUG(logger, "new state: CMD_CONNECTED");
+
+        LOGDEBUG(logger, "new state: CMD_SIM_INIT");
+
+        cmd = new ICommand(CMD_SIM_CONNECTED, this);
+        if (connection->IsConnected()) connection->Disconnect(NULL);
+        connection->Accept(cmd);
+        break;
+	}
+
+	case CMD_SIM_CONNECTED: // Wait for
+	{
+		LOGDEBUG(logger, "new state: CMD_SIM_CONNECTED");
 
 		int err = -1;
 		// CMD_CONNECTED: Accept succeeded of failure.
 		try {
 			err = boost::any_cast<int>(Command->findData(ICMD_ERRNO));
 		} catch (...) {
-			LOGDEBUG(logger,"CMD_CONNECTED: unexpected exception while trying to get errorcode.");
+			LOGDEBUG(logger,"CMD_SIM_CONNECTED: unexpected exception while "
+			        "trying to get the errorcode.");
 			err = -1;
 		}
 
@@ -285,23 +363,23 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 				LOGERROR(logger, "Unknown error " << err << " while connecting.");
 			}
 
-			cmd = new ICommand(CMD_INIT, this);
+			cmd = new ICommand(CMD_SIM_INIT, this);
 	        timespec ts;
 	        ts.tv_sec = 15;
 	        ts.tv_nsec = 0;
 			Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
 			break;
 		} else {
-	        cmd = new ICommand(CMD_EVALUATE_RECEIVE, this);
+	        cmd = new ICommand(CMD_SIM_EVALUATE_RECEIVE, this);
 	        cmd->addData(ICONN_TOKEN_TIMEOUT,(unsigned long)3600*1000);
 	        connection->Receive(cmd);
 		}
 	}
 		break;
 
-	case CMD_EVALUATE_RECEIVE:
+	case CMD_SIM_EVALUATE_RECEIVE:
 	{
-		LOGDEBUG(logger, "new state: CMD_EVALUATE_RECEIVE");
+		LOGDEBUG(logger, "new state: CMD_SIM_EVALUATE_RECEIVE");
 
 		int err;
 		std::string s;
@@ -314,7 +392,7 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 
 		if (err < 0) {
 			// we do not differentiate the error here, an error is an error....
-			cmd = new ICommand(CMD_INIT, this);
+			cmd = new ICommand(CMD_SIM_INIT, this);
 			Registry::GetMainScheduler()->ScheduleWork(cmd);
 			try {
 				s = boost::any_cast<std::string>(Command->findData(
@@ -352,16 +430,16 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 		// make answer and send it.
 		s = parsereceivedstring(s);
         LOGTRACE(logger, "Response :" << s << "len: " << s.size());
-		cmd = new ICommand(CMD_WAIT_SENT,this);
+		cmd = new ICommand(CMD_SIM_WAIT_SENT,this);
 		cmd->addData(ICONN_TOKEN_SEND_STRING, s);
 		connection->Send(cmd);
 	}
 
 		break;
 
-    case CMD_WAIT_SENT:
+    case CMD_SIM_WAIT_SENT:
     {
-        LOGDEBUG(logger, "new state: CMD_WAIT_SENT");
+        LOGDEBUG(logger, "new state: CMD_SIM_WAIT_SENT");
         int err;
         try {
             err = boost::any_cast<int>(Command->findData(ICMD_ERRNO));
@@ -372,16 +450,152 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 
         if (err < 0) {
             LOGERROR(logger,"Error while sending");
-            cmd = new ICommand(CMD_INIT, this);
+            cmd = new ICommand(CMD_SIM_INIT, this);
             Registry::GetMainScheduler()->ScheduleWork(cmd);
             break;
         }
 
-        cmd = new ICommand(CMD_EVALUATE_RECEIVE, this);
+        cmd = new ICommand(CMD_SIM_EVALUATE_RECEIVE, this);
         cmd->addData(ICONN_TOKEN_TIMEOUT, (unsigned long) 3600 * 1000);
         connection->Receive(cmd);
         break;
         }
+
+    case CMD_CTRL_INIT:
+    {
+        // the commandserver is known to be non-NULL, otherwise CMD_INIT
+        // would not have scheduled this work.
+
+        LOGDEBUG(logger, "new state: CMD_CTRL_INIT");
+
+           cmd = new ICommand(CMD_CTRL_CONNECTED, this);
+           if (ctrlserver->IsConnected()) ctrlserver->Disconnect(NULL);
+           ctrlserver->Accept(cmd);
+           break;
+    }
+
+    case CMD_CTRL_CONNECTED:
+    {
+
+        LOGDEBUG(logger, "new state: CMD_CTRL_CONNECTED");
+
+        int err = -1;
+        try {
+            err = boost::any_cast<int>(Command->findData(ICMD_ERRNO));
+        } catch (...) {
+            LOGDEBUG(logger,"CMD_CTRL_CONNECTED: unexpected exception while "
+                    "trying to get the errorcode.");
+            err = -1;
+        }
+
+        if (err < 0) {
+            try {
+                LOGERROR(logger, "Error while connecting (ctrl-server): " <<
+                        boost::any_cast<string>(Command->findData(ICMD_ERRNO_STR)));
+            } catch (...) {
+                LOGERROR(logger, "Unknown error " << err << " while connecting.");
+            }
+
+            cmd = new ICommand(CMD_CTRL_INIT, this);
+            timespec ts;
+            ts.tv_sec = 15;
+            ts.tv_nsec = 0;
+            Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
+            break;
+        } else {
+            cmd = new ICommand(CMD_CTRL_PARSERECEIVE, this);
+            cmd->addData(ICONN_TOKEN_TIMEOUT,(unsigned long)3600*1000);
+            connection->Receive(cmd);
+            break;
+        }
+        break;
+    }
+
+    case CMD_CTRL_PARSERECEIVE:
+    {
+#warning todo
+        LOGDEBUG(logger, "new state: CMD_CTRL_PARSERECEIVE");
+
+        int err;
+        std::string s;
+        try {
+            err = boost::any_cast<int>(Command->findData(ICMD_ERRNO));
+        } catch (...) {
+            LOGDEBUG(logger, "BUG: Unexpected exception.");
+            err = -1;
+        }
+
+        if (err < 0) {
+            // we do not differentiate the error here, an error is an error....
+            cmd = new ICommand(CMD_CTRL_INIT, this);
+            Registry::GetMainScheduler()->ScheduleWork(cmd);
+            try {
+                s = boost::any_cast<std::string>(Command->findData(
+                        ICMD_ERRNO_STR));
+                LOGERROR(logger, "Receive Error (ctrl-server): " << s);
+            } catch (...) {
+                LOGERROR(logger, "Receive Error (ctrl-server): " <<
+                        strerror(-err));
+            }
+            break;
+        }
+
+        try {
+            s = boost::any_cast<std::string>(Command->findData(
+                    ICONN_TOKEN_RECEIVE_STRING));
+        } catch (...) {
+            LOGDEBUG(logger, "Unexpected Exception");
+            break;
+        }
+
+        LOGTRACE(logger, "Received (ctrl-server): " << s << " len: " << s.size());
+        if (logger.IsEnabled(ILogger::LL_TRACE)) {
+            string st;
+            char buf[32];
+            for (unsigned int i = 0; i < s.size(); i++) {
+                sprintf(buf, "%02x", (unsigned char) s[i]);
+                st = st + buf;
+                if (i && i % 16 == 0)
+                    st = st + "\n";
+                else
+                    st = st + ' ';
+            }
+            LOGTRACE(logger, "Received in hex: " << st);
+        }
+
+        // make answer and send it.
+        s = parsereceivedstring_ctrlserver(s);
+        LOGTRACE(logger, "Response (ctrl-server):" << s << "len: " << s.size());
+        cmd = new ICommand(CMD_CTRL_WAIT_SENT,this);
+        cmd->addData(ICONN_TOKEN_SEND_STRING, s);
+        connection->Send(cmd);
+        break;
+    }
+
+    case CMD_CTRL_WAIT_SENT:
+    {
+        LOGDEBUG(logger, "new state: CMD_CTRL_WAIT_SENT");
+        int err;
+        try {
+            err = boost::any_cast<int>(Command->findData(ICMD_ERRNO));
+        } catch (...) {
+            LOGDEBUG(logger, "BUG: Unexpected exception.");
+            err = -1;
+        }
+
+        if (err < 0) {
+            LOGERROR(logger, "Error while sending (ctrl-server)");
+            cmd = new ICommand(CMD_CTRL_INIT, this);
+            Registry::GetMainScheduler()->ScheduleWork(cmd);
+            break;
+        }
+
+        cmd = new ICommand(CMD_CTRL_PARSERECEIVE, this);
+        cmd->addData(ICONN_TOKEN_TIMEOUT, (unsigned long) 3600 * 1000);
+        connection->Receive(cmd);
+        break;
+    }
+
 
     // Fall through ok.
 	default:
@@ -392,6 +606,7 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 
 }
 
+// parsing of the reception -- simulator.
 std::string CInverterSputnikSSeriesSimulator::parsereceivedstring(const string & s) {
 
     unsigned int i;
@@ -515,6 +730,83 @@ std::string CInverterSputnikSSeriesSimulator::parsereceivedstring(const string &
 
 }
 
+std::string CInverterSputnikSSeriesSimulator::parsereceivedstring_ctrlserver(std::string s)
+{
+    bool sputnikmode = false;
+    // this parser accepts two versions of input
+    // - complete telegrams in sputnik format,
+    //   where all parts except the data is ignored
+    // - <token>=<value> or <token>=<value1>,<value2>
+    //
+    // as the complete telegramm is only a special case of the seconds one,
+    // parsing is still straight forward.
+
+    // strip off the sputnik protocol path, if existant.
+    // from the front: {xx;xx;xx|64:
+    // from the end: |xxxx}
+
+    // remove whitespaces.
+    boost::algorithm::trim(s);
+
+    size_t first = s.find_first_of(':');
+    size_t last = s.find_last_of('|');
+    if(first != std::string::npos && last != std::string::npos) {
+        s = s.substr(first,last);
+        sputnikmode = true;
+    }
+
+    // now should have just the data portion.
+    // token1=value1;=value2;token3=value3,value4
+    // so seperated by ";"
+    vector<string> tokens;
+    tokenizer(":", s, tokens);
+
+    s.clear();
+
+    // now go through the tokens.
+    vector<string>::iterator it;
+    vector<string> subtokens;
+    int count = 0;
+    for (it = tokens.begin(); it != tokens.end(); it++) {
+        subtokens.clear();
+        boost::algorithm::trim(*it);
+        tokenizer("=,", *it, subtokens);
+        if(subtokens.size() < 2 || subtokens.size() > 3) {
+            LOGERROR(logger,"ctrl-server parse: Parse error.");
+            s += "ERR: Parse error on " + * it + ". ";
+            continue;
+        }
+        int i=0;
+        for (i=0; scommands[i].token; i++) {
+            LOGTRACE(logger,"parsing " << *it);
+            if ( scommands[i].token == subtokens[0]) {
+                bool ret1=true, ret2=true;
+                if (scommands[i].value) {
+                    ret1 = converttovalue(scommands[i].value, subtokens[1],
+                            scommands[i].scale1, sputnikmode);
+                }
+                if (scommands[i].value2 && subtokens.size() == 3) {
+                    ret2 =converttovalue(scommands[i].value2, subtokens[2],
+                            scommands[i].scale2, sputnikmode);
+                }
+                if (!ret1 || !ret2) {
+                    LOGDEBUG(logger, "Parse error on token "<<*it);
+                    s += "ERR: Parse error on " + * it + ". ";
+                } else {
+                    count++;
+                }
+                break;
+            }
+        }
+
+    }
+    s= s + "OK:";
+    s+= count + " tokens parsed ok\n";
+
+    return s;
+}
+
+// tokenizer.
 void CInverterSputnikSSeriesSimulator::tokenizer(const char *delimiters,
 		const string& s, vector<string> &tokens)
 {

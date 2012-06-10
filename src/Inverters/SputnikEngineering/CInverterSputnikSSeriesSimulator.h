@@ -80,10 +80,20 @@ private:
 	/// Commands for the Workscheduler
 	enum Commands
 	{
+
 		CMD_INIT = 1000,
-		CMD_CONNECTED,
-		CMD_EVALUATE_RECEIVE,
-		CMD_WAIT_SENT,
+        // Simulator commands
+        CMD_SIM_INIT, ///< Wait for incoming connections.
+        CMD_SIM_CONNECTED, ///< Wait for incoming data
+        CMD_SIM_EVALUATE_RECEIVE, ///< Parse incoming data and send response
+        CMD_SIM_WAIT_SENT, ///< Wait till data sent
+        // Control-Server commmands.
+        CMD_CTRL_INIT, ///< Wait for incoming connections (cmd-server).
+        CMD_CTRL_CONNECTED, ///< Wait for incoming data (cmd-server).
+        CMD_CTRL_PARSERECEIVE, ///< Parse incoming data (cmd-server) and send response.
+        CMD_CTRL_WAIT_SENT
+    ///< Wait till response sent.
+
 	};
 
 	/// Dataports of the sputnik inverters.
@@ -96,8 +106,8 @@ private:
 	/// parse the answer of the inverter.
 	std::string parsereceivedstring(const string& s);
 
-	/// helper for parsereceivedstring()
-	bool parsetoken(string token);
+	/// parser for the control server.
+	std::string parsereceivedstring_ctrlserver(std::string s);
 
 	/// Adress to use as "our" adress for communication
 	/// This can be set by the conffile and the parameter ownadr
@@ -110,6 +120,10 @@ private:
 	unsigned int commadr;
 
     struct simulator_commands *scommands;
+
+    /// Command Server.
+    IConnect *ctrlserver;
+
 };
 
 #endif

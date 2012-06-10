@@ -77,6 +77,21 @@ else
 	AC_MSG_NOTICE([Support for Sputnik inverters disabled as requested.])
 fi
 
+# Sputnik Simulator support.
+AC_ARG_ENABLE([sputniksimulator],
+    [AS_HELP_STRING([--disable-sputniksimulator],
+            [Simulates a Sputnik engineering inverter.])
+    ]
+)
+
+if test "x$enable_sputniksimulator" = "xyes" ; then
+    AC_DEFINE([HAVE_INV_SPUTNIKSIMULATOR], [1], [Sputnik simulator])
+    enable_sputniksimulator=yes
+else
+    AC_MSG_NOTICE([Support for sputnik invertor simulation disabled -- default.])
+    enable_sputniksimulator=no
+fi
+
 # Dummy Inverter
 AC_ARG_ENABLE([dummyinverter],
     [AS_HELP_STRING([--disable-dummyinverter],
@@ -334,6 +349,7 @@ AC_MSG_NOTICE([Commandline options: ....................... $enable_commandlineo
 
 AC_MSG_NOTICE([INVERTERS:]);
 AC_MSG_NOTICE([Sputnik support: ........................... $enable_sputnik])
+AC_MSG_NOTICE([Sputnik simulator: ......................... $enable_sputniksimulator])
 AC_MSG_NOTICE([Dummy inverter: ............................ $enable_dummyinverter])
 
 AC_MSG_NOTICE([COMMUNICATIONS:]);

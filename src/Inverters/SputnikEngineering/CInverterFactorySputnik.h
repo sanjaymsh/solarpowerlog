@@ -39,7 +39,7 @@ Copyright (C) 2009-2012 Tobias Frost
 #include "config.h"
 #endif
 
-#if defined HAVE_INV_SPUTNIK
+#if defined HAVE_INV_SPUTNIK || defined HAVE_INV_SPUTNIKSIMULATOR
 
 #include "Inverters/factories/IInverterFactory.h"
 

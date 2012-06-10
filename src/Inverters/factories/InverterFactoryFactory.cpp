@@ -32,9 +32,10 @@ Copyright (C) 2009-2012 Tobias Frost
 #include "InverterFactoryFactory.h"
 #include "IInverterFactory.h"
 
-#if defined HAVE_INV_SPUTNIK
+#if defined HAVE_INV_SPUTNIK || defined HAVE_INV_SPUTNIKSIMULATOR
 #include "Inverters/SputnikEngineering/CInverterFactorySputnik.h"
 #endif
+
 
 #if defined HAVE_INV_DUMMY
 #include "Inverters/DummyInverter/CInverterFactoryDummy.h"
@@ -48,11 +49,12 @@ InverterFactoryFactory::InverterFactoryFactory() {
 IInverterFactory *InverterFactoryFactory::createInverterFactory(const string& manufactor)
 {
 
-#if defined HAVE_INV_SPUTNIK
-	if (manufactor == "SPUTNIK_ENGINEERING") {
+#if defined HAVE_INV_SPUTNIK || defined HAVE_INV_SPUTNIKSIMULATOR
+ 	if (manufactor == "SPUTNIK_ENGINEERING") {
 		return new CInverterFactorySputnik;
 	}
 #endif
+
 #if defined HAVE_INV_DUMMY
 	if ( manufactor == "DUMMY_INVERTER") {
 		return new CInverterFactoryDummy;

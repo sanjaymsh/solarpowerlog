@@ -32,6 +32,7 @@ Connections/CSharedConnectionSlave.cpp Connections/CConnectSerialAsio.cpp \
 Connections/factories/IConnectFactory.cpp Connections/CConnectTCPAsio.cpp \
 solarpowerlog.cpp Inverters/SputnikEngineering/CInverterFactorySputnik.cpp \
 Inverters/SputnikEngineering/CInverterSputnikSSeries.cpp \
+Inverters/SputnikEngineering/CInverterSputnikSSeriesSimulator.cpp \
 Inverters/SputnikEngineering/SputnikCommand/CSputnikCommand.cpp \
 Inverters/SputnikEngineering/SputnikCommand/ISputnikCommand.cpp \
 Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSoftwareVersion.cpp \
@@ -68,6 +69,7 @@ Connections/CSharedConnectionSlave.h Connections/CConnectSerialAsio.h \
 Connections/factories/IConnectFactory.h Connections/CConnectTCPAsio.h \
 Inverters/SputnikEngineering/CInverterFactorySputnik.h \
 Inverters/SputnikEngineering/CInverterSputnikSSeries.h \
+Inverters/SputnikEngineering/CInverterSputnikSSeriesSimulator.h \
 Inverters/SputnikEngineering/SputnikCommand/CSputnikCommand.h \
 Inverters/SputnikEngineering/SputnikCommand/ISputnikCommand.h \
 Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSoftwareVersion.h \

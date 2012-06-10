@@ -524,6 +524,9 @@ bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
         num = ioservice->run_one(ec);
     } while (num == 1 && !result_timer && 0 == read_handler.bytes);
 
+    if (num == 0) {
+        LOGTRACE(logger,"HandleReceive: IO Service error: " << ec.message());
+    }
 	// ioservice error or timeout
 	if (num == 0 || result_timer) {
 		timer.cancel(ec);
@@ -718,7 +721,6 @@ bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 }
 
 // Server mode. Listen to incoming connections.
-
 bool CConnectTCPAsio::HandleAccept(CAsyncCommand *cmd)
 {
     int port;
@@ -754,11 +756,16 @@ bool CConnectTCPAsio::HandleAccept(CAsyncCommand *cmd)
         endpoint = new ip::tcp::endpoint(adr,port);
     }
 
-    LOGDEBUG(logger,"Waiting for inbound connection");
-    ip::tcp::acceptor acceptor(*ioservice, *endpoint);
     boost::system::error_code ec;
-    acceptor.accept(*sockt, ec);
+    LOGDEBUG(logger,"Waiting for inbound connection");
 
+    try {
+        ip::tcp::acceptor acceptor(*ioservice, *endpoint);
+        acceptor.accept(*sockt, ec);
+    } catch (boost::system::system_error &e) {
+        LOGDEBUG(logger, "Boost: exception received while accepting.");
+        ec = e.code();
+    }
     if (ec) {
         int eval = -ec.value();
         if (!eval) { eval = -1; }

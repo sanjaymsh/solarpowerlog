@@ -71,20 +71,20 @@ struct CInverterSputnikSSeriesSimulator::simulator_commands simcommands[] = {
         { "KLD", 0.1, new CValue<float>(42), 0, NULL },
         { "KT0", 1.0, new CValue<float>(42), 0, NULL },
         { "PIN", 0.5, new CValue<float>(42), 0, NULL },
-        { "TNF", 0.01, new CValue<float>(42), 0, NULL },
+        { "TNF", 0.01, new CValue<float>(50), 0, NULL },
         { "PRL", 1.0, new CValue<float>(42), 0, NULL },
         { "PRL", 1.0, new CValue<float>(42), 0, NULL },
         { "UDC", 0.1, new CValue<float>(200), 0, NULL },
         { "UL1", 0.1, new CValue<float>(230), 0, NULL },
         { "UL2", 0.1, new CValue<float>(200), 0, NULL },
         { "UL3", 0.1, new CValue<float>(230), 0, NULL },
-        { "IDC", 0.01, new CValue<float>(200), 0, NULL },
-        { "IL1", 0.01, new CValue<float>(230), 0, NULL },
-        { "IL2", 0.01, new CValue<float>(200), 0, NULL },
-        { "IL3", 0.01, new CValue<float>(230), 0, NULL },
-        { "TKK", 1.0, new CValue<float>(230), 0, NULL },
-        { "TK2", 1.0, new CValue<float>(230), 0, NULL },
-        { "TK3", 1.0, new CValue<float>(230), 0, NULL },
+        { "IDC", 0.01, new CValue<float>(2), 0, NULL },
+        { "IL1", 0.01, new CValue<float>(2), 0, NULL },
+        { "IL2", 0.01, new CValue<float>(2), 0, NULL },
+        { "IL3", 0.01, new CValue<float>(2), 0, NULL },
+        { "TKK", 1.0, new CValue<float>(42), 0, NULL },
+        { "TK2", 1.0, new CValue<float>(42), 0, NULL },
+        { "TK3", 1.0, new CValue<float>(42), 0, NULL },
         { "IEE", 0.1, new CValue<float>(1), 0, NULL },
         { "IED", 0.1, new CValue<float>(1), 0, NULL },
         { "IEA", 0.1, new CValue<float>(1), 0, NULL },
@@ -98,13 +98,13 @@ static std::string convert2sputnikhex(IValue *value, float scale) {
     char buf[32];
     unsigned long tmp;
     if (CValue<float>::IsType(value)) {
-        float ftmp = ((CValue<float>*) value)->Get() * scale + 0.5;
+        float ftmp = ((CValue<float>*) value)->Get() / scale + 0.5;
         tmp = (long) ftmp;
     } else if (CValue<long>::IsType(value)) {
-        float ftmp = ((CValue<long>*) value)->Get() * scale + 0.5;
+        float ftmp = ((CValue<long>*) value)->Get() / scale + 0.5;
         tmp = (long) ftmp;
     } else if (CValue<int>::IsType(value)) {
-        float ftmp = ((CValue<int>*) value)->Get() * scale + 0.5;
+        float ftmp = ((CValue<int>*) value)->Get() / scale + 0.5;
         tmp = (long) ftmp;
     } else if (CValue<int>::IsType(value)) {
         bool btmp = ((CValue<bool>*) value)->Get();
@@ -134,7 +134,7 @@ CInverterSputnikSSeriesSimulator::CInverterSputnikSSeriesSimulator(const string 
 	CCapability *c;
 	s = CAPA_INVERTER_MANUFACTOR_NAME;
 	v = CValueFactory::Factory<CAPA_INVERTER_MANUFACTOR_TYPE>();
-	((CValue<string>*) v)->Set("Sputnik Engineering (Simulator)");
+	((CValue<string>*) v)->Set("Solarpowerlog");
 	c = new CCapability(s, v, this);
 	AddCapability(c);
 
@@ -286,7 +286,10 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 			}
 
 			cmd = new ICommand(CMD_INIT, this);
-			Registry::GetMainScheduler()->ScheduleWork(cmd);
+	        timespec ts;
+	        ts.tv_sec = 15;
+	        ts.tv_nsec = 0;
+			Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
 			break;
 		} else {
 	        cmd = new ICommand(CMD_EVALUATE_RECEIVE, this);

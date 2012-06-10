@@ -693,6 +693,8 @@ bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 	timer.cancel();
 	ioservice->poll(ec);
 
+	LOGTRACE(logger,"Sent " << *write_handler.bytes << "Bytes");
+
 	if (*write_handler.ec) {
 		if (*write_handler.ec != boost::asio::error::eof) {
 			LOGDEBUG(logger,"Async write failed with ec=" << *write_handler.ec

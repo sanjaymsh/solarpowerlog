@@ -384,12 +384,11 @@ bool CSharedConnectionMaster::CheckConfig(void)
 
 	connection = IConnectFactory::Factory(commsconfig);
 
+	// connection always valid -- the factory returns a dummy
+	// object if it does not know the comms.
 	if (connection) {
 		connection->SetupLogger(ConfigurationPath,"realcomms");
 		return connection->CheckConfig();
-	} else {
-		LOGERROR(logger,"No connection object for shared master comms.");
-		return false;
 	}
 }
 

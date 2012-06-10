@@ -62,7 +62,34 @@ struct CInverterSputnikSSeriesSimulator::simulator_commands simcommands[] = {
         { "KHR", 1.0, new CValue<float>(42), 0, NULL },
         { "CAC", 1.0, new CValue<long>(42), 0, NULL },
         { "SYS", 1.0, new CValue<int>(20004), 1, new CValue<int>(0) },
-        { NULL , 0  , NULL, 0, NULL}
+        { "TYP", 1.0, new CValue<int>(65534), 0, NULL },
+        { "BDN", 1.0, new CValue<int>(24), 0, NULL },
+        { "SWV", 1.0, new CValue<int>(0), 0, NULL },
+        { "KYR", 1.0, new CValue<float>(42), 0, NULL },
+        { "KMT", 1.0, new CValue<float>(42), 0, NULL },
+        { "KDY", 0.1, new CValue<float>(42), 0, NULL },
+        { "KLD", 0.1, new CValue<float>(42), 0, NULL },
+        { "KT0", 1.0, new CValue<float>(42), 0, NULL },
+        { "PIN", 0.5, new CValue<float>(42), 0, NULL },
+        { "TNF", 0.01, new CValue<float>(42), 0, NULL },
+        { "PRL", 1.0, new CValue<float>(42), 0, NULL },
+        { "PRL", 1.0, new CValue<float>(42), 0, NULL },
+        { "UDC", 0.1, new CValue<float>(200), 0, NULL },
+        { "UL1", 0.1, new CValue<float>(230), 0, NULL },
+        { "UL2", 0.1, new CValue<float>(200), 0, NULL },
+        { "UL3", 0.1, new CValue<float>(230), 0, NULL },
+        { "IDC", 0.01, new CValue<float>(200), 0, NULL },
+        { "IL1", 0.01, new CValue<float>(230), 0, NULL },
+        { "IL2", 0.01, new CValue<float>(200), 0, NULL },
+        { "IL3", 0.01, new CValue<float>(230), 0, NULL },
+        { "TKK", 1.0, new CValue<float>(230), 0, NULL },
+        { "TK2", 1.0, new CValue<float>(230), 0, NULL },
+        { "TK3", 1.0, new CValue<float>(230), 0, NULL },
+        { "IEE", 0.1, new CValue<float>(1), 0, NULL },
+        { "IED", 0.1, new CValue<float>(1), 0, NULL },
+        { "IEA", 0.1, new CValue<float>(1), 0, NULL },
+        { "UGD", 0.1, new CValue<float>(25), 0, NULL },
+{ NULL , 0  , NULL, 0, NULL}
 };
 
 // helper to convert the values to suitable strings
@@ -435,14 +462,18 @@ std::string CInverterSputnikSSeriesSimulator::parsereceivedstring(const string &
 
     std::string ret;
     std::string tmps;
+    bool found;
     int j = 0;
 
     for (i = 4; i < tokens.size() - 1; i++) {
         // tokens[i] contains the commands to be answered.
         //LOGDEBUG(logger,"token=" << tokens[i]);
+        found = false;
         for (j = 0; scommands[j].token; j++) {
             if (tokens[i] == scommands[j].token) {
                 if (scommands[j].value) {
+                    found = true;
+                    // LOGTRACE(logger, tokens[i] << " found");
                     tmps = convert2sputnikhex(scommands[j].value,
                             scommands[j].scale1);
                     if (!tmps.empty()) {
@@ -459,11 +490,11 @@ std::string CInverterSputnikSSeriesSimulator::parsereceivedstring(const string &
                             + convert2sputnikhex(scommands[j].value2,
                                     scommands[j].scale2);
                 }
-                continue; // token handled. continue
+                break; // token handled. continue with the next
             }
         }
         // token not in the list
-        LOGINFO(logger, "Token " << tokens[i] << " unknown and not answered");
+        if (!found) LOGINFO(logger, "Token " << tokens[i] << " unknown and not answered");
     }
 
     // ret contains token answer, but without framing.

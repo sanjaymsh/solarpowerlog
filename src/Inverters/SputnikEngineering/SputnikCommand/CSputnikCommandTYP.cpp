@@ -37,7 +37,9 @@ static const struct
     const int typ;
     const char *description;
 } model_lookup[] =
-    { { 2001, "SolarMax 2000 E" },
+    {
+      { 65534, "Solarpowerlog Sputnik Simulator"},
+      { 2001, "SolarMax 2000 E" },
       { 3001, "SolarMax 3000 E" },
       { 4000, "SolarMax 4000 E" },
       { 6000, "SolarMax 6000 E" },

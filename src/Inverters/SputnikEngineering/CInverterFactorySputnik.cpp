@@ -44,6 +44,9 @@ static const string supportedmodels =
 #if defined HAVE_INV_SPUTNIKSIMULATOR
         "Simulator:\tModels a S-Series Inverter\n";
 #endif
+#else
+;
+#endif
 
 CInverterFactorySputnik::CInverterFactorySputnik() {
 	// TODO Auto-generated constructor stub

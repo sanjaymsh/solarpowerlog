@@ -207,7 +207,7 @@ public:
 	/// \sa CanAccept
 	/// \warning If you use Accept() and Connect() on the same object,
 	/// the behaviour is undefined.
-	virtual bool Accept(ICommand *cmd) {
+	virtual bool Accept(ICommand */*cmd*/) {
 	    return false;
 	}
 

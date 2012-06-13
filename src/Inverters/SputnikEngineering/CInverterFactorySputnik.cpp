@@ -43,7 +43,6 @@ static const string supportedmodels =
 #endif
 #if defined HAVE_INV_SPUTNIKSIMULATOR
         "Simulator:\tModels a S-Series Inverter\n";
-#endif
 #else
 ;
 #endif

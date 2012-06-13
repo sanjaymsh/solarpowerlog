@@ -17,7 +17,7 @@ AC_CONFIG_HEADERS(src/config.h)
 # TODO
 #AC_COPYRIGHT (copyright-notice )
 
-AM_INIT_AUTOMAKE(solarpowerlog, 0.24-dev)
+AM_INIT_AUTOMAKE([1.9 tar-pax])
 
 AC_CONFIG_SRCDIR([src/solarpowerlog.cpp])
 

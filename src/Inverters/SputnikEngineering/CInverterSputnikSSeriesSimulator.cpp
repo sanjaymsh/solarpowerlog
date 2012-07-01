@@ -92,7 +92,7 @@ struct CInverterSputnikSSeriesSimulator::simulator_commands simcommands[] = {
         { "IED", 0.1, new CValue<float>(1), 0, NULL, false },
         { "IEA", 0.1, new CValue<float>(1), 0, NULL, false },
         { "UGD", 0.1, new CValue<float>(25), 0, NULL, false },
-        { "PAL", 1, new CValue<int>(0), 0, NULL, false },
+        { "SAL", 1, new CValue<int>(0), 0, NULL, false },
         { NULL , 0  , NULL, 0, NULL, false}
 };
 

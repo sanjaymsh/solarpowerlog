@@ -41,7 +41,7 @@ static const struct
       { 65534, "Solarpowerlog Sputnik Simulator"},
       { 2001, "SolarMax 2000 E" },
       { 3001, "SolarMax 3000 E" },
-      { 4000, "SolarMax 4000 E" },
+      { 4001, "SolarMax 4000 E" },
       { 6000, "SolarMax 6000 E" },
       { 2010, "SolarMax 2000 C" },
       { 3010, "SolarMax 3000 C" },

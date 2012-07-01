@@ -59,6 +59,7 @@ Copyright (C) 2009-2012 Tobias Frost
 #include <boost/algorithm/string.hpp>
 
 struct CInverterSputnikSSeriesSimulator::simulator_commands simcommands[] = {
+        { "ADR", 1, new CValue<int>(1), 0, NULL, false },
         { "PAC", 0.5, new CValue<float>(42), 0, NULL, false },
         { "PDC", 0.5, new CValue<float>(42), 0, NULL, false },
         { "KHR", 1.0, new CValue<float>(42), 0, NULL, false },
@@ -273,6 +274,23 @@ bool CInverterSputnikSSeriesSimulator::CheckConfig()
 	    LOGINFO(logger,"Simulator: control server disables as config not found.");
 	}
 
+    int type;
+    int cadr;
+    hlp.GetConfig("TYP", type, -1);
+    hlp.GetConfig("commadr", cadr);
+    if (-1 != type) {
+        int i;
+        for (i = 0; scommands[i].token; i++) {
+            if (0 == strcmp(scommands[i].token, "TYP")) {
+                CValue<int>* v = (CValue<int>*)scommands[i].value;
+                v->Set(type);
+            } else if (0 == strcmp(scommands[i].token, "ADR")) {
+                CValue<int>* v = (CValue<int>*)scommands[i].value;
+                v->Set(cadr);
+            }
+        }
+    }
+
 	LOGTRACE(logger, "Check Configuration result: " << !fail);
 	return !fail;
 }
@@ -368,6 +386,7 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 	        cmd = new ICommand(CMD_SIM_EVALUATE_RECEIVE, this);
 	        cmd->addData(ICONN_TOKEN_TIMEOUT,(unsigned long)3600*1000);
 	        connection->Receive(cmd);
+	        LOGINFO(logger,"Simulator connected.");
 		}
 	}
 		break;
@@ -475,6 +494,7 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
     {
 
         LOGDEBUG(logger, "new state: CMD_CTRL_CONNECTED");
+        LOGINFO(logger,"Ctrl-Server connected");
 
         int err = -1;
         try {

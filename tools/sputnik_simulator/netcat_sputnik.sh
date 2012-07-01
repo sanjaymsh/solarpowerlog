@@ -1,12 +1,19 @@
 #!/bin/bash
 
+# License: GPL-3 or later
+# Author: Tobias Frost, (c) 2009-2012
+# Part of solarpowerlog, http://sourceforge.net/projects/solarpowerlog/
+
+# NOTE: This simulator is depreciated. Use the internal simulator of 
+# solarpowerlog if possible.
+
 if [[ $# -ne "1" ]]
 then
 	echo "Usage $0 <portnum>"
 	exit 1
 fi
 
-if [[ ! -e ./netcat_sputnik_parse.sh ]] 
+if [[ ! -e ./netcat_sputnik_parse.sh ]]
 then
 	echo "./netcat_sputnik_parse.sh not found. cd into simulator dir"
 	exit 1

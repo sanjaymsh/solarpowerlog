@@ -59,39 +59,39 @@ Copyright (C) 2009-2012 Tobias Frost
 #include <boost/algorithm/string.hpp>
 
 struct CInverterSputnikSSeriesSimulator::simulator_commands simcommands[] = {
-        { "PAC", 0.5, new CValue<float>(42), 0, NULL },
-        { "PDC", 0.5, new CValue<float>(42), 0, NULL },
-        { "KHR", 1.0, new CValue<float>(42), 0, NULL },
-        { "CAC", 1.0, new CValue<long>(42), 0, NULL },
-        { "SYS", 1.0, new CValue<int>(20004), 1, new CValue<int>(0) },
-        { "TYP", 1.0, new CValue<int>(65534), 0, NULL },
-        { "BDN", 1.0, new CValue<int>(24), 0, NULL },
-        { "SWV", 1.0, new CValue<int>(0), 0, NULL },
-        { "KYR", 1.0, new CValue<float>(42), 0, NULL },
-        { "KMT", 1.0, new CValue<float>(42), 0, NULL },
-        { "KDY", 0.1, new CValue<float>(42), 0, NULL },
-        { "KLD", 0.1, new CValue<float>(42), 0, NULL },
-        { "KT0", 1.0, new CValue<float>(42), 0, NULL },
-        { "PIN", 0.5, new CValue<float>(42), 0, NULL },
-        { "TNF", 0.01, new CValue<float>(50), 0, NULL },
-        { "PRL", 1.0, new CValue<float>(42), 0, NULL },
-        { "PRL", 1.0, new CValue<float>(42), 0, NULL },
-        { "UDC", 0.1, new CValue<float>(200), 0, NULL },
-        { "UL1", 0.1, new CValue<float>(230), 0, NULL },
-        { "UL2", 0.1, new CValue<float>(200), 0, NULL },
-        { "UL3", 0.1, new CValue<float>(230), 0, NULL },
-        { "IDC", 0.01, new CValue<float>(2), 0, NULL },
-        { "IL1", 0.01, new CValue<float>(2), 0, NULL },
-        { "IL2", 0.01, new CValue<float>(2), 0, NULL },
-        { "IL3", 0.01, new CValue<float>(2), 0, NULL },
-        { "TKK", 1.0, new CValue<float>(42), 0, NULL },
-        { "TK2", 1.0, new CValue<float>(42), 0, NULL },
-        { "TK3", 1.0, new CValue<float>(42), 0, NULL },
-        { "IEE", 0.1, new CValue<float>(1), 0, NULL },
-        { "IED", 0.1, new CValue<float>(1), 0, NULL },
-        { "IEA", 0.1, new CValue<float>(1), 0, NULL },
-        { "UGD", 0.1, new CValue<float>(25), 0, NULL },
-{ NULL , 0  , NULL, 0, NULL}
+        { "PAC", 0.5, new CValue<float>(42), 0, NULL, false },
+        { "PDC", 0.5, new CValue<float>(42), 0, NULL, false },
+        { "KHR", 1.0, new CValue<float>(42), 0, NULL, false },
+        { "CAC", 1.0, new CValue<long>(42), 0, NULL, false },
+        { "SYS", 1.0, new CValue<int>(20004), 1, new CValue<int>(0), false },
+        { "TYP", 1.0, new CValue<int>(65534), 0, NULL, false },
+        { "BDN", 1.0, new CValue<int>(24), 0, NULL, false },
+        { "SWV", 1.0, new CValue<int>(0), 0, NULL, false },
+        { "KYR", 1.0, new CValue<float>(42), 0, NULL, false },
+        { "KMT", 1.0, new CValue<float>(42), 0, NULL, false },
+        { "KDY", 0.1, new CValue<float>(42), 0, NULL, false },
+        { "KLD", 0.1, new CValue<float>(42), 0, NULL, false },
+        { "KT0", 1.0, new CValue<float>(42), 0, NULL, false },
+        { "PIN", 0.5, new CValue<float>(42), 0, NULL, false },
+        { "TNF", 0.01, new CValue<float>(50), 0, NULL, false },
+        { "PRL", 1.0, new CValue<float>(42), 0, NULL, false },
+        { "PRL", 1.0, new CValue<float>(42), 0, NULL, false },
+        { "UDC", 0.1, new CValue<float>(200), 0, NULL, false },
+        { "UL1", 0.1, new CValue<float>(230), 0, NULL, false },
+        { "UL2", 0.1, new CValue<float>(200), 0, NULL, false },
+        { "UL3", 0.1, new CValue<float>(230), 0, NULL, false },
+        { "IDC", 0.01, new CValue<float>(2), 0, NULL, false },
+        { "IL1", 0.01, new CValue<float>(2), 0, NULL, false },
+        { "IL2", 0.01, new CValue<float>(2), 0, NULL, false },
+        { "IL3", 0.01, new CValue<float>(2), 0, NULL, false },
+        { "TKK", 1.0, new CValue<float>(42), 0, NULL, false },
+        { "TK2", 1.0, new CValue<float>(42), 0, NULL, false },
+        { "TK3", 1.0, new CValue<float>(42), 0, NULL, false },
+        { "IEE", 0.1, new CValue<float>(1), 0, NULL, false },
+        { "IED", 0.1, new CValue<float>(1), 0, NULL, false },
+        { "IEA", 0.1, new CValue<float>(1), 0, NULL, false },
+        { "UGD", 0.1, new CValue<float>(25), 0, NULL, false },
+{ NULL , 0  , NULL, 0, NULL, false}
 };
 
 
@@ -101,7 +101,7 @@ struct CInverterSputnikSSeriesSimulator::simulator_commands simcommands[] = {
 /// scale -> applied to the decoded value, if sputnikmode=true
 /// sputnikmode -> if true, expect hexvalues, raw.
 /// returns false if string did not convert.
-static bool converttovalue(IValue *ivalue, std::string value, float scale=1.0, bool sputnikmode = false) {
+static bool converttovalue(IValue *ivalue, const std::string &value, float scale=1.0, bool sputnikmode = false) {
     float tmp;
     if (!sputnikmode) {
        if ( 1 != sscanf(value.c_str(), "%f",&tmp)) return false;
@@ -125,6 +125,7 @@ static bool converttovalue(IValue *ivalue, std::string value, float scale=1.0, b
         return false;
     }
 
+    //LOGTRACE(Registry::GetMainLogger(),"value now " << std::string(*ivalue));
     return true;
 }
 
@@ -211,14 +212,7 @@ CInverterSputnikSSeriesSimulator::CInverterSputnikSSeriesSimulator(const string 
 	    scommands[i].value2 = NULL;
 	    if (simcommands[i].value) scommands[i].value  = simcommands[i].value->clone();
 	    if (simcommands[i].value2) scommands[i].value2  = simcommands[i].value2->clone();
-#if 0
-	    // dump lookuptable .
-	    LOGTRACE( logger,
-                "scommmand["<<i<<"]:"
-                " token=" << scommands[i].token <<
-                " value="<< (void*)scommands[i].value <<
-                " value2=" << (void*)scommands[i].value2);
-#endif
+	    scommands[i].killbit = false;
 	} while (simcommands[i++].token);
 }
 
@@ -514,14 +508,9 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
         break;
     }
 
-    case CMD_CTRL_PARSERECEIVE_RETRY:
-        LOGDEBUG(logger, "new state: CMD_CTRL_PARSERECEIVE_RETRY");
     case CMD_CTRL_PARSERECEIVE:
     {
         LOGDEBUG(logger, "new state: CMD_CTRL_PARSERECEIVE");
-
-        LOGTRACE(logger, this->ctrlserver->IsConnected());
-
         int err;
         std::string s;
         try {
@@ -532,12 +521,6 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
         }
 
         if (err < 0) {
-            if ((Commands) Command->getCmd() == CMD_CTRL_PARSERECEIVE ) {
-                cmd = new ICommand(CMD_CTRL_PARSERECEIVE_RETRY, this);
-                cmd->addData(ICONN_TOKEN_TIMEOUT, (unsigned long)3600 * 1000);
-                ctrlserver->Receive(cmd);
-                break;
-            }
             // we do not differentiate the error here, an error is an error....
             cmd = new ICommand(CMD_CTRL_INIT, this);
             Registry::GetMainScheduler()->ScheduleWork(cmd);
@@ -701,6 +684,11 @@ std::string CInverterSputnikSSeriesSimulator::parsereceivedstring(const string &
         found = false;
         for (j = 0; scommands[j].token; j++) {
             if (tokens[i] == scommands[j].token) {
+
+            	// check if command was disabled via the ctrl server
+            	if (scommands[j].killbit) {
+            		break;
+            	}
                 if (scommands[j].value) {
                     found = true;
                     // LOGTRACE(logger, tokens[i] << " found");
@@ -761,9 +749,15 @@ std::string CInverterSputnikSSeriesSimulator::parsereceivedstring_ctrlserver(std
     boost::algorithm::trim(s);
 
     size_t first = s.find_first_of(':');
+    if (s.length() > first) {
+    	first++;
+    } else {
+    	first = std::string::npos;
+    }
     size_t last = s.find_last_of('|');
+
     if(first != std::string::npos && last != std::string::npos) {
-        s = s.substr(first,last);
+        s = s.substr(first,last-first);
         sputnikmode = true;
     }
 
@@ -771,7 +765,7 @@ std::string CInverterSputnikSSeriesSimulator::parsereceivedstring_ctrlserver(std
     // token1=value1;=value2;token3=value3,value4
     // so seperated by ";"
     vector<string> tokens;
-    tokenizer(":", s, tokens);
+    tokenizer(";", s, tokens);
 
     s.clear();
 
@@ -789,9 +783,22 @@ std::string CInverterSputnikSSeriesSimulator::parsereceivedstring_ctrlserver(std
         }
         int i=0;
         for (i=0; scommands[i].token; i++) {
-            LOGTRACE(logger,"parsing " << *it);
             if ( scommands[i].token == subtokens[0]) {
                 bool ret1=true, ret2=true;
+                LOGTRACE(logger,"parsing " << *it);
+                if (boost::algorithm::to_lower_copy(subtokens[1]) == "off") {
+					LOGTRACE(logger, "Disabing " << subtokens[0]);
+					scommands[i].killbit = false;
+					break;
+				}
+				if (boost::algorithm::to_lower_copy(subtokens[1]) == "on") {
+					LOGTRACE(logger, "Enabling " << subtokens[0]);
+					scommands[i].killbit = false;
+					break;
+				}
+				if (scommands[i].killbit) {
+					break;
+				}
                 if (scommands[i].value) {
                     ret1 = converttovalue(scommands[i].value, subtokens[1],
                             scommands[i].scale1, sputnikmode);

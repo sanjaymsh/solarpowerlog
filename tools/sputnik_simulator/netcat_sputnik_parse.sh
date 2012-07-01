@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# License: GPL-3 or later
+# Author: Tobias Frost, (c) 2009-2012
+# Part of solarpowerlog, http://sourceforge.net/projects/solarpowerlog/
+
 echo "Connected" 1>&2
 
 while (/bin/true)

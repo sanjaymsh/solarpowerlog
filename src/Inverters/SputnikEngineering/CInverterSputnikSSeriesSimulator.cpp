@@ -809,7 +809,7 @@ std::string CInverterSputnikSSeriesSimulator::parsereceivedstring_ctrlserver(std
                 LOGTRACE(logger,"parsing " << *it);
                 if (boost::algorithm::to_lower_copy(subtokens[1]) == "off") {
 					LOGTRACE(logger, "Disabing " << subtokens[0]);
-					scommands[i].killbit = false;
+					scommands[i].killbit = true;
 					break;
 				}
 				if (boost::algorithm::to_lower_copy(subtokens[1]) == "on") {

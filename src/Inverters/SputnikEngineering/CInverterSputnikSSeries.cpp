@@ -569,25 +569,50 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 			LOGTRACE(logger, "Received in hex: "<< st );
 		}
 
-		int parseresult = parsereceivedstring(s);
+		int parseresult=-1;
+		part_received += s;
+		std::string tmp = part_received;
+
+		// Check all the telgrams in the buffer (if there are more than one...)
+		while ( part_received.length()) {
+		    int tmpresult = 0;
+		    parseresult = parsereceivedstring();
+		    // stop parsing if a partial telegram is detected.
+		    if ( parseresult == 0 || parseresult == 1) {
+		        // make sure that we do not hide an error when receiving a
+		        // telegram not for us or a partial telegram.
+		        if (tmpresult < 0) parseresult = tmpresult;
+		    } else {
+		        // in all other cases, update tmpresult
+		        tmpresult = parseresult;
+		    }
+		    // break on partial.
+		    if ( parseresult == 1) break;
+		}
+
+		// get the result from the last parse
+		// yes, in the unlikely event that we parsed more than one telegram in one
+		// session, we discard the result of the first one, and do not detect
+		// an error here (but the last telegram for us needed to be successful)...
 		if (0 > parseresult ) {
 			// Reconnect on parse errors.
-			LOGERROR(logger, "Parse error while receiving: \""<< s <<"\"");
+			LOGERROR(logger, "Parse error on received string: \""<< tmp <<"\"");
 			cmd = new ICommand(CMD_DISCONNECTED, this);
 			Registry::GetMainScheduler()->ScheduleWork(cmd);
 			break;
-		} else if ( parseresult == 0) {
-			// The received data seems not to be for our inverter.
+		} else if ( parseresult == 0 || parseresult == 1 ) {
+			// if 0 => The received data seems not to be for our inverter.
 			// Can happen on a shared connection.
+		    // if 1 => We did only receive a partial telegram. Can happen on
+		    // eg. serial connections.
 			// So lets wait again.
-
 			ICommand *cmd = new ICommand(CMD_EVALUATE_RECEIVE, this);
 			connection->Receive(cmd);
 			break;
 		}
 
         // all issued commands should have been answered,
-        // those in the notanswered set, have not been answered and we notfify
+        // those in the not-answered set, were un-answered and we notify
         // the commands to pass that information to their backoff algorithms.
         std::set<ISputnikCommand*>::iterator it;
         for (it=notansweredcommands.begin();it!=notansweredcommands.end();it++) {
@@ -683,12 +708,51 @@ string CInverterSputnikSSeries::assemblequerystring()
     return telegram;
 }
 
-int CInverterSputnikSSeries::parsereceivedstring(const string & s) {
+int CInverterSputnikSSeries::parsereceivedstring() {
 
     unsigned int i;
+    size_t pos;
+    // ensure that we get a "{" as first character.
+    pos = part_received.find_last_of('{');
+    if (pos != 0 && (std::string::npos != pos)) {
+        part_received = part_received.substr(pos);
+    }
+
+    // check if we got an complete telegram
+    pos = part_received.find('}');
+    if ( pos == std::string::npos) {
+        // no "}" seen
+        // discard telegram if it grows too large. However, we will make sure
+        // that there is no second "{" in the stream. (as then appearantly the "}" was lost)
+        pos = part_received.find_last_of('{');
+        if (pos != 0 && pos != std::string::npos) {
+            part_received = part_received.substr(pos);
+        }
+
+        // On Sputnik, max telegram is 255, due to the size field.
+        // so we can clear the buffer if its larger.
+        if (part_received.size() > 256) {
+            part_received.clear();
+            LOGINFO(logger,"parsereceivedstring: Discarded too long partial telegram");
+            return -1;
+        }
+
+        // signal caller that we have a partial telegramm here.
+        return 1;
+    }
+
+    // both { and } found -- extract the telegramm...
+    // pos still contains result from pos = part_received.find('}');
+    std::string telegram = part_received.substr(0,pos+1);
+    if (part_received.size()-1 > pos) {
+        part_received = part_received.substr(pos + 1);
+    }
+    else {
+        part_received.clear();
+    }
 
     // check for basic constraints...
-    if (s[0] != '{' || s[s.length() - 1] != '}') return -1;
+    // ensured already. if (telegram[0] != '{' || telegram[telegram.length() - 1] != '}') return -1;
     // tokenizer (taken from
     // http://oopweb.com/CPP/Documents/CPPHOWTO/Volume/C++Programming-HOWTO-7.html
     // but  modified.
@@ -701,7 +765,7 @@ int CInverterSputnikSSeries::parsereceivedstring(const string & s) {
     vector<string> tokens;
     {
         char delimiters[] = "{;|:}";
-        tokenizer(delimiters, s, tokens);
+        tokenizer(delimiters, telegram, tokens);
     }
     // Debug: Print all received tokens
 #if defined DEBUG_TOKENIZER
@@ -717,7 +781,7 @@ int CInverterSputnikSSeries::parsereceivedstring(const string & s) {
         return -1;
     }
 
-    if (tmp != CalcChecksum(s.c_str(), s.length() - 6)) {
+    if (tmp != CalcChecksum(telegram.c_str(), telegram.length() - 6)) {
         LOGDEBUG(logger, "Checksum error on received telegram");
         return -1;
     }
@@ -747,13 +811,14 @@ int CInverterSputnikSSeries::parsereceivedstring(const string & s) {
         return -1;
     }
 
-    if (tmp != s.length()) {
+    if (tmp != telegram.length()) {
         LOGDEBUG(logger, "wrong telegram length ");
         return -1;
     }
 
     {
-        int ret = 1;
+
+        int ret = 2;
         const char delimiters[] = "=,";
         for (i = 4; i < tokens.size() - 1; i++) {
             vector<std::string> subtokens;
@@ -762,7 +827,7 @@ int CInverterSputnikSSeries::parsereceivedstring(const string & s) {
             vector<ISputnikCommand*>::iterator it;
             for (it = commands.begin(); it != commands.end(); it++) {
                 if ((*it)->IsHandled(subtokens[0])) {
-                    LOGTRACE(logger,"Now handling: " << tokens[i] << " ret=" << ret);
+                    LOGTRACE(logger,"Now handling: " << tokens[i]);
                     bool result = (*it)->handle_token(subtokens);
                     if (!result)  {
                         LOGTRACE(logger,"failed parsing " + tokens[i]);
@@ -775,8 +840,10 @@ int CInverterSputnikSSeries::parsereceivedstring(const string & s) {
                 }
             }
         }
+        // we return either -1 (error) or 2 (all ok)
         return ret;
     }
+
 }
 
 void CInverterSputnikSSeries::tokenizer(const char *delimiters,

@@ -96,7 +96,7 @@ private:
 	string assemblequerystring();
 
 	/// parse the answer of the inverter.
-	int parsereceivedstring(const string& s);
+	int parsereceivedstring();
 
 	/// helper for parsereceivedstring()
 	bool parsetoken(string token);
@@ -121,6 +121,10 @@ private:
 
     /// stores not answered commands (by removing the ansewered ones)
     set<ISputnikCommand*> notansweredcommands;
+
+    /// stores particially received responses (due to an interrupted read)
+    std::string part_received;
+
 };
 
 #endif

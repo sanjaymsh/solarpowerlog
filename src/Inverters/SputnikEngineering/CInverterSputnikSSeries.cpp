@@ -112,6 +112,9 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	float interval;
 	cfghlp.GetConfig("queryinterval", interval, 5.0f);
 
+	bool disable_3phase;
+	cfghlp.GetConfig("disable_3phase_commands",disable_3phase,(bool) false);
+
 	// Query settings needed and default all optional settings.
 	cfghlp.GetConfig("ownadr", ownadr, 0xFBu);
 	cfghlp.GetConfig("commadr", commadr, 0x01u);
@@ -142,7 +145,7 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 
     // Gets SW version
     commands.push_back(
-        new CSputnikCommandSoftwareVersion(logger, this, CAPA_INVERTER_FIRMWARE,new CSputnikCmdBOOnce));
+        new CSputnikCommandSoftwareVersion(logger, this, CAPA_INVERTER_FIRMWARE, new CSputnikCmdBOOnce));
 
 //	needs special handling this->commands.push_back(CSputnikCommand<unsigned long>("EC*",27,0));
 
@@ -163,7 +166,7 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
             CAPA_INVERTER_PON_HOURS,
             new CSputnikCmdBOTimed(time_between)));
 
-    // Number of startups -- only once per conncetion.
+    // Number of startups -- only once per connection.
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_STARTUPS_TYPE>(logger, "CAC", 9, 1.0, this,
             CAPA_INVERTER_STARTUPS, new CSputnikCmdBOOnce));
@@ -223,16 +226,18 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
         new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGE_TYPE>(logger, "UL1", 10, 0.1,
             this, CAPA_INVERTER_GRID_AC_VOLTAGE_NAME));
 
-    // First, implement the "this command is not supported" scheme.
-    commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE2_TYPE>(logger, "UL2",
-            10, 0.1, this, CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE2_NAME,
-            new CSputnikCmdBOIfSupported));
+    if (disable_3phase) {
+        // First, implement the "this command is not supported" scheme.
+        commands.push_back(
+            new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE2_TYPE>(logger, "UL2",
+                10, 0.1, this, CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE2_NAME,
+                new CSputnikCmdBOIfSupported));
 
-    commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE3_TYPE>(logger, "UL3",
-            10, 0.1, this, CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE3_NAME,
-            new CSputnikCmdBOIfSupported));
+        commands.push_back(
+            new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE3_TYPE>(logger, "UL3",
+                10, 0.1, this, CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE3_NAME,
+                new CSputnikCmdBOIfSupported));
+    }
 
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_INPUT_DC_CURRENT_TYPE>(logger, "IDC", 10,
@@ -242,25 +247,29 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
         new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_TYPE>(logger, "IL1", 10, 0.01,
             this, CAPA_INVERTER_GRID_AC_CURRENT_NAME));
 
-    commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_PHASE2_TYPE>(logger, "IL2", 10, 0.01,
-            this, CAPA_INVERTER_GRID_AC_CURRENT_PHASE2_NAME, new CSputnikCmdBOIfSupported));
+    if (disable_3phase) {
+        commands.push_back(
+            new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_PHASE2_TYPE>(logger, "IL2", 10, 0.01,
+                this, CAPA_INVERTER_GRID_AC_CURRENT_PHASE2_NAME, new CSputnikCmdBOIfSupported));
 
-    commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_PHASE3_TYPE>(logger, "IL3", 10, 0.01,
-            this, CAPA_INVERTER_GRID_AC_CURRENT_PHASE3_NAME, new CSputnikCmdBOIfSupported));
+        commands.push_back(
+            new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_PHASE3_TYPE>(logger, "IL3", 10, 0.01,
+                this, CAPA_INVERTER_GRID_AC_CURRENT_PHASE3_NAME, new CSputnikCmdBOIfSupported));
+    }
 
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_TYPE>(logger, "TKK", 10, 1.0,
             this, CAPA_INVERTER_TEMPERATURE_NAME));
 
-    commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_PHASE2_TYPE>(logger, "TK2", 10, 1.0, this,
-            CAPA_INVERTER_TEMPERATURE_PHASE2_NAME, new CSputnikCmdBOIfSupported));
+    if (disable_3phase) {
+        commands.push_back(
+            new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_PHASE2_TYPE>(logger, "TK2", 10, 1.0, this,
+                CAPA_INVERTER_TEMPERATURE_PHASE2_NAME, new CSputnikCmdBOIfSupported));
 
-    commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_PHASE3_TYPE>(logger, "TK3", 10, 1.0, this,
-            CAPA_INVERTER_TEMPERATURE_PHASE3_NAME, new CSputnikCmdBOIfSupported));
+        commands.push_back(
+            new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_PHASE3_TYPE>(logger, "TK3", 10, 1.0, this,
+                CAPA_INVERTER_TEMPERATURE_PHASE3_NAME, new CSputnikCmdBOIfSupported));
+    }
 
 	// DC Tracker 1-3 voltage, current, power
 	// For multi tracker inverters (MT Series)
@@ -303,7 +312,7 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 
     // Get Inverter Timestamp / (Hour:Minute)
     // Should be s special implementation!
-    // But the clock is rather inaccurate, so the compuiter's timestamp is
+    // But the clock is rather inaccurate, so the computer's timestamp is
     // far more precice.
     // Note: It is possible to set the time/hour via the interface, but
     // not implemented
@@ -352,15 +361,18 @@ bool CInverterSputnikSSeries::CheckConfig()
 	fail |= (true != hlp.CheckConfig("comms", libconfig::Setting::TypeString));
 	// Note: Queryinterval is optional. But CConfigHelper handle also opt.
 	// parameters and checks for type.
-	fail
-			|= (true != hlp.CheckConfig("queryinterval", libconfig::Setting::TypeFloat,
-					true));
+	fail |= (true != hlp.CheckConfig("queryinterval",
+	    libconfig::Setting::TypeFloat, true));
 	fail |= (true != hlp.CheckConfig("commadr", libconfig::Setting::TypeInt));
 
-	// Check config of the component, if already instanciated.
+	// Check config of the communication component, if already instanciated.
 	if (connection) {
 		fail |= (true != connection->CheckConfig());
 	}
+
+	// syntax check for option to disable 3-phase commands.
+	// default: non-enabled.
+	fail |= (true != hlp.CheckConfig("disable_3phase_commands",libconfig::Setting::TypeBoolean,true));
 
 	LOGTRACE(logger, "Check Configuration result: " << !fail);
 	return !fail;

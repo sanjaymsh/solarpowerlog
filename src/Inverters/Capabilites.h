@@ -293,6 +293,15 @@ Copyright (C) 2009-2012 Tobias Frost
 #define CAPA_INVERTER_INPUT_DC_VOLTAGE_NAME "DC voltage in (V)"
 #define CAPA_INVERTER_INPUT_DC_VOLTAGE_TYPE float
 
+#define CAPA_INVERTER_INPUT_DC_VOLTAGE_T1_NAME "DC voltage Tracker 1 in (V)"
+#define CAPA_INVERTER_INPUT_DC_VOLTAGE_T1_TYPE float
+
+#define CAPA_INVERTER_INPUT_DC_VOLTAGE_T2_NAME "DC voltage Tracker 2 in (V)"
+#define CAPA_INVERTER_INPUT_DC_VOLTAGE_T2_TYPE float
+
+#define CAPA_INVERTER_INPUT_DC_VOLTAGE_T3_NAME "DC voltage Tracker 3 in (V)"
+#define CAPA_INVERTER_INPUT_DC_VOLTAGE_T3_TYPE float
+
 /** DC Input Current
  *
  * Input voltage from the generator.
@@ -305,6 +314,30 @@ Copyright (C) 2009-2012 Tobias Frost
 #define CAPA_INVERTER_INPUT_DC_CURRENT_NAME "DC current in (A)"
 #define CAPA_INVERTER_INPUT_DC_CURRENT_TYPE float
 
+#define CAPA_INVERTER_INPUT_DC_CURRENT_T1_NAME "DC current Tracker 1 in (A)"
+#define CAPA_INVERTER_INPUT_DC_CURRENT_T1_TYPE float
+
+#define CAPA_INVERTER_INPUT_DC_CURRENT_T2_NAME "DC current Tracker 2 in (A)"
+#define CAPA_INVERTER_INPUT_DC_CURRENT_T2_TYPE float
+
+#define CAPA_INVERTER_INPUT_DC_CURRENT_T3_NAME "DC current Tracker 3 in (A)"
+#define CAPA_INVERTER_INPUT_DC_CURRENT_T3_TYPE float
+
+/** Power feeding DC per Tracker
+ *
+ * Type: float
+ *
+ * Optional.
+ * 
+ * */
+#define CAPA_INVERTER_DCPOWER_T1_NAME "DC Power Tracker 1"
+#define CAPA_INVERTER_DCPOWER_T1_TYPE float
+
+#define CAPA_INVERTER_DCPOWER_T2_NAME "DC Power Tracker 2"
+#define CAPA_INVERTER_DCPOWER_T2_TYPE float
+
+#define CAPA_INVERTER_DCPOWER_T3_NAME "DC Power Tracker 3"
+#define CAPA_INVERTER_DCPOWER_T3_TYPE float
 
 /** AC Grid Voltage
  *

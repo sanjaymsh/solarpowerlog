@@ -243,11 +243,11 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
             this, CAPA_INVERTER_GRID_AC_CURRENT_NAME));
 
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_PHASE2_TYPE>(logger, "IL2", 10, 0.1,
+        new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_PHASE2_TYPE>(logger, "IL2", 10, 0.01,
             this, CAPA_INVERTER_GRID_AC_CURRENT_PHASE2_NAME, new CSputnikCmdBOIfSupported));
 
     commands.push_back(
-        new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_PHASE3_TYPE>(logger, "IL3", 10, 0.1,
+        new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_PHASE3_TYPE>(logger, "IL3", 10, 0.01,
             this, CAPA_INVERTER_GRID_AC_CURRENT_PHASE3_NAME, new CSputnikCmdBOIfSupported));
 
     commands.push_back(
@@ -261,6 +261,45 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
     commands.push_back(
         new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_PHASE3_TYPE>(logger, "TK3",10,1.0, this,
             CAPA_INVERTER_TEMPERATURE_PHASE3_NAME, new CSputnikCmdBOIfSupported));
+
+	// DC Tracker 1-3 voltage, current, power
+	// For multi tracker inverters (MT Series)
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_INPUT_DC_VOLTAGE_T1_TYPE>(logger, "UD01", 10, 0.1,
+            this, CAPA_INVERTER_INPUT_DC_VOLTAGE_T1_NAME));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_INPUT_DC_VOLTAGE_T2_TYPE>(logger, "UD02", 10, 0.1,
+            this, CAPA_INVERTER_INPUT_DC_VOLTAGE_T2_NAME));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_INPUT_DC_VOLTAGE_T3_TYPE>(logger, "UD03", 10, 0.1,
+            this, CAPA_INVERTER_INPUT_DC_VOLTAGE_T3_NAME));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_INPUT_DC_CURRENT_T1_TYPE>(logger, "ID01", 10,
+            0.01, this, CAPA_INVERTER_INPUT_DC_CURRENT_T1_NAME));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_INPUT_DC_CURRENT_T2_TYPE>(logger, "ID02", 10,
+            0.01, this, CAPA_INVERTER_INPUT_DC_CURRENT_T2_NAME));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_INPUT_DC_CURRENT_T3_TYPE>(logger, "ID03", 10,
+            0.01, this, CAPA_INVERTER_INPUT_DC_CURRENT_T3_NAME));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_DCPOWER_T1_TYPE>(logger, "PD01", 9, 0.5,
+            this, CAPA_INVERTER_DCPOWER_T1_NAME));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_DCPOWER_T2_TYPE>(logger, "PD02", 9, 0.5,
+            this, CAPA_INVERTER_DCPOWER_T2_NAME));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_DCPOWER_T3_TYPE>(logger, "PD03", 9, 0.5,
+            this, CAPA_INVERTER_DCPOWER_T3_NAME));
+
 
     // Get Inverter Timestamp / (Hour:Minute)
     // Should be s special implementation!

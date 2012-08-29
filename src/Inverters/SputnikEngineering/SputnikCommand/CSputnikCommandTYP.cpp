@@ -52,6 +52,7 @@ static const struct
       { 20020, "SolarMax 3000 S" },
       { 20030, "SolarMax 4200 S" },
       { 20040, "SolarMax 6000 S" },
+      { 20202, "SolarMax 10MT" },
       { 20, "SolarMax 20 C" },
       { 25, "SolarMax 25 C" },
       { 30, "SolarMax 30 C" },

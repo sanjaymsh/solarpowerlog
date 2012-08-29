@@ -93,6 +93,18 @@ struct CInverterSputnikSSeriesSimulator::simulator_commands simcommands[] = {
         { "IEA", 0.1, new CValue<float>(1), 0, NULL, false },
         { "UGD", 0.1, new CValue<float>(25), 0, NULL, false },
         { "SAL", 1, new CValue<int>(0), 0, NULL, false },
+
+        { "UD01", 0.1, new CValue<float>(200), 0, NULL, false },
+        { "UD02", 0.1, new CValue<float>(200), 0, NULL, false },
+        { "UD03", 0.1, new CValue<float>(200), 0, NULL, false },
+        { "ID01", 0.01, new CValue<float>(2), 0, NULL, false },
+        { "ID02", 0.01, new CValue<float>(2), 0, NULL, false },
+        { "ID03", 0.01, new CValue<float>(2), 0, NULL, false },
+        { "PD01", 0.5, new CValue<float>(400), 0, NULL, false },
+        { "PD02", 0.5, new CValue<float>(400), 0, NULL, false },
+        { "PD03", 0.5, new CValue<float>(400), 0, NULL, false },
+
+
         { NULL , 0  , NULL, 0, NULL, false}
 };
 
@@ -444,7 +456,7 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 
 		// make answer and send it.
 		s = parsereceivedstring(s);
-        LOGTRACE(logger, "Response :" << s << "len: " << s.size());
+		LOGTRACE(logger, "Response :" << s << "len: " << s.size());
 		cmd = new ICommand(CMD_SIM_WAIT_SENT,this);
 		cmd->addData(ICONN_TOKEN_SEND_STRING, s);
 		connection->Send(cmd);
@@ -708,6 +720,8 @@ std::string CInverterSputnikSSeriesSimulator::parsereceivedstring(const string &
 
             	// check if command was disabled via the ctrl server
             	if (scommands[j].killbit) {
+            	    found = true;
+            	    LOGINFO(logger, "Token " << tokens[i] << " disabled and ignored.");
             		break;
             	}
                 if (scommands[j].value) {
@@ -808,18 +822,18 @@ std::string CInverterSputnikSSeriesSimulator::parsereceivedstring_ctrlserver(std
                 bool ret1=true, ret2=true;
                 LOGTRACE(logger,"parsing " << *it);
                 if (boost::algorithm::to_lower_copy(subtokens[1]) == "off") {
-					LOGTRACE(logger, "Disabing " << subtokens[0]);
-					scommands[i].killbit = true;
-					break;
-				}
-				if (boost::algorithm::to_lower_copy(subtokens[1]) == "on") {
-					LOGTRACE(logger, "Enabling " << subtokens[0]);
-					scommands[i].killbit = false;
-					break;
-				}
-				if (scommands[i].killbit) {
-					break;
-				}
+                    LOGTRACE(logger, "Disabing " << subtokens[0]);
+                    scommands[i].killbit = true;
+                    break;
+                }
+                if (boost::algorithm::to_lower_copy(subtokens[1]) == "on") {
+                    LOGTRACE(logger, "Enabling " << subtokens[0]);
+                    scommands[i].killbit = false;
+                    break;
+                }
+                if (scommands[i].killbit) {
+                    break;
+                }
                 if (scommands[i].value) {
                     ret1 = converttovalue(scommands[i].value, subtokens[1],
                             scommands[i].scale1, sputnikmode);

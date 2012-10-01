@@ -30,7 +30,8 @@ Connections/CAsyncCommand.cpp Connections/CConnectDummy.cpp \
 Connections/CSharedConnection.cpp Connections/CSharedConnectionMaster.cpp \
 Connections/CSharedConnectionSlave.cpp Connections/CConnectSerialAsio.cpp \
 Connections/factories/IConnectFactory.cpp Connections/CConnectTCPAsio.cpp \
-solarpowerlog.cpp Inverters/SputnikEngineering/CInverterFactorySputnik.cpp \
+solarpowerlog.cpp daemon.cpp \
+Inverters/SputnikEngineering/CInverterFactorySputnik.cpp \
 Inverters/SputnikEngineering/CInverterSputnikSSeries.cpp \
 Inverters/SputnikEngineering/CInverterSputnikSSeriesSimulator.cpp \
 Inverters/SputnikEngineering/SputnikCommand/CSputnikCommand.cpp \
@@ -51,7 +52,7 @@ patterns/ICommandTarget.cpp patterns/IValue.cpp patterns/ICommand.cpp \
 patterns/IObserverObserver.cpp patterns/IObserverSubject.cpp \
 configuration/CConfigHelper.cpp ctemplate/ctemplate.c \
 interfaces/CDebugHelper.cpp \
-Inverters/BasicCommands.h \
+daemon.h Inverters/BasicCommands.h \
 interfaces/CCapability.h interfaces/CMutexHelper.h \
 Inverters/factories/InverterFactoryFactory.h \
 Inverters/factories/IInverterFactory.h interfaces/CWorkScheduler.h \

@@ -72,11 +72,6 @@ Copyright (C) 2009-2012 Tobias Frost
 #include "config.h"
 #endif
 
-#include <vector>
-#include <string>
-#include <iostream>
-#include <iterator>
-
 #if defined HAVE_LIBLOG4CXX
 #include <log4cxx/logger.h>
 #include <log4cxx/simplelayout.h>
@@ -91,11 +86,6 @@ using namespace log4cxx::net;
 #ifdef HAVE_OPENLOG
 #include <syslog.h>
 #endif
-
-#include <sys/stat.h>
-#include <fcntl.h>
-
-#include <signal.h>
 
 #include "configuration/ILogger.h"
 
@@ -117,7 +107,7 @@ using namespace log4cxx::net;
 
 #include "interfaces/CDebugHelper.h"
 
-#include <execinfo.h>
+#include "daemon.h"
 
 using namespace std;
 
@@ -125,34 +115,12 @@ using namespace std;
 using namespace log4cxx;
 #endif
 
-std::string rundir("/");
-std::string daemon_stdout("/dev/null");
-std::string daemon_stderr("/dev/null");
-
-volatile sig_atomic_t killsignal = false;
-volatile sig_atomic_t sigusr1 = false;
-
-bool background = false;
-
-
-// Filedescriptor for pid-file
-/// Note: pid file will be closed right after generation, then this will be kept
-/// non-zero to indicate that we have a pid file and need to unlink it on exit.
-int pidfile_fd = 0;
-
-char *progname;
-std::string pidfile="";
 
 /** this array of string specifies which sections int the config file must be present.
  * The program will abort if any of these is missing.
  */
 static const char *required_sections[] = { "application", "inverter",
 		"inverter.inverters", "logger", "logger.loggers" };
-
-void cleanup() {
-	if (background && pidfile_fd) unlink(pidfile.c_str());
-	pidfile_fd=0;
-}
 
 
 /** Just dump the read config to cout.... (the values are automatically promoted to a string...)
@@ -223,169 +191,6 @@ void DumpSettings(libconfig::Setting &set)
 		libconfig::Setting &s2 = set[i];
 		DumpSettings(s2);
 	}
-}
-
-void SignalHandler(int signal)
-{
-    switch (signal) {
-
-        case SIGTERM:
-            // die.
-            if (!killsignal) {
-                killsignal = true;
-                LOGINFO(
-                    Registry::GetMainLogger(),
-                    progname << " Termination requested. Will terminate at next opportunity.");
-            } else {
-                LOGFATAL(
-                    Registry::GetMainLogger(),
-                    progname << " Termination signal received. Please be patient.");
-            }
-        break;
-        case SIGSEGV:
-        {
-        	cleanup();
-            cerr << progname << " Segmentation fault. " << endl;
-            cerr << "Trying to dump internal state information" << endl;
-            Registry::Instance().DumpDebugCollection();
-            LOGFATAL(Registry::GetMainLogger(),
-                progname << " Segmentation fault.");
-            // try to print a backtrace.
-            LOGFATAL(Registry::GetMainLogger(),"Trying a backtrace to stderr:");
-            {
-                void *trace[64];
-                int count = backtrace( trace, 64 );
-                backtrace_symbols_fd(trace, count, 2);
-            }
-
-            raise(signal);
-            break;
-        }
-        case SIGUSR1: {
-            LOGINFO(Registry::GetMainLogger(),"SIGUSR1 received");
-            sigusr1 = true;
-            break;
-        }
-
-        case SIGUSR2: {
-            cerr << "SIGUSR1 received" << endl;
-            cerr << "Trying to dump internal state information" << endl;
-            Registry::Instance().DumpDebugCollection();
-            break;
-        }
-    }
-}
-
-
-void logreopen(bool rotate) {
-
-	ILogger mainlogger;
-
-	if (!rotate) {
-		if (!freopen("/dev/null", "r", stdin)) {
-			LOGWARN(mainlogger, "daemonize: Could not reopen stdin. errno=" << errno);
-		}
-	}
-
-	// do not rotate stdout when redirected to /dev/null
-	if (!rotate || daemon_stdout != "/dev/null" ) {
-		if (!freopen(daemon_stdout.c_str(), "a", stdout)) {
-			LOGFATAL(mainlogger, "daemonize: Could not reopen stdout. errno=" << errno);
-			// try to rectify things... a closed stdout might not be a good idea...
-			exit(1);
-		}
-	}
-
-	// also, do not rotate /dev/null on stderr
-	if (!rotate || daemon_stderr != "/dev/null" ) {
-		if (!freopen(daemon_stderr.c_str(), "a", stderr)) {
-			LOGFATAL(mainlogger, "daemonize: Could not reopen stdout. errno=" << errno);
-			// try to rectify things... a closed stdout might not be a good idea...
-			exit(1);
-		}
-	}
-
-}
-
-void daemonize(void)
-{
-	ILogger mainlogger;
-
-	// generate pidfile
-	if (pidfile != "") {
-		LOGINFO(mainlogger, "Using PID file " << pidfile );
-		pidfile_fd = open(pidfile.c_str(),O_WRONLY | O_CREAT | O_EXCL,
-				S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-
-		if( pidfile_fd == -1) {
-			LOGFATAL(mainlogger,"Cannot generate pidfile " << pidfile <<" Reason: " << strerror(errno));
-			exit(1);
-		}
-	} else {
-		pidfile_fd = 0;
-	}
-
-	// dameonize.
-	LOGDEBUG(mainlogger, "daemonize: Rising a daemon.");
-
-	// reopen stdxxx now, because afterwards we will loose our communication channel.
-	LOGDEBUG(mainlogger, "reopening stdout / stderr to log file");
-	logreopen(false);
-
-	LOGDEBUG(mainlogger, "daemonize: logfiles redirected.");
-
-
-	pid_t pid, sid;
-	pid = fork();
-	if (pid < 0) {
-		LOGFATAL(mainlogger, "Could not dameonize. fork() error="<<errno );
-		cleanup();
-		exit(1);
-	}
-
-	if (pid > 0) {
-		// on daemons, the parent use _exit.
-		_exit(EXIT_SUCCESS);
-	}
-
-	sid = setsid();
-	if (sid < 0) {
-		cleanup();
-		LOGFATAL(mainlogger, "Could not dameonize. setsid() error="<<errno );
-		exit(EXIT_FAILURE);
-	}
-
-	// the second fork seems not to be necessary on linux, but believing
-	// references, it is for for some unixes to avoid reattached to some
-	// controlling tty
-	// http://web.archive.org/web/20020416015637/www.whitefang.com/unix/faq_2.html#SEC16
-	pid = fork();
-	if (pid < 0) {
-		cleanup();
-		LOGFATAL(mainlogger, "Could not dameonize. 2nd fork() error="<<errno );
-		exit(1);
-	}
-
-	if (pid > 0) {
-		// on daemons, the parent use _exit.
-		_exit(EXIT_SUCCESS);
-	}
-
-	// change umask to 000, change dir to root dir to avoid locking the dir
-	// we started from
-	umask(0);
-	if (0 != chdir(rundir.c_str())) {
-		LOGERROR(mainlogger, "Could not chdir() to " << rundir << " error=" <<errno);
-	}
-
-	// write pid to pid file
-	if (pidfile_fd) {
-		char buf[64];
-		snprintf(buf,63,"%d\n",getpid());
-		write(pidfile_fd,buf,strlen(buf));
-		close(pidfile_fd);
-	}
-
 }
 
 int main(int argc, char* argv[])
@@ -461,7 +266,7 @@ int main(int argc, char* argv[])
 
 #else
 	if (argc > 1) {
-		(void) argv; // remove warning unused parameter.
+		(void) argv; // remove warning about unused parameter.
 		cerr << "This version does not support command line options." << endl;
 		exit(1);
 	}
@@ -544,20 +349,10 @@ int main(int argc, char* argv[])
 	if (background)
 		daemonize();
 
-	struct sigaction sa;
-	sa.sa_handler = SignalHandler;
-	sigfillset(&sa.sa_mask);
-	sa.sa_flags = SA_RESTART;
-	sigaction(SIGTERM, &sa, NULL);
-	sigaction(SIGUSR1, &sa, NULL);
-	sigaction(SIGUSR2, &sa, NULL);
-	// Sigsegv - after trigered, set to default behaviour.
-	sa.sa_flags = SA_RESETHAND;
-	sigaction(SIGSEGV, &sa, NULL);
+	SetupSignalHandler();
 
+    /** bootstraping the system */
 	ILogger mainlogger;
-
-	/** bootstraping the system */
 	LOGDEBUG(mainlogger, "Instanciating Inverter objects");
 
 	/** create the inverters via its factories. */

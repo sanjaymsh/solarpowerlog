@@ -38,7 +38,6 @@ Copyright (C) 2009-2012 Tobias Frost
 #include <set>
 
 #include <semaphore.h>
-#include <map>
 
 #include <boost/thread/mutex.hpp>
 
@@ -47,8 +46,6 @@ Copyright (C) 2009-2012 Tobias Frost
 class ICommand;
 class ICommandTarget;
 class CTimedWork;
-
-using namespace std;
 
 
 /** This class implements the work scheduler:
@@ -109,36 +106,26 @@ public:
 
 private:
 
+	/// Stores the CTimedWork Object, the handler for works to be executed in
+	/// at a specific time.
 	CTimedWork *timedwork;
 
-	list<ICommand*> CommandsDue;
-
-#if 0
-	struct timepec_compare
-	{
-		 bool operator()(const struct timespec t1, const struct timespec t2) const
-		  {
-			 if(t1.tv_sec < t2.tv_sec) return true;
-			 if(t1.tv_sec > t2.tv_sec) return false;
-			 if(t1.tv_nsec < t2.tv_nsec) return true;
-			 return false;
-		  };
-	};
-
-	multimap<struct timespec, ICommand*, timepec_compare> TimedCommands;
-#endif
+	/// Stores the pending work
+	std::list<ICommand*> CommandsDue;
 
 	/** get the next new command in the list.
 	 * (Thread safe)*/
 	ICommand *getnextcmd(void);
 
 private:
+	/// Semaphore to wait on until work arrives (probably via timed works
 	sem_t semaphore;
 
 	/// stores for the mainscheduler the list of broadcast subscribers
 	std::set<ICommandTarget*> *broadcast_subscribers;
 
 protected:
+	/// Mutex to protect against concurrent accesses.
 	boost::mutex mut;
 
 private:

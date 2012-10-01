@@ -71,8 +71,10 @@ public:
 
 	virtual ~ICommand();
 
+	/// excecute the command
 	void execute();
 
+	/// Getter for the command
 	int getCmd() const;
 
 	/** Find Data in Command
@@ -85,16 +87,17 @@ public:
 	 * \throw std::invalid_argument { throws this if data is not existant. The
 	 * data of the invalid_argument is the key which was not found }
 	 */
-
 	const boost::any findData(const std::string & key) const
 			throw(std::invalid_argument);
 
 
+	///  Setter for Command
 	void setCmd(int cmd)
 	{
 		this->cmd = cmd;
 	}
 
+	/// Setter for the target of the command
 	void setTrgt(ICommandTarget *trgt)
 	{
 		this->trgt = trgt;
@@ -105,8 +108,6 @@ public:
     ICommandTarget* getTrgt() const {
         return trgt;
     }
-
-
 
 	/** Remove Data from Command
 	 *

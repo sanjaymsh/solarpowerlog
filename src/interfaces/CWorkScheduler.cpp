@@ -30,7 +30,6 @@ Copyright (C) 2009-2012 Tobias Frost
 #endif
 
 #include <boost/exception/all.hpp>
-
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
 

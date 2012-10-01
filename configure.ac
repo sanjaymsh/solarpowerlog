@@ -79,7 +79,7 @@ fi
 
 # Sputnik Simulator support.
 AC_ARG_ENABLE([sputniksimulator],
-    [AS_HELP_STRING([--disable-sputniksimulator],
+    [AS_HELP_STRING([--enable-sputniksimulator],
             [Simulates a Sputnik engineering inverter.])
     ]
 )
@@ -94,16 +94,17 @@ fi
 
 # Dummy Inverter
 AC_ARG_ENABLE([dummyinverter],
-    [AS_HELP_STRING([--disable-dummyinverter],
-            [Do not support the dummy inverter.])
+    [AS_HELP_STRING([--enable-dummyinverter],
+            [Build the dummy inverter (development example).])
     ]
 )
 
-if test "x$enable_dummyinverter" != "xno" ; then
+if test "x$enable_dummyinverter" = "xyes" ; then
     AC_DEFINE([HAVE_INV_DUMMY], [1], [Dummy inverter support])
     enable_dummyinverter=yes
 else
-    AC_MSG_NOTICE([Dummy inverter support disabled as requested.])
+    AC_MSG_NOTICE([Dummy inverter support disabled (default).])
+    enable_dummyinverter=no
 fi
 
 
@@ -349,13 +350,13 @@ AC_MSG_NOTICE([Commandline options: ....................... $enable_commandlineo
 
 AC_MSG_NOTICE([INVERTERS:]);
 AC_MSG_NOTICE([Sputnik support: ........................... $enable_sputnik])
-AC_MSG_NOTICE([Sputnik simulator: ......................... $enable_sputniksimulator])
-AC_MSG_NOTICE([Dummy inverter: ............................ $enable_dummyinverter])
+AC_MSG_NOTICE([Sputnik simulator: (default off) ........... $enable_sputniksimulator])
+AC_MSG_NOTICE([Dummy inverter: (default off) .............. $enable_dummyinverter])
 
 AC_MSG_NOTICE([COMMUNICATIONS:]);
 AC_MSG_NOTICE([TCP/IP: .................................... $enable_tcpcomms])
 AC_MSG_NOTICE([Serial Ports: .............................. $enable_serialcomms])
-AC_MSG_NOTICE([Shared Communication: ...................... $enable_sharedcomms])
+AC_MSG_NOTICE([Shared Communication: (default off) ........ $enable_sharedcomms])
 
 AC_MSG_NOTICE([FILTERS AND LOGGERS:]);
 AC_MSG_NOTICE([CSV logger support: ........................ $enable_csvlogger])

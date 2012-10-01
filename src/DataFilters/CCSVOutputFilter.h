@@ -261,7 +261,7 @@ private:
 
 	enum Commands
 	{
-		CMD_INIT = CMD_USER,
+		CMD_INIT = CMD_USER_MIN,
 		CMD_CYCLIC,
 		CMD_ROTATE ///<Rotate logfile
 	};

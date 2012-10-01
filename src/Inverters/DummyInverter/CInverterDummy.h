@@ -49,7 +49,7 @@ public:
 
 private:
 	enum CMDs {
-		CMD_INIT = CMD_USER
+		CMD_INIT = CMD_USER_MIN
 	};
 
 };

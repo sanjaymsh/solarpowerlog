@@ -28,12 +28,22 @@ Copyright (C) 2009-2012 Tobias Frost
 
 enum BasicCommands {
 
-	/// reserverd for transport algorithms which can send events
-	/// on receiption (planned... therefore TODO )
-	CMD_RECEIVED ,
-	// For now, we reserve 1000 cmds for our purpose.
-	// but please use this define for your commands.
-	CMD_USER = 1000
+    // The events 0 - CMD_BROADCAST_MAX are reserved for eg. broadcast events.
+    // Any event in this range will be distributed to any inverter and any
+    // datafilter using the main CWorkScheduler (##Registry::GetMainScheduler())
+    // and are registered to receive broadcast events.
+
+    /// SIG_TERM has been received and we are asked to terminate as soon as possible
+    /// (For example, generally get read to close down, flush and close files,
+    /// abort I/O if possible...)
+    /// Note that you might receive other events until the programm really terminates
+    /// (for example, aborting I/Os might generate events)
+    CMD_SHUTDOWN,
+    CMD_BROADCAST_MAX,
+
+    // The events between CMD_BROADCAST_MAX and CMD_USER_MIN are reserved
+    // at this moment.
+	CMD_USER_MIN = 1000
 };
 
 

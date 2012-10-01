@@ -68,7 +68,7 @@ public:
 
 	enum Commands
 	{
-		CMD_INIT = CMD_USER,
+		CMD_INIT = CMD_USER_MIN,
 		CMD_UPDATED,
 		CMD_CYCLIC,
 	};

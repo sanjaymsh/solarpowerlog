@@ -80,7 +80,7 @@ private:
 	enum Commands
 	{
 
-		CMD_INIT = CMD_USER,
+		CMD_INIT = CMD_USER_MIN,
         // Simulator commands
         CMD_SIM_INIT, ///< Wait for incoming connections.
         CMD_SIM_CONNECTED, ///< Wait for incoming data

@@ -209,6 +209,7 @@ Copyright (C) 2009-2012 Tobias Frost
 #include "boost/date_time/local_time/local_time.hpp"
 
 #include "DataFilters/interfaces/IDataFilter.h"
+#include "Inverters/BasicCommands.h"
 
 
 /** This class implements a logger to write the data to a CSV File
@@ -260,7 +261,7 @@ private:
 
 	enum Commands
 	{
-		CMD_INIT,
+		CMD_INIT = CMD_USER,
 		CMD_CYCLIC,
 		CMD_ROTATE ///<Rotate logfile
 	};

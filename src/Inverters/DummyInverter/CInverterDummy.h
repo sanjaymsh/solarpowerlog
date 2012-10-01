@@ -32,6 +32,7 @@ Copyright (C) 2011-2012 Tobias Frost
 #ifdef HAVE_INV_DUMMY
 
 #include "Inverters/interfaces/InverterBase.h"
+#include "Inverters/BasicCommands.h"
 
 class CInverterDummy: public IInverterBase
 {
@@ -48,7 +49,7 @@ public:
 
 private:
 	enum CMDs {
-		CMD_INIT
+		CMD_INIT = CMD_USER
 	};
 
 };

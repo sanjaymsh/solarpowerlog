@@ -41,6 +41,8 @@ extern "C" {
 #include "ctemplate/ctemplate.h"
 }
 
+#include "Inverters/BasicCommands.h"
+
 /** Writes data prepared by other plugins / inverters
  * to a template, which can be HTML, for example
  *
@@ -66,7 +68,7 @@ public:
 
 	enum Commands
 	{
-		CMD_INIT,
+		CMD_INIT = CMD_USER,
 		CMD_UPDATED,
 		CMD_CYCLIC,
 	};

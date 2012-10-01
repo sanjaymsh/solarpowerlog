@@ -126,37 +126,41 @@ Copyright (C) 2009-2012 Tobias Frost
  */
 #include "DataFilters/interfaces/IDataFilter.h"
 #include "Inverters/interfaces/CNestedCapaIterator.h"
+#include "Inverters/BasicCommands.h"
 
-class CDumpOutputFilter: public IDataFilter
+class CDumpOutputFilter : public IDataFilter
 {
 protected:
-	friend class IDataFilterFactory;
-	CDumpOutputFilter(const string &name, const string & configurationpath);
+    friend class IDataFilterFactory;
+    CDumpOutputFilter(const string &name, const string & configurationpath);
 
 public:
-	virtual ~CDumpOutputFilter();
+    virtual ~CDumpOutputFilter();
 
-	virtual bool CheckConfig();
+    virtual bool CheckConfig();
 
-	virtual void Update(const IObserverSubject *subject);
+    virtual void Update(const IObserverSubject *subject);
 
-	/** This DataFilter uses the CWorkScheduler, so it needs to implement
-	 * this function. \sa ICommandTarget::ExecuteCommand */
-	virtual void ExecuteCommand(const ICommand *cmd);
+    /** This DataFilter uses the CWorkScheduler, so it needs to implement
+     * this function. \sa ICommandTarget::ExecuteCommand */
+    virtual void ExecuteCommand(const ICommand *cmd);
 
 private:
-	void CheckOrUnSubscribe(bool subscribe = true);
+    void CheckOrUnSubscribe(bool subscribe = true);
 
-	void DoCyclicWork(void);
+    void DoCyclicWork(void);
 
-	enum Commands
-	{
-		CMD_INIT, CMD_CYCLIC, CMD_UNSUBSCRIBE, CMD_ADDED_CAPAS
-	};
+    enum Commands
+    {
+        CMD_INIT = CMD_USER,
+        CMD_CYCLIC,
+        CMD_UNSUBSCRIBE,
+        CMD_ADDED_CAPAS
+    };
 
-	bool AddedCaps;
+    bool AddedCaps;
 
-	bool clearscreen;
+    bool clearscreen;
 };
 
 #endif

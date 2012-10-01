@@ -70,7 +70,7 @@ private:
 	/// Commands for the Workscheduler
 	enum Commands
 	{
-		CMD_INIT = 1000,
+		CMD_INIT = CMD_USER,
 		CMD_WAIT4CONNECTION,
 		CMD_IDENTFY_WAIT,
 		CMD_POLL,

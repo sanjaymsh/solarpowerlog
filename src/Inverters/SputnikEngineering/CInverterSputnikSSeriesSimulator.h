@@ -42,8 +42,6 @@ Copyright (C) 2009-2012 Tobias Frost
 
 #include "Inverters/SputnikEngineering/SputnikCommand/ISputnikCommand.h"
 
-#include <set>
-
 /** Implements a (simple) simulator for the Sputnik S Series
  *
  * The Sputnik S-Series are an inverter family by Sputnik Engineering
@@ -82,7 +80,7 @@ private:
 	enum Commands
 	{
 
-		CMD_INIT = 1000,
+		CMD_INIT = CMD_USER,
         // Simulator commands
         CMD_SIM_INIT, ///< Wait for incoming connections.
         CMD_SIM_CONNECTED, ///< Wait for incoming data

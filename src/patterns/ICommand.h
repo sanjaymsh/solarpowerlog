@@ -30,7 +30,18 @@ Copyright (C) 2009-2012 Tobias Frost
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
+#include "porting.h"
 #endif
+
+/// #define ICMD_WITH_DUMP_MEMBER
+
+#ifdef HAVE_INV_DUMMY
+    /// Debug-Helper, define and you have the DumpData Member to dump at runtime
+    /// A Icommand,
+    /// (Will be automatically enabled if you have the dummy inverter enabled...)
+#define ICMD_WITH_DUMP_MEMBER
+#endif
+
 
 #include <string>
 #include <map>
@@ -39,6 +50,8 @@ Copyright (C) 2009-2012 Tobias Frost
 #include <boost/any.hpp>
 
 #include "configuration/ILogger.h"
+#include "Inverters/BasicCommands.h"
+#include <assert.h>
 
 // Tokens for ICommands (general meanings)
 
@@ -134,17 +147,25 @@ public:
 		dat.insert(std::pair<std::string, boost::any>(key, data));
 	}
 
-	// Merge data from other ICommand into this one.
+	/// Merge data from other ICommand into this one.
 	void mergeData(const ICommand &other);
 
-	void DumpData(ILogger &logger) const {
-		std::map<std::string, boost::any>::const_iterator it;
-		LOGDEBUG(logger,"dumping available data: ");
-		for(it=dat.begin(); it != dat.end(); it++) {
-			LOGDEBUG(logger, it->first);
-		}
-		LOGDEBUG(logger,"dumping done.");
-	}
+    /// Debug-Helper to dump all data which is stored in the ICommand.
+    void DumpData(ILogger& logger) const {
+        std::map<std::string, boost::any>::const_iterator it;
+        LOGDEBUG(logger, "ICommand::DumpData() with command " << this->cmd);
+        if (this->cmd < CMD_BROADCAST_MAX) {
+            LOGDEBUG(logger, "(BROADCAST COMMAND) " << this->cmd);
+        } else {
+            assert(this->trgt);
+            LOGDEBUG(logger, "Target: " << trgt);
+        }
+        LOGDEBUG(logger, "dumping available data: ");
+        for (it = dat.begin(); it != dat.end(); it++) {
+            LOGDEBUG(logger, it->first);
+        }
+        LOGDEBUG(logger, "dumping done.");
+    }
 
 private:
 	int cmd;

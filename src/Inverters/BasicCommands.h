@@ -38,7 +38,7 @@ enum BasicCommands {
     /// abort I/O if possible...)
     /// Note that you might receive other events until the programm really terminates
     /// (for example, aborting I/Os might generate events)
-    CMD_SHUTDOWN,
+    CMD_BRC_SHUTDOWN,
     CMD_BROADCAST_MAX,
 
     // The events between CMD_BROADCAST_MAX and CMD_USER_MIN are reserved

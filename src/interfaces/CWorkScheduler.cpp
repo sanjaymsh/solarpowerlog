@@ -43,6 +43,7 @@ Copyright (C) 2009-2012 Tobias Frost
 #include "interfaces/CMutexHelper.h"
 
 #include "patterns/ICommandTarget.h"
+#include "configuration/Registry.h"
 
 using namespace std;
 
@@ -75,29 +76,34 @@ CWorkScheduler::~CWorkScheduler()
 	if (broadcast_subscribers) delete broadcast_subscribers;
 }
 
-bool CWorkScheduler::DoWork( bool block )
-{
-	if (!block) {
-		CMutexAutoLock(&(this->mut));
-		if (CommandsDue.empty()) {
-			return false;
-		}
-	}
+bool CWorkScheduler::DoWork(bool block) {
+    if (!block) {
+        CMutexAutoLock(&(this->mut));
+        if (CommandsDue.empty()) {
+            return false;
+        }
+    }
 
-	sem_wait(&semaphore);
-	ICommand *cmd = getnextcmd();
-	if ( cmd->getCmd() > CMD_BROADCAST_MAX) {
-	    cmd->execute();
-	} else {
-	    if (broadcast_subscribers) {
+    sem_wait(&semaphore);
+    ICommand *cmd = getnextcmd();
+    if (cmd->getCmd() > CMD_BROADCAST_MAX) {
+        cmd->execute();
+    } else {
+        if (broadcast_subscribers) {
+            LOGDEBUG(Registry::GetMainLogger(),
+                "Handling broadcast-event cmd=" << cmd->getCmd() << " subscribers=" << broadcast_subscribers->size());
             std::set<ICommandTarget*>::iterator it;
-            for (it = broadcast_subscribers->begin(); it != broadcast_subscribers->end(); it++) {
+            for (it = broadcast_subscribers->begin();
+                it != broadcast_subscribers->end(); it++) {
                 (*it)->ExecuteCommand(cmd);
             }
-	    }
-	}
-	delete cmd;
-	return true;
+        } else {
+            LOGDEBUG(Registry::GetMainLogger(),
+                "Handling broadcast-event cmd=" << cmd->getCmd() << " NO subscribers");
+        }
+    }
+    delete cmd;
+    return true;
 }
 
 void CWorkScheduler::RegisterBroadcasts(ICommandTarget* target,
@@ -126,18 +132,29 @@ ICommand *CWorkScheduler::getnextcmd( void )
 	return cmd;
 }
 
-void CWorkScheduler::ScheduleWork(ICommand *Command) {
+bool CWorkScheduler::ScheduleWork(ICommand *Command, bool tryonly) {
     // assert if either it as broadcast event with target!=NULL or if not an
     // broadcast event with the target equal NULL.
     assert(
         (Command->getCmd() > CMD_BROADCAST_MAX && NULL != Command->getTrgt()) ||
         (Command->getCmd() <= CMD_BROADCAST_MAX && 0 == Command->getTrgt()));
 
-    this->mut.lock();
+
+    if (tryonly) {
+        if (!mut.try_lock()) return false;
+    } else {
+        mut.lock();
+    }
+
+    if (Command->getCmd() <= CMD_BROADCAST_MAX) {
+        LOGDEBUG(Registry::GetMainLogger(),"Broadcast event accepted cmd=" << Command->getCmd() );
+    }
+
     CommandsDue.push_back(Command);
-    this->works_received++;
-    this->mut.unlock();
+    works_received++;
+    mut.unlock();
     sem_post(&semaphore);
+    return true;
 }
 
 void CWorkScheduler::ScheduleWork(ICommand *Command, struct timespec ts) {

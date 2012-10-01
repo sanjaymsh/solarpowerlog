@@ -71,7 +71,17 @@ public:
 	CWorkScheduler();
 	virtual ~CWorkScheduler();
 
-	void ScheduleWork(ICommand *Command);
+	/** Schedule an immediate work
+	 *
+	 * \param Command to be issued
+	 * \param tryonly does not issue the work if the underlying mutex cannot be
+	 * obtained immediatly (useful if called from e.g signal handler)
+	 *
+	 * \returns true if work has been scheduled, false if not
+	 * It is guartanteed to return true if tryonly is false.
+	 *
+	*/
+	bool ScheduleWork(ICommand *Command, bool tryonly=false);
 
 	/** Schedule a work for later */
 	void ScheduleWork(ICommand *Commmand, struct timespec ts);

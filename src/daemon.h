@@ -33,6 +33,7 @@
 
 #include <string>
 #include <signal.h>
+#include <boost/thread.hpp>
 
 /// Filename for the pidfile.
 extern std::string pidfile;
@@ -75,5 +76,9 @@ extern void SignalHandler(int signal);
 /// Setup the signal handler
 /// must be called from main
 extern void SetupSignalHandler(void);
+
+/// This thread is spawn when receiving SIGTERM and the mutex in the CWorkScheduler
+/// was locked at that time
+extern boost::thread terminator_thread;
 
 #endif /* SIGNALHANDLER_H_ */

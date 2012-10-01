@@ -43,6 +43,8 @@ Copyright (C) 2009-2012 Tobias Frost
 #include <stdio.h>
 #include "configuration/Registry.h"
 #include <execinfo.h>
+#include "Inverters/BasicCommands.h"
+#include "patterns/ICommand.h"
 
 volatile sig_atomic_t killsignal = false;
 volatile sig_atomic_t sigusr1 = false;
@@ -54,6 +56,8 @@ std::string daemon_stderr("/dev/null");
 
 std::string pidfile="";
 int pidfile_fd = 0;
+
+boost::thread terminator_thread;
 
 bool background = false;
 
@@ -173,6 +177,13 @@ void daemonize(void)
 }
 
 
+struct boostthreadcallable{
+    void operator()(ICommand* cmd ) {
+        // we will just wait until we get the mutex in this case and then terminate.
+        Registry::GetMainScheduler()->ScheduleWork(cmd);
+    };
+};
+
 void SignalHandler(int signal)
 {
     switch (signal) {
@@ -184,6 +195,15 @@ void SignalHandler(int signal)
                 LOGINFO(
                     Registry::GetMainLogger(),
                     progname << " Termination requested. Will terminate at next opportunity.");
+
+
+                ICommand* cmd = new ICommand(CMD_BRC_SHUTDOWN, NULL);
+                if (!Registry::GetMainScheduler()->ScheduleWork(cmd,true)) {
+                    // bad luck -- received SIGTERM in the moment when the mutex was hold.
+                    // so we spawn a task to do it for us...
+                    boostthreadcallable callable;
+                    terminator_thread = boost::thread(callable,boost::ref(cmd));
+                }
             } else {
                 LOGFATAL(
                     Registry::GetMainLogger(),
@@ -237,5 +257,4 @@ void SetupSignalHandler(void)
     // Sigsegv - after trigered, set to default behaviour.
     sa.sa_flags = SA_RESETHAND;
     sigaction(SIGSEGV, &sa, NULL);
-
 }

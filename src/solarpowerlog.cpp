@@ -492,7 +492,6 @@ int main(int argc, char* argv[])
 			}
 
 			Registry::Instance().AddInverter(filter);
-
 			// Filter is ready.
 		}
 	}
@@ -509,6 +508,14 @@ int main(int argc, char* argv[])
 
 		Registry::GetMainScheduler()->DoWork(true);
 	}
+
+	// Ensure that the "terminator thread" (if spawn) is finished before
+	// handling the remaining events (or the broadcast shutdown event
+	// might get lost)
+	terminator_thread.join();
+
+	// Termination requested -- execute all pending events.
+	while(Registry::GetMainScheduler()->DoWork(false));
 
 	LOGINFO(Registry::GetMainLogger(), "Terminating.");
 

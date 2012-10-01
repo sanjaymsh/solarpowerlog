@@ -35,6 +35,7 @@ Copyright (C) 2009-2012 Tobias Frost
 
 #include <time.h>
 #include <list>
+#include <set>
 
 #include <semaphore.h>
 #include <map>
@@ -78,6 +79,24 @@ public:
 	/** Schedule a work for later */
 	void ScheduleWork(ICommand *Commmand, struct timespec ts);
 
+	/** Register for broadcast events.
+	 *
+	 * There (will) be some broadcast events, and if your datafilter/inverter
+	 * is interested in those.
+	 *
+	 * See the file BasicCommands.h for defined broadcast events, but those
+	 * events are only broadcasted through the mainscheduler.
+	 *
+	 * A specialty about broadcast events is, that they will have no callback
+	 * in the ICommand. This is asserted by ScheduleWork().
+	 *
+	 * \param target which wants to receive the broadcast events
+	 * \param subscribe set to false if you want to unsubscribe to the events.
+	 *
+	 * \note solarpowerlog will only issue
+	*/
+	void RegisterBroadcasts(ICommandTarget *target, bool subscribe=true);
+
 	/** Call this method to do dispatch due work.
 	 * Note: Returns after each piece of work has been done!
 	 *
@@ -115,6 +134,9 @@ private:
 
 private:
 	sem_t semaphore;
+
+	/// stores for the mainscheduler the list of broadcast subscribers
+	std::set<ICommandTarget*> *broadcast_subscribers;
 
 protected:
 	boost::mutex mut;

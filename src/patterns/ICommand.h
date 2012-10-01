@@ -100,6 +100,14 @@ public:
 		this->trgt = trgt;
 	}
 
+
+    /// Getter for the target
+    ICommandTarget* getTrgt() const {
+        return trgt;
+    }
+
+
+
 	/** Remove Data from Command
 	 *
 	 * Removes the named key from the data list of the command.

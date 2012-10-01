@@ -143,33 +143,25 @@ public:
 	bool CheckConfig( const string &setting, libconfig::Setting::Type type,
 		bool optional = false, bool printerr = true );
 
-	template<class T>
+    /** Specialization of the GetConfig routine for the type long.
+     * This is necessary as libconfig-1.4.8 removes long support.
+     * \returns false, if the default value has been used.
+     */
+	bool GetConfig(string const &setting, long &store,
+            long defvalue)
+    {
+        return GetConfig(setting.c_str(), store, defvalue);
+    }
 
-	/** Retrieves a configuration or set the config with a default value.
-	 *
-	 * \returns false, if the default value has been used.
-	 */
-	bool GetConfig( string const &setting, T &store, T defvalue )
-	{
-		libconfig::Setting & set
-			= Registry::Instance().GetSettingsForObject(cfgpath);
-
-		if (!set.lookupValue(setting, store)) {
-			store = defvalue;
-			return false;
-		}
-		return true;
-	}
-
-	/** Specialization of the GetConfig routine for the type unsigned-long.
-	 * This is necessary as libconfig-1.4.8 removes long support.
-	 *
-	 * \returns false, if the default value has been used.
-	 */
-	bool GetConfig(string const &setting, unsigned long &store,
+    /** Specialization of the GetConfig routine for the type unsigned-long.
+     * This is necessary as libconfig-1.4.8 removes long support.
+     *
+     * \returns false, if the default value has been used.
+     */
+    bool GetConfig(char const *setting, unsigned long &store,
         unsigned long defvalue)
-	{
-	    unsigned int tmp;
+    {
+        unsigned int tmp;
 
         libconfig::Setting & set
             = Registry::Instance().GetSettingsForObject(cfgpath);
@@ -181,13 +173,13 @@ public:
 
         store = tmp;
         return true;
-	}
+    }
 
     /** Specialization of the GetConfig routine for the type long.
      * This is necessary as libconfig-1.4.8 removes long support.
      * \returns false, if the default value has been used.
      */
-	bool GetConfig(string const &setting, long &store,
+    bool GetConfig(char const *setting, long &store,
             long defvalue)
     {
         int tmp;
@@ -203,15 +195,42 @@ public:
         return true;
     }
 
+    /** Retrieves a configuration or set the config with a default value.
+     *
+     * \returns false, if the default value has been used.
+     */
+    template<class T>
+    bool GetConfig( string const &setting, T &store, T defvalue )
+    {
+        return GetConfig(setting.c_str(), store, defvalue);
+    }
+
     /** GetConfig when using a char-array as setting -- see ##GetConfig doc
       * \returns false, if the default value has been used.
      */
-	template<class T>
-	bool GetConfig( char const *setting, T &store, const T defvalue )
-	{
-		string s = setting;
-		return GetConfig(s, store, defvalue);
-	}
+    template<class T>
+    bool GetConfig( char const *setting, T &store, const T defvalue )
+    {
+
+        libconfig::Setting & set
+             = Registry::Instance().GetSettingsForObject(cfgpath);
+
+         if (!set.lookupValue(setting, store)) {
+             store = defvalue;
+             return false;
+         }
+         return true;
+    }
+
+    /** GetConfig for mandatory unsigned long settings, for libconfig 1.4.8
+      * \returns false, if the setting could not be retrieved.
+     */
+    bool GetConfig( char const *setting, unsigned long &store )
+    {
+         libconfig::Setting & set
+            = Registry::Instance().GetSettingsForObject(cfgpath);
+        return set.lookupValue(setting, (unsigned int &)store);
+    }
 
     /** GetConfig for mandatory settings.
       * \returns false, if the setting could not be retrieved.
@@ -219,45 +238,13 @@ public:
 	template<class T>
 	bool GetConfig( const string &setting, T &store )
 	{
-		libconfig::Setting & set
-			= Registry::Instance().GetSettingsForObject(cfgpath);
-
-		if (!set.lookupValue(setting, store)) {
-			return false;
-		}
-		return true;
+	    return GetConfig(setting.c_str(),store);
 	}
-
-    /** GetConfig for mandatory settings, flavour "char*"
-      * \returns false, if the setting could not be retrieved.
-     */
-	template<class T>
-	bool GetConfig( char const *setting, T &store )
-	{
-		string s = setting;
-		return GetConfig(s, store);
-	}
-
-    /** GetConfig for mandatory unsigned long settings, for libconfig 1.4.8
-      * \returns false, if the setting could not be retrieved.
-     */
-    bool GetConfig( const string &setting, unsigned long &store )
-    {
-        unsigned int tmp;
-        libconfig::Setting & set
-            = Registry::Instance().GetSettingsForObject(cfgpath);
-
-        if (!set.lookupValue(setting, tmp)) {
-            return false;
-        }
-        store = tmp;
-        return true;
-    }
 
     /** GetConfig for mandatory long settings, for libconfig 1.4.8
       * \returns false, if the setting could not be retrieved.
      */
-    bool GetConfig( const string &setting, long &store )
+    bool GetConfig( char const *setting, long &store )
     {
         int tmp;
         libconfig::Setting & set
@@ -270,6 +257,16 @@ public:
         return true;
     }
 
+    /** GetConfig for mandatory settings, flavour "char*"
+      * \returns false, if the setting could not be retrieved.
+     */
+    template<class T>
+    bool GetConfig( char const *setting, T &store )
+    {
+        libconfig::Setting & set
+            = Registry::Instance().GetSettingsForObject(cfgpath);
+        return set.lookupValue(setting, store);
+    }
 
 	/** Get the configuration for an array entry, identified by a index.
 	 *
@@ -297,16 +294,14 @@ public:
 		} catch (libconfig::SettingNotFoundException &e) {
 			return false;
 		} catch (libconfig::SettingTypeException &e) {
-			// TODO: Assert here?
 			return false;
 		}
 		return true;
 	}
 
-
 	/** Get the configuration for an array entry, identified by a index.
-	 * (string specalization) -> this is needed as libconfig would be ambigiius
-	 * for char* and std::string.
+	 * (std::string specialization) -> this is needed as for libconfig it would
+	 * be ambiguous for char* and std::string.
 	 *
 	 * See Libconfig's docs for how the arrays working.
 	 *
@@ -330,15 +325,13 @@ public:
 		} catch (libconfig::SettingNotFoundException &e) {
 			return false;
 		} catch (libconfig::SettingTypeException &e) {
-			// TODO: Assert here?
 			return false;
 		}
         return true;
 	}
 
-	/** this ugly helper is for the CHTHML Writer -- we are having a list which
-	 *  embeddes a array. The entries are anonymous, that is without
-	 * a destinctive name.
+	/** This is a ugly helper the CHTHML Writer -- we are having a list which
+	 * embeddes a array. The entries are anonymous (without a destinctive name).
 	 * I currently wonder how a better access function should look like ;-O)
 	 * TODO make this more elegant and reusable...
 	 *
@@ -360,26 +353,14 @@ public:
 		} catch (libconfig::SettingNotFoundException &e) {
 			return false;
 		} catch (libconfig::SettingTypeException &e) {
-			// TODO: Assert here?
 			return false;
 		}
 	}
 
 
-    /** this ugly helper is for the CHTHML Writer, for types that are strings.#
-     *
-     * we are having a list which embeddes a array. The entries are anonymous, that is without
-     * a destinctive name.
-     * I currently wonder how a better access function should look like ;-O)
-     * TODO make this more elegant and reusable...
-     *
-     * so, well, this function looks up an entry in the embedded array,
-     * with param i giving the row, index the column.
-     *
-     * \returns true on success (setting found, type ok),
-     *     false else (setting not found, type error)
+    /** this ugly helper is for the CHTHML Writer, for types that are strings.
+     * See the other ##GetConfigArray for details.
      */
-
     bool GetConfigArray( const int i, int index, string &store )
     {
         libconfig::Setting & set
@@ -390,7 +371,6 @@ public:
         } catch (libconfig::SettingNotFoundException &e) {
             return false;
         } catch (libconfig::SettingTypeException &e) {
-            // TODO: Assert here?
             return false;
         }
         return true;
@@ -399,7 +379,6 @@ public:
 
 private:
 	string cfgpath;
-
 };
 
 #endif /* CCONFIGHELPER_H_ */

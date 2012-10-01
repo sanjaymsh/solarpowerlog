@@ -26,6 +26,6 @@ then
 	sudo /usr/sbin/pbuilder update
 fi
 
-( cd stagedir_debbuild/solarpowerlog-$VERSION && dpkg-buildpackage -uc -us )
+( cd stagedir_debbuild/solarpowerlog-$VERSION && pdebuild --debbuildopts "-j2" )
 
 

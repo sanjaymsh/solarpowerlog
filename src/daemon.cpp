@@ -197,7 +197,7 @@ void SignalHandler(int signal)
                     progname << " Termination requested. Will terminate at next opportunity.");
 
 
-                ICommand* cmd = new ICommand(CMD_BRC_SHUTDOWN, NULL);
+                ICommand* cmd = new ICommand(BasicCommands::CMD_BRC_SHUTDOWN, NULL);
                 if (!Registry::GetMainScheduler()->ScheduleWork(cmd,true)) {
                     // bad luck -- received SIGTERM in the moment when the mutex was hold.
                     // so we spawn a task to do it for us...

@@ -152,7 +152,7 @@ private:
 
     enum Commands
     {
-        CMD_INIT = CMD_USER_MIN,
+        CMD_INIT = BasicCommands::CMD_USER_MIN,
         CMD_CYCLIC,
         CMD_UNSUBSCRIBE,
         CMD_ADDED_CAPAS

@@ -26,7 +26,10 @@ Copyright (C) 2009-2012 Tobias Frost
 #include "config.h"
 #endif
 
-enum BasicCommands {
+namespace BasicCommands
+{
+enum BasicCommands
+{
 
     // The events 0 - CMD_BROADCAST_MAX are reserved for eg. broadcast events.
     // Any event in this range will be distributed to any inverter and any
@@ -36,15 +39,20 @@ enum BasicCommands {
     /// SIG_TERM has been received and we are asked to terminate as soon as possible
     /// (For example, generally get read to close down, flush and close files,
     /// abort I/O if possible...)
-    /// Note that you might receive other events until the programm really terminates
+    /// \note that you might receive other events until the programm really terminates
     /// (for example, aborting I/Os might generate events)
+    /// \note after receiving this event, "timed work"
+    /// (submitted via \sa CWorkSchedule::ScheduleWork())
+    /// will be accepted but never handled. However, immediately due events
+    /// added after receiption of this event will still be handled.
     CMD_BRC_SHUTDOWN,
     CMD_BROADCAST_MAX,
 
     // The events between CMD_BROADCAST_MAX and CMD_USER_MIN are reserved
     // at this moment.
-	CMD_USER_MIN = 1000
+    CMD_USER_MIN = 1000
 };
 
+}
 
 #endif

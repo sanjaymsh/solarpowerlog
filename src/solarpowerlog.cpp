@@ -237,7 +237,7 @@ int main(int argc, char* argv[])
 
 	{
 		std::string pidfile_info = "create a pidfile after the daemon has been started. "
-				"(only used when running as a daemon. Default: no pid file";
+				"(only used when running as a daemon.) Default: no pid file";
 
 	desc.add_options()(
 			"pidfile",

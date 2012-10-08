@@ -70,7 +70,10 @@ private:
 	/// Commands for the Workscheduler
 	enum Commands
 	{
-		CMD_INIT = CMD_USER_MIN,
+	    // broadcast event.
+		CMD_BRC_SHUTDOWN = BasicCommands::CMD_BRC_SHUTDOWN,
+
+	    CMD_INIT = BasicCommands::CMD_USER_MIN,
 		CMD_WAIT4CONNECTION,
 		CMD_IDENTFY_WAIT,
 		CMD_POLL,
@@ -125,6 +128,9 @@ private:
     /// stores particially received responses (due to an interrupted read)
     std::string part_received;
 
+    /// set to true if the shutdown request has been received via broadcast
+    /// event.
+    bool _shutdown_requested;
 };
 
 #endif

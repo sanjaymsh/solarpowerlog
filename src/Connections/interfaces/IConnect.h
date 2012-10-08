@@ -192,7 +192,7 @@ public:
 
 	/// Check if we believe the connection is still active
 	/// Note: if the concrete implementation cannot tell,
-	/// it should always return true, as the default implementaion does.
+	/// it should always return true, as the default implementation does.
 	/// (the inverter class has to do some kind of timeout-handling anyway)
 	virtual bool IsConnected(void)
 	{
@@ -200,16 +200,24 @@ public:
 	}
 
 	/// Accept an inbound connection to be used for the communication.
-	/// (if supported by the underlaying transport mechanism.)
-	/// \param cmd Callback object to be used after completiion.
+	/// (if supported by the underlying transport mechanism.)
+	/// \param cmd callback object to be used after completion.
 	/// \note cmd must be provided (non-NULL)
 	/// \returns false if Accept is not supported.
 	/// \sa CanAccept
 	/// \warning If you use Accept() and Connect() on the same object,
-	/// the behaviour is undefined.
+	/// the behavior is undefined.
 	virtual bool Accept(ICommand */*cmd*/) {
 	    return false;
 	}
+
+	/// Abort all pending commands
+	/// (Try to) abort everything pending, like waiting for all I/O and clear
+	/// all other (queued) commands.
+	/// Answer all unfinished command with an error, preferable ECANCELED.
+	/// returns true if succeeded, false if not supported by the connection
+	/// object
+	virtual bool AbortAll() = 0;
 
 protected:
 	/// Storage for the Configuration Path to extract settings.

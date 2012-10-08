@@ -318,10 +318,14 @@ void CConnectSerialAsio::_main(void)
 			if (!cmds.empty()) {
 				bool delete_cmd;
 				CAsyncCommand *donow = cmds.front();
+				cmds.pop_front();
 				// cache info if to delete the object later,
 				// as later it might be already gone.
 				delete_cmd = donow->IsAsynchronous();
-
+                // reset the ioservice for the next commmand.
+                // (must be done during holding the mutex to avoid a race
+                // with the AbortAll() call.
+                ioservice->reset();
 				mutex.unlock();
 
 				LOGTRACE(logger, "Received command " << donow << " with callback " << donow->callback );
@@ -329,59 +333,41 @@ void CConnectSerialAsio::_main(void)
 				switch (donow->c)
 				{
 				case CAsyncCommand::CONNECT:
-					if (HandleConnect(donow)) {
-						LOGTRACE(logger, "Check command " << donow << " with callback " << donow->callback );
-						mutex.lock();
-						LOGTRACE(logger, "Front is " <<cmds.front() );
-						cmds.pop_front();
-						// check if we have to delete the object
-						// or -- in case of sync operation --
-						// the caller will do that for us.
-						// the "sign" is, that donow->callback is non NULL
-						// (as the object can be already gone, if
-						// the sync command had already deleted it)
-						if (delete_cmd) {
-							LOGTRACE(logger, "Deleting " << donow);
-							delete donow;
-						}
-						mutex.unlock();
+					HandleConnect(donow);
+					// check if we have to delete the object
+					// or -- in case of sync operation --
+					// the caller will do that for us.
+					// the "sign" is, that donow->callback is non NULL
+					// (as the object can be already gone, if
+					// the sync command had already deleted it)
+					if (delete_cmd) {
+						LOGTRACE(logger, "Deleting " << donow);
+						delete donow;
 					}
 					break;
 
 				case CAsyncCommand::DISCONNECT:
-					if (HandleDisConnect(donow)) {
-						mutex.lock();
-						cmds.pop_front();
-						if (delete_cmd) {
-							LOGTRACE(logger, "Deleting " << donow);
-							delete donow;
-						}
-						mutex.unlock();
+					HandleDisConnect(donow);
+					if (delete_cmd) {
+						LOGTRACE(logger, "Deleting " << donow);
+						delete donow;
 					}
 					break;
 
 				case CAsyncCommand::RECEIVE:
-					if (HandleReceive(donow)) {
-						mutex.lock();
-						cmds.pop_front();
-						if (delete_cmd) {
-							LOGTRACE(logger, "Deleting " << donow);
-							delete donow;
-						}
-						mutex.unlock();
+					HandleReceive(donow);
+					if (delete_cmd) {
+						LOGTRACE(logger, "Deleting " << donow);
+						delete donow;
 					}
 					break;
 
 				case CAsyncCommand::SEND:
 				{
-					if (HandleSend(donow)) {
-						mutex.lock();
-						cmds.pop_front();
-						if (delete_cmd) {
-							LOGTRACE(logger, "Deleting " << donow);
-							delete donow;
-						}
-						mutex.unlock();
+					HandleSend(donow);
+					if (delete_cmd) {
+						LOGTRACE(logger, "Deleting " << donow);
+						delete donow;
 					}
 				}
 					break;
@@ -415,7 +401,7 @@ bool CConnectSerialAsio::PushWork(CAsyncCommand *cmd)
 	return true;
 }
 
-bool CConnectSerialAsio::HandleConnect(CAsyncCommand *cmd)
+void CConnectSerialAsio::HandleConnect(CAsyncCommand *cmd)
 {
 	// most likely, the inverter's check config did not call CheckConfig
 	// of this connection method.
@@ -428,7 +414,7 @@ bool CConnectSerialAsio::HandleConnect(CAsyncCommand *cmd)
 	if (IsConnected()) {
 		cmd->callback->addData(ICMD_ERRNO, 0);
 		cmd->HandleCompletion();
-		return true;
+		return ;
 	}
 
 	CConfigHelper cfghelper(ConfigurationPath);
@@ -450,7 +436,7 @@ bool CConnectSerialAsio::HandleConnect(CAsyncCommand *cmd)
 			cmd->callback->addData(ICMD_ERRNO_STR, ec.message());
 		}
 		cmd->HandleCompletion();
-		return true;
+		return ;
 	}
 
 	port->set_option(boost::asio::serial_port_base::baud_rate(baudrate));
@@ -469,16 +455,16 @@ bool CConnectSerialAsio::HandleConnect(CAsyncCommand *cmd)
 		cmd->callback->addData(ICMD_ERRNO_STR, std::string(
 				"Error: Open succeeded but port not open. WTF?"));
 		cmd->HandleCompletion();
-		return true;
+		return ;
 	}
 
 	cmd->callback->addData(ICMD_ERRNO, 0);
 	cmd->HandleCompletion();
-	return true;
+	return ;
 
 }
 
-bool CConnectSerialAsio::HandleDisConnect(CAsyncCommand *cmd)
+void CConnectSerialAsio::HandleDisConnect(CAsyncCommand *cmd)
 {
 	boost::system::error_code ec, ec2;
 	std::string message;
@@ -487,7 +473,7 @@ bool CConnectSerialAsio::HandleDisConnect(CAsyncCommand *cmd)
 	if (!IsConnected()) {
 		cmd->callback->addData(ICMD_ERRNO, 0);
 		cmd->HandleCompletion();
-		return true;
+		return ;
 	}
 
 	ec = port->cancel(ec);
@@ -511,7 +497,7 @@ bool CConnectSerialAsio::HandleDisConnect(CAsyncCommand *cmd)
 	}
 
 	cmd->HandleCompletion();
-	return true;
+	return ;
 }
 
 /** Handle Receive -- asynchronous read from the asio socket with timeout.
@@ -527,7 +513,7 @@ bool CConnectSerialAsio::HandleDisConnect(CAsyncCommand *cmd)
  *
  * HandleReceive expects a std::string in CAsyncCommand->auxData.
  */
-bool CConnectSerialAsio::HandleReceive(CAsyncCommand *cmd)
+void CConnectSerialAsio::HandleReceive(CAsyncCommand *cmd)
 {
 	boost::system::error_code ec, handlerec;
 
@@ -536,9 +522,8 @@ bool CConnectSerialAsio::HandleReceive(CAsyncCommand *cmd)
 	unsigned long timeout;
 	char buf[2];
 	struct asyncASIOCompletionHandler read_handler(&bytes, &handlerec);
-	// timeout setup
-	ioservice->reset();
 
+	// timeout setup
 	try {
 		timeout = boost::any_cast<unsigned long>(cmd->callback->findData(
 				ICONN_TOKEN_TIMEOUT));
@@ -572,7 +557,7 @@ bool CConnectSerialAsio::HandleReceive(CAsyncCommand *cmd)
 		cmd->callback->addData(ICMD_ERRNO, -ETIMEDOUT);
 		cmd->HandleCompletion();
 		ioservice->poll();
-		return true;
+		return ;
 	}
 
 	timer.cancel();
@@ -590,7 +575,7 @@ bool CConnectSerialAsio::HandleReceive(CAsyncCommand *cmd)
 			LOGTRACE(logger, "Received eof on socket read");
 		}
 		cmd->HandleCompletion();
-		return true;
+		return ;
 	}
 
 	/* now one byte is read -- we apply the byte-timeout here to read the
@@ -656,7 +641,7 @@ bool CConnectSerialAsio::HandleReceive(CAsyncCommand *cmd)
 				cmd->callback->addData(ICMD_ERRNO, -EIO);
 				cmd->callback->addData(ICMD_ERRNO_STR, read_handler.ec->message());
 				cmd->HandleCompletion();
-				return true;
+				return ;
 			} else {
 				// other end closed connection -- treat that as timeout
 				break;
@@ -674,11 +659,31 @@ bool CConnectSerialAsio::HandleReceive(CAsyncCommand *cmd)
 	cmd->callback->addData(ICMD_ERRNO, 0);
 	cmd->HandleCompletion();
 
-	return true;
+	return ;
+}
+
+bool CConnectSerialAsio::AbortAll() {
+    // obtain mutex
+    LOGINFO(logger, "AbortAll()");
+    mutex.lock();
+    // abort all pending commands.
+    std::list<CAsyncCommand *>::iterator it = cmds.begin();
+    for (it = cmds.begin(); it != cmds.end(); it++) {
+        CAsyncCommand *c = *it;
+        c->callback->addData(ICMD_ERRNO, -ECANCELED);
+        c->HandleCompletion();
+    }
+    // stop any run ioservices.
+    ioservice->stop();
+    mutex.unlock();
+    LOGINFO(logger, "AbortAll() end");
+
+    return true;
+
 }
 
 /** handles async sending */
-bool CConnectSerialAsio::HandleSend(CAsyncCommand *cmd)
+void CConnectSerialAsio::HandleSend(CAsyncCommand *cmd)
 {
 
 	boost::system::error_code ec, handlerec;
@@ -687,7 +692,6 @@ bool CConnectSerialAsio::HandleSend(CAsyncCommand *cmd)
 	unsigned long timeout;
 	struct asyncASIOCompletionHandler write_handler(&bytes, &handlerec);
 	// timeout setup
-	ioservice->reset();
 	std::string s;
 
 	try {
@@ -745,7 +749,7 @@ bool CConnectSerialAsio::HandleSend(CAsyncCommand *cmd)
 		cmd->callback->addData(ICMD_ERRNO, -ETIMEDOUT);
 		cmd->HandleCompletion();
 		ioservice->poll();
-		return true;
+		return ;
 	}
 
 	// cancel the timer, and catch the completion handler
@@ -763,7 +767,7 @@ bool CConnectSerialAsio::HandleSend(CAsyncCommand *cmd)
 			LOGTRACE(logger, "Received eof on socket write");
 		}
 		cmd->HandleCompletion();
-		return true;
+		return ;
 	}
 
 	if (s.length() != *write_handler.bytes) {
@@ -771,12 +775,12 @@ bool CConnectSerialAsio::HandleSend(CAsyncCommand *cmd)
 				<< *write_handler.bytes << " but expected "<< s.length() );
 		cmd->callback->addData(ICMD_ERRNO, -EIO);
 		cmd->HandleCompletion();
-		return true;
+		return ;
 	}
 
 	cmd->callback->addData(ICMD_ERRNO, 0);
 	cmd->HandleCompletion();
-	return true;
+	return ;
 }
 
 #endif /* HAVE_COMMS_ASIOSERIAL */

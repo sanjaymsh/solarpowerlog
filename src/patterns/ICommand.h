@@ -154,7 +154,7 @@ public:
     void DumpData(ILogger& logger) const {
         std::map<std::string, boost::any>::const_iterator it;
         LOGDEBUG(logger, "ICommand::DumpData() with command " << this->cmd);
-        if (this->cmd < CMD_BROADCAST_MAX) {
+        if (this->cmd < BasicCommands::CMD_BROADCAST_MAX) {
             LOGDEBUG(logger, "(BROADCAST COMMAND) " << this->cmd);
         } else {
             assert(this->trgt);

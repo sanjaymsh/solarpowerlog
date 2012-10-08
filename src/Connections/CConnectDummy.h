@@ -69,28 +69,29 @@ private:
 
 public:
 
-	virtual void Connect( ICommand *cmd )
-	{
-		this->Dispatch_Error(cmd);
-	};
+    virtual void Connect(ICommand *cmd) {
+        this->Dispatch_Error(cmd);
+    }
 
-	virtual void Disconnect( ICommand *cmd )
-	{
-		this->Dispatch_Error(cmd);
-	};
+    virtual void Disconnect(ICommand *cmd) {
+        this->Dispatch_Error(cmd);
+    }
 
-	virtual void Send(ICommand *cmd) {
-		Dispatch_Error(cmd);
-	}
+    virtual void Send(ICommand *cmd) {
+        Dispatch_Error(cmd);
+    }
 
-	virtual void Receive( ICommand *cmd )
-	{
-		return this->Dispatch_Error(cmd);
-	};
+    virtual void Receive(ICommand *cmd) {
+        return this->Dispatch_Error(cmd);
+    }
 
-	virtual bool CheckConfig(void) ;
+    virtual bool AbortAll() {
+        return false;
+    }
 
-	virtual void _main (void) {};
+    virtual bool CheckConfig(void);
+
+    virtual void _main(void) {}
 
 };
 

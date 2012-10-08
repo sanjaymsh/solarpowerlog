@@ -209,7 +209,7 @@ class ICapaIterator;
 
 using namespace std;
 
-/// connectiontimeout: Wait this long for the connection attempt to time out
+/// connection_timeout: Wait this long for the connection attempt to time out
 /// note: currently FIXME (not implemented in ASIO TCP)
 /// note: This tweak is optional. The Connection method needs not to honor
 /// this parameter (especially if the success/failure is immediately known)

@@ -228,6 +228,11 @@ CInverterSputnikSSeriesSimulator::CInverterSputnikSSeriesSimulator(const string 
 	    if (simcommands[i].value2) scommands[i].value2  = simcommands[i].value2->clone();
 	    scommands[i].killbit = false;
 	} while (simcommands[i++].token);
+
+    // Register for broadcast events
+    Registry::GetMainScheduler()->RegisterBroadcasts(this);
+    _shutdown_requested = false;
+
 }
 
 CInverterSputnikSSeriesSimulator::~CInverterSputnikSSeriesSimulator()
@@ -358,6 +363,8 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 
 	case CMD_SIM_INIT: // Wait for incoming connections.
 	{
+        // only if no shutdown have been requested.
+        if (_shutdown_requested) break;
 
         LOGDEBUG(logger, "new state: CMD_SIM_INIT");
 
@@ -490,6 +497,8 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 
     case CMD_CTRL_INIT:
     {
+        // only if no shutdown have been requested.
+        if (_shutdown_requested) break;
         // the commandserver is known to be non-NULL, otherwise CMD_INIT
         // would not have scheduled this work.
 
@@ -624,12 +633,24 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
         break;
     }
 
+            // Broadcast events
+        case CMD_BRC_SHUTDOWN:
+            // stop all pending I/Os, as we will exit soon.
+            connection->AbortAll();
+            ctrlserver->AbortAll();
+            _shutdown_requested = true;
+        break;
 
-    // Fall through ok.
-	default:
-		LOGFATAL(logger, "Unknown CMD received");
-		abort();
-		break; // to have one code-analysis warning less.
+        default:
+            if (Command->getCmd() <= BasicCommands::CMD_BROADCAST_MAX) {
+                // broadcast event
+                LOGDEBUG(logger,
+                    "Unhandled broadcast event received " << Command->getCmd());
+                break;
+            }
+            LOGERROR(logger, "Unknown CMD received: "<< Command->getCmd());
+        break;
+
 	}
 
 }

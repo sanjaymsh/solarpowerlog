@@ -79,8 +79,10 @@ private:
 	/// Commands for the Workscheduler
 	enum Commands
 	{
+        // broadcast event.
+        CMD_BRC_SHUTDOWN = BasicCommands::CMD_BRC_SHUTDOWN,
 
-		CMD_INIT = CMD_USER_MIN,
+        CMD_INIT = BasicCommands::CMD_USER_MIN,
         // Simulator commands
         CMD_SIM_INIT, ///< Wait for incoming connections.
         CMD_SIM_CONNECTED, ///< Wait for incoming data
@@ -90,9 +92,7 @@ private:
         CMD_CTRL_INIT, ///< Wait for incoming connections (cmd-server).
         CMD_CTRL_CONNECTED, ///< Wait for incoming data (cmd-server).
         CMD_CTRL_PARSERECEIVE, ///< Parse incoming data (cmd-server) and send response.
-        CMD_CTRL_WAIT_SENT
-    ///< Wait till response sent.
-
+        CMD_CTRL_WAIT_SENT  ///< Wait till response sent.
 	};
 
 	/// Dataports of the sputnik inverters.
@@ -122,6 +122,10 @@ private:
 
     /// Command Server.
     IConnect *ctrlserver;
+
+    /// set to true if the shutdown request has been received via broadcast
+    /// event.
+    bool _shutdown_requested;
 
 };
 

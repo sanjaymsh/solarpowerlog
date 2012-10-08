@@ -65,6 +65,12 @@ protected:
 
 	virtual bool IsConnected(void);
 
+#warning implement me
+    virtual bool AbortAll() {
+        return false;
+    }
+
+
 private:
 	class CSharedConnection *master;
 

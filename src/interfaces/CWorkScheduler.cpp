@@ -86,7 +86,7 @@ bool CWorkScheduler::DoWork(bool block) {
 
     sem_wait(&semaphore);
     ICommand *cmd = getnextcmd();
-    if (cmd->getCmd() > CMD_BROADCAST_MAX) {
+    if (cmd->getCmd() > BasicCommands::CMD_BROADCAST_MAX) {
         cmd->execute();
     } else {
         if (broadcast_subscribers) {
@@ -136,9 +136,10 @@ bool CWorkScheduler::ScheduleWork(ICommand *Command, bool tryonly) {
     // assert if either it as broadcast event with target!=NULL or if not an
     // broadcast event with the target equal NULL.
     assert(
-        (Command->getCmd() > CMD_BROADCAST_MAX && NULL != Command->getTrgt()) ||
-        (Command->getCmd() <= CMD_BROADCAST_MAX && 0 == Command->getTrgt()));
-
+        (Command->getCmd() > BasicCommands::CMD_BROADCAST_MAX
+            && NULL != Command->getTrgt()) ||
+        (Command->getCmd() <= BasicCommands::CMD_BROADCAST_MAX
+            && 0 == Command->getTrgt()));
 
     if (tryonly) {
         if (!mut.try_lock()) return false;
@@ -146,7 +147,7 @@ bool CWorkScheduler::ScheduleWork(ICommand *Command, bool tryonly) {
         mut.lock();
     }
 
-    if (Command->getCmd() <= CMD_BROADCAST_MAX) {
+    if (Command->getCmd() <= BasicCommands::CMD_BROADCAST_MAX) {
         LOGDEBUG(Registry::GetMainLogger(),"Broadcast event accepted cmd=" << Command->getCmd() );
     }
 
@@ -161,8 +162,10 @@ void CWorkScheduler::ScheduleWork(ICommand *Command, struct timespec ts) {
     // assert if either it as broadcast event with target!=NULL or if not an
     // broadcast event with the target equal NULL.
     assert(
-        (Command->getCmd() > CMD_BROADCAST_MAX && NULL != Command->getTrgt()) ||
-        (Command->getCmd() <= CMD_BROADCAST_MAX && 0 == Command->getTrgt()));
+        (Command->getCmd() > BasicCommands::CMD_BROADCAST_MAX
+            && NULL != Command->getTrgt()) ||
+        (Command->getCmd() <= BasicCommands::CMD_BROADCAST_MAX
+            && 0 == Command->getTrgt()));
 
     works_timed_scheduled++;
     timedwork->ScheduleWork(Command, ts);

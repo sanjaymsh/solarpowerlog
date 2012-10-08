@@ -91,6 +91,11 @@ public:
         return this->configured_as_server;
     }
 
+	/// Aborts all IOs.
+	/// Note: The current executed I/O will also be cancelled, but error
+	/// reporting might report a wrong error. (e.g timeout instead of cancelled)
+	virtual bool AbortAll();
+
 private:
 	boost::asio::io_service *ioservice;
 	boost::asio::ip::tcp::socket *sockt;
@@ -125,7 +130,7 @@ private:
 	 *
 	 *
 	 * */
-	bool HandleConnect( CAsyncCommand *cmd );
+	void HandleConnect( CAsyncCommand *cmd );
 
 	/** Handle the disconnect command.
 	 *
@@ -133,13 +138,13 @@ private:
 	 * be handled again
 	 */
 
-	bool HandleDisConnect( CAsyncCommand *cmd );
+	void HandleDisConnect( CAsyncCommand *cmd );
 
-	bool HandleReceive( CAsyncCommand *cmd );
+	void HandleReceive( CAsyncCommand *cmd );
 
-	bool HandleSend( CAsyncCommand *cmd );
+	void HandleSend( CAsyncCommand *cmd );
 
-    bool HandleAccept( CAsyncCommand *cmd );
+    void HandleAccept( CAsyncCommand *cmd );
 
 	list<CAsyncCommand*> cmds;
 	sem_t cmdsemaphore;

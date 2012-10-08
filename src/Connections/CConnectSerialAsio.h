@@ -90,6 +90,8 @@ public:
 
 	virtual bool IsConnected(void);
 
+    virtual bool AbortAll();
+
 private:
 	boost::asio::io_service *ioservice;
 	boost::asio::serial_port *port;
@@ -130,7 +132,7 @@ private:
 	 *
 	 *
 	 * */
-	bool HandleConnect(CAsyncCommand *cmd);
+	void HandleConnect(CAsyncCommand *cmd);
 
 	/** Handle the disconnect command.
 	 *
@@ -138,11 +140,11 @@ private:
 	 * be handled again
 	 */
 
-	bool HandleDisConnect(CAsyncCommand *cmd);
+	void HandleDisConnect(CAsyncCommand *cmd);
 
-	bool HandleReceive(CAsyncCommand *cmd);
+	void HandleReceive(CAsyncCommand *cmd);
 
-	bool HandleSend(CAsyncCommand *cmd);
+	void HandleSend(CAsyncCommand *cmd);
 
 	list<CAsyncCommand*> cmds;
 	sem_t cmdsemaphore;

@@ -225,78 +225,61 @@ void CConnectTCPAsio::_main( void )
 			if (!cmds.empty()) {
 				bool delete_cmd;
 				CAsyncCommand *donow = cmds.front();
+				cmds.pop_front();
 				// cache info if to delete the object later,
 				// as later it might be already gone.
 				delete_cmd = donow->IsAsynchronous();
-
+				// reset the ioservice for the next commmand.
+				// (must be done during holding the mutex to avoid a race
+				// with the AbortAll() call.
+				ioservice->reset();
 				mutex.unlock();
 
 				switch (donow->c) {
 				case CAsyncCommand::CONNECT:
-					if (HandleConnect(donow)) {
-						mutex.lock();
-						cmds.pop_front();
-						// check if we have to delete the object
-						// or -- in case of sync operation --
-						// the caller will do that for us.
-						// the "sign" is, that donow->callback is non NULL
-						// (as the object can be already gone, if
-						// the sync command had already deleted it)
-						if (delete_cmd) {
-							delete donow;
-						}
-						mutex.unlock();
-					}
+					HandleConnect(donow);
+                    // check if we have to delete the object
+                    // or -- in case of sync operation --
+                    // the caller will do that for us.
+                    // the "sign" is, that donow->callback is non NULL
+                    // (as the object can be already gone, if
+                    // the sync command had already deleted it)
+                    if (delete_cmd) {
+                        delete donow;
+                    }
 				break;
 
 				case CAsyncCommand::DISCONNECT:
-					if (HandleDisConnect(donow)) {
-						mutex.lock();
-						cmds.pop_front();
-						if (delete_cmd) {
-							delete donow;
-						}
-						mutex.unlock();
+					HandleDisConnect(donow);
+					if (delete_cmd) {
+						delete donow;
 					}
 					break;
 
 				case CAsyncCommand::RECEIVE:
-					if (HandleReceive(donow)) {
-						mutex.lock();
-						cmds.pop_front();
-						if (delete_cmd) {
-							delete donow;
-						}
-						mutex.unlock();
-					}
+					HandleReceive(donow);
+                    if (delete_cmd) {
+                        delete donow;
+                    }
 					break;
 
 				case CAsyncCommand::SEND:
 				{
-					if(HandleSend(donow)) {
-						mutex.lock();
-						cmds.pop_front();
-						if (delete_cmd) {
-							delete donow;
-						}
-						mutex.unlock();
+					HandleSend(donow);
+					if (delete_cmd) {
+						delete donow;
 					}
 				}
 				break;
 
                 case CAsyncCommand::ACCEPT:
                 {
-                    if (HandleAccept(donow)) {
-                        mutex.lock();
-                        cmds.pop_front();
-                        if (delete_cmd) {
-                            delete donow;
-                        }
-                        mutex.unlock();
+                    HandleAccept(donow);
+                    if (delete_cmd) {
+                       delete donow;
                     }
                 }
-                    break;
-
+                break;
 
 				default:
 				{
@@ -326,7 +309,7 @@ bool CConnectTCPAsio::PushWork( CAsyncCommand *cmd )
 	return true;
 }
 
-bool CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
+void CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 {
 	string strhost, port;
 	unsigned long timeout = -1;
@@ -335,14 +318,14 @@ bool CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 	if (IsConnected()) {
 		cmd->callback->addData(ICMD_ERRNO, 0);
 		cmd->HandleCompletion();
-		return true;
+		return ;
 	}
 
 	// fail, if we are configured for inbound connections.
     if (configured_as_server) {
         cmd->callback->addData(ICMD_ERRNO,-EPERM);
         cmd->HandleCompletion();
-        return true;
+        return ;
     }
 
 	CConfigHelper cfghelper(ConfigurationPath);
@@ -393,17 +376,17 @@ bool CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 		if (!ec.message().empty())
 			cmd->callback->addData(ICMD_ERRNO_STR, ec.message());
 		cmd->HandleCompletion();
-		return true;
+		return ;
 	}
 
 	LOGDEBUG(logger, "Connected to " << strhost );
 	// Signal success.
 	cmd->callback->addData(ICMD_ERRNO, 0);
 	cmd->HandleCompletion();
-	return true;
+	return ;
 }
 
-bool CConnectTCPAsio::HandleDisConnect( CAsyncCommand *cmd )
+void CConnectTCPAsio::HandleDisConnect( CAsyncCommand *cmd )
 {
 	boost::system::error_code ec, ec2;
 	std::string message;
@@ -412,7 +395,7 @@ bool CConnectTCPAsio::HandleDisConnect( CAsyncCommand *cmd )
 	if (!IsConnected()) {
 		cmd->callback->addData(ICMD_ERRNO, 0);
 		cmd->HandleCompletion();
-		return true;
+		return ;
 	}
 
 	// according boost:asio documentation, one should call shutdown before
@@ -439,11 +422,12 @@ bool CConnectTCPAsio::HandleDisConnect( CAsyncCommand *cmd )
 		cmd->callback->addData(ICMD_ERRNO_STR, ec.message());
 	}
 	cmd->HandleCompletion();
-	return true;
+	return ;
 }
 
-/// Helping function for timeout and receive, will be called by boost::asio.
-/// this handler just will set the int store with the value value.
+/*** Helping function for timeout and receive, will be called by boost::asio.
+ *  this handler just will set the int store with the value value.
+*/
 static void boosthelper_set_result( int* store, int value )
 {
 	if (store)
@@ -463,7 +447,7 @@ static void boosthelper_set_result( int* store, int value )
  *
  * HandleReceive expects a std::string in CAsyncCommand->auxData.
  */
-bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
+void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 {
 	boost::system::error_code ec, handlerec;
 	volatile int result_timer = 0;
@@ -472,7 +456,6 @@ bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 	char buf[2];
 	struct asyncASIOCompletionHandler read_handler(&bytes, &handlerec);
 	// timeout setup
-	ioservice->reset();
 
 	try {
 		timeout = boost::any_cast<unsigned long>(
@@ -521,8 +504,9 @@ bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 	} while (maxsleep != 0 && !result_timer && 0 == *(read_handler.bytes));
 
     if (num == 0) {
-		LOGTRACE(logger, "HandleReceive: IO Service error: " << ec.message());
+		LOGDEBUG(logger, "HandleReceive: IO Service error: " << ec.message());
 	}
+
 	// ioservice error or timeout
 	if (num == 0 || result_timer) {
 		timer.cancel(ec);
@@ -532,7 +516,7 @@ bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 		cmd->callback->addData(ICMD_ERRNO, -ETIMEDOUT);
 		cmd->HandleCompletion();
 		ioservice->poll();
-		return true;
+		return ;
 	}
 
 	timer.cancel();
@@ -550,7 +534,7 @@ bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 			LOGTRACE(logger, "Received eof on socket read");
 		}
 		cmd->HandleCompletion();
-		return true;
+		return ;
 	}
 
 	if (1 != *read_handler.bytes) {
@@ -558,7 +542,7 @@ bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 				<< *read_handler.bytes << " but expected only 1 byte");
 		cmd->callback->addData(ICMD_ERRNO, -EIO);
 		cmd->HandleCompletion();
-		return true;
+		return ;
 	}
 
 	size_t avail = sockt->available();
@@ -593,7 +577,7 @@ bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 			cmd->callback->addData(ICMD_ERRNO_STR, ec.message());
 			cmd->callback->addData(ICMD_ERRNO, error);
 			cmd->HandleCompletion();
-			return true;
+			return ;
 		}
 	}
 
@@ -601,7 +585,7 @@ bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 	cmd->callback->addData(ICONN_TOKEN_RECEIVE_STRING, receivestr);
 	cmd->callback->addData(ICMD_ERRNO, 0);
 	cmd->HandleCompletion();
-	return true;
+	return ;
 }
 
 bool CConnectTCPAsio::Accept(ICommand *callback)
@@ -614,7 +598,7 @@ bool CConnectTCPAsio::Accept(ICommand *callback)
 }
 
 /** handles async sending */
-bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
+void CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 
 	boost::system::error_code ec, handlerec;
 	volatile int result_timer = 0;
@@ -622,9 +606,7 @@ bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 	unsigned long timeout;
 	struct asyncASIOCompletionHandler write_handler(&bytes, &handlerec);
 	// timeout setup
-	ioservice->reset();
 	std::string s;
-
 	try {
 		s = boost::any_cast<std::string>(cmd->callback->findData(ICONN_TOKEN_SEND_STRING));
 	}
@@ -681,7 +663,7 @@ bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 		cmd->callback->addData(ICMD_ERRNO, -ETIMEDOUT);
 		cmd->HandleCompletion();
 		ioservice->poll();
-		return true;
+		return ;
 	}
 
 	// cancel the timer, and catch the completion handler
@@ -701,7 +683,7 @@ bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 			LOGTRACE(logger, "Received eof on socket write");
 		}
 		cmd->HandleCompletion();
-		return true;
+		return ;
 	}
 
 	if (s.length() != *write_handler.bytes) {
@@ -709,32 +691,51 @@ bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 				<< *write_handler.bytes << " but expected "<< s.length() );
 		cmd->callback->addData(ICMD_ERRNO, -EIO);
 		cmd->HandleCompletion();
-		return true;
+		return ;
 	}
 
 	cmd->callback->addData(ICMD_ERRNO, 0);
 	cmd->HandleCompletion();
-	return true;
+	return ;
+}
+
+bool CConnectTCPAsio::AbortAll()
+{
+    // obtain mutex
+    LOGINFO(logger,"AbortAll()");
+    mutex.lock();
+    // abort all pending commands.
+    std::list<CAsyncCommand *>::iterator it = cmds.begin();
+    for (it = cmds.begin(); it != cmds.end(); it++) {
+        CAsyncCommand *c = *it;
+        c->callback->addData(ICMD_ERRNO, -ECANCELED);
+        c->HandleCompletion();
+    }
+    // stop any run ioservices.
+    this->ioservice->stop();
+    mutex.unlock();
+    LOGINFO(logger,"AbortAll() end");
+
+    return true;
 }
 
 // Server mode. Listen to incoming connections.
-bool CConnectTCPAsio::HandleAccept(CAsyncCommand *cmd)
+void CConnectTCPAsio::HandleAccept(CAsyncCommand *cmd)
 {
     int port;
     std::string ipadr;
-	ioservice->reset();
     // Do not accept if already connected.
     if (IsConnected()) {
         cmd->callback->addData(ICMD_ERRNO, -EBUSY);
         cmd->HandleCompletion();
-        return true;
+        return;
     }
 
     // Fail if this is not configured as a server.
     if (!configured_as_server) {
         cmd->callback->addData(ICMD_ERRNO,-EPERM);
         cmd->HandleCompletion();
-        return true;
+        return;
     }
 
     CConfigHelper cfghelper(ConfigurationPath);
@@ -776,13 +777,13 @@ bool CConnectTCPAsio::HandleAccept(CAsyncCommand *cmd)
         LOGDEBUG( logger,
                 "Connection failed. Error " << eval <<
                 "(" << ec.message() << ")");
-        return true;
+        return;
     }
 
     LOGTRACE(logger, "Connected.");
     cmd->callback->addData(ICMD_ERRNO, 0);
     cmd->HandleCompletion();
-    return true;
+    return;
 }
 
 #endif /* HAVE_COMMS_ASIOTCPIO */

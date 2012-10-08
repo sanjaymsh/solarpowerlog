@@ -337,6 +337,9 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
         new CSputnikCommand<CAPA_INVERTER_GROUND_VOLTAGE_TYPE>(logger, "UGD", 10, 0.1,
             this, CAPA_INVERTER_GROUND_VOLTAGE_NAME));
 
+    // Register for broadcast events
+    Registry::GetMainScheduler()->RegisterBroadcasts(this);
+    _shutdown_requested = false;
 }
 
 CInverterSputnikSSeries::~CInverterSputnikSSeries()
@@ -453,6 +456,9 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 
 	case CMD_INIT:
 	{
+	    // initiate new connection only if no shutdown was requested.
+	    if (_shutdown_requested) break;
+
 		// INIT: Try to connect to the comm partner
 		// Action Connection Attempt
 		// Next-State: Wait4Connection
@@ -695,10 +701,22 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 	}
 		break;
 
+		// Broadcast events
+	case CMD_BRC_SHUTDOWN:
+	    // stop all pending I/Os, as we will exit soon.
+	    connection->AbortAll();
+	    _shutdown_requested = true;
+	    break;
+
+
 	default:
-		LOGFATAL(logger, "Unknown CMD received");
-		abort();
-		break; // to have one code-analysis warning less.
+	    if (Command->getCmd() <= BasicCommands::CMD_BROADCAST_MAX) {
+	        // broadcast event
+	        LOGDEBUG(logger, "Unhandled broadcast event received " << Command->getCmd());
+	        break;
+	    }
+		LOGERROR(logger, "Unknown CMD received: "<< Command->getCmd());
+		break;
 	}
 
 }

@@ -99,11 +99,7 @@ public:
 private:
 	boost::asio::io_service *ioservice;
 	boost::asio::ip::tcp::socket *sockt;
-	boost::asio::streambuf *data;
 
-	time_t timer;
-
-	// async patch
 	virtual void _main( void );
 
 	/** push some new work to the worker thread.

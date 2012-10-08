@@ -95,7 +95,6 @@ public:
 private:
 	boost::asio::io_service *ioservice;
 	boost::asio::serial_port *port;
-	boost::asio::streambuf *data;
 
 	char characterlen;
 	boost::asio::serial_port_base::parity parity;
@@ -103,9 +102,6 @@ private:
 	boost::asio::serial_port_base::flow_control flowctrl;
 	unsigned int baudrate;
 
-	time_t timer;
-
-	// async patch
 	virtual void _main(void);
 
 	/** push some new work to the worker thread.

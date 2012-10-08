@@ -152,4 +152,10 @@ bool CSharedConnectionSlave::IsConnected(void)
 	return master->IsConnected();
 }
 
+bool CSharedConnectionSlave::AbortAll()
+{
+    // only the master may abort all commands at this time.
+    return false;
+}
+
 #endif

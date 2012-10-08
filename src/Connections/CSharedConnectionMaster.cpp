@@ -194,13 +194,7 @@ void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
 			// Successful read. Distribute received data to all listeners.
 			list<ICommand*>::iterator it;
 			for (it = readcommands.begin(); it != readcommands.end(); it++) {
-//				LOGDEBUG(logger, "Premerge:");
-//				(*it)->DumpData(logger);
-//				LOGDEBUG(logger, "Merge with:");
-//				Command->DumpData(logger);
 				(*it)->mergeData(*Command);
-//				LOGDEBUG(logger, "Merged");
-//				(*it)->DumpData(logger);
 				Registry::GetMainScheduler()->ScheduleWork(*it);
 			}
 			readcommands.clear();
@@ -397,5 +391,12 @@ bool CSharedConnectionMaster::IsConnected(void)
 	assert(connection);
 	return connection->IsConnected();
 }
+
+bool CSharedConnectionMaster::AbortAll()
+{
+    assert(connection);
+    return connection->AbortAll();
+}
+
 
 #endif

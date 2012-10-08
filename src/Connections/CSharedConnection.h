@@ -106,9 +106,9 @@ public:
 		return concreteSharedConnection->IsConnected();
 	}
 
-#warning implement me
     virtual bool AbortAll() {
-        return false;
+        assert(concreteSharedConnection);
+        return concreteSharedConnection->AbortAll();
     }
 
 

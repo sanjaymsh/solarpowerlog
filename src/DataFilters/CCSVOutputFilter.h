@@ -259,13 +259,13 @@ private:
 	 *  */
 	void DoCYCLICmd(const ICommand *);
 
-	enum Commands
-	{
-		CMD_INIT = BasicCommands::CMD_USER_MIN,
-		CMD_CYCLIC,
-		CMD_ROTATE ///<Rotate logfile
-	};
-
+    enum Commands
+    {
+        CMD_BRC_SHUTDOWN = BasicCommands::CMD_BRC_SHUTDOWN,
+        CMD_INIT = BasicCommands::CMD_USER_MIN,
+        CMD_CYCLIC,
+        CMD_ROTATE ///<Rotate logfile
+    };
 
 	/** has the header been outputted to the file */
 	bool headerwritten;

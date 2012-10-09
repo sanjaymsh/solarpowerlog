@@ -88,8 +88,8 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 		const string & configurationpath) :
 	IInverterBase::IInverterBase(name, configurationpath, "inverter")
 {
-	ownadr = 0xfb;
-	commadr = 0x01;
+    _cfg_ownadr = 0xfb;
+    _cfg_commadr = 0x01;
 
 	// Add the capabilites that this inverter has
 	// Note: The "must-have" ones CAPA_CAPAS_REMOVEALL and CAPA_CAPAS_UPDATED are already instanciated by the base class constructor.
@@ -116,8 +116,11 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	cfghlp.GetConfig("disable_3phase_commands",disable_3phase,(bool) false);
 
 	// Query settings needed and default all optional settings.
-	cfghlp.GetConfig("ownadr", ownadr, 0xFBu);
-	cfghlp.GetConfig("commadr", commadr, 0x01u);
+	cfghlp.GetConfig("ownadr", _cfg_ownadr, 0xFBu);
+	cfghlp.GetConfig("commadr", _cfg_commadr, 0x01u);
+	cfghlp.GetConfig("response_timeout",_cfg_response_timeout_ms,3.0F);
+	// cfg-file ha unit "seconds", but we need "milliseconds" later.
+	_cfg_response_timeout_ms *= 1000.0;
 
 	s = CAPA_INVERTER_QUERYINTERVAL;
 	v = CValueFactory::Factory<CAPA_INVERTER_QUERYINTERVAL_TYPE>();
@@ -134,7 +137,7 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	LOGDEBUG(logger,"Inverter configuration:");
 	LOGDEBUG(logger,"class CInverterSputnikSSeries ");
 	LOGDEBUG(logger,"Query Interval: "<< interval);
-	LOGDEBUG(logger,"Ownadr: " << ownadr << " Commadr: " << commadr);
+	LOGDEBUG(logger,"Ownadr: " << _cfg_ownadr << " Commadr: " << _cfg_commadr);
 	cfghlp.GetConfig("comms", s, (string) "unset");
 	LOGDEBUG(logger,"Communication: " << s);
 
@@ -528,6 +531,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 #endif
 		}
 	}
+	// fall through intended.
 
 	case CMD_SEND_QUERIES:
 	{
@@ -631,13 +635,17 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		std::string tmp = part_received;
 
 		// Check all the telgrams in the buffer (if there are more than one...)
+		// note: if there are more than one in the buffer only one can be
+		// for this inverter. (as we are playing a answer-question)
+		// it wont hurt to call the loop more than once, though.
 		while ( part_received.length()) {
 		    int tmpresult = 0;
 		    parseresult = parsereceivedstring();
 		    // stop parsing if a partial telegram is detected.
 		    if ( parseresult == 0 || parseresult == 1) {
-		        // make sure that we do not hide an error when receiving a
-		        // telegram not for us or a partial telegram.
+		        // make sure that we do not hide an error in the previous
+		        // telegramm when receiving a telegram not for us or a
+		        // partial telegram.
 		        if (tmpresult < 0) parseresult = tmpresult;
 		    } else {
 		        // in all other cases, update tmpresult
@@ -766,7 +774,7 @@ string CInverterSputnikSSeries::assemblequerystring()
     char buf[32];
     snprintf(buf, 32,"%X:", currentport);
     len = strlen(buf) + telegram.length() + 10 + 6;
-    snprintf(buf, 32, "{%02X;%02X;%02X|%X:", ownadr, commadr, len,
+    snprintf(buf, 32, "{%02X;%02X;%02X|%X:", _cfg_ownadr, _cfg_commadr, len,
             currentport);
     // Insert header at beginning, add trailing "|"
     telegram.insert(0,buf);
@@ -860,7 +868,7 @@ int CInverterSputnikSSeries::parsereceivedstring() {
         return -1;
     }
 
-    if (tmp != commadr) {
+    if (tmp != _cfg_commadr) {
         LOGDEBUG(logger, "Received string is not for us: Wrong Sender");
         return 0;
     }
@@ -870,7 +878,7 @@ int CInverterSputnikSSeries::parsereceivedstring() {
         return -1;
     }
 
-    if (tmp != ownadr) {
+    if (tmp != _cfg_ownadr) {
         LOGDEBUG(logger, "Received string is not for us: Wrong receiver");
         return 0;
     }

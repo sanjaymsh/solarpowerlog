@@ -111,11 +111,6 @@ private:
 	void tokenizer(const char *delimiters, const string& s,
 			vector<string> &tokens);
 
-	/// cache for inverters comm adr.
-	unsigned int commadr;
-	/// cache for own adr
-	unsigned int ownadr;
-
     /// stores supported commands.
     vector<ISputnikCommand*> commands;
 
@@ -131,6 +126,23 @@ private:
     /// set to true if the shutdown request has been received via broadcast
     /// event.
     bool _shutdown_requested;
+
+    /// timestamp of expected next receive
+    /// on shared connections we'll receive telgramms for other inverts,
+    /// and on slow (serial) connections receiving might
+    /// be split on several chunks.
+    /// So we need to put a cap on retries to avoid exceeding the time allowes
+    /// for a complete response.
+    boost::posix_time::ptime _deadline_receive;
+
+    /// Configuration Cache: Timeout for telegramm, unit is ms
+    float _cfg_response_timeout_ms;
+
+    /// cache for inverters comm adr.
+    unsigned int _cfg_commadr;
+    /// cache for own adr
+    unsigned int _cfg_ownadr;
+
 };
 
 #endif

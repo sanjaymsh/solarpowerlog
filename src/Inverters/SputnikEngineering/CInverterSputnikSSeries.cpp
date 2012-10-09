@@ -380,6 +380,9 @@ bool CInverterSputnikSSeries::CheckConfig()
 	// default: non-enabled.
 	fail |= (true != hlp.CheckConfig("disable_3phase_commands",libconfig::Setting::TypeBoolean,true));
 
+	/// syntax check for communication timeouts
+    fail |= (true != hlp.CheckConfig("response_timeout",libconfig::Setting::TypeFloat,true));
+
 	LOGTRACE(logger, "Check Configuration result: " << !fail);
 	return !fail;
 }
@@ -567,6 +570,11 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
             Registry::GetMainScheduler()->ScheduleWork(cmd);
             break;
 		}
+
+        // record deadline
+        _deadline_receive = boost::posix_time::microsec_clock::universal_time()
+            + boost::posix_time::milliseconds(_cfg_response_timeout_ms*1000.0);
+
 	}
 	// Fall through ok.
 
@@ -574,6 +582,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 	{
 		LOGDEBUG(logger, "new state: CMD_WAIT_RECEIVE");
 		cmd = new ICommand(CMD_EVALUATE_RECEIVE, this);
+        cmd->addData(ICONN_TOKEN_TIMEOUT, (long)_cfg_response_timeout_ms);
 		connection->Receive(cmd);
 	}
 		break;
@@ -671,6 +680,16 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		    // if 1 => We did only receive a partial telegram. Can happen on
 		    // eg. serial connections.
 			// So lets wait again.
+		    boost::posix_time::ptime now =
+		        boost::posix_time::microsec_clock::universal_time();
+
+            if (now > _deadline_receive) {
+                // deadline exceeded, stop retrying.
+                cmd = new ICommand(CMD_DISCONNECTED, this);
+                Registry::GetMainScheduler()->ScheduleWork(cmd);
+                break;
+            }
+
 			ICommand *cmd = new ICommand(CMD_EVALUATE_RECEIVE, this);
 			connection->Receive(cmd);
 			break;

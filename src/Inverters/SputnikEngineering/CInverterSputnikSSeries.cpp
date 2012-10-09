@@ -122,6 +122,17 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	// cfg-file ha unit "seconds", but we need "milliseconds" later.
 	_cfg_response_timeout_ms *= 1000.0;
 
+    cfghlp.GetConfig("connection_timeout",_cfg_connection_timeout_ms,3.0F);
+    // cfg-file ha unit "seconds", but we need "milliseconds" later.
+    _cfg_connection_timeout_ms *= 1000.0;
+
+    cfghlp.GetConfig("send_timeout",_cfg_send_timeout_ms,3.0F);
+    // cfg-file ha unit "seconds", but we need "milliseconds" later.
+    _cfg_send_timeout_ms *= 1000.0;
+
+    cfghlp.GetConfig("reconnect_delay",_cfg_reconnectdelay_s,15.0F);
+     // cfg-file ha unit "seconds", but we need "milliseconds" later.
+
 	s = CAPA_INVERTER_QUERYINTERVAL;
 	v = CValueFactory::Factory<CAPA_INVERTER_QUERYINTERVAL_TYPE>();
 	((CValue<float>*) v)->Set(interval);
@@ -382,6 +393,9 @@ bool CInverterSputnikSSeries::CheckConfig()
 
 	/// syntax check for communication timeouts
     fail |= (true != hlp.CheckConfig("response_timeout",libconfig::Setting::TypeFloat,true));
+    fail |= (true != hlp.CheckConfig("connection_timeout",libconfig::Setting::TypeFloat,true));
+    fail |= (true != hlp.CheckConfig("send_timeout",libconfig::Setting::TypeFloat,true));
+    fail |= (true != hlp.CheckConfig("reconnect_delay",libconfig::Setting::TypeFloat,true));
 
 	LOGTRACE(logger, "Check Configuration result: " << !fail);
 	return !fail;
@@ -454,8 +468,10 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		LOGDEBUG(logger, "new state: CMD_DISCONNECTED_WAIT");
 		cmd = new ICommand(CMD_INIT, this);
 		timespec ts;
-		ts.tv_sec = 15;
-		ts.tv_nsec = 0;
+		float fraction, intpart;
+		fraction = modf(_cfg_reconnectdelay_s, &intpart);
+		ts.tv_sec = (long) intpart;
+		ts.tv_nsec =  (long) (fraction*1E9);
 		Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
 		break;
 	}
@@ -471,6 +487,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		LOGDEBUG(logger, "new state: CMD_INIT");
 
 		cmd = new ICommand(CMD_WAIT4CONNECTION, this);
+		cmd->addData(ICONN_TOKEN_TIMEOUT,((long)_cfg_connection_timeout_ms));
 		connection->Connect(cmd);
 		break;
 
@@ -544,6 +561,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 
 		cmd = new ICommand(CMD_WAIT_SENT, this);
 		cmd->addData(ICONN_TOKEN_SEND_STRING, commstring);
+		cmd->addData(ICONN_TOKEN_TIMEOUT,((long)_cfg_send_timeout_ms));
 		connection->Send(cmd);
 	}
 		break;
@@ -571,7 +589,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
             break;
 		}
 
-        // record deadline
+        // record deadline after confirmation that request has been sent.
         _deadline_receive = boost::posix_time::microsec_clock::universal_time()
             + boost::posix_time::milliseconds(_cfg_response_timeout_ms*1000.0);
 

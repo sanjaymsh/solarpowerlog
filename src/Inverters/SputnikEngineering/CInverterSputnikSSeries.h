@@ -138,6 +138,15 @@ private:
     /// Configuration Cache: Timeout for telegramm, unit is ms
     float _cfg_response_timeout_ms;
 
+    /// Configuration Cache: Timeout to establish a connection, unit ms
+    float _cfg_connection_timeout_ms;
+
+    /// Configuration Cache: Timeout to send a telegramm, unit ms
+    float _cfg_send_timeout_ms;
+
+    /// Configuration Cache: Reconnect delay, unit s
+    float _cfg_reconnectdelay_s;
+
     /// cache for inverters comm adr.
     unsigned int _cfg_commadr;
     /// cache for own adr

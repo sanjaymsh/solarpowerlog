@@ -171,6 +171,15 @@ void CConnectTCPAsio::Receive( ICommand *callback )
 	PushWork(commando);
 }
 
+bool CConnectTCPAsio::Accept(ICommand *callback)
+{
+    assert(callback); // does not support sync operation!
+    CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::ACCEPT,
+            callback);
+    PushWork(commando);
+    return true;
+}
+
 bool CConnectTCPAsio::IsConnected( void )
 {
 	if (!this->sockt) return false;
@@ -199,6 +208,12 @@ bool CConnectTCPAsio::CheckConfig( void )
         fail |= !cfghelper.CheckConfig("tcpport", libconfig::Setting::TypeString);
         fail |= !cfghelper.CheckConfig("tcptimeout", libconfig::Setting::TypeInt,
                 false);
+
+        if (cfghelper.CheckConfig("tcptimeout", libconfig::Setting::TypeInt,
+                true,false)) {
+            LOGWARN(logger,"Tcptimeout configuration parameter has changed and might not work anymore! It will be removed soon.");
+            LOGWARN(logger,"Timeouts are now configured in the inverter class, see documentation.");
+        }
 	}
 
 	if (!fail) {
@@ -336,16 +351,18 @@ void CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 #warning rework: Should be only needed from the configuration, as the \
 	calling object needs not be aware of these issues (should be transparent)
 
-	try {
-		timeout = boost::any_cast<long>(cmd->callback->findData(
-				ICONN_TOKEN_TIMEOUT));
-	} catch (std::invalid_argument &e) {
-		cfghelper.GetConfig("tcptimeout", timeout, TCP_ASIO_DEFAULT_TIMEOUT);
-	} catch (boost::bad_any_cast &e) {
-		LOGDEBUG(logger,
-				"BUG: Handling Connect: Bad cast for " << ICONN_TOKEN_TIMEOUT);
-		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
-	}
+    try {
+        timeout = boost::any_cast<long>(
+            cmd->callback->findData(
+                                    ICONN_TOKEN_TIMEOUT));
+    } catch (std::invalid_argument &e) {
+        cfghelper.GetConfig("tcptimeout", timeout, TCP_ASIO_DEFAULT_TIMEOUT);
+        LOGDEBUG(logger, "Depreciated fallback to tcptimeout");
+    } catch (boost::bad_any_cast &e) {
+        LOGDEBUG(logger, "BUG: Handling Connect: Bad cast for "
+                 << ICONN_TOKEN_TIMEOUT);
+        timeout = TCP_ASIO_DEFAULT_TIMEOUT;
+    }
 
 	cfghelper.GetConfig("tcpadr", strhost);
 	cfghelper.GetConfig("tcpport", port);
@@ -458,14 +475,15 @@ void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 	// timeout setup
 
 	try {
-		timeout = boost::any_cast<unsigned long>(
+		timeout = boost::any_cast<long>(
 				cmd->callback->findData(ICONN_TOKEN_TIMEOUT));
 	} catch (std::invalid_argument &e) {
 		CConfigHelper cfghelper(ConfigurationPath);
 		cfghelper.GetConfig("tcptimeout", timeout, TCP_ASIO_DEFAULT_TIMEOUT);
+        LOGDEBUG(logger, "Depreciated fallback to tcptimeout");
 	} catch (boost::bad_any_cast &e) {
 		LOGDEBUG(logger,
-				"Unexpected exception in HandleReceive: Bad cast" << e.what());
+				"Unexpected exception in HandleReceive: Bad cast " << e.what());
 		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
 	}
 
@@ -588,15 +606,6 @@ void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 	return ;
 }
 
-bool CConnectTCPAsio::Accept(ICommand *callback)
-{
-    assert(callback); // does not support sync operation!
-    CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::ACCEPT,
-            callback);
-    PushWork(commando);
-    return true;
-}
-
 /** handles async sending */
 void CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 
@@ -617,22 +626,23 @@ void CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 	}
 	catch (boost::bad_any_cast &e)
 	{
-		LOGDEBUG(logger, "Unexpected exception in HandleSend: Bad cast" << e.what());
+		LOGDEBUG(logger, "Unexpected exception in HandleSend: Bad cast " << e.what());
 	}
 #else
 	catch (...);
 #endif
 
 	try {
-		timeout = boost::any_cast<unsigned long>(cmd->callback->findData(
+		timeout = boost::any_cast<long>(cmd->callback->findData(
 				ICONN_TOKEN_TIMEOUT));
 	}
 #ifdef DEBUG_TCPASIO
 		catch (std::invalid_argument &e) {
 		CConfigHelper cfghelper(ConfigurationPath);
 		cfghelper.GetConfig("tcptimeout", timeout, 3000UL);
+        LOGDEBUG(logger, "Depreciated fallback to tcptimeout");
 	} catch (boost::bad_any_cast &e) {
-		LOGDEBUG(logger, "Unexpected exception in HandleSend: Bad cast" << e.what());
+		LOGDEBUG(logger, "Unexpected exception in HandleSend: Bad cast " << e.what());
 		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
 	}
 #else

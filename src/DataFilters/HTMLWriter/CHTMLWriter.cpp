@@ -276,18 +276,14 @@ void CHTMLWriter::ExecuteCommand(const ICommand *cmd)
 		break;
 
 	case CMD_CYCLIC:
-	{
-
 		DoCyclicCmd(cmd);
 		ScheduleCyclicEvent(CMD_CYCLIC);
-	}
+	break;
 
 	case CMD_UPDATED:
-	{
 		// prepared for the next version.
 		// "do on update mode"
 		break;
-	}
 	}
 
 }
@@ -393,18 +389,13 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 		// cache the name of the capability
 		std::string templatename = cappair.first.c_str();
 
-//	 LOG_TRACE(logger, "Capability: " << cappair.first << "\tValue: "<< value);
-
-//	 if ( formattermap.find(templatename) != formattermap.end())
-//	 {
-//		 LOG_TRACE(logger, "****");
-//	 }
-
+		//	 LOG_TRACE(logger, "Capability: " << cappair.first << "\tValue: "<< value);
 		// TODO Rip this part into its own function -- this way, we can also do some daisy-chain
 		// formatting: Modify value x to value y, modify value y to value z ....
 
-	// debug code: dump the multimap find results.
+
 #if 0
+		// debug code: dump the multimap find results.
 		for (it = formattermap.find(cappair.first); it != formattermap.end(); it++) {
 
 		LOGTRACE(logger, "***** " << templatename <<": found 1st=" << (*it).first << " 2nd " << (*it).second[0]);
@@ -416,7 +407,7 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 			IFormater *frmt;
 
 			// the multimap returns everything after the first result
-			// so we have to recheck we really want this result.
+			// so we have to recheck if we really want this result.
 			// FIXME the multimap seems not to be best for the task, so maybe
 			// code should be reworked to use another container.
 			if (cappair.first != (*it).first ) break;

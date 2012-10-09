@@ -52,8 +52,8 @@ Copyright (C) 2010-2012 Tobias Frost
 #include "Connections/CAsyncCommand.h"
 
 /// Default timeout for all operations, if not configured
-#define TCP_ASIO_DEFAULT_TIMEOUT (3000UL)
-#define TCP_ASIO_DEFAULT_INTERBYTETIMEOUT (50UL)
+#define SERIAL_ASIO_DEFAULT_TIMEOUT (3000UL)
+#define SERIAL_ASIO_DEFAULT_INTERBYTETIMEOUT (50UL)
 
 using namespace std;
 

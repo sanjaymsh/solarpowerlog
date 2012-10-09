@@ -525,14 +525,14 @@ void CConnectSerialAsio::HandleReceive(CAsyncCommand *cmd)
 
 	// timeout setup
 	try {
-		timeout = boost::any_cast<unsigned long>(cmd->callback->findData(
+		timeout = boost::any_cast<long>(cmd->callback->findData(
 				ICONN_TOKEN_TIMEOUT));
 	} catch (std::invalid_argument &e) {
 		CConfigHelper cfghelper(ConfigurationPath);
-		cfghelper.GetConfig("serial_timeout", timeout, TCP_ASIO_DEFAULT_TIMEOUT);
+		cfghelper.GetConfig("serial_timeout", timeout, SERIAL_ASIO_DEFAULT_TIMEOUT);
 	} catch (boost::bad_any_cast &e) {
 		LOGDEBUG(logger, "Unexpected exception in HandleReceive: Bad cast" << e.what());
-		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
+		timeout = SERIAL_ASIO_DEFAULT_TIMEOUT;
 	}
 
 	deadline_timer timer(*(this->ioservice));
@@ -582,24 +582,25 @@ void CConnectSerialAsio::HandleReceive(CAsyncCommand *cmd)
 	 * remaining bytes. */
 
 	try {
-		timeout = boost::any_cast<unsigned long>(cmd->callback->findData(
+		timeout = boost::any_cast<long>(cmd->callback->findData(
 				ICONN_TOKEN_INTERBYTETIMEOUT));
 	} catch (std::invalid_argument &e) {
 		CConfigHelper cfghelper(ConfigurationPath);
 		cfghelper.GetConfig("serial_interbytetimeout", timeout, 0UL);
 		if (timeout == 0) {
 			// default interbyte timeout is 10 times the time for one byte.
-			// (we allow the inaccurary and assume 10 bits per byte, which is
+			// (we allow the inaccuracy and assume 10 bits per byte, which is
 			// valid for 8N1)
-			// however, we ensure a minimum time of 40 ms.
+			// however, we ensure a minimum time of 50 ms.
 			// (which still might be tough as our OS might idle around for even longer)
 			timeout = (1000 * 10 * 10) / baudrate;
-			if (timeout <= TCP_ASIO_DEFAULT_INTERBYTETIMEOUT) timeout = TCP_ASIO_DEFAULT_INTERBYTETIMEOUT;
+			if (timeout <= SERIAL_ASIO_DEFAULT_INTERBYTETIMEOUT)
+			    timeout = SERIAL_ASIO_DEFAULT_INTERBYTETIMEOUT;
 		}
 
 	} catch (boost::bad_any_cast &e) {
 		LOGDEBUG(logger, "Unexpected exception in HandleReceive: Bad cast" << e.what());
-		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
+		timeout = SERIAL_ASIO_DEFAULT_INTERBYTETIMEOUT;
 	}
 
 	std::string received;
@@ -710,21 +711,21 @@ void CConnectSerialAsio::HandleSend(CAsyncCommand *cmd)
 #endif
 
 	try {
-		timeout = boost::any_cast<unsigned long>(cmd->callback->findData(
+		timeout = boost::any_cast<long>(cmd->callback->findData(
 				ICONN_TOKEN_TIMEOUT));
 	}
 #ifdef DEBUG_SERIALASIO
 	catch (std::invalid_argument &e) {
 		CConfigHelper cfghelper(ConfigurationPath);
-		cfghelper.GetConfig("tcptimeout", timeout, 3000UL);
+		cfghelper.GetConfig("serial_timeout", timeout, SERIAL_ASIO_DEFAULT_TIMEOUT);
 	} catch (boost::bad_any_cast &e) {
 		LOGDEBUG(logger, "Unexpected exception in HandleSend: Bad cast" << e.what());
-		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
+		timeout = SERIAL_ASIO_DEFAULT_TIMEOUT;
 	}
 #else
 	catch (...) {
 		CConfigHelper cfghelper(ConfigurationPath);
-		cfghelper.GetConfig("tcptimeout", timeout, 3000UL);
+		cfghelper.GetConfig("tcptimeout", timeout, SERIAL_ASIO_DEFAULT_TIMEOUT);
 	}
 #endif
 

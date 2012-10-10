@@ -79,7 +79,7 @@ public:
 
 	virtual void SetupLogger(const string& parentlogger, const string & = "")
 	{
-		IConnect::SetupLogger(parentlogger, "Comms_TCP_ASIO");
+		IConnect::SetupLogger(parentlogger, "Comms_Serial_ASIO");
 	}
 
 	virtual void Send(ICommand *callback);
@@ -96,11 +96,11 @@ private:
 	boost::asio::io_service *ioservice;
 	boost::asio::serial_port *port;
 
-	char characterlen;
-	boost::asio::serial_port_base::parity parity;
-	boost::asio::serial_port_base::stop_bits stopbits;
-	boost::asio::serial_port_base::flow_control flowctrl;
-	unsigned int baudrate;
+	char _cfg_characterlen;
+	boost::asio::serial_port_base::parity _cfg_parity;
+	boost::asio::serial_port_base::stop_bits _cfg_stopbits;
+	boost::asio::serial_port_base::flow_control _cfg_flowctrl;
+	unsigned int _cfg_baudrate;
 
 	virtual void _main(void);
 

@@ -368,8 +368,9 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 
         LOGDEBUG(logger, "new state: CMD_SIM_INIT");
 
-        cmd = new ICommand(CMD_SIM_CONNECTED, this);
         if (connection->IsConnected()) connection->Disconnect(NULL);
+
+        cmd = new ICommand(CMD_SIM_CONNECTED, this);
         connection->Accept(cmd);
         break;
 	}
@@ -397,14 +398,11 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 			}
 
 			cmd = new ICommand(CMD_SIM_INIT, this);
-	        timespec ts;
-	        ts.tv_sec = 15;
-	        ts.tv_nsec = 0;
-			Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
+			Registry::GetMainScheduler()->ScheduleWork(cmd);
 			break;
 		} else {
 	        cmd = new ICommand(CMD_SIM_EVALUATE_RECEIVE, this);
-	        cmd->addData(ICONN_TOKEN_TIMEOUT,(unsigned long)3600*1000);
+	        cmd->addData(ICONN_TOKEN_TIMEOUT,(long)3600*1000);
 	        connection->Receive(cmd);
 	        LOGINFO(logger,"Simulator connected.");
 		}
@@ -465,6 +463,7 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 		s = parsereceivedstring(s);
 		LOGTRACE(logger, "Response :" << s << "len: " << s.size());
 		cmd = new ICommand(CMD_SIM_WAIT_SENT,this);
+		cmd->addData(ICONN_TOKEN_TIMEOUT,(long)3000);
 		cmd->addData(ICONN_TOKEN_SEND_STRING, s);
 		connection->Send(cmd);
 	}
@@ -490,7 +489,7 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
         }
 
         cmd = new ICommand(CMD_SIM_EVALUATE_RECEIVE, this);
-        cmd->addData(ICONN_TOKEN_TIMEOUT, (unsigned long) 3600 * 1000);
+        cmd->addData(ICONN_TOKEN_TIMEOUT, (long) 3600 * 1000);
         connection->Receive(cmd);
         break;
         }
@@ -543,7 +542,7 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
             break;
         } else {
             cmd = new ICommand(CMD_CTRL_PARSERECEIVE, this);
-            cmd->addData(ICONN_TOKEN_TIMEOUT,(unsigned long)3600*1000);
+            cmd->addData(ICONN_TOKEN_TIMEOUT,(long)3600*1000);
             ctrlserver->Receive(cmd);
             break;
         }
@@ -604,6 +603,7 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
         s = parsereceivedstring_ctrlserver(s);
         LOGTRACE(logger, "Response (ctrl-server):" << s << "len: " << s.size());
         cmd = new ICommand(CMD_CTRL_WAIT_SENT,this);
+        cmd->addData(ICONN_TOKEN_TIMEOUT,((long)3000));
         cmd->addData(ICONN_TOKEN_SEND_STRING, s);
         ctrlserver->Send(cmd);
         break;

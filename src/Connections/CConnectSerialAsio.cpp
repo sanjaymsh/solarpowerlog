@@ -213,7 +213,7 @@ bool CConnectSerialAsio::CheckConfig(void)
         true);
 
     if (cfghelper.CheckConfig("serial_timeout", libconfig::Setting::TypeInt)) {
-        LOGDEBUG(logger, " Parameter serial_timeout depreciated.");
+        LOGWARN(logger, " Parameter serial_timeout is depreciated.");
     }
 
     fail |= !cfghelper.CheckConfig("serial_interbytetimeout",

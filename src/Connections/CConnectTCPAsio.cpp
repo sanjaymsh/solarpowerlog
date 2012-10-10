@@ -454,16 +454,15 @@ static void boosthelper_set_result( int* store, int value )
 /** Handle Receive -- asynchronous read from the asio socket with timeout.
  *
  * Strategy:
- * -- get timeout config from configuration
- * -- spawn timer with timeoput setting
- * -- run timer in background (async)
- * -- setup async read operation of one byte (to detect incoming comms)
- * -- check if we got byte or timeout
- * -- if got the byte, try to read all available bytes
+ * -- get timeout config from caller or configuration (depreciated)
+ *    -- spawn timer with timeout setting in background
+ *    -- run timer in background (async)
+ * -- setup async read operation of one byte (to detect incoming communication)
+ * -- check if we got a byte or timeout
+ * -- if got the byte, try to read all available bytes (ASIO tells us how many
+ *    are pending)
  * -- if got the timer, cancel socket read and return error.
- *
- * HandleReceive expects a std::string in CAsyncCommand->auxData.
- */
+*/
 void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 {
 	boost::system::error_code ec, handlerec;
@@ -472,8 +471,8 @@ void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 	unsigned long timeout = 0;
 	char buf[2];
 	struct asyncASIOCompletionHandler read_handler(&bytes, &handlerec);
-	// timeout setup
 
+	// timeout setup
 	try {
 		timeout = boost::any_cast<long>(
 				cmd->callback->findData(ICONN_TOKEN_TIMEOUT));
@@ -521,21 +520,23 @@ void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 		num = ioservice->run_one(ec);
 	} while (maxsleep != 0 && !result_timer && 0 == *(read_handler.bytes));
 
-    if (num == 0) {
-		LOGDEBUG(logger, "HandleReceive: IO Service error: " << ec.message());
-	}
-
 	// ioservice error or timeout
-	if (num == 0 || result_timer) {
-		timer.cancel(ec);
-		sockt->cancel(ec);
-		LOGTRACE(logger,"Async read timeout");
-		cmd->callback->addData(ICMD_ERRNO_STR, std::string("Read timeout"));
-		cmd->callback->addData(ICMD_ERRNO, -ETIMEDOUT);
-		cmd->HandleCompletion();
-		ioservice->poll();
-		return ;
-	}
+    if (num == 0 || result_timer) {
+        if (result_timer) {
+            LOGTRACE(logger, "Read timeout");
+            cmd->callback->addData(ICMD_ERRNO_STR, std::string("Read timeout"));
+            cmd->callback->addData(ICMD_ERRNO, -ETIMEDOUT);
+        } else {
+            LOGTRACE(logger, "IO Service error: " << ec.message());
+            cmd->callback->addData(ICMD_ERRNO_STR, std::string("IO-service error " + ec.message()));
+            cmd->callback->addData(ICMD_ERRNO, -EIO);
+        }
+        cmd->HandleCompletion();
+        timer.cancel(ec);
+        sockt->cancel(ec);
+        ioservice->poll();
+        return;
+    }
 
 	timer.cancel();
 	ioservice->poll(ec);

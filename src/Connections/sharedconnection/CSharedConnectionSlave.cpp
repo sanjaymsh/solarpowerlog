@@ -78,10 +78,13 @@ void CSharedConnectionSlave::Receive(ICommand *callback)
 {
 	assert(master);
 
+    // Oct-2012:
+    // Timeouts are supposed inserted by the inverters logic,
+    // so this logic can and will go.
+#if 0
 	// If there is no timeout specified in the callback, derive it from
 	// the configuration or default. (The master does not have access to the
 	// slaves configuration, so we have to make it sure here...)
-#warning configuration parameter: check in configcheck() and documentation missing
 
 	unsigned long timeout = 0;
 
@@ -95,7 +98,7 @@ void CSharedConnectionSlave::Receive(ICommand *callback)
 			callback->addData(ICONN_TOKEN_TIMEOUT, timeout);
 		}
 	}
-
+#endif
 	// Now, tell the master to do the job.
 	// (The master will add the timestamp for timeout handling for us....)
 	master->Receive(callback);
@@ -112,7 +115,10 @@ bool CSharedConnectionSlave::CheckConfig(void)
 	fail |= !cfg.CheckConfig("useconnection", libconfig::Setting::TypeString,
 			false);
 
+#if 0
+	// obsolete, see Receive()
 	fail |= !cfg.CheckConfig("timeout", libconfig::Setting::TypeInt, true);
+#endif
 
 	if (fail)
 		return false;

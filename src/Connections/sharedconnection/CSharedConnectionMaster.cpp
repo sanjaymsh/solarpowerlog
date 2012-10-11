@@ -72,7 +72,7 @@ enum
  *            execeuted when all "receives" are indeed completed
  *            b) as a, but only for receive handling completion... If receiving, all other
  *            commands are delayed until timeouts occures.
- *            b) ignore for now...
+ *            c) ignore for now...
  *
  *
  *
@@ -160,7 +160,7 @@ void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
 			}
 		}
 
-		// Saftey: Check is list is empty... (Should not happen here anyway)
+		// Safety: Check is list is empty... (Should not happen here anyway)
 		if (readcommands.empty())
 			readtimeout = boost::posix_time::not_a_date_time;
 
@@ -365,7 +365,6 @@ void CSharedConnectionMaster::Receive(ICommand *callback)
 
 bool CSharedConnectionMaster::CheckConfig(void)
 {
-
 	// Get real configuration path to extract target comms config.
 	string commsconfig = this->ConfigurationPath + ".realcomms";
 	string s;
@@ -376,6 +375,11 @@ bool CSharedConnectionMaster::CheckConfig(void)
 		return false;
 	}
 
+	// Shared comms are a hack,
+	LOGWARN(logger,"Shared comminucation is unstable and should be the last resort only");
+	LOGWARN(logger,"Prefer individual communication objects.");
+	LOGWARN(logger,"Please give feedback if you use this communication method.");
+
 	connection = IConnectFactory::Factory(commsconfig);
 
 	// connection always valid -- the factory returns a dummy
@@ -384,6 +388,7 @@ bool CSharedConnectionMaster::CheckConfig(void)
 		connection->SetupLogger(ConfigurationPath,"realcomms");
 		return connection->CheckConfig();
 	}
+	return false;
 }
 
 bool CSharedConnectionMaster::IsConnected(void)

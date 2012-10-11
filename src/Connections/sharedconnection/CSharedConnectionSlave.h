@@ -18,15 +18,20 @@ Copyright (C) 2010-2012 Tobias Frost
 
  ----------------------------------------------------------------------------
  */
-/*
- * CSharedConnectionMaster.h
+/** \file CConnectSlave.h
+ *
+ * This is the slave object for the Shared Communication.Please see the
+ * CSharedConnection class for documentation...
+ *
+ * (In few words, this will will proxy requests over to amaster object
+ * which then will do the comms)
  *
  *  Created on: Sep 13, 2010
- *      Author: tobi
+ *      Author: coldtobi
  */
 
-#ifndef CSHAREDCONNECTIONMASTER_H_
-#define CSHAREDCONNECTIONMASTER_H_
+#ifndef CCONNECTSLAVE_H_
+#define CCONNECTSLAVE_H_
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -35,44 +40,22 @@ Copyright (C) 2010-2012 Tobias Frost
 
 #ifdef HAVE_COMMS_SHAREDCONNECTION
 
-#include <list>
-#include <semaphore.h>
+#include "Connections/interfaces/IConnect.h"
+#include "CSharedConnectionMaster.h"
 
-#include "interfaces/IConnect.h"
-#include "Connections/CAsyncCommand.h"
-#include "patterns/ICommandTarget.h"
-#include "patterns/ICommand.h"
-#include "CSharedConnectionSlave.h"
-
-
-// Token inserted by this or the slave class to specify individual timeouts.
-// At this timestamp, the command can be considered timed-out.
-#define ICONNECT_TOKEN_TIMEOUTTIMESTAMP "CSharedConnection_Timeout"
-
-#define ICONNECT_TOKEN_PRV_ORIGINALCOMMAND "CSharedConnection_OrgiginalWork"
-
-#define SHARED_CONN_MASTER_DEFAULTTIMEOUT (3000UL)
-
-class CSharedConnectionMaster: public IConnect, ICommandTarget
+class CSharedConnectionSlave: public IConnect
 {
-
 protected:
 	friend class CSharedConnection;
-	friend class CSharedConnectionSlave;
-	CSharedConnectionMaster(const string & configurationname);
-
+	CSharedConnectionSlave(const string & configurationname);
 public:
-	virtual ~CSharedConnectionMaster();
-
-	void ExecuteCommand(const ICommand *Command);
+	virtual ~CSharedConnectionSlave();
 
 protected:
 
 	virtual void Connect(ICommand *callback);
 
 	virtual void Disconnect(ICommand *callback);
-
-	virtual void SetupLogger(const string& parentlogger, const string & = "");
 
 	virtual void Send(ICommand *cmd);
 
@@ -84,16 +67,12 @@ protected:
 
     virtual bool AbortAll();
 
+
 private:
-	IConnect *connection;
-
-	list<ICommand*> readcommands;
-
-	// When is the current receive scheduled to timeout?
-	boost::posix_time::ptime readtimeout;
+	class CSharedConnection *master;
 
 };
 
 #endif
 
-#endif /* CSHAREDCONNECTIONMASTER_H_ */
+#endif /* CCONNECTSLAVE_H_ */

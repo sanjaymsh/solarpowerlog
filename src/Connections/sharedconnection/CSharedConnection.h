@@ -61,7 +61,7 @@ Copyright (C) 2010-2012 Tobias Frost
 #ifdef HAVE_COMMS_SHAREDCONNECTION
 
 #include <assert.h>
-#include "interfaces/IConnect.h"
+#include "Connections/interfaces/IConnect.h"
 
 class CSharedConnection: public IConnect
 {

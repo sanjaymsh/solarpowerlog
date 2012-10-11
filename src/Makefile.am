@@ -27,8 +27,10 @@ DataFilters/interfaces/IDataFilter.cpp DataFilters/CDumpOutputFilter.cpp \
 DataFilters/CCSVOutputFilter.cpp DataFilters/HTMLWriter/CHTMLWriter.cpp \
 configuration/Registry.cpp configuration/ILogger.cpp \
 Connections/CAsyncCommand.cpp Connections/CConnectDummy.cpp \
-Connections/CSharedConnection.cpp Connections/CSharedConnectionMaster.cpp \
-Connections/CSharedConnectionSlave.cpp Connections/CConnectSerialAsio.cpp \
+Connections/sharedconnection/CSharedConnection.cpp \
+Connections/sharedconnection/CSharedConnectionMaster.cpp \
+Connections/sharedconnection/CSharedConnectionSlave.cpp \
+Connections/CConnectSerialAsio.cpp \
 Connections/factories/IConnectFactory.cpp Connections/CConnectTCPAsio.cpp \
 solarpowerlog.cpp daemon.cpp \
 Inverters/SputnikEngineering/CInverterFactorySputnik.cpp \
@@ -65,8 +67,10 @@ DataFilters/interfaces/IDataFilter.h DataFilters/CDumpOutputFilter.h \
 DataFilters/CCSVOutputFilter.h DataFilters/HTMLWriter/CHTMLWriter.h \
 configuration/Registry.h configuration/ILogger.h \
 Connections/CAsyncCommand.h Connections/CConnectDummy.h \
-Connections/CSharedConnection.h Connections/CSharedConnectionMaster.h \
-Connections/CSharedConnectionSlave.h Connections/CConnectSerialAsio.h \
+Connections/sharedconnection/CSharedConnection.h \
+Connections/sharedconnection/CSharedConnectionMaster.h \
+Connections/sharedconnection/CSharedConnectionSlave.h \
+Connections/CConnectSerialAsio.h \
 Connections/factories/IConnectFactory.h Connections/CConnectTCPAsio.h \
 Inverters/SputnikEngineering/CInverterFactorySputnik.h \
 Inverters/SputnikEngineering/CInverterSputnikSSeries.h \

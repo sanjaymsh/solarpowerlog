@@ -114,9 +114,6 @@ private:
 	 */
 	bool PushWork( CAsyncCommand *cmd );
 
-	/// cancel all current work.
-	//void CancelWork( void );
-
 	/** Handle "Connect-Command"
 	 *
 	 * Connects to the configured target.

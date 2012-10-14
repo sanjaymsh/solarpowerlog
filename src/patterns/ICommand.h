@@ -72,6 +72,12 @@ class ICommandTarget;
  * to check for completion, etc...
  *
  * NOTE: The one that calls execute should delete the object afterwards!
+ * (like CWorkScheduler does...)
+ *
+ * \note New from Oct 2012: "Fire-and-forget"-ICommands. This are commands whose
+ * ICommandTarget is NULL. They will be be answered, just deleted...
+ * Purpose is to allow calls to subsystems which takes ICommands as callbacks
+ * (like the IConnect ones) when the actual callback is unimportant.
  *
  */
 class ICommand

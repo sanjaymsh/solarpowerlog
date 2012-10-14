@@ -56,8 +56,9 @@ ICommand::~ICommand()
 /** Delegate the command to the one that should do the work */
 void ICommand::execute()
 {
-	assert(trgt);
-	trgt->ExecuteCommand(this);
+    // Allow also "fire-and-forget" commmands which will be done but never a
+    // callback issued.
+	if (trgt) trgt->ExecuteCommand(this);
 }
 
 /** Getter for the private cmd field (field is for Commandees use) */

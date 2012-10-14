@@ -133,13 +133,18 @@ ICommand *CWorkScheduler::getnextcmd( void )
 }
 
 bool CWorkScheduler::ScheduleWork(ICommand *Command, bool tryonly) {
-    // assert if either it as broadcast event with target!=NULL or if not an
-    // broadcast event with the target equal NULL.
-    assert(
-        (Command->getCmd() > BasicCommands::CMD_BROADCAST_MAX
-            && NULL != Command->getTrgt()) ||
-        (Command->getCmd() <= BasicCommands::CMD_BROADCAST_MAX
-            && 0 == Command->getTrgt()));
+    // assert if a broadcast event has a ITarget set. (This indicates a bug)
+    //LOGERROR(Registry::GetMainLogger(),"cmd=" <<Command->getCmd() << " trgt="<< Command->getTrgt());
+
+    assert( !(( Command->getCmd() <= BasicCommands::CMD_BROADCAST_MAX
+        && Command->getTrgt())));
+
+    if( Command->getCmd() >= BasicCommands::CMD_BROADCAST_MAX &&
+        !Command->getTrgt()) {
+       // Fire-and-Forget commmand. Just delete it.
+        delete Command;
+        return true;
+    }
 
     if (tryonly) {
         if (!mut.try_lock()) return false;
@@ -159,13 +164,16 @@ bool CWorkScheduler::ScheduleWork(ICommand *Command, bool tryonly) {
 }
 
 void CWorkScheduler::ScheduleWork(ICommand *Command, struct timespec ts) {
-    // assert if either it as broadcast event with target!=NULL or if not an
-    // broadcast event with the target equal NULL.
-    assert(
-        (Command->getCmd() > BasicCommands::CMD_BROADCAST_MAX
-            && NULL != Command->getTrgt()) ||
-        (Command->getCmd() <= BasicCommands::CMD_BROADCAST_MAX
-            && 0 == Command->getTrgt()));
+    // assert if a broadcast event has a ITarget set. (This indicates a bug)
+    assert( !(( Command->getCmd() <= BasicCommands::CMD_BROADCAST_MAX
+        && Command->getTrgt())));
+
+    if( Command->getCmd() >= BasicCommands::CMD_BROADCAST_MAX &&
+        !Command->getTrgt()) {
+       // Fire-and-Forget commmand. Just delete it.
+        delete Command;
+        return;
+    }
 
     works_timed_scheduled++;
     timedwork->ScheduleWork(Command, ts);

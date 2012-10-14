@@ -204,12 +204,11 @@ public:
 	/// (if supported by the underlying transport mechanism.)
 	/// \param cmd callback object to be used after completion.
 	/// \note cmd must be provided (non-NULL)
-	/// \returns false if Accept is not supported.
-	/// \sa CanAccept
+	/// \sa CanAccept()
 	/// \warning If you use Accept() and Connect() on the same object,
 	/// the behavior is undefined.
-	virtual bool Accept(ICommand */*cmd*/) {
-	    return false;
+	virtual void Accept(ICommand */*cmd*/) {
+	    return;
 	}
 
 	/// Abort all pending commands

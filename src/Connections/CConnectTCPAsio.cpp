@@ -171,13 +171,12 @@ void CConnectTCPAsio::Receive( ICommand *callback )
 	PushWork(commando);
 }
 
-bool CConnectTCPAsio::Accept(ICommand *callback)
+void CConnectTCPAsio::Accept(ICommand *callback)
 {
     assert(callback); // does not support sync operation!
     CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::ACCEPT,
             callback);
     PushWork(commando);
-    return true;
 }
 
 bool CConnectTCPAsio::IsConnected( void )

@@ -84,7 +84,7 @@ public:
 
 	virtual bool IsConnected( void );
 
-	virtual bool Accept(ICommand *cmd);
+	virtual void Accept(ICommand *cmd);
 
 	virtual bool CanAccept()
     {

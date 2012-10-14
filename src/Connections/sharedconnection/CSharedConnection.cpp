@@ -19,12 +19,12 @@ Copyright (C) 2010-2012 Tobias Frost
  ----------------------------------------------------------------------------
  */
 
-/*
- * CSharedConnection.cpp
+/** \file CSharedConnection.cpp
  *
  *  Created on: Sep 12, 2010
  *      Author: tobi
- */
+ *
+*/
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -98,7 +98,6 @@ bool CSharedConnection::CheckConfig(void)
 		LOGERROR(logger,"Configuration Error: Sharedconnection_type must be master or slave.");
 		return false;
 	}
-
 
 	if (fail)
 		return false;

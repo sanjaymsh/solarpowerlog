@@ -1,24 +1,23 @@
 /* ----------------------------------------------------------------------------
  solarpowerlog -- photovoltaic data logging
 
-Copyright (C) 2010-2012 Tobias Frost
+ Copyright (C) 2010-2012 Tobias Frost
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
  ----------------------------------------------------------------------------
  */
-
 
 /*
  * CSharedConnectionMaster.cpp
@@ -41,366 +40,386 @@ Copyright (C) 2010-2012 Tobias Frost
 
 #include <boost/date_time.hpp>
 #include "configuration/CConfigHelper.h"
+#include "interfaces/CMutexHelper.h"
+#include "CSharedConnection.h"
+#include "patterns/ICommand.h"
+
+#define STATUS_CONNECTED (1<<0)
+
+#define ICONN_SHAREDCOMMS_APIID "ICONN_CSC_APIID"
 
 enum
 {
-	CMD_READ, CMD_CHECKTIMEOUTS,
+    CMD_HANDLEENDOFBLOCK = BasicCommands::CMD_USER_MIN
 };
 
-// THOUGHTS:
-/*
- * Problems to solve:
- * TIMEOUTs
- *    * slaves has to keep track of its timeouts, as the dispatched call to
- *      the master can timeout before/afterwards
- *
- *          - master keeps track of all timeouts,
- *          - the slaves add the information required
- *            for the timeouts to the command, if they are not present.
- *          - master tracks the timeout horizon for all icommands, and if timeout
- *            is met before a receive is completed, the receive fails.
- *          - if the "real connection object" receive times out, it is checked
- *            if others are not yet timed out, therefore requesting another receive
- *            with the remaining timeout time.
- *
- *            PROBLEM: Intercommand races. As FIFO for comm is used, it could be that
- *            a receive command and its resume could be not adjacent in the queue,
- *            but interrupted with a "send", for example.
- *
- *            SOLUTION: a) Needing a command queue in the master which will timestamp
- *            the commands received and makes sure that the next commmand is only
- *            execeuted when all "receives" are indeed completed
- *            b) as a, but only for receive handling completion... If receiving, all other
- *            commands are delayed until timeouts occures.
- *            c) ignore for now...
- *
- *
- *
- * CONNECT/DISCONNECT
- *    * Masters/Slaves might want to disconnect/connect according to their logic,
- *      but constant disconnection/connection might jeopadize everything.
- *
- *
- *
- *
- * old:
- * - the master talks to the real connection class
- * - (the first version) will just do a FIFO in comms, so getting the
- *   requests from the inverter, adding them to an internal list and
- *   then propagate them to the comms object, acting as a negotiater.
- * - it cannot just add them to the targets comms queue, as receive events
- *   might impose race conditions so that a answer would be routed to a wrong
- *   destiation or a message would be concentreated so that a inverter gets its
- *   own and a foreign one (or in the other sequence)
- *   Another issue is that there might be inverters that do not need an question
- *   to answer, but keep talking without request. The Connection class could and
- *   should not have logic to sort them apart.
- *   This is solved that all inverters currently waiting for receiption will
- *   get the answer and as they have the knowledge about the telegramms, they
- *   easily can sort out the other telegrams.
- *
- * */
-
 CSharedConnectionMaster::CSharedConnectionMaster(
-		const string & configurationname) :
-	IConnect(configurationname)
+    const string & configurationname) :
+    IConnect(configurationname)
 {
-	connection = NULL;
+    connection = NULL;
+    last_atomic_cmd = NULL;
+    ticket_cnt = active_ticket = 0;
+    ownslave = new CSharedConnectionSlave(configurationname);
+    ownslave->setMaster(this);
+
 }
 
 CSharedConnectionMaster::~CSharedConnectionMaster()
 {
-	if (connection)
-		delete connection;
+    if (connection) delete connection;
+    delete ownslave;
 }
+
+void CSharedConnectionMaster::SetupLogger(const string& parentlogger,
+    const string &)
+{
+    IConnect::SetupLogger(parentlogger, "");
+    if (connection) connection->SetupLogger(parentlogger, "");
+    ownslave->SetupLogger(parentlogger);
+}
+
 
 void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
 {
+    // handling end of atomic blocks and issuing pending commands.
+    switch (Command->getCmd()) {
+        case CMD_HANDLEENDOFBLOCK: {
+            // ok, we've got signalled that the last atomic block command has
+            // just been finished.
+            // redirect the answer and clean up our stats.
+            CMutexAutoLock m(&mutex); // mutex is needed....
+            LOGDEBUG(logger, "Ending Ticket " << active_ticket );
+            assert(last_atomic_cmd);
+            last_atomic_cmd->mergeData(*Command);
+            Registry::GetMainScheduler()->ScheduleWork(last_atomic_cmd);
+            last_atomic_cmd = NULL;
+            active_ticket = 0;
 
-//	Command->DumpData(logger);
+            // answer redirected, now lets check for pending work.
+            // first the "non-atomic-ones"
+            // they can just be queued to the comms object
+
+            LOGDEBUG(logger,"non-atomic-backlog:" << non_atomic_icommands_pending.size());
+
+            while (non_atomic_icommands_pending.size()) {
+                ICommand *cmd = non_atomic_icommands_pending.front();
+                non_atomic_icommands_pending.pop();
+                ICommandDispatcher(cmd);
+             }
+
+            LOGDEBUG(logger,"atomic-backlog (blocks):" << atomic_icommands_pending.size());
+
+            // after giving the non-atomic priority, lets resume atomic operation.
+            // we can also queue the next atomic block completly, but we need
+            // again to catch the cmd completing the block.
+            // as std::maps are ordered, we can just "pop" the first item#
+            if (atomic_icommands_pending.size()) {
+                ICommand *cmd;
+                std::map<long, std::queue<ICommand*> >::iterator it =
+                    atomic_icommands_pending.begin();
+                active_ticket = it->first;
+                std::queue<ICommand *> *q = &(it->second); // Convenience only :)
+                while (q->size() > 1) {
+                    cmd = q->front();
+                    q->pop();
+                    ICommandDispatcher(cmd);
+                }
 
 
-	switch (Command->getCmd())
-	{
+                // now we have one left in the queue, but this could be one
+                // finishing the queue (then we need to intercept the result)
+                // or it just one block in the middle of the atomic block
+                // in this case we can just submit the command to the comms.
+                assert(q->size() == 1);
+                cmd = q->front();
+                bool end_of_block = !boost::any_cast<bool>(
+                    cmd->findData(ICONN_ATOMIC_COMMS));
 
-	// A receive command has been issued with a shorter timeout than
-	// the current read command.
-	// So it could be that we need to time-out something....
-	case CMD_CHECKTIMEOUTS:
-	{
-		boost::posix_time::ptime now(
-				boost::posix_time::microsec_clock::local_time());
+                if (end_of_block) {
+                    ICommand *newcmd = new ICommand(CMD_HANDLEENDOFBLOCK, this);
+                    newcmd->mergeData(*cmd);
+                    last_atomic_cmd = cmd;
+                    cmd->RemoveData(); // free up some memory, data not needed.
+                } else {
+                    ICommandDispatcher(cmd);
+                }
 
-		boost::posix_time::ptime timeout;
+                LOGDEBUG(logger, "New Ticket " << active_ticket );
 
-		// check all pending reads for timeout.
-		list<ICommand*>::iterator it = readcommands.begin();
-		while (it != readcommands.end()) {
-			ICommand *trgt = *it;
-			it++; // increment to be sure that we can remove the item after evaluation.
-
-			try {
-				timeout = boost::any_cast<boost::posix_time::ptime>(
-						trgt->findData(ICONNECT_TOKEN_TIMEOUTTIMESTAMP));
-			} catch (std::invalid_argument &e) {
-				LOGDEBUG(logger,"BUG: Required timeout-key not found. " <<
-						__PRETTY_FUNCTION__ << " at " << __LINE__ << " what:" << e.what());
-				timeout = now;
-			} catch (boost::bad_any_cast &e) {
-				LOGDEBUG(logger,"BUG: Bad boost::any-cast at " <<
-						__PRETTY_FUNCTION__ << ", " << __LINE__ << " what:"
-						<< e.what());
-				timeout = now;
-			}
-
-			if (timeout <= now) {
-				trgt->addData(ICMD_ERRNO, -ETIMEDOUT);
-				readcommands.remove(trgt);
-				Registry::GetMainScheduler()->ScheduleWork(trgt);
-			}
-		}
-
-		// Safety: Check is list is empty... (Should not happen here anyway)
-		if (readcommands.empty())
-			readtimeout = boost::posix_time::not_a_date_time;
-
-		break;
-	}
-
-		// A read command issued to the real connection object has returned.
-		// Evaluate its status and if successful return the retrieved object
-		// to all listeners.
-		// On timeouts check if others are waiting for a longer time and re-issue
-		// the receive in this case.
-		// On other errors, inform the callers for error handling.
-	case CMD_READ:
-	{
-		long errorcode;
-
-		try {
-			errorcode = boost::any_cast<int>(Command->findData(ICMD_ERRNO));
-		} catch (std::invalid_argument &e) {
-			LOGDEBUG(logger,"BUG: Required parameter not found." <<
-					__PRETTY_FUNCTION__ << " at " << __LINE__ << " what:" << e.what());
-			errorcode = -EIO;
-
-		} catch (boost::bad_any_cast &e) {
-			LOGDEBUG(logger,"BUG: Required parameter cast failed " <<
-					__PRETTY_FUNCTION__ << " at " << __LINE__ << " what:" << e.what());
-			errorcode = -EIO;
-		}
-
-		if (errorcode != ETIMEDOUT) {
-			// Successful read. Distribute received data to all listeners.
-			list<ICommand*>::iterator it;
-			for (it = readcommands.begin(); it != readcommands.end(); it++) {
-				(*it)->mergeData(*Command);
-				Registry::GetMainScheduler()->ScheduleWork(*it);
-			}
-			readcommands.clear();
-			readtimeout = boost::posix_time::not_a_date_time;
-			break;
-
-		} else /* if (errorcode == ETIMEDOUT) */ {
-			// timeout.
-			// notifiy and calculate the maximum waiting time for the next
-			// receive command.
-
-			boost::posix_time::ptime now(
-					boost::posix_time::microsec_clock::local_time());
-
-			boost::posix_time::ptime timeout;
-
-			boost::posix_time::ptime largest_timeout = now;
-
-			list<ICommand*>::iterator it = readcommands.begin();
-			while (it != readcommands.end()) {
-				ICommand *trgt = *it;
-				it++; // increment to be sure that we can remove the item after evaluation.
-
-				try {
-					timeout = boost::any_cast<boost::posix_time::ptime>(
-							trgt->findData(ICONNECT_TOKEN_TIMEOUTTIMESTAMP));
-				} catch (std::invalid_argument &e) {
-					LOGDEBUG(logger,"BUG: Required timeout-key not found. " <<
-							__PRETTY_FUNCTION__ << " at " << __LINE__ << " what:" << e.what());
-					timeout = now;
-				} catch (boost::bad_any_cast &e) {
-					LOGDEBUG(logger,"BUG: Bad boost::any-cast at " <<
-							__PRETTY_FUNCTION__ << ", " << __LINE__ << " what:"
-							<< e.what());
-					timeout = now;
-				}
-
-				if (largest_timeout < timeout) {
-					largest_timeout = timeout;
-				}
-
-				if (timeout <= now) {
-					trgt->addData(ICMD_ERRNO, -ETIMEDOUT);
-					readcommands.remove(trgt);
-					Registry::GetMainScheduler()->ScheduleWork(trgt);
-				}
-			}
-
-			if (readcommands.empty()) {
-				// If all reads are gone, reset readtimeout.
-				readtimeout = boost::posix_time::not_a_date_time;
-			} else {
-				// Make a copy of the current command to reuse for the next
-				// receive (the lifetime of the current one ends after this
-				// function returns.)
-				// Schedule the largest known timeout, the shorter ones are
-				// handled in the CHECKTIMEOUTs state.
-				ICommand *cmd = new ICommand(*Command);
-				boost::posix_time::time_duration dur = largest_timeout - now;
-				long remainingtimeout = dur.total_milliseconds();
-				cmd->addData(ICONN_TOKEN_TIMEOUT, remainingtimeout);
-				connection->Receive(cmd);
-				readtimeout = largest_timeout;
-			}
-
-		}
-
-		break;
-	}
-	}
-
+                // we do not need to keep this map item anymore.
+                atomic_icommands_pending.erase(it);
+            }
+            break;
+        }
+    }
+#warning fehlt: -> Unterstützung der atomic blocks in den Invertern
+#warning -> callbacks aller commands dürfen nicht mehr NULL sein (diverse Comms updaten)
+#warning -> noch nicht gedebuggt.
+#warning -> (Mindest-Unterstützung) CCommsSharedSlave von non-atomic blöcken (auch hier kann connect/disconect ein problem sein)
+#warning -> Entscheidung wessen Connect/Disconnect weitergereicht wird (alle? nur master? Algo?)
 }
 
 void CSharedConnectionMaster::Connect(ICommand *callback)
 {
-	assert(connection);
-	assert(callback);
-	connection->Connect(callback);
+    ownslave->Connect(callback);
 }
 
 void CSharedConnectionMaster::Disconnect(ICommand *callback)
 {
-	assert(connection);
-	assert(callback);
-	connection->Disconnect(callback);
+    ownslave->Disconnect(callback);
 }
 
-void CSharedConnectionMaster::SetupLogger(const string& parentlogger,
-		const string &)
+void CSharedConnectionMaster::Send(ICommand *callback)
 {
-	IConnect::SetupLogger(parentlogger, "");
-
-	if (connection)
-		connection->SetupLogger(parentlogger, "");
-}
-
-void CSharedConnectionMaster::Send(ICommand *callback) {
-	assert(callback);
-	assert(connection);
-	connection->Send(callback);
+    ownslave->Send(callback);
 }
 
 void CSharedConnectionMaster::Receive(ICommand *callback)
 {
-	assert(callback);
+    ownslave->Receive(callback);
+}
 
-#warning need we to hold a mutex here?
+void CSharedConnectionMaster::Accept(ICommand* callback)
+{
+    ownslave->Accept(callback);
+}
 
-	// Save command for later interpretation.
-	readcommands.push_back(callback);
-
-	boost::posix_time::ptime timestamp(
-			boost::posix_time::microsec_clock::local_time());
-
-	// Add a timestamp for the timeout handling, if it is not already there
-	try {
-		// just check if it is there.
-		timestamp = boost::any_cast<boost::posix_time::ptime>(
-				callback->findData(ICONNECT_TOKEN_TIMEOUTTIMESTAMP));
-	} catch (...) {
-		// Apparently not, or the caller did not add an ptime....
-		// get timeout from config and calculate the timestamp.
-		// for now, we can only use our config, as this is the best knowledge
-		// we have, (otherwise we have a default configuration....)
-
-		unsigned long timeout;
-
-		try {
-			timeout = boost::any_cast<long>(callback->findData(
-					ICONN_TOKEN_TIMEOUT));
-		} catch (...) {
-			CConfigHelper cfg(ConfigurationPath);
-			cfg.GetConfig("timeout", timeout, SHARED_CONN_MASTER_DEFAULTTIMEOUT);
-		}
-
-		timestamp += boost::posix_time::millisec(timeout);
-		callback->addData(ICONNECT_TOKEN_TIMEOUTTIMESTAMP, timestamp);
-	}
-
-	// check if the new command is supposed to timeout earlier than
-	// the current read request. In this case, add an additional worker
-	// to get notified in time.
-	if (readtimeout == boost::posix_time::not_a_date_time) {
-		// not a pending read.
-		// clone the command, divert its response to this class and the read
-		// to the real connection class.
-		// If no read is pending, directly issue a read commmand to the connection,
-		// but divert result to our class for later distribution.
-		// for this, we copy-construct a ICOmmand and modify it afterwards.
-
-		this->readtimeout = timestamp;
-		ICommand *cmd = new ICommand(*callback);
-		callback->addData(ICONNECT_TOKEN_PRV_ORIGINALCOMMAND, callback);
-		cmd->setTrgt(this);
-		cmd->setCmd(CMD_READ);
-		connection->Receive(cmd);
-	}
-
-	// a receive already pending. Schedule work to monitor its timeout.
-	ICommand *cmd = new ICommand(CMD_CHECKTIMEOUTS, this);
-	boost::posix_time::time_duration duration;
-	duration = timestamp - boost::posix_time::microsec_clock::local_time();
-	struct timespec ts;
-	ts.tv_sec = duration.total_seconds();
-	ts.tv_nsec = duration.total_nanoseconds() % 1000000000;
-	Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
+void CSharedConnectionMaster::Noop(ICommand* callback)
+{
+    ownslave->Noop(callback);
 }
 
 bool CSharedConnectionMaster::CheckConfig(void)
 {
-	// Get real configuration path to extract target comms config.
-	string commsconfig = this->ConfigurationPath + ".realcomms";
-	string s;
-	CConfigHelper h(commsconfig);
+    // Get real configuration path to extract target comms config.
+    string commsconfig = this->ConfigurationPath + ".realcomms";
+    string s;
+    CConfigHelper h(commsconfig);
 
-	if (! h.GetConfig("comms",s)) {
-		LOGERROR(logger,"realcomms section: comms missing");
-		return false;
-	}
+    if (!h.GetConfig("comms", s)) {
+        LOGERROR(logger, "realcomms section: comms missing");
+        return false;
+    }
 
-	// Shared comms are a hack,
-	LOGWARN(logger,"Shared comminucation is unstable and should be the last resort only");
-	LOGWARN(logger,"Prefer individual communication objects.");
-	LOGWARN(logger,"Please give feedback if you use this communication method.");
+    connection = IConnectFactory::Factory(commsconfig);
 
-	connection = IConnectFactory::Factory(commsconfig);
-
-	// connection always valid -- the factory returns a dummy
-	// object if it does not know the comms.
-	if (connection) {
-		connection->SetupLogger(ConfigurationPath,"realcomms");
-		return connection->CheckConfig();
-	}
-	return false;
+    // connection always valid -- the factory returns a dummy
+    // object if it does not know the comms.
+    if (connection) {
+        connection->SetupLogger(logger.getLoggername(),"realcomms");
+        return connection->CheckConfig();
+    }
+    LOGFATAL(logger,"Could not create real communication object");
+    return false;
 }
 
 bool CSharedConnectionMaster::IsConnected(void)
 {
-	assert(connection);
-	return connection->IsConnected();
+    assert(connection);
+    return connection->IsConnected();
 }
 
 bool CSharedConnectionMaster::AbortAll()
 {
     assert(connection);
     return connection->AbortAll();
+}
+
+long CSharedConnectionMaster::GetTicket()
+{
+    CMutexAutoLock lock(&mutex);
+    ++ticket_cnt;
+    // Overflow protection -- the zero is reserved for "no ticket"
+    if (0 == ticket_cnt) ticket_cnt++;
+    LOGDEBUG(logger," New ticket requested:" << ticket_cnt);
+    return ticket_cnt;
+}
+
+void CSharedConnectionMaster::Connect(ICommand* callback,
+    CSharedConnectionSlave* s)
+{
+    assert(callback);
+    assert(s);
+    callback = HandleAtomicBlock(callback, API_CONNECT);
+    if (callback) connection->Connect(callback);
+}
+
+void CSharedConnectionMaster::Disconnect(ICommand* callback,
+    CSharedConnectionSlave* s)
+{
+    assert(callback);
+    assert(s);
+    callback = HandleAtomicBlock(callback, API_DISCONNECT);
+    if (callback) connection->Disconnect(callback);
+}
+
+void CSharedConnectionMaster::Send(ICommand* callback,
+    CSharedConnectionSlave* s)
+{
+    assert(callback);
+    assert(s);
+    callback = HandleAtomicBlock(callback, API_SEND);
+
+    std::string st = boost::any_cast<std::string>(callback->findData(ICONN_TOKEN_SEND_STRING));
+    LOGDEBUG(logger,"to-send: "<< st);
+
+    if (callback) connection->Send(callback);
+}
+
+void CSharedConnectionMaster::Receive(ICommand* callback,
+    CSharedConnectionSlave* s)
+{
+    assert(callback);
+    assert(s);
+    callback = HandleAtomicBlock(callback, API_RECEIVE);
+    if (callback) connection->Receive(callback);
+}
+
+void CSharedConnectionMaster::Noop(ICommand* callback,
+    CSharedConnectionSlave* s)
+{
+    assert(callback);
+    assert(s);
+    callback = HandleAtomicBlock(callback, API_NOOP);
+    if (callback) connection->Noop(callback);
+
+}
+
+void CSharedConnectionMaster::Accept(ICommand* callback,
+    CSharedConnectionSlave* s)
+{
+#warning handle accept here as connect!
+    assert(callback);
+    assert(s);
+    callback = HandleAtomicBlock(callback, API_ACCEPT);
+    if (callback) connection->Accept(callback);
+}
+
+ICommand* CSharedConnectionMaster::HandleAtomicBlock(ICommand* cmd,
+    enum api_id id)
+{
+    long ticket = 0;
+    try {
+        ticket = boost::any_cast<long>(cmd->findData(ICONN_SHARED_TICKET));
+    } catch (...) {
+    }
+
+    bool end_of_block = false;
+    try {
+        end_of_block = !boost::any_cast<bool>(
+            cmd->findData(ICONN_ATOMIC_COMMS));
+    } catch (...) {
+        // assert if we could not retrieve this in a signaled atomic block.
+        assert(!ticket);
+    }
+
+    CMutexAutoLock m(&mutex);
+    LOGDEBUG(logger,"Ticket for this command is: "<< ticket << " (current ticket is "
+        << active_ticket << ")");
+
+    // check if this received work is part of an atomic block
+    if (ticket) {
+        // -> yes: check if the active one
+        // check if we currently got an atomic-block
+        if (!active_ticket) {
+            // nope, this will start it.
+            active_ticket = ticket;
+            LOGDEBUG(logger, "New ticket: "<< ticket);
+        }
+
+        if (active_ticket == ticket) {
+            //-> yes: check if the current block ends the atomic block
+            if (end_of_block) {
+                //-> yes: this ends the atomic block.
+                // So save Icommand and create a new one to redirect to own
+                // for completion handling in own ICommandTrgt. Send new one to comms.
+                LOGDEBUG(logger, "Ticket: "<< ticket << " ends soon");
+                ICommand *newcmd = new ICommand(CMD_HANDLEENDOFBLOCK, this);
+                newcmd->mergeData(*cmd);
+                assert(!last_atomic_cmd);
+                last_atomic_cmd = cmd;
+                cmd->RemoveData(); // free up some memory, this copy wont need
+                // the data.
+                return newcmd;
+            } else {
+                //-> no: just send to comms directly,
+                // the communication will handle it with its fifo.
+                LOGDEBUG(logger, "Ticket: "<< ticket << " continues");
+                return cmd;
+            }
+        } else {
+            // -> no, not part of active atomic block, queue for later.
+            // (as currently the interface is occupied)
+            cmd->addData(ICONN_SHAREDCOMMS_APIID, id);
+            // check if this sets a completly new atomic block
+            if (!atomic_icommands_pending.count(ticket)) {
+                LOGDEBUG(logger, "Ticket: "<< ticket << " new backlog entry");
+
+                // Yes, we need a new map-entry.
+                std::pair<long, std::queue<ICommand*> > p;
+                p.first = ticket;
+                p.second.push(cmd);
+                atomic_icommands_pending.insert(p);
+            } else {
+                // No, just append to queue.
+                LOGDEBUG(logger, "Ticket: "<< ticket << " new backlog entry to queue");
+                std::map<long, std::queue<ICommand*> >::iterator it =
+                    atomic_icommands_pending.find(ticket);
+                it->second.push(cmd);
+            }
+            return NULL;
+        }
+    } else {
+        // -> no, not atomic.  check if currently an atomic block is locking the comms
+        if (active_ticket) {
+            // -> yes, queue for later
+            cmd->addData(ICONN_SHAREDCOMMS_APIID, id);
+            non_atomic_icommands_pending.push(cmd);
+            return NULL;
+        } else {
+            // -> no, send directly to comms
+            return cmd;
+        }
+    }
+}
+
+void CSharedConnectionMaster::ICommandDispatcher(ICommand* cmd)
+{
+    api_id api = boost::any_cast<api_id>(
+        cmd->findData(ICONN_SHAREDCOMMS_APIID));
+
+    // forward the api calls to the real comms object.
+    switch (api) {
+        case API_CONNECT:
+            connection->Connect(cmd);
+        break;
+
+        case API_DISCONNECT:
+            connection->Disconnect(cmd);
+        break;
+
+        case API_RECEIVE:
+            connection->Receive(cmd);
+
+        break;
+
+        case API_SEND:
+            connection->Send(cmd);
+        break;
+
+        case API_ACCEPT:
+            connection->Accept(cmd);
+        break;
+
+        case API_NOOP:
+            connection->Noop(cmd);
+        break;
+
+        default:
+            assert(0);
+        break;
+    }
 }
 
 

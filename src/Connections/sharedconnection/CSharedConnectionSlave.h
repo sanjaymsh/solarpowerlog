@@ -41,15 +41,24 @@ Copyright (C) 2010-2012 Tobias Frost
 #ifdef HAVE_COMMS_SHAREDCONNECTION
 
 #include "Connections/interfaces/IConnect.h"
-#include "CSharedConnectionMaster.h"
+
+class CSharedConnectionMaster;
 
 class CSharedConnectionSlave: public IConnect
 {
 protected:
 	friend class CSharedConnection;
+    friend class CSharedConnectionMaster;
 	CSharedConnectionSlave(const string & configurationname);
 public:
 	virtual ~CSharedConnectionSlave();
+
+protected:
+    void setMaster(CSharedConnectionMaster* master)
+    {
+        LOGDEBUG(logger,"this:" << this << " master:"<<master);
+        this->master = master;
+    }
 
 protected:
 
@@ -61,15 +70,39 @@ protected:
 
 	virtual void Receive(ICommand *callback);
 
+	virtual void Accept(ICommand *callback);
+
 	virtual bool CheckConfig(void);
 
 	virtual bool IsConnected(void);
 
     virtual bool AbortAll();
 
+    virtual void Noop(ICommand *cmd);
+
+    virtual bool CanAccept(void) {
+        #warning change after we accept Accept()
+        return false;
+    }
+
+    /** Handles the common tasks regarding the ticket system to handler "atomic
+     * blocks"
+     *
+     * It will
+     * - examine if a new ticket is needed
+     * - examine if the ticket is about to be closed
+     * - add the ticket to ICommand for the SharedMaster
+     *
+     * \param callback callback to be fixed
+     *
+     * \returns true if the command requests atomic operation.
+     * */
+    bool HandleTickets(ICommand *callback);
 
 private:
-	class CSharedConnection *master;
+	CSharedConnectionMaster *master;
+
+	long current_ticket;
 
 };
 

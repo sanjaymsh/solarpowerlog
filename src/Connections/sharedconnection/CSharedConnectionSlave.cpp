@@ -34,74 +34,85 @@ Copyright (C) 2010-2012 Tobias Frost
 #ifdef HAVE_COMMS_SHAREDCONNECTION
 
 #include "CSharedConnectionSlave.h"
+#include "CSharedConnectionMaster.h"
 #include "configuration/CConfigHelper.h"
 #include "Inverters/interfaces/InverterBase.h"
 #include "CSharedConnection.h"
+#include "configuration/ILogger.h"
 
 // Slave Configuration Parameter
 // useconnection = "name"  Name of the inverter having the master connection.
-// timeout = "override for timeout if not specified for receive operations. Unit ms"
-
 
 CSharedConnectionSlave::CSharedConnectionSlave(const string & configurationname) :
 	IConnect(configurationname)
 {
 	master = NULL;
+	current_ticket = 0; // 0 == no ticket assigned,
 }
 
 CSharedConnectionSlave::~CSharedConnectionSlave()
 {
 }
 
+
 void CSharedConnectionSlave::Connect(ICommand *callback)
 {
-	assert(master);
-	master->Connect(callback);
+    LOGDEBUG(logger,"CSharedConnectionSlave::Connect: callback:"<<callback);
+    assert(master);
+    assert(callback);
+    (void)HandleTickets(callback);
+    master->Connect(callback, this);
 }
 
 void CSharedConnectionSlave::Disconnect(ICommand *callback)
 {
-	// only the master will be allowed to disconnect for the time being.
-	assert(master);
-	callback->addData(ICMD_ERRNO, 0);
-	Registry::GetMainScheduler()->ScheduleWork(callback);
+    LOGDEBUG(logger,"CSharedConnectionSlave::Disconnect: callback:"<<callback);
+    assert(callback);
+    (void)HandleTickets(callback);
+    master->Disconnect(callback, this);
 }
 
 void CSharedConnectionSlave::Send(ICommand *callback)
 {
-	assert(callback);
-	assert(master);
-	master->Send(callback);
+    LOGDEBUG(logger,"CSharedConnectionSlave::Send: callback:"<<callback);
+    assert(callback);
+    assert(master);
+    (void)HandleTickets(callback);
+    master->Send(callback, this);
 }
 
 void CSharedConnectionSlave::Receive(ICommand *callback)
 {
-	assert(master);
+#warning receive handling needs to be revised to support non-atomic blocks.
+    LOGDEBUG(logger,"CSharedConnectionSlave::Receive: callback:"<<callback);
+    assert(master);
+    assert(callback);
 
-    // Oct-2012:
-    // Timeouts are supposed inserted by the inverters logic,
-    // so this logic can and will go.
-#if 0
-	// If there is no timeout specified in the callback, derive it from
-	// the configuration or default. (The master does not have access to the
-	// slaves configuration, so we have to make it sure here...)
+    if (HandleTickets(callback)) {
+        master->Receive(callback, this);
+        // Receive within an atomic block.
+    } else {
+        // non-atomic reads are not yet supported!!!
+        // (slave side support missing: timeout handling and master-side buffer
+        // sharing)
+        // lets abort() for now.
+        assert(!"not implemented");
+    }
+}
 
-	unsigned long timeout = 0;
+void CSharedConnectionSlave::Accept(ICommand* callback)
+{
+#warning not implemented.
+    assert(callback);
+    assert(!"not implemented");
+}
 
-	try {
-		timeout
-				= boost::any_cast<long>(callback->findData(ICONN_TOKEN_TIMEOUT));
-	} catch (...) {
-		CConfigHelper cfg(ConfigurationPath);
-		cfg.GetConfig("timeout", timeout);
-		if (timeout != 0) {
-			callback->addData(ICONN_TOKEN_TIMEOUT, timeout);
-		}
-	}
-#endif
-	// Now, tell the master to do the job.
-	// (The master will add the timestamp for timeout handling for us....)
-	master->Receive(callback);
+void CSharedConnectionSlave::Noop(ICommand* cmd)
+{
+    LOGDEBUG(logger,"CSharedConnectionSlave::Noop: callback:"<<cmd);
+    assert(cmd);
+    (void)HandleTickets(cmd);
+    master->Noop(cmd, this);
 }
 
 bool CSharedConnectionSlave::CheckConfig(void)
@@ -115,22 +126,21 @@ bool CSharedConnectionSlave::CheckConfig(void)
 	fail |= !cfg.CheckConfig("useconnection", libconfig::Setting::TypeString,
 			false);
 
-#if 0
-	// obsolete, see Receive()
-	fail |= !cfg.CheckConfig("timeout", libconfig::Setting::TypeInt, true);
-#endif
-
 	if (fail)
 		return false;
 
+	// Retrieve the pointer to the CSharedConnectionMaster via the Inverter,
+	// but do checks to ensure that the type is right.
 	IInverterBase *base = Registry::Instance().GetInverter(s);
 
+	// Check if inverter is known
 	if (!base) {
 		LOGERROR(logger,"useconnection must point to a known Inverter and this "
-				"inverter must be declared first. Inverter: " << s;);
+				"inverter must be declared first. Inverter not found: " << s;);
 		return false;
 	}
 
+	// Check if the config of this inverter is a shared comm.
 	CConfigHelper bcfg(base->GetConfigurationPath());
 	bcfg.GetConfig("comms", s, std::string(""));
 	if (s != "SharedConnection") {
@@ -139,6 +149,7 @@ bool CSharedConnectionSlave::CheckConfig(void)
 		return false;
 	}
 
+	// Make sure it is a master.
 	bcfg.GetConfig("sharedconnection_type", s);
 	if (s != "master") {
 		LOGERROR(logger,"inverter " << base->GetName() <<
@@ -146,10 +157,13 @@ bool CSharedConnectionSlave::CheckConfig(void)
 		return false;
 	}
 
-	master = (CSharedConnection*) base->getConnection();
-
+	// The API of the SharedConnection gives us a IConnect*, promote it to
+	// (CSharedConnectionMaster* (we checked the type above...)
+    master =
+        (CSharedConnectionMaster*)((CSharedConnection*)base->getConnection())
+            ->GetConcreteSharedConnection();
+	LOGDEBUG(logger, ConfigurationPath << " slave:" << this << " master " << master);
 	return true;
-
 }
 
 bool CSharedConnectionSlave::IsConnected(void)
@@ -160,8 +174,47 @@ bool CSharedConnectionSlave::IsConnected(void)
 
 bool CSharedConnectionSlave::AbortAll()
 {
-    // only the master may abort all commands at this time.
+#warning code for non-atomic operations.
     return false;
+}
+
+
+bool CSharedConnectionSlave::HandleTickets(ICommand* callback)
+{
+    // get if this block goes atomic or ends an atomic block.
+    bool is_still_atomic = false;
+    bool is_atomic = false;
+    try {
+        is_still_atomic = boost::any_cast<bool>(
+            callback->findData(ICONN_ATOMIC_COMMS));
+        is_atomic = true;
+    } catch (const std::invalid_argument &e) {
+        // data not contained -- it is a non-atomic block.
+        is_atomic = false;
+    } catch (const boost::bad_any_cast &e) {
+        //"Bad cast -- Programming error."
+        //throw; // abort programm.
+    }
+
+    if (!is_atomic) {
+        LOGDEBUG(logger," Not atomic " << callback);
+        return false;
+    }
+
+    // New atomic block?
+    if (0 == current_ticket) {
+        current_ticket = master->GetTicket();
+        LOGDEBUG(logger," New ticket "<< current_ticket << " requested for " << callback);
+    } else  {
+       if ( is_still_atomic) LOGDEBUG(logger," Existing ticket "<< current_ticket << " continued for " << callback);
+       else  LOGDEBUG(logger," Existing ticket "<< current_ticket << " ending with " << callback);
+    }
+
+    callback->addData(ICONN_SHARED_TICKET, current_ticket);
+
+    // is this the last astomic request?
+    if (!is_still_atomic) current_ticket = 0;
+    return true;
 }
 
 #endif

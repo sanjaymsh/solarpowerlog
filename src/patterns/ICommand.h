@@ -139,6 +139,16 @@ public:
 		dat.erase(key);
 	}
 
+    /** Remove all data from command.
+     *
+     * \note: As the underlaying storage is a std::map,
+     * the associated boost::any objects will be deleted.
+     */
+    inline void RemoveData()
+    {
+        dat.clear();
+    }
+
 	/** Add/Replace Data from the Command
 	 *
 	 * Add new data, or if the data is already existing, replace

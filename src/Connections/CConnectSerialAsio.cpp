@@ -360,7 +360,7 @@ void CConnectSerialAsio::_main(void)
                     break;
 
                     case CAsyncCommand::DISCONNECT:
-                        HandleDisConnect(donow);
+                        HandleDisconnect(donow);
                         if (delete_cmd) {
                             delete donow;
                         }
@@ -460,7 +460,7 @@ void CConnectSerialAsio::HandleConnect(CAsyncCommand *cmd)
     return;
 }
 
-void CConnectSerialAsio::HandleDisConnect(CAsyncCommand *cmd)
+void CConnectSerialAsio::HandleDisconnect(CAsyncCommand *cmd)
 {
     boost::system::error_code ec, ec2;
     std::string message;

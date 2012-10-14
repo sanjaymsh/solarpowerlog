@@ -136,7 +136,7 @@ private:
 	 * be handled again
 	 */
 
-	void HandleDisConnect(CAsyncCommand *cmd);
+	void HandleDisconnect(CAsyncCommand *cmd);
 
 	void HandleReceive(CAsyncCommand *cmd);
 

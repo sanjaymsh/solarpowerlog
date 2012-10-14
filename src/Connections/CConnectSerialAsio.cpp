@@ -109,10 +109,17 @@ CConnectSerialAsio::CConnectSerialAsio(const string &configurationname) :
 
 CConnectSerialAsio::~CConnectSerialAsio()
 {
-
-    if (IsConnected()) {
-        this->Disconnect(NULL);
+    // Try to shutdown cleanly...
+    // (most likely abortall() has been previously called anyway)
+    boost::system::error_code ec;
+    mutex.lock();
+    cmds.clear();
+    ioservice->stop();
+    if (port->is_open()) {
+        port->cancel(ec);
+        port->close(ec);
     }
+    mutex.unlock();
 
     if (port) delete port;
     if (ioservice) delete ioservice;

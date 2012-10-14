@@ -98,15 +98,19 @@ CConnectTCPAsio::CConnectTCPAsio( const string &configurationname ) :
 
 CConnectTCPAsio::~CConnectTCPAsio()
 {
-	if (IsConnected()) {
-		Disconnect(NULL);
-	}
+    // Try a clean shutdown
+    boost::system::error_code ec;
+    mutex.lock();
+    cmds.clear();
+    ioservice->stop();
+    if (sockt->is_open()) {
+        sockt->cancel(ec);
+        sockt->close(ec);
+    }
+    mutex.unlock();
 
-	if (sockt)
-		delete sockt;
-	if (ioservice)
-		delete ioservice;
-
+    if (sockt) delete sockt;
+    if (ioservice) delete ioservice;
 }
 
 // ASYNCED!!

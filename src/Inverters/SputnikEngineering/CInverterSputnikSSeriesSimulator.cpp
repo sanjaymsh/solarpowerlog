@@ -368,12 +368,19 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 
         LOGDEBUG(logger, "new state: CMD_SIM_INIT");
 
-        if (connection->IsConnected()) connection->Disconnect(NULL);
+            if (connection->IsConnected()) {
+                cmd = new ICommand(CMD_SIM_WAITDISCONNECT, this);
+                connection->Disconnect(cmd);
+                break;
+            }
+        }
+        // fall-through ok
 
-        cmd = new ICommand(CMD_SIM_CONNECTED, this);
-        connection->Accept(cmd);
-        break;
-	}
+        case CMD_SIM_WAITDISCONNECT: {
+            cmd = new ICommand(CMD_SIM_CONNECTED, this);
+            connection->Accept(cmd);
+            break;
+        }
 
 	case CMD_SIM_CONNECTED: // Wait for
 	{
@@ -505,11 +512,19 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 
         LOGINFO(logger,"Sputnik-Simulator control server ready.");
 
-           cmd = new ICommand(CMD_CTRL_CONNECTED, this);
-           if (ctrlserver->IsConnected()) ctrlserver->Disconnect(NULL);
-           ctrlserver->Accept(cmd);
-           break;
-    }
+            if (ctrlserver->IsConnected()) {
+                cmd = new ICommand(CMD_CTRL_WAITDISCONNECT, this);
+                ctrlserver->Disconnect(cmd);
+                break;
+            }
+        }
+        // fall through ok
+
+        case CMD_CTRL_WAITDISCONNECT: {
+            cmd = new ICommand(CMD_CTRL_CONNECTED, this);
+            ctrlserver->Accept(cmd);
+            break;
+        }
 
     case CMD_CTRL_CONNECTED:
     {

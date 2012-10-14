@@ -85,11 +85,13 @@ private:
         CMD_INIT = BasicCommands::CMD_USER_MIN,
         // Simulator commands
         CMD_SIM_INIT, ///< Wait for incoming connections.
+        CMD_SIM_WAITDISCONNECT, ///< if connected, wait for disconnection.
         CMD_SIM_CONNECTED, ///< Wait for incoming data
         CMD_SIM_EVALUATE_RECEIVE, ///< Parse incoming data and send response
         CMD_SIM_WAIT_SENT, ///< Wait till data sent
         // Control-Server commmands.
         CMD_CTRL_INIT, ///< Wait for incoming connections (cmd-server).
+        CMD_CTRL_WAITDISCONNECT, ///< if connected, wait for disconnection.
         CMD_CTRL_CONNECTED, ///< Wait for incoming data (cmd-server).
         CMD_CTRL_PARSERECEIVE, ///< Parse incoming data (cmd-server) and send response.
         CMD_CTRL_WAIT_SENT  ///< Wait till response sent.

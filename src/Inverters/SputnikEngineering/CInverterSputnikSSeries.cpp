@@ -67,6 +67,8 @@ Copyright (C) 2009-2012 Tobias Frost
 #include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOTimed.h"
 #include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOIfSupported.h"
 
+#include <errno.h>
+
 #undef DEBUG_TOKENIZER
 // Debug: Print all received tokens
 #if defined DEBUG_TOKENIZER
@@ -443,8 +445,12 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		// we assume that we are now disconnected.
 		// so lets schedule a reconnection.
 		// TODO this time should be configurable.
-		cmd = new ICommand(CMD_DISCONNECTED_WAIT, this);
-		connection->Disconnect(cmd);
+        cmd = new ICommand(CMD_DISCONNECTED_WAIT, this);
+		if (connection->IsConnected()) {
+	        connection->Disconnect(cmd);
+		} else {
+            Registry::GetMainScheduler()->ScheduleWork(cmd);
+		}
 
 		// Tell everyone that all data is now invalid.
 		CCapability *c = GetConcreteCapability(CAPA_INVERTER_DATASTATE);
@@ -557,9 +563,11 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 	{
 		LOGDEBUG(logger, "new state: CMD_SEND_QUERIES ");
 		commstring = assemblequerystring();
-		LOGTRACE(logger, "Sending: " << commstring << " Len: "<< commstring.size());
+		LOGDEBUG(logger, "Sending: " << commstring << " Len: "<< commstring.size());
 
 		cmd = new ICommand(CMD_WAIT_SENT, this);
+		// Start an atomic communication block (to hint any shared comms)
+		cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_REQUEST);
 		cmd->addData(ICONN_TOKEN_SEND_STRING, commstring);
 		cmd->addData(ICONN_TOKEN_TIMEOUT,((long)_cfg_send_timeout_ms));
 		connection->Send(cmd);
@@ -574,21 +582,29 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 			err = boost::any_cast<int>(Command->findData(ICMD_ERRNO));
 		} catch (...) {
 			LOGDEBUG(logger, "BUG: Unexpected exception.");
-			err = -1;
+			err = -EINVAL;
 		}
 
-		if (err < 0) {
-	        try {
-                LOGERROR( logger, "Error while sending: (" << -err << ") " <<
-                        boost::any_cast<string>(Command->findData(ICMD_ERRNO_STR)));
+        if (err < 0) {
+            try {
+                LOGERROR( logger,
+                    "Error while sending: (" << -err << ") " << boost::any_cast<string>(Command->findData(ICMD_ERRNO_STR)));
             } catch (...) {
                 LOGERROR(logger, "Error while sending. (" << -err << ")");
             }
-            cmd = new ICommand(CMD_DISCONNECTED, this);
+
+            // Issue an fire-and-forget API call to stop the atomic session
+            cmd = new ICommand(BasicCommands::CMD_INVALID, NULL);
+            cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_CEASE);
+            connection->Noop(cmd);
+
+            cmd = new ICommand(CMD_DISCONNECTED,this);
             Registry::GetMainScheduler()->ScheduleWork(cmd);
             break;
 		}
 
+#warning this code can be reverted --> it was preperation for the sharedcomms \
+    but direction taken is now different and this solved by atomic blocks.
         // record deadline after confirmation that request has been sent.
         _deadline_receive = boost::posix_time::microsec_clock::universal_time()
             + boost::posix_time::milliseconds(_cfg_response_timeout_ms*1000.0);
@@ -601,6 +617,8 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		LOGDEBUG(logger, "new state: CMD_WAIT_RECEIVE");
 		cmd = new ICommand(CMD_EVALUATE_RECEIVE, this);
         cmd->addData(ICONN_TOKEN_TIMEOUT, (long)_cfg_response_timeout_ms);
+        // maintain this atomic block (shared comms hinting)
+        cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_REQUEST);
 		connection->Receive(cmd);
 	}
 		break;
@@ -615,13 +633,12 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 			err = boost::any_cast<int>(Command->findData(ICMD_ERRNO));
 		} catch (...) {
 			LOGDEBUG(logger, "BUG: Unexpected exception.");
-			err = -1;
+			err = -EINVAL;
 		}
 
 		if (err < 0) {
 			// we do not differentiate the error here, an error is an error....
-			cmd = new ICommand(CMD_DISCONNECTED, this);
-			Registry::GetMainScheduler()->ScheduleWork(cmd);
+		    // try to log the error message, if any.
 			try {
 				s = boost::any_cast<std::string>(Command->findData(
 						ICMD_ERRNO_STR));
@@ -637,12 +654,23 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 					ICONN_TOKEN_RECEIVE_STRING));
 		} catch (...) {
 			LOGERROR(logger, "Retrieving string: Unexpected Exception");
+			err = -EINVAL;
+		}
+
+		if (err < 0) {
+			// Issue an fire-and-forget API call to stop the atomic session
+			cmd = new ICommand(BasicCommands::CMD_INVALID, NULL);
+		    cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_CEASE);
+		    connection->Noop(cmd);
+
+		    // Schedule new connection later.
 			cmd = new ICommand(CMD_DISCONNECTED,this);
 			Registry::GetMainScheduler()->ScheduleWork(cmd);
 			break;
 		}
 
-		LOGTRACE(logger, "Received :" << s << "len: " << s.size());
+		LOGTRACE(logger, "Received :" << s << " len: " << s.size());
+
 		if (logger.IsEnabled(ILogger::LL_TRACE)) {
 			string st;
 			char buf[32];
@@ -689,6 +717,9 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		if (0 > parseresult ) {
 			// Reconnect on parse errors.
 			LOGERROR(logger, "Parse error on received string: \""<< tmp <<"\"");
+            cmd = new ICommand(BasicCommands::CMD_INVALID, NULL);
+            cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_CEASE);
+            connection->Noop(cmd);
 			cmd = new ICommand(CMD_DISCONNECTED, this);
 			Registry::GetMainScheduler()->ScheduleWork(cmd);
 			break;
@@ -703,12 +734,19 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 
             if (now > _deadline_receive) {
                 // deadline exceeded, stop retrying.
+                LOGTRACE(logger, "Internal timeout");
+                cmd = new ICommand(BasicCommands::CMD_INVALID, NULL);
+                cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_CEASE);
+                connection->Noop(cmd);
                 cmd = new ICommand(CMD_DISCONNECTED, this);
                 Registry::GetMainScheduler()->ScheduleWork(cmd);
                 break;
             }
 
+            LOGTRACE(logger, "Resume partial reading");
+            // reissue receive command to get rest of telegramm.
 			ICommand *cmd = new ICommand(CMD_EVALUATE_RECEIVE, this);
+            cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_REQUEST);
 			connection->Receive(cmd);
 			break;
 		}
@@ -722,16 +760,23 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
         }
         notansweredcommands.clear();
 
+        LOGTRACE(logger, "Clearing atomic comm status");
+        // In any case, the atomic block is now complete.
+        // Hint that ...
+        cmd = new ICommand(BasicCommands::CMD_INVALID, NULL);
+        cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_CEASE);
+        connection->Noop(cmd);
+
 		// if there are still pending commands, issue them first before
 		// filling the queue again.
 		if (!pendingcommands.empty()) {
+		    LOGTRACE(logger, "Querying remaining commands");
 			cmd = new ICommand(CMD_SEND_QUERIES, this);
 			Registry::GetMainScheduler()->ScheduleWork(cmd);
 			break;
 		}
 
 		// TODO differenciate between identify query and "normal" runtime queries
-		cmd = new ICommand(CMD_QUERY_POLL, this);
 
 		CCapability *c = GetConcreteCapability(CAPA_INVERTER_DATASTATE);
 		CValue<bool> *vb = (CValue<bool> *) c->getValue();
@@ -742,7 +787,9 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		CValue<float> *v = (CValue<float> *) c->getValue();
 		ts.tv_sec = v->Get();
 		ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
+		cmd = new ICommand(CMD_QUERY_POLL, this);
 		Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
+
 	}
 		break;
 

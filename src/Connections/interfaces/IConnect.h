@@ -59,6 +59,27 @@ using namespace std;
 /// unit is ms.
 #define ICONN_TOKEN_TIMEOUT "ICON_TIMEOUT"
 
+/** SharedComms Request Atomic-Block
+ *
+ * An Atomic Comms block is a series of commands for communication that must
+ * not be interrupted by other communications.
+ *
+ * This is used for SharedComms.
+ *
+ * Use the defines below to request and cease request atomic comms.
+ * (You need to request in any of the comms steps, and the last one in the
+ * atomic block needs to cease the request.)
+ *
+ * datatype needs to be bool.
+ * */
+#define ICONN_ATOMIC_COMMS "ICON_ATOMIC_COMMS"
+
+/** request the comms to be atomic */
+#define ICONN_ATOMIC_COMMS_REQUEST ((bool)true)
+
+/** after this request the comms atomic block is ended. */
+#define ICONN_ATOMIC_COMMS_CEASE ((bool)false)
+
 /** Interface for all communication classes
  *
  * This Interface is the API for all concrete communication methods.

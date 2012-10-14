@@ -356,8 +356,7 @@ void CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 
     try {
         timeout = boost::any_cast<long>(
-            cmd->callback->findData(
-                                    ICONN_TOKEN_TIMEOUT));
+            cmd->callback->findData(ICONN_TOKEN_TIMEOUT));
     } catch (std::invalid_argument &e) {
         cfghelper.GetConfig("tcptimeout", timeout, TCP_ASIO_DEFAULT_TIMEOUT);
         LOGDEBUG(logger, "Depreciated fallback to tcptimeout");
@@ -577,7 +576,7 @@ void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 	recved[0] = buf[0];
 	while (avail > 0) {
 		tmp = sockt->read_some(asio::buffer(&recved[numrecvd], avail), ec);
-		LOGTRACE(logger, "Read " << tmp << " of these");
+		LOGTRACE(logger, "Read " << tmp << " of those");
 		avail -= tmp;
 		numrecvd += tmp;
 		// check if error occured.

@@ -100,8 +100,6 @@ static void boosthelper_set_result(int* store, int value)
 CConnectSerialAsio::CConnectSerialAsio(const string &configurationname) :
     IConnect(configurationname)
 {
-    // Generate our own asio ioservice
-    // TODO check if one central would do that too...
     ioservice = new io_service;
     port = new boost::asio::serial_port(*ioservice);
     sem_init(&cmdsemaphore, 0, 0);

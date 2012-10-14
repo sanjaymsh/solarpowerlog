@@ -47,7 +47,7 @@ enum BasicCommands
     /// added after receiption of this event will still be handled.
     CMD_BRC_SHUTDOWN,
     CMD_BROADCAST_MAX,
-
+    CMD_INVALID, /// can be used for fire-and-forget ICommands.
     // The events between CMD_BROADCAST_MAX and CMD_USER_MIN are reserved
     // at this moment.
     CMD_USER_MIN = 1000

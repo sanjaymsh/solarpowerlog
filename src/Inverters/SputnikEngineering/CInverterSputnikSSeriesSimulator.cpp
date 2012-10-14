@@ -104,6 +104,35 @@ struct CInverterSputnikSSeriesSimulator::simulator_commands simcommands[] = {
         { "PD02", 0.5, new CValue<float>(400), 0, NULL, false },
         { "PD03", 0.5, new CValue<float>(400), 0, NULL, false },
 
+        // Inverter Solarmax 20C uses those to signal stati...
+        // (not implemented in the inverter class!)
+        { "SE1", 1, new CValue<int>(0), 0, NULL, false },
+        { "SE2", 1, new CValue<int>(0), 0, NULL, false },
+        { "SPR", 1, new CValue<int>(0), 0, NULL, false },
+        { "SCD", 1, new CValue<int>(0), 0, NULL, false },
+
+        // some other commands to evaluate... Seems to be general settings
+        // for the inverter / grid configuration.
+        // take with care, values mostly guessed.
+        // not implemented in the inverter.
+        { "ULH", 0.1, new CValue<float>(220), 0, NULL, false },  // Uac max
+        { "ULL", 0.1, new CValue<float>(240), 0, NULL, false },  // Uac min
+        { "TNH", 0.01, new CValue<float>(49.7), 0, NULL, false }, // freq max
+        { "TNL", 0.01, new CValue<float>(50.2), 0, NULL, false }, // freq min
+        { "TND", 0.01, new CValue<float>(0.1), 0, NULL, false },  // df/dt max
+        { "ISL", 1, new CValue<bool>(0), 0, NULL, false }, // "ISL"anding detection
+        { "IEM", .1, new CValue<float>(.5), 0, NULL, false }, // max error current
+        { "IAA", 0.01, new CValue<float>(16), 0, NULL, false }, // max Iac mean
+        { "ILM", 0.01, new CValue<float>(17), 0, NULL, false }, // max Iac
+        { "UMX", 0.1, new CValue<float>(240), 0, NULL, false }, // 10 min Uax max.
+        { "RSD", 1, new CValue<float>(30), 0, NULL, false }, // Restart delay
+        { "CYC", 1, new CValue<float>(0), 0, NULL, false }, // ???
+        { "PWF", 1, new CValue<float>(0), 0, NULL, false }, // ???
+        { "SYM", 1, new CValue<float>(0), 0, NULL, false }, // Symmetry Settings?
+        { "PAM", 1, new CValue<float>(4000), 0, NULL, false }, // Maximum power to feed.
+
+        { "PWM", 1, new CValue<float>(25), 0, NULL, false }, // ??? some modulation
+        { "PWT", 1, new CValue<float>(26), 0, NULL, false }, // ??? some modulation
 
         { NULL , 0  , NULL, 0, NULL, false}
 };
@@ -361,12 +390,12 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 		//cmd = boost::any_cast<ICommand*>(cmd->findData("TEST"));
 	}
 
-	case CMD_SIM_INIT: // Wait for incoming connections.
-	{
-        // only if no shutdown have been requested.
-        if (_shutdown_requested) break;
+        case CMD_SIM_INIT: // Wait for incoming connections.
+        {
+            // only if no shutdown have been requested.
+            if (_shutdown_requested) break;
 
-        LOGDEBUG(logger, "new state: CMD_SIM_INIT");
+            LOGDEBUG(logger, "new state: CMD_SIM_INIT");
 
             if (connection->IsConnected()) {
                 cmd = new ICommand(CMD_SIM_WAITDISCONNECT, this);
@@ -468,11 +497,16 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 
 		// make answer and send it.
 		s = parsereceivedstring(s);
-		LOGTRACE(logger, "Response :" << s << "len: " << s.size());
-		cmd = new ICommand(CMD_SIM_WAIT_SENT,this);
-		cmd->addData(ICONN_TOKEN_TIMEOUT,(long)3000);
-		cmd->addData(ICONN_TOKEN_SEND_STRING, s);
-		connection->Send(cmd);
+        cmd = new ICommand(CMD_SIM_WAIT_SENT,this);
+        // only response if parsing was successful.
+		if (s.size()) {
+		LOGTRACE(logger, "Response :" << s << " len: " << s.size());
+            cmd->addData(ICONN_TOKEN_TIMEOUT,(long)3000);
+            cmd->addData(ICONN_TOKEN_SEND_STRING, s);
+            connection->Send(cmd);
+		} else {
+		    Registry::GetMainScheduler()->ScheduleWork(cmd);
+		}
 	}
 
 		break;
@@ -501,16 +535,15 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
         break;
         }
 
-    case CMD_CTRL_INIT:
-    {
-        // only if no shutdown have been requested.
-        if (_shutdown_requested) break;
-        // the commandserver is known to be non-NULL, otherwise CMD_INIT
-        // would not have scheduled this work.
+        case CMD_CTRL_INIT: {
+            // only if no shutdown have been requested.
+            if (_shutdown_requested) break;
+            // the commandserver is known to be non-NULL, otherwise CMD_INIT
+            // would not have scheduled this work.
 
-        LOGDEBUG(logger, "new state: CMD_CTRL_INIT");
+            LOGDEBUG(logger, "new state: CMD_CTRL_INIT");
 
-        LOGINFO(logger,"Sputnik-Simulator control server ready.");
+            LOGINFO(logger, "Sputnik-Simulator control server ready.");
 
             if (ctrlserver->IsConnected()) {
                 cmd = new ICommand(CMD_CTRL_WAITDISCONNECT, this);

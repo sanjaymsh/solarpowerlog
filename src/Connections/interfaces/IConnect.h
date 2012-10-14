@@ -114,7 +114,7 @@ public:
      * Connect asynchronous and use the ICommand to tell the result in ICMD_ERRNO
      *
      * \note If asynchronous operations would be overkill, because the result is
-     * immediately known, one can also implement the asynchronsous operations
+     * immediately known, one can also implement the asynchronous operations
      * as synchronous ones as long as it uses the ICommand as notification
      * for the result.
      */
@@ -169,6 +169,15 @@ public:
 	 *	ENOTCONN  Connection went down, e.g. eof received.
 	 */
 	virtual void Receive(ICommand *cmd) = 0;
+
+	/** NoOperation
+	 * Will just do nothing :)
+	 *
+	 * Can be used in a derived class for housekeeping,
+	 * for example the CSharedConnection use this to provide an easy way to
+	 * stop the atomic_block constraint.
+	 * \sa CSharedConnectinSlave::Noop()*/
+	virtual void Noop(ICommand *cmd);
 
 	/// Check the configuration for validity. Return false on config errors.
 	/// (program will abort then!)

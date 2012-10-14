@@ -32,6 +32,7 @@ Copyright (C) 2009-2012 Tobias Frost
 #include <string>
 
 #include "IConnect.h"
+#include "configuration/Registry.h"
 
 using namespace std;
 
@@ -77,6 +78,13 @@ bool IConnect::IsTermRequested(void)
 	bool ret = _thread_term_request;
 	mutex.unlock();
 	return ret;
+}
+
+void IConnect::Noop(ICommand* cmd)
+{
+    // Standard noop is just to schedule this work with no error set.
+    cmd->addData(ICMD_ERRNO,(int)0);
+    Registry::GetMainScheduler()->ScheduleWork(cmd);
 }
 
 bool IConnect::IsThreadRunning(void)

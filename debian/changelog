@@ -1,3 +1,9 @@
+solarpowerlog (0.23a-2) unstable; urgency=low
+
+  * Fix "bashism in the init.d file (Closes: #690632)
+
+ -- Tobias Frost <tobi@coldtobi.de>  Tue, 16 Oct 2012 19:51:13 +0200
+
 solarpowerlog (0.23a-1) unstable; urgency=low
 
   * Initial upload (Closes: #652904)

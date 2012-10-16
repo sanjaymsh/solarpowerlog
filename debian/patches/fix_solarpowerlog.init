@@ -1,0 +1,21 @@
+# Description: Fix for #690632
+# Author: Tobias Frost <tobi@coldtobi.de>
+# Bug: 690632
+Index: solarpowerlog/tools/solarpowerlog.init
+===================================================================
+--- solarpowerlog.orig/tools/solarpowerlog.init	2012-10-16 19:47:55.994885908 +0200
++++ solarpowerlog/tools/solarpowerlog.init	2012-10-16 19:48:37.519428305 +0200
+@@ -56,11 +56,11 @@
+ do_start()
+ {
+ 	# As we want to run as non-privilegded user, we need to create a helper directory
+-	[[ ! -e $PIDDIR ]] && mkdir -p $PIDDIR && chown $USER $PIDDIR
++	[ ! -e $PIDDIR ] && mkdir -p $PIDDIR && chown $USER $PIDDIR
+ 
+ 	# The same applies to the programm logs. We need to ensure that solarpowerlog can
+ 	# access it.
+-	[[ ! -e $LOGDIR ]] && mkdir -p $LOGDIR && chown $USER $LOGDIR
++	[ ! -e $LOGDIR ] && mkdir -p $LOGDIR && chown $USER $LOGDIR
+ 
+ 	# Return
+ 	#   0 if daemon has been started

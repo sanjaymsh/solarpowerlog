@@ -646,7 +646,6 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 			} catch (...) {
 				LOGERROR(logger, "Receive Error: " << strerror(-err));
 			}
-			break;
 		}
 
 		try {

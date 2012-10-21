@@ -82,6 +82,34 @@ Copyright (C) 2010-2012 Tobias Frost
  on a read request -- even if the data was received when there was no active
   read request at the time.
 
+Handling of "non-atomic" block reads.
+
+As outlined above reads can cause trouble. This needs to be resolved by the
+SharedComms to have an reliable operation:
+- Other requests than read requests are issued the normal handling
+- If a read request without the hint for an atomic block is sent, the behaviour
+ of the shared comms is changed:
+     --> read requests will be issued to the master, but it's completion handler
+     needs to be diverted to the master.
+     --> any subsequent commands received by the master will abort the current
+     read first and then schedule the command with the result diverted again to
+     the master. The master then will forward the result to the original caller
+     and resume if no other command has entered the queue in the meantime.
+     --> additional read-calls from other inverters will subscribe those slaves
+     to the reception queue: Any receptions will be submitted to all recipients,
+     as long as they are subscribed. (even if there is no active read command,
+     in this case the slave will buffer the data until a read requests is issued.
+     In this case the slave will immediately receive the so-far buffered comms.
+     (The inverter needs to filter out the data for the others)
+     Buffered data is reset after a read or after a disconnect.
+     --> the master will also keep track about the timeouts specified by the
+     receive commands and will inform the caller if they expired without receiption.
+     for this timestamps, wallclock time will be used.
+
+please note: "Atomic" and "non-atomic" read operations at the same time
+are not supported.
+
+
 
 *  Created on: Sep 12, 2010
  *      Author: coldtobi

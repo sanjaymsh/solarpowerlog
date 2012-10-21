@@ -50,7 +50,9 @@
 
 enum
 {
-    CMD_HANDLEENDOFBLOCK = BasicCommands::CMD_USER_MIN
+    CMD_HANDLEENDOFBLOCK = BasicCommands::CMD_USER_MIN,
+    CMD_NONATOMIC_HANDLEREADCOMPLETION,
+    CMD_NONATOMIC_HANDLETIMEOUT
 };
 
 CSharedConnectionMaster::CSharedConnectionMaster(
@@ -62,6 +64,8 @@ CSharedConnectionMaster::CSharedConnectionMaster(
     ticket_cnt = active_ticket = 0;
     ownslave = new CSharedConnectionSlave(configurationname);
     ownslave->setMaster(this);
+    non_atomic_mode = false;
+    _nam_interrupted = false;
 
 }
 
@@ -79,9 +83,10 @@ void CSharedConnectionMaster::SetupLogger(const string& parentlogger,
     ownslave->SetupLogger(parentlogger);
 }
 
-
 void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
 {
+    LOGDEBUG(logger, __PRETTY_FUNCTION__ << " now handling: " << Command);
+
     // handling end of atomic blocks and issuing pending commands.
     switch (Command->getCmd()) {
         case CMD_HANDLEENDOFBLOCK: {
@@ -92,6 +97,7 @@ void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
             LOGDEBUG(logger, "Ending Ticket " << active_ticket );
             assert(last_atomic_cmd);
             last_atomic_cmd->mergeData(*Command);
+            LOGDEBUG(logger, __PRETTY_FUNCTION__ << " scheduling " << last_atomic_cmd);
             Registry::GetMainScheduler()->ScheduleWork(last_atomic_cmd);
             last_atomic_cmd = NULL;
             active_ticket = 0;
@@ -151,12 +157,52 @@ void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
             }
             break;
         }
+        case CMD_NONATOMIC_HANDLEREADCOMPLETION: {
+            CMutexAutoLock cma(&mutex);
+            _nam_interrupted = false;
+            // will be executed if a non-atomic read completes or read
+            // was interrupted with another request.
+
+            // retrieve error information about this read.
+            int err = 0;
+            try {
+                err = boost::any_cast<int>(Command->findData(ICMD_ERRNO));
+            } catch (...) {
+            }
+
+
+            // Submit everything to the slaves except timeout (handled by slaves)
+            // and the aborted calls.
+            if (err != -ECANCELED && err != -ETIMEDOUT) {
+                // call was not canceled, tha means transmit to all slaves.
+                for (std::list<CSharedConnectionSlave *>::iterator it =
+                    _reading_slaves.begin(); it != _reading_slaves.end();
+                    it++) {
+                    ICommand *c = new ICommand(
+                        CSharedConnectionSlave::CMD_HANDLEREAD, *it);
+                    c->mergeData(*Command);
+                    LOGDEBUG(logger, __PRETTY_FUNCTION__ << " read-results: now scheduling: " << c);
+                    Registry::GetMainScheduler()->ScheduleWork(c);
+                }
+            }
+
+            // Restart receive if there is still time for reading.
+            boost::posix_time::ptime pt(
+                boost::posix_time::microsec_clock::universal_time());
+            if (!readtimeout.is_special() && pt < readtimeout && err == -ECANCELED) {
+                boost::posix_time::time_duration d = readtimeout - pt;
+                ICommand *c = new ICommand(CMD_NONATOMIC_HANDLEREADCOMPLETION,
+                    this);
+                long timeout = d.total_milliseconds();
+                c->addData(ICONN_TOKEN_TIMEOUT, timeout);
+                LOGDEBUG(logger, __PRETTY_FUNCTION__ << " rescheduling read: " << c);
+                connection->Receive(c);
+            } else {
+                readtimeout = boost::posix_time::not_a_date_time;
+            }
+        }
+        break;
     }
-#warning fehlt: -> Unterstützung der atomic blocks in den Invertern
-#warning -> callbacks aller commands dürfen nicht mehr NULL sein (diverse Comms updaten)
-#warning -> noch nicht gedebuggt.
-#warning -> (Mindest-Unterstützung) CCommsSharedSlave von non-atomic blöcken (auch hier kann connect/disconect ein problem sein)
-#warning -> Entscheidung wessen Connect/Disconnect weitergereicht wird (alle? nur master? Algo?)
 }
 
 void CSharedConnectionMaster::Connect(ICommand *callback)
@@ -171,6 +217,7 @@ void CSharedConnectionMaster::Disconnect(ICommand *callback)
 
 void CSharedConnectionMaster::Send(ICommand *callback)
 {
+
     ownslave->Send(callback);
 }
 
@@ -222,6 +269,8 @@ bool CSharedConnectionMaster::IsConnected(void)
 bool CSharedConnectionMaster::AbortAll()
 {
     assert(connection);
+    CMutexAutoLock cma(&mutex);
+    readtimeout = boost::posix_time::not_a_date_time;
     return connection->AbortAll();
 }
 
@@ -240,6 +289,7 @@ void CSharedConnectionMaster::Connect(ICommand* callback,
 {
     assert(callback);
     assert(s);
+    _HandleNonAtomicReceiveInterrupts();
     callback = HandleAtomicBlock(callback, API_CONNECT);
     if (callback) connection->Connect(callback);
 }
@@ -249,30 +299,100 @@ void CSharedConnectionMaster::Disconnect(ICommand* callback,
 {
     assert(callback);
     assert(s);
-    callback = HandleAtomicBlock(callback, API_DISCONNECT);
-    if (callback) connection->Disconnect(callback);
+    // at the moment only the master can disconnect.
+    // and if the master disconnects, we'll disconnect regardless of other
+    // slaves present.
+    // so if someone else disconnects, we'll make a NOOP instead
+    if (s == ownslave) {
+        _HandleNonAtomicReceiveInterrupts();
+        callback = HandleAtomicBlock(callback, API_DISCONNECT);
+        if (callback) connection->Disconnect(callback);
+    } else {
+        _HandleNonAtomicReceiveInterrupts();
+        callback->addData(ICMD_ERRNO,0);
+        callback = HandleAtomicBlock(callback, API_NOOP);
+        if (callback) connection->Noop(callback);
+    }
 }
 
 void CSharedConnectionMaster::Send(ICommand* callback,
     CSharedConnectionSlave* s)
 {
+
     assert(callback);
     assert(s);
+    _HandleNonAtomicReceiveInterrupts();
     callback = HandleAtomicBlock(callback, API_SEND);
-
-    std::string st = boost::any_cast<std::string>(callback->findData(ICONN_TOKEN_SEND_STRING));
-    LOGDEBUG(logger,"to-send: "<< st);
-
+    LOGDEBUG(logger, "CSharedConnectionMaster::Send() ICmd: " << callback);
     if (callback) connection->Send(callback);
 }
 
 void CSharedConnectionMaster::Receive(ICommand* callback,
     CSharedConnectionSlave* s)
 {
+    LOGDEBUG(logger, __PRETTY_FUNCTION__<< " callback:" << callback);
+
+    bool is_atomic;
     assert(callback);
     assert(s);
-    callback = HandleAtomicBlock(callback, API_RECEIVE);
-    if (callback) connection->Receive(callback);
+    callback = HandleAtomicBlock(callback, API_RECEIVE, &is_atomic);
+
+    if(is_atomic) {
+        LOGDEBUG(logger, __PRETTY_FUNCTION__<< " sending atomic callback : " << callback);
+        if (callback) connection->Receive(callback);
+        return;
+    }
+
+    // non-atomic read.
+    if (!non_atomic_mode) {
+        non_atomic_mode = true;
+        // LOGDEBUG(logger,"SharedComms switched to Non-Atomic read mode.");
+    }
+
+    unsigned long timeout;
+    try {
+        timeout = boost::any_cast<long>(callback->findData(
+                ICONN_TOKEN_TIMEOUT));
+    } catch (...) {
+        LOGDEBUG(logger,"CSharedConnectionMaster::Receive(): Depreciated: Falling back to default timeoout");
+        timeout = SHARED_CONN_DEFAULTTIMEOUT;
+    }
+
+    CMutexAutoLock m(&mutex);
+    boost::posix_time::ptime ptimetmp =
+        boost::posix_time::microsec_clock::universal_time()
+            + boost::posix_time::milliseconds(timeout);
+
+    // check if we got already an read request pending.
+    if (readtimeout == boost::posix_time::not_a_date_time) {
+        // not a pending read.
+        // If no read is pending, directly issue a read commmand to the connection,
+        // but divert result to our class for later distribution.
+        // In the Execute member our master will then inform every listening slave
+        // about the incoming comms.
+        // We will need to track timeouts to determine when we can stop
+        // listening.
+        // The slave kept a copy of the read request, so we can use the one
+        // we have been supplied with for our purpose.
+
+        readtimeout = ptimetmp;
+
+        callback->setTrgt(this);
+        callback->setCmd(CMD_NONATOMIC_HANDLEREADCOMPLETION);
+        LOGDEBUG(logger, __PRETTY_FUNCTION__ << " sending non-atomic to own Execute(): " << callback);
+        connection->Receive(callback);
+    } else {
+        // we've got already a read pending, just check if we need to update
+        // the timeout value if necesary.
+        if( readtimeout < ptimetmp) {
+            // Just record the value, the completion handler will do the rest.
+            readtimeout = ptimetmp;
+        }
+        // in this case we do not need this callback anymore
+        // as we own it, we delete it.
+        LOGDEBUG(logger, "CSharedConnectionMaster::Receive() deleting: " << callback);
+        delete callback;
+    }
 }
 
 void CSharedConnectionMaster::Noop(ICommand* callback,
@@ -280,6 +400,7 @@ void CSharedConnectionMaster::Noop(ICommand* callback,
 {
     assert(callback);
     assert(s);
+    _HandleNonAtomicReceiveInterrupts();
     callback = HandleAtomicBlock(callback, API_NOOP);
     if (callback) connection->Noop(callback);
 
@@ -291,17 +412,22 @@ void CSharedConnectionMaster::Accept(ICommand* callback,
 #warning handle accept here as connect!
     assert(callback);
     assert(s);
+    _HandleNonAtomicReceiveInterrupts();
     callback = HandleAtomicBlock(callback, API_ACCEPT);
     if (callback) connection->Accept(callback);
 }
 
 ICommand* CSharedConnectionMaster::HandleAtomicBlock(ICommand* cmd,
-    enum api_id id)
+    enum api_id id, bool *isatomic)
 {
     long ticket = 0;
     try {
         ticket = boost::any_cast<long>(cmd->findData(ICONN_SHARED_TICKET));
     } catch (...) {
+    }
+
+    if (isatomic) {
+        *isatomic = (0 != ticket);
     }
 
     bool end_of_block = false;
@@ -383,6 +509,16 @@ ICommand* CSharedConnectionMaster::HandleAtomicBlock(ICommand* cmd,
     }
 }
 
+void CSharedConnectionMaster::SubscribeSlave(CSharedConnectionSlave* slave, bool subscribe )
+{
+
+    if ( subscribe) {
+        _reading_slaves.push_back(slave);
+    } else {
+        _reading_slaves.remove(slave);
+    }
+}
+
 void CSharedConnectionMaster::ICommandDispatcher(ICommand* cmd)
 {
     api_id api = boost::any_cast<api_id>(
@@ -427,5 +563,20 @@ bool CSharedConnectionMaster::CanAccept(void)
     assert(connection);
     return connection->CanAccept();
 }
+
+void CSharedConnectionMaster::_HandleNonAtomicReceiveInterrupts(void)
+{
+    // if non-atomic mode, every command during a receive() will interrupt said
+    // read, but this interrupt must only happen once until.
+    CMutexAutoLock cma(&mutex);
+
+    // only work in non_atomic_mode and if not already interrupted
+    if(!non_atomic_mode || _nam_interrupted) return;
+
+    _nam_interrupted = true;
+    // ok, we AbortAll() now, this will cancel the receive.
+    connection->AbortAll();
+}
+
 
 #endif

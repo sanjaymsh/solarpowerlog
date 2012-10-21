@@ -47,11 +47,11 @@
 
 // Token inserted by this or the slave class to specify individual timeouts.
 // At this timestamp, the command can be considered timed-out.
-#define ICONNECT_TOKEN_TIMEOUTTIMESTAMP "CSharedConnection_Timeout"
+#define SHARED_CONN_TIMEOUTTIMESTAMP "CSharedConnection_Timeout"
 
-#define ICONNECT_TOKEN_PRV_ORIGINALCOMMAND "CSharedConnection_OrgiginalWork"
+#define ICONNECT_TOKEN_PRV_ORIGINALCOMMAND "CSharedConnection_Orig_ICommand"
 
-#define SHARED_CONN_MASTER_DEFAULTTIMEOUT (3000UL)
+#define SHARED_CONN_DEFAULTTIMEOUT (3000UL)
 
 class CSharedConnectionMaster : public IConnect , ICommandTarget
 {
@@ -93,23 +93,36 @@ protected:
     virtual bool AbortAll();
 
     /// Incoming communication calls from the sharedcomms-slaves.
-    virtual void Connect(ICommand *callback, CSharedConnectionSlave *s);
+    void Connect(ICommand *callback, CSharedConnectionSlave *s);
 
     /// Incoming communication calls from the sharedcomms-slaves.
-    virtual void Disconnect(ICommand *callback, CSharedConnectionSlave *s);
+    void Disconnect(ICommand *callback, CSharedConnectionSlave *s);
 
     /// Incoming communication calls from the sharedcomms-slaves.
-    virtual void Send(ICommand *callback, CSharedConnectionSlave *s);
+    void Send(ICommand *callback, CSharedConnectionSlave *s);
 
     /// Incoming communication calls from the sharedcomms-slaves.
-    virtual void Receive(ICommand *callback, CSharedConnectionSlave *s);
+    void Receive(ICommand *callback, CSharedConnectionSlave *s);
 
-    virtual void Accept(ICommand *callback, CSharedConnectionSlave *s);
+    void Accept(ICommand *callback, CSharedConnectionSlave *s);
 
-    virtual void Noop(ICommand *callback, CSharedConnectionSlave *s);
+    void Noop(ICommand *callback, CSharedConnectionSlave *s);
 
     /// Ticket-Service for atomic-block handling
     long GetTicket();
+
+    /** Register a slave for reading result distribution.
+     *
+     * Adds the slave to the list of recipients
+     *
+     * \param slave to be subscribed or unsubscribed
+     * \param subscribe true to subscribe, false to unsubscribe
+     *
+     * \note multiple calls to subscribe will cause multiple subscriptions.
+     *
+     * \note unsubscribing will remove all subscriptions of this slave..
+     */
+    void SubscribeSlave(CSharedConnectionSlave *slave, bool subscribe= true);
 
 private:
 
@@ -122,20 +135,25 @@ private:
      *
      * Bundled the common handling of slave requests entering the IConnect API.
      *
+     * \param cmd the callback
+     * \param api_id  API ID
+     * \param isatomic if non-null, store the result of the check if it is atomic or not
+     *
      * \returns the ICommand to be used for the target IConnect or NULL
      * if no command must be issued at this time.
      * */
-    ICommand* HandleAtomicBlock(ICommand *cmd, enum api_id id);
+    ICommand* HandleAtomicBlock(ICommand *cmd, enum api_id id, bool *isatomic=NULL);
 
-    /// Helper function to dispatch API calls.
+    /** Helper function to dispatch API calls.
+     */
     void ICommandDispatcher(ICommand *cmd);
+
+    /** Helper function to handle the interruption of non-atomic receives */
+    void _HandleNonAtomicReceiveInterrupts(void);
 
     IConnect *connection;
 
     list<ICommand*> readcommands;
-
-    // When is the current receive scheduled to timeout?
-    boost::posix_time::ptime readtimeout;
 
     boost::mutex mutex;
     long ticket_cnt;
@@ -156,6 +174,16 @@ private:
 
     /** The ICommand that will end this block.*/
     ICommand *last_atomic_cmd;
+
+    bool non_atomic_mode;
+
+    /// List of "listening" slaves.
+    std::list<CSharedConnectionSlave *> _reading_slaves;
+
+    /// When is the current receive scheduled to timeout?
+    boost::posix_time::ptime readtimeout;
+
+    bool _nam_interrupted;
 
 };
 

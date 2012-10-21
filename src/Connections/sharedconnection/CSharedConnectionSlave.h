@@ -41,10 +41,11 @@ Copyright (C) 2010-2012 Tobias Frost
 #ifdef HAVE_COMMS_SHAREDCONNECTION
 
 #include "Connections/interfaces/IConnect.h"
+#include "patterns/ICommandTarget.h"
 
 class CSharedConnectionMaster;
 
-class CSharedConnectionSlave: public IConnect
+class CSharedConnectionSlave: public IConnect, protected ICommandTarget
 {
 protected:
 	friend class CSharedConnection;
@@ -53,12 +54,21 @@ protected:
 public:
 	virtual ~CSharedConnectionSlave();
 
+	virtual void ExecuteCommand(const ICommand *cmd);
+
 protected:
     void setMaster(CSharedConnectionMaster* master)
     {
         LOGDEBUG(logger,"this:" << this << " master:"<<master);
         this->master = master;
     }
+
+    enum Commands
+    {
+        CMD_HANDLETIMEOUTS = BasicCommands::CMD_USER_MIN,
+        CMD_HANDLEREAD
+    };
+
 
 protected:
 
@@ -100,6 +110,16 @@ private:
 	CSharedConnectionMaster *master;
 
 	long current_ticket;
+
+	bool slave_registered;
+
+    std::list<ICommand *> pending_reads;
+
+    boost::mutex mutex;
+
+    /// Buffer for non-atomic reads while no read is pending.
+    /// Will be reset by Connect and Disconnect.
+    std::string read_buffer;
 
 };
 

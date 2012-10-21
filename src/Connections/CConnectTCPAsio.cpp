@@ -458,6 +458,12 @@ void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 	char buf[2];
 	struct asyncASIOCompletionHandler read_handler(&bytes, &handlerec);
 
+    // avoid that the ioservice will be automatically stopped.
+    // when running out of work.
+	// on deletion of this object the ioserver might get stopped, if not
+	// externally AbortAll has been called.
+    boost::asio::io_service::work work(*ioservice);
+
 	// timeout setup
 	try {
 		timeout = boost::any_cast<long>(
@@ -722,8 +728,9 @@ void CConnectTCPAsio::HandleAccept(CAsyncCommand *cmd)
     int port;
     std::string ipadr;
     // Do not accept if already connected.
+    // Pretend success in this case.
     if (IsConnected()) {
-        cmd->callback->addData(ICMD_ERRNO, -EBUSY);
+        cmd->callback->addData(ICMD_ERRNO, 0);
         cmd->HandleCompletion();
         return;
     }

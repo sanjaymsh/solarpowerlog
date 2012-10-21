@@ -133,25 +133,9 @@ void CConnectTCPAsio::Disconnect( ICommand *callback )
 	// note: internally we still use the sync interface in the destructor!
 	// to ensure that the port is closed when we tear down everything.
 
-	sem_t semaphore;
-
-	CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::DISCONNECT,
-			callback);
-	// if callback is NULL, fallback to synchronous operation.
-	// (we will do the job asynchronous, but wait for completion here)
-	if (!callback) {
-		sem_init(&semaphore, 0, 0);
-		commando->SetSemaphore(&semaphore);
-	}
-
-	PushWork(commando);
-
-	if (!callback) {
-		// wait for async job completion
-		sem_wait(&semaphore);
-		LOGTRACE(logger, "destroying CAsyncCommando " << commando );
-		delete commando;
-	}
+    assert(callback);
+	CAsyncCommand *co = new CAsyncCommand(CAsyncCommand::DISCONNECT, callback);
+	PushWork(co);
 }
 
 void  CConnectTCPAsio::Send( ICommand *callback)

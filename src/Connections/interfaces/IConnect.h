@@ -208,9 +208,7 @@ public:
 	/// method.
 	/// \returns true if Accept() works, false if not.
 
-	virtual bool CanAccept(void) {
-	    return false;
-	}
+	virtual bool CanAccept(void) = 0;
 
 	/// Check if we believe the connection is still active
 	/// Note: if the concrete implementation cannot tell,

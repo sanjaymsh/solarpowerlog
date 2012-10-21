@@ -168,8 +168,8 @@ bool CSharedConnectionSlave::CheckConfig(void)
 
 bool CSharedConnectionSlave::IsConnected(void)
 {
-	assert(master);
-	return master->IsConnected();
+    assert(master);
+    return master->IsConnected();
 }
 
 bool CSharedConnectionSlave::AbortAll()
@@ -178,6 +178,12 @@ bool CSharedConnectionSlave::AbortAll()
     return false;
 }
 
+
+bool CSharedConnectionSlave::CanAccept(void)
+{
+    assert(master);
+    return master->CanAccept();
+}
 
 bool CSharedConnectionSlave::HandleTickets(ICommand* callback)
 {

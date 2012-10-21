@@ -165,6 +165,8 @@ public:
         return concreteSharedConnection->AbortAll();
     }
 
+    virtual bool CanAccept(void);
+
 protected:
     IConnect *GetConcreteSharedConnection(void)
     {

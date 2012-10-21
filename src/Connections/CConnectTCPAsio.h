@@ -94,7 +94,7 @@ public:
 	/// Aborts all IOs.
 	/// Note: The current executed I/O will also be cancelled, but error
 	/// reporting might report a wrong error. (e.g timeout instead of cancelled)
-	virtual bool AbortAll();
+    virtual bool AbortAll(void);
 
 private:
 	boost::asio::io_service *ioservice;

@@ -80,10 +80,7 @@ protected:
 
     virtual void Noop(ICommand *cmd);
 
-    virtual bool CanAccept(void) {
-        #warning change after we accept Accept()
-        return false;
-    }
+    virtual bool CanAccept(void);
 
     /** Handles the common tasks regarding the ticket system to handler "atomic
      * blocks"

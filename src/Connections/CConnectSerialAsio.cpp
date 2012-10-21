@@ -714,6 +714,12 @@ bool CConnectSerialAsio::AbortAll()
     return true;
 }
 
+bool CConnectSerialAsio::CanAccept()
+{
+#warning FIXME Enable Accept for Serial Comms -- Mapp Accept to Connect and we're fine...
+    return false;
+}
+
 /** handles async sending */
 void CConnectSerialAsio::HandleSend(CAsyncCommand *cmd)
 {

@@ -126,7 +126,6 @@ void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
                     ICommandDispatcher(cmd);
                 }
 
-
                 // now we have one left in the queue, but this could be one
                 // finishing the queue (then we need to intercept the result)
                 // or it just one block in the middle of the atomic block
@@ -422,5 +421,11 @@ void CSharedConnectionMaster::ICommandDispatcher(ICommand* cmd)
     }
 }
 
+
+bool CSharedConnectionMaster::CanAccept(void)
+{
+    assert(connection);
+    return connection->CanAccept();
+}
 
 #endif

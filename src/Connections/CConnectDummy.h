@@ -93,6 +93,10 @@ public:
 
     virtual void _main(void) {}
 
+    virtual bool CanAccept(void) {
+        return false;
+    }
+
 };
 
 #endif /* CCONNECTDUMMY_H_ */

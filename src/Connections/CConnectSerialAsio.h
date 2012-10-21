@@ -92,6 +92,8 @@ public:
 
     virtual bool AbortAll();
 
+    virtual bool CanAccept();
+
 private:
 	boost::asio::io_service *ioservice;
 	boost::asio::serial_port *port;

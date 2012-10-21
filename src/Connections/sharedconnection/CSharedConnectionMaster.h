@@ -81,10 +81,7 @@ protected:
 
     virtual void Accept(ICommand *callback);
 
-    virtual bool CanAccept(void) {
-#warning change after we accept Accept()
-        return false;
-    }
+    virtual bool CanAccept(void);
 
     virtual void Noop(ICommand *callback);
 

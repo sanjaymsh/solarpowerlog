@@ -52,6 +52,11 @@ CSharedConnection::~CSharedConnection()
 		delete concreteSharedConnection;
 }
 
+bool CSharedConnection::CanAccept(void)
+{
+    return concreteSharedConnection->CanAccept();
+}
+
 bool CSharedConnection::CreateSharedConnectionObject()
 {
 	if (concreteSharedConnection) return true;
@@ -84,7 +89,6 @@ bool CSharedConnection::CreateSharedConnectionObject()
 
 bool CSharedConnection::CheckConfig(void)
 {
-
 	bool fail = false;
 	CConfigHelper cfg(ConfigurationPath);
 	std::string s;

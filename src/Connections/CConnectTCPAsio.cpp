@@ -712,7 +712,7 @@ void CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 	return ;
 }
 
-bool CConnectTCPAsio::AbortAll()
+bool CConnectTCPAsio::AbortAll(void)
 {
     // obtain mutex
     LOGINFO(logger,"AbortAll()");

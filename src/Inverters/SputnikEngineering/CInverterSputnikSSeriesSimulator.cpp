@@ -469,7 +469,6 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 			} catch (...) {
 				LOGERROR(logger, "Receive Error: " << strerror(-err));
 			}
-			break;
 		}
 
 		try {
@@ -477,7 +476,14 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 					ICONN_TOKEN_RECEIVE_STRING));
 		} catch (...) {
 			LOGDEBUG(logger, "Unexpected Exception");
+			err = -EINVAL;
 			break;
+		}
+
+		if (err < 0) {
+            cmd = new ICommand(CMD_SIM_INIT, this);
+            Registry::GetMainScheduler()->ScheduleWork(cmd);
+            break;
 		}
 
 		LOGTRACE(logger, "Received: " << s << " len: " << s.size());
@@ -501,11 +507,14 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
         // only response if parsing was successful.
 		if (s.size()) {
 		LOGTRACE(logger, "Response :" << s << " len: " << s.size());
+		    cmd = new ICommand(CMD_SIM_WAIT_SENT,this);
             cmd->addData(ICONN_TOKEN_TIMEOUT,(long)3000);
             cmd->addData(ICONN_TOKEN_SEND_STRING, s);
             connection->Send(cmd);
 		} else {
-		    Registry::GetMainScheduler()->ScheduleWork(cmd);
+            cmd = new ICommand(CMD_SIM_EVALUATE_RECEIVE,this);
+            cmd->addData(ICONN_TOKEN_TIMEOUT, (long) 3600 * 1000);
+            connection->Receive(cmd);
 		}
 	}
 

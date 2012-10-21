@@ -166,6 +166,7 @@ public:
 	/// Merge data from other ICommand into this one.
 	void mergeData(const ICommand &other);
 
+#ifdef ICMD_WITH_DUMP_MEMBER
     /// Debug-Helper to dump all data which is stored in the ICommand.
     void DumpData(ILogger& logger) const {
         std::map<std::string, boost::any>::const_iterator it;
@@ -182,6 +183,7 @@ public:
         }
         LOGDEBUG(logger, "dumping done.");
     }
+#endif
 
 private:
 	int cmd;

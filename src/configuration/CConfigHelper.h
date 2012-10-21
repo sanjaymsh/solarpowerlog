@@ -163,16 +163,19 @@ public:
     {
         unsigned int tmp;
 
-        libconfig::Setting & set
-            = Registry::Instance().GetSettingsForObject(cfgpath);
-
-        if (!set.lookupValue(setting, tmp)) {
+        try {
+            libconfig::Setting & set =
+                Registry::Instance().GetSettingsForObject(cfgpath);
+            if (!set.lookupValue(setting, tmp)) {
+                store = defvalue;
+                return false;
+            }
+            store = tmp;
+            return true;
+        } catch (...) {
             store = defvalue;
             return false;
         }
-
-        store = tmp;
-        return true;
     }
 
     /** Specialization of the GetConfig routine for the type long.
@@ -183,16 +186,20 @@ public:
             long defvalue)
     {
         int tmp;
+        try {
+            libconfig::Setting & set =
+                Registry::Instance().GetSettingsForObject(cfgpath);
 
-        libconfig::Setting & set
-            = Registry::Instance().GetSettingsForObject(cfgpath);
-
-        if (!set.lookupValue(setting, tmp)) {
+            if (!set.lookupValue(setting, tmp)) {
+                store = defvalue;
+                return false;
+            }
+            store = tmp;
+            return true;
+        } catch (...) {
             store = defvalue;
             return false;
         }
-        store = tmp;
-        return true;
     }
 
     /** Retrieves a configuration or set the config with a default value.
@@ -206,30 +213,38 @@ public:
     }
 
     /** GetConfig when using a char-array as setting -- see ##GetConfig doc
-      * \returns false, if the default value has been used.
+     * \returns false, if the default value has been used.
      */
     template<class T>
-    bool GetConfig( char const *setting, T &store, const T defvalue )
+    bool GetConfig(char const *setting, T &store, const T defvalue)
     {
 
-        libconfig::Setting & set
-             = Registry::Instance().GetSettingsForObject(cfgpath);
-
-         if (!set.lookupValue(setting, store)) {
-             store = defvalue;
-             return false;
-         }
-         return true;
+        try {
+            libconfig::Setting & set =
+                Registry::Instance().GetSettingsForObject(cfgpath);
+            if (!set.lookupValue(setting, store)) {
+                store = defvalue;
+                return false;
+            }
+            return true;
+        } catch (...) {
+            store = defvalue;
+            return false;
+        }
     }
 
     /** GetConfig for mandatory unsigned long settings, for libconfig 1.4.8
       * \returns false, if the setting could not be retrieved.
      */
-    bool GetConfig( char const *setting, unsigned long &store )
+    bool GetConfig(char const *setting, unsigned long &store)
     {
-         libconfig::Setting & set
-            = Registry::Instance().GetSettingsForObject(cfgpath);
-        return set.lookupValue(setting, (unsigned int &)store);
+        try {
+            libconfig::Setting & set =
+                Registry::Instance().GetSettingsForObject(cfgpath);
+            return set.lookupValue(setting, (unsigned int &)store);
+        } catch (...) {
+            return false;
+        }
     }
 
     /** GetConfig for mandatory settings.
@@ -244,28 +259,36 @@ public:
     /** GetConfig for mandatory long settings, for libconfig 1.4.8
       * \returns false, if the setting could not be retrieved.
      */
-    bool GetConfig( char const *setting, long &store )
+    bool GetConfig(char const *setting, long &store)
     {
-        int tmp;
-        libconfig::Setting & set
-            = Registry::Instance().GetSettingsForObject(cfgpath);
+        try {
+            int tmp;
+            libconfig::Setting & set =
+                Registry::Instance().GetSettingsForObject(cfgpath);
 
-        if (!set.lookupValue(setting, tmp)) {
+            if (!set.lookupValue(setting, tmp)) {
+                return false;
+            }
+            store = tmp;
+            return true;
+        } catch (...) {
             return false;
         }
-        store = tmp;
-        return true;
     }
 
     /** GetConfig for mandatory settings, flavour "char*"
-      * \returns false, if the setting could not be retrieved.
+     * \returns false, if the setting could not be retrieved.
      */
     template<class T>
-    bool GetConfig( char const *setting, T &store )
+    bool GetConfig(char const *setting, T &store)
     {
-        libconfig::Setting & set
-            = Registry::Instance().GetSettingsForObject(cfgpath);
-        return set.lookupValue(setting, store);
+        try {
+            libconfig::Setting & set =
+                Registry::Instance().GetSettingsForObject(cfgpath);
+            return set.lookupValue(setting, store);
+        } catch (...) {
+            return false;
+        }
     }
 
 	/** Get the configuration for an array entry, identified by a index.
@@ -282,21 +305,26 @@ public:
 	 * not existant.
 	 *
 	 */
-	template<class T>
-	bool GetConfigArray( const string& setting, int index, T &store )
-	{
-		libconfig::Setting & set
-			= Registry::Instance().GetSettingsForObject(cfgpath);
+    template<class T>
+    bool GetConfigArray(const string& setting, int index, T &store)
+    {
+        try {
+            libconfig::Setting & set =
+                Registry::Instance().GetSettingsForObject(cfgpath);
 
-		try {
-			store = set[setting][index];
-
-		} catch (libconfig::SettingNotFoundException &e) {
-			return false;
-		} catch (libconfig::SettingTypeException &e) {
-			return false;
-		}
-		return true;
+            store = set[setting][index];
+            return true;
+#if 0
+        } catch (libconfig::SettingNotFoundException &e) {
+            return false;
+        } catch (libconfig::SettingTypeException &e) {
+            return false;
+        }
+#else
+        } catch (...) {
+            return false;
+        }
+#endif
 	}
 
 	/** Get the configuration for an array entry, identified by a index.
@@ -315,20 +343,26 @@ public:
 	 * not existant.
 	 *
 	 */
-	bool GetConfigArray( const string& setting, int index, string &store )
-	{
-		libconfig::Setting & set
-			= Registry::Instance().GetSettingsForObject(cfgpath);
+    bool GetConfigArray(const string& setting, int index, string &store)
+    {
+        try {
+            libconfig::Setting & set =
+                Registry::Instance().GetSettingsForObject(cfgpath);
 
-		try {
-			store = (const char *) set[setting][index];
-		} catch (libconfig::SettingNotFoundException &e) {
-			return false;
-		} catch (libconfig::SettingTypeException &e) {
-			return false;
-		}
-        return true;
-	}
+            store = (const char *)set[setting][index];
+            return true;
+#if 0
+        } catch (libconfig::SettingNotFoundException &e) {
+            return false;
+        } catch (libconfig::SettingTypeException &e) {
+            return false;
+        }
+#else
+        } catch (...) {
+            return false;
+        }
+#endif
+    }
 
 	/** This is a ugly helper the CHTHML Writer -- we are having a list which
 	 * embeddes a array. The entries are anonymous (without a destinctive name).
@@ -344,38 +378,48 @@ public:
 	template<class T>
 	bool GetConfigArray( const int i, int index, T &store )
 	{
-		libconfig::Setting & set
+		try {
+		    libconfig::Setting & set
 			= Registry::Instance().GetSettingsForObject(cfgpath);
 
-		try {
 			store = (const char *) set[i][index];
 			return true;
-		} catch (libconfig::SettingNotFoundException &e) {
-			return false;
-		} catch (libconfig::SettingTypeException &e) {
-			return false;
-		}
+#if 0
+        } catch (libconfig::SettingNotFoundException &e) {
+            return false;
+        } catch (libconfig::SettingTypeException &e) {
+            return false;
+        }
+#else
+        } catch (...) {
+            return false;
+        }
+#endif
 	}
-
 
     /** this ugly helper is for the CHTHML Writer, for types that are strings.
      * See the other ##GetConfigArray for details.
      */
     bool GetConfigArray( const int i, int index, string &store )
     {
-        libconfig::Setting & set
+        try {
+            libconfig::Setting & set
             = Registry::Instance().GetSettingsForObject(cfgpath);
 
-        try {
             store = (const char *) set[i][index];
+            return true;
+#if 0
         } catch (libconfig::SettingNotFoundException &e) {
             return false;
         } catch (libconfig::SettingTypeException &e) {
             return false;
         }
-        return true;
+#else
+        } catch (...) {
+            return false;
+        }
+#endif
     }
-
 
 private:
 	string cfgpath;

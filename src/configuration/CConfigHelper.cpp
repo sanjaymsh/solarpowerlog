@@ -58,25 +58,26 @@ bool CConfigHelper::CheckConfig( const string & setting,
 		if (printerr)
 			reason = "was not found";
 	} else {
-		libconfig::Setting & set = cfg->lookup(tmp);
-		if (printerr)
-			reason = "is of wrong type.";
+        try {
+            libconfig::Setting & set = cfg->lookup(tmp);
+            if (printerr) reason = "is of wrong type.";
 
-		switch (type) {
-		case Setting::TypeInt:
-		case Setting::TypeFloat:
-		case Setting::TypeInt64:
-		{
-			if (set.isNumber())
-				return true;
-			break;
-		}
-		default:
-			if (set.getType() == type) {
-				return true;
-			}
-			break;
-		}
+            switch (type) {
+                case Setting::TypeInt:
+                case Setting::TypeFloat:
+                case Setting::TypeInt64: {
+                    if (set.isNumber()) return true;
+                    break;
+                }
+                default:
+                    if (set.getType() == type) {
+                        return true;
+                    }
+                break;
+            }
+        } catch (...) {
+            if (printerr) reason = "cannot type-check: setting not found";
+        }
 	}
 
 	if (printerr) {

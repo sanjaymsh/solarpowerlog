@@ -117,8 +117,8 @@ CConnectTCPAsio::~CConnectTCPAsio()
 void CConnectTCPAsio::Connect( ICommand *callback )
 {
 	assert(callback);
-	CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::CONNECT, callback);
-	PushWork(commando);
+	CAsyncCommand *co = new CAsyncCommand(CAsyncCommand::CONNECT, callback);
+	PushWork(co);
 }
 
 /* Disconnect
@@ -210,7 +210,7 @@ bool CConnectTCPAsio::CheckConfig( void )
         fail |= !cfghelper.CheckConfig("tcpadr", libconfig::Setting::TypeString);
         fail |= !cfghelper.CheckConfig("tcpport", libconfig::Setting::TypeString);
         fail |= !cfghelper.CheckConfig("tcptimeout", libconfig::Setting::TypeInt,
-                false);
+                true);
 
         if (cfghelper.CheckConfig("tcptimeout", libconfig::Setting::TypeInt,
                 true,false)) {
@@ -268,7 +268,7 @@ void CConnectTCPAsio::_main( void )
 				break;
 
 				case CAsyncCommand::DISCONNECT:
-					HandleDisConnect(donow);
+					HandleDisconnect(donow);
 					if (delete_cmd) {
 						delete donow;
 					}
@@ -405,7 +405,7 @@ void CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 	return ;
 }
 
-void CConnectTCPAsio::HandleDisConnect( CAsyncCommand *cmd )
+void CConnectTCPAsio::HandleDisconnect( CAsyncCommand *cmd )
 {
 	boost::system::error_code ec, ec2;
 	std::string message;

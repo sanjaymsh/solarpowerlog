@@ -67,22 +67,22 @@ protected:
 public:
 	virtual ~CConnectTCPAsio();
 
-	virtual void Connect( ICommand *callback );
+    virtual void Connect(ICommand *callback);
 
-	virtual void Disconnect( ICommand *callback );
+    virtual void Disconnect(ICommand *callback);
 
-	virtual void SetupLogger( const string& parentlogger, const string & = "" )
-	{
-		IConnect::SetupLogger(parentlogger, "Comms_TCP_ASIO");
-	}
+    virtual void SetupLogger(const string& parentlogger, const string & = "")
+    {
+        IConnect::SetupLogger(parentlogger, "Comms_TCP_ASIO");
+    }
 
-	virtual void Send( ICommand *callback);
+    virtual void Send(ICommand *callback);
 
-	virtual void Receive( ICommand *callback );
+    virtual void Receive(ICommand *callback);
 
-	virtual bool CheckConfig( void );
+    virtual bool CheckConfig(void);
 
-	virtual bool IsConnected( void );
+    virtual bool IsConnected(void);
 
 	virtual void Accept(ICommand *cmd);
 
@@ -97,53 +97,52 @@ public:
     virtual bool AbortAll(void);
 
 private:
-	boost::asio::io_service *ioservice;
-	boost::asio::ip::tcp::socket *sockt;
+    boost::asio::io_service *ioservice;
+    boost::asio::ip::tcp::socket *sockt;
 
-	virtual void _main( void );
+    virtual void _main(void);
 
-	/** push some new work to the worker thread.
-	 *  \note: If the work can be handled synchronously more efficent, the
-	 *  work might be executed right away.
-	 *
-	 * \param cmd to be executed. Will take ownership of object and destroy
-	 * it after use. (in other words: will be deleted. But only the struct,
-	 * not containing objects!)
-	 *
-	 * \returns false if work could not be pushed or true if it worked out.
-	 */
-	bool PushWork( CAsyncCommand *cmd );
+    /** push some new work to the worker thread.
+     *  \note: If the work can be handled synchronously more efficent, the
+     *  work might be executed right away.
+     *
+     * \param cmd to be executed. Will take ownership of object and destroy
+     * it after use. (in other words: will be deleted. But only the struct,
+     * not containing objects!)
+     *
+     * \returns false if work could not be pushed or true if it worked out.
+     */
+    bool PushWork(CAsyncCommand *cmd);
 
-	/** Handle "Connect-Command"
-	 *
-	 * Connects to the configured target.
-	 *
-	 * \returns true, if job can be removed from queue, false, if it needs to
-	 * be handled again
-	 *
-	 *
-	 * */
-	void HandleConnect( CAsyncCommand *cmd );
+    /** Handle "Connect-Command"
+     *
+     * Connects to the configured target.
+     *
+     * \returns true, if job can be removed from queue, false, if it needs to
+     * be handled again
+     *
+     *
+     * */
+    void HandleConnect(CAsyncCommand *cmd);
 
-	/** Handle the disconnect command.
-	 *
-	 * \returns true, if job can be removed from queue, false, if it needs to
-	 * be handled again
-	 */
+    /** Handle the disconnect command.
+     *
+     * \returns true, if job can be removed from queue, false, if it needs to
+     * be handled again
+     */
 
-	void HandleDisConnect( CAsyncCommand *cmd );
+    void HandleDisconnect(CAsyncCommand *cmd);
 
-	void HandleReceive( CAsyncCommand *cmd );
+    void HandleReceive(CAsyncCommand *cmd);
 
-	void HandleSend( CAsyncCommand *cmd );
+    void HandleSend(CAsyncCommand *cmd);
 
-    void HandleAccept( CAsyncCommand *cmd );
+    void HandleAccept(CAsyncCommand *cmd);
 
-	list<CAsyncCommand*> cmds;
-	sem_t cmdsemaphore;
+    list<CAsyncCommand*> cmds;
+    sem_t cmdsemaphore;
 
-	bool configured_as_server;
-
+    bool configured_as_server;
 };
 
 #endif /* HAVE_COMMS_ASIOTCPIO */

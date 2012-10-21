@@ -80,6 +80,7 @@ struct asyncASIOCompletionHandler
 		*ec = e;
 	}
 
+private:
 	// note, we need pointer as boost seems to make a copy of our handler...
 	size_t *bytes;
 	boost::system::error_code *ec;
@@ -451,12 +452,14 @@ static void boosthelper_set_result( int* store, int value )
 */
 void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 {
-	boost::system::error_code ec, handlerec;
+    // LOGDEBUG(logger, __PRETTY_FUNCTION__ << " handling " << cmd);
+	boost::system::error_code ec;
+	boost::system::error_code read_handlerec;
 	volatile int result_timer = 0;
-	size_t bytes = 0;
+	size_t read_bytes = 0;
 	unsigned long timeout = 0;
 	char buf[2];
-	struct asyncASIOCompletionHandler read_handler(&bytes, &handlerec);
+	struct asyncASIOCompletionHandler read_handler(&read_bytes, &read_handlerec);
 
     // avoid that the ioservice will be automatically stopped.
     // when running out of work.
@@ -510,7 +513,7 @@ void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 		sleep = true;
 		sockt->async_read_some(boost::asio::buffer(&buf, 1), read_handler);
 		num = ioservice->run_one(ec);
-	} while (maxsleep != 0 && !result_timer && 0 == *(read_handler.bytes));
+	} while (maxsleep != 0 && !result_timer && 0 == read_bytes);
 
 	// ioservice error or timeout
     if (num == 0 || result_timer) {
@@ -518,7 +521,11 @@ void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
             LOGTRACE(logger, "Read timeout");
             cmd->callback->addData(ICMD_ERRNO_STR, std::string("Read timeout"));
             cmd->callback->addData(ICMD_ERRNO, -ETIMEDOUT);
-        } else {
+        } else if (ioservice->stopped()){
+            LOGTRACE(logger, "ioservice stopped (1)");
+            cmd->callback->addData(ICMD_ERRNO_STR, std::string("Aborted 1"));
+            cmd->callback->addData(ICMD_ERRNO, -ECANCELED);
+       } else {
             LOGTRACE(logger, "IO Service error: " << ec.message());
             cmd->callback->addData(ICMD_ERRNO_STR, std::string("IO-service error " + ec.message()));
             cmd->callback->addData(ICMD_ERRNO, -EIO);
@@ -526,21 +533,24 @@ void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
         cmd->HandleCompletion();
         timer.cancel(ec);
         sockt->cancel(ec);
-        ioservice->poll();
+        ioservice->poll(ec);
         return;
     }
 
 	timer.cancel();
 	ioservice->poll(ec);
 
-	if (*read_handler.ec) {
-		if (*read_handler.ec != boost::asio::error::eof) {
-			LOGDEBUG(logger,"Async read failed with ec=" << *read_handler.ec
-					<< " msg="<< read_handler.ec->message());
+	if (read_handlerec || ioservice->stopped()) {
+		if (read_handlerec != boost::asio::error::eof) {
+			LOGDEBUG(logger,"Async read failed with ec=" << read_handlerec
+					<< " msg="<< read_handlerec.message());
 			cmd->callback->addData(ICMD_ERRNO, -EIO);
-			cmd->callback->addData(ICMD_ERRNO_STR, read_handler.ec->message());
-
-		} else {
+			cmd->callback->addData(ICMD_ERRNO_STR, read_handlerec.message());
+		} else if (ioservice->stopped()){
+            cmd->callback->addData(ICMD_ERRNO_STR, std::string("Aborted 2"));
+            cmd->callback->addData(ICMD_ERRNO, -ECANCELED);
+            LOGTRACE(logger, "ioservice stopped (2)");
+        } else {
 			cmd->callback->addData(ICMD_ERRNO, -ENOTCONN);
 			LOGTRACE(logger, "Received eof on socket read");
 		}
@@ -548,9 +558,9 @@ void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 		return ;
 	}
 
-	if (1 != *read_handler.bytes) {
+	if (1 != read_bytes) {
 		LOGDEBUG(logger,"Received "
-				<< *read_handler.bytes << " but expected only 1 byte");
+				<< read_bytes << " but expected only 1 byte");
 		cmd->callback->addData(ICMD_ERRNO, -EIO);
 		cmd->HandleCompletion();
 		return ;
@@ -566,7 +576,14 @@ void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 	recved[0] = buf[0];
 	while (avail > 0) {
 		tmp = sockt->read_some(asio::buffer(&recved[numrecvd], avail), ec);
-		LOGTRACE(logger, "Read " << tmp << " of those");
+        if (ioservice->stopped()) {
+            cmd->callback->addData(ICMD_ERRNO_STR, std::string("Aborted 3"));
+            cmd->callback->addData(ICMD_ERRNO, -ECANCELED);
+            LOGTRACE(logger, "ioservice stopped. (3)");
+            cmd->HandleCompletion();
+            return;
+        }
+//		LOGTRACE(logger, "Read " << tmp << " of those");
 		avail -= tmp;
 		numrecvd += tmp;
 		// check if error occured.
@@ -602,13 +619,15 @@ void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 /** handles async sending */
 void CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 
-	boost::system::error_code ec, handlerec;
+    // LOGTRACE(logger, __PRETTY_FUNCTION__ << ": now handling: " << cmd->callback);
+
+    std::string s;
+	boost::system::error_code ec;
+	boost::system::error_code write_handlerec;
 	volatile int result_timer = 0;
-	size_t bytes = 0;
+	size_t wrote_bytes = 0;
 	unsigned long timeout;
-	struct asyncASIOCompletionHandler write_handler(&bytes, &handlerec);
-	// timeout setup
-	std::string s;
+	struct asyncASIOCompletionHandler write_handler(&wrote_bytes, &write_handlerec);
 	try {
 		s = boost::any_cast<std::string>(cmd->callback->findData(ICONN_TOKEN_SEND_STRING));
 	}
@@ -673,14 +692,13 @@ void CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 	timer.cancel();
 	ioservice->poll(ec);
 
-	LOGTRACE(logger,"Sent " << *write_handler.bytes << "Bytes");
-
-	if (*write_handler.ec) {
-		if (*write_handler.ec != boost::asio::error::eof) {
-			LOGDEBUG(logger,"Async write failed with ec=" << *write_handler.ec
-					<< " msg="<< write_handler.ec->message());
+	LOGTRACE(logger,"Sent " << wrote_bytes << " Bytes");
+	if (write_handlerec) {
+		if (write_handlerec != boost::asio::error::eof) {
+			LOGDEBUG(logger,"Async write failed with ec=" << write_handlerec
+					<< " msg="<< write_handlerec.message());
 			cmd->callback->addData(ICMD_ERRNO, -EIO);
-			cmd->callback->addData(ICMD_ERRNO_STR, write_handler.ec->message());
+			cmd->callback->addData(ICMD_ERRNO_STR, write_handlerec.message());
 		} else {
 			cmd->callback->addData(ICMD_ERRNO, -ENOTCONN);
 			LOGTRACE(logger, "Received eof on socket write");
@@ -689,9 +707,9 @@ void CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 		return ;
 	}
 
-	if (s.length() != *write_handler.bytes) {
+	if (s.length() != wrote_bytes) {
 		LOGDEBUG(logger,"Sent "
-				<< *write_handler.bytes << " but expected "<< s.length() );
+				<< wrote_bytes << " but expected "<< s.length() );
 		cmd->callback->addData(ICMD_ERRNO, -EIO);
 		cmd->HandleCompletion();
 		return ;
@@ -715,16 +733,15 @@ bool CConnectTCPAsio::AbortAll(void)
         c->HandleCompletion();
     }
     // stop any run ioservices.
-    this->ioservice->stop();
+    ioservice->stop();
     mutex.unlock();
-    LOGINFO(logger,"AbortAll() end");
-
     return true;
 }
 
 // Server mode. Listen to incoming connections.
 void CConnectTCPAsio::HandleAccept(CAsyncCommand *cmd)
 {
+    //LOGDEBUG(logger, __PRETTY_FUNCTION__);
     int port;
     std::string ipadr;
     // Do not accept if already connected.

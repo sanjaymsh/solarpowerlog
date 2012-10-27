@@ -143,7 +143,11 @@ private:
     sem_t cmdsemaphore;
 
     bool configured_as_server;
+
+    // Work-around for https://svn.boost.org/trac/boost/ticket/7392
+    bool _connected;
 };
+
 
 #endif /* HAVE_COMMS_ASIOTCPIO */
 #endif /* CONNECTIONTCP_H_ */

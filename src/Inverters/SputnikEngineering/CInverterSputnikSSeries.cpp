@@ -441,17 +441,6 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		// Next-State: INIT (Try to connect)
 		LOGDEBUG(logger, "new state: CMD_DISCONNECTED");
 
-        // Timeout on reception
-		// we assume that we are now disconnected.
-		// so lets schedule a reconnection.
-		// TODO this time should be configurable.
-        cmd = new ICommand(CMD_DISCONNECTED_WAIT, this);
-		if (connection->IsConnected()) {
-	        connection->Disconnect(cmd);
-		} else {
-            Registry::GetMainScheduler()->ScheduleWork(cmd);
-		}
-
 		// Tell everyone that all data is now invalid.
 		CCapability *c = GetConcreteCapability(CAPA_INVERTER_DATASTATE);
 		CValue<bool> *v = (CValue<bool> *) c->getValue();
@@ -465,6 +454,13 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		for (it=this->commands.begin(); it!=commands.end(); it++) {
 		    (*it)->InverterDisconnected();
 		}
+
+        cmd = new ICommand(CMD_DISCONNECTED_WAIT, this);
+        if (connection->IsConnected()) {
+            connection->Disconnect(cmd);
+        } else {
+            Registry::GetMainScheduler()->ScheduleWork(cmd);
+        }
 
 		break;
 	}
@@ -484,13 +480,13 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 
 	case CMD_INIT:
 	{
+        LOGDEBUG(logger, "new state: CMD_INIT");
 	    // initiate new connection only if no shutdown was requested.
 	    if (_shutdown_requested) break;
 
 		// INIT: Try to connect to the comm partner
 		// Action Connection Attempt
 		// Next-State: Wait4Connection
-		LOGDEBUG(logger, "new state: CMD_INIT");
 
 		cmd = new ICommand(CMD_WAIT4CONNECTION, this);
 		cmd->addData(ICONN_TOKEN_TIMEOUT,((long)_cfg_connection_timeout_ms));
@@ -794,6 +790,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 
 		// Broadcast events
 	case CMD_BRC_SHUTDOWN:
+        LOGDEBUG(logger, "new state: CMD_BRC_SHUTDOWN");
 	    // stop all pending I/Os, as we will exit soon.
 	    connection->AbortAll();
 	    _shutdown_requested = true;

@@ -78,17 +78,16 @@ void CSharedConnectionSlave::Disconnect(ICommand *callback)
 
 void CSharedConnectionSlave::Send(ICommand *callback)
 {
-    LOGDEBUG(logger, __PRETTY_FUNCTION__ << ": work: "<<callback);
+//    LOGDEBUG(logger, __PRETTY_FUNCTION__ << ": work: "<<callback);
     assert(callback);
     assert(master);
     (void)HandleTickets(callback);
-    LOGDEBUG(logger, __PRETTY_FUNCTION__ << ": submitting work: "<<callback);
     master->Send(callback, this);
 }
 
 void CSharedConnectionSlave::Receive(ICommand *callback)
 {
-    LOGDEBUG(logger, __PRETTY_FUNCTION__ << ": callback: "<<callback);
+//    LOGDEBUG(logger, __PRETTY_FUNCTION__ << ": callback: "<<callback);
     assert(master);
     assert(callback);
 
@@ -166,7 +165,7 @@ void CSharedConnectionSlave::Accept(ICommand* callback)
 
 void CSharedConnectionSlave::Noop(ICommand* cmd)
 {
-    LOGDEBUG(logger, "CSharedConnectionSlave::Noop: callback:"<<cmd);
+ //   LOGDEBUG(logger, "CSharedConnectionSlave::Noop: callback:"<<cmd);
     assert(cmd);
     (void)HandleTickets(cmd);
     master->Noop(cmd, this);
@@ -337,20 +336,21 @@ bool CSharedConnectionSlave::HandleTickets(ICommand* callback)
     }
 
     if (!is_atomic) {
-        LOGDEBUG(logger, " Not atomic " << callback);
+        // LOGDEBUG(logger, " Not atomic " << callback);
         return false;
     }
 
     // New atomic block?
     if (0 == current_ticket) {
         current_ticket = master->GetTicket();
-        LOGDEBUG(logger,
-            " New ticket "<< current_ticket << " requested for " << callback);
+       //LOGDEBUG(logger,   " New ticket "<< current_ticket << " requested for " << callback);
     } else {
-        if (is_still_atomic) LOGDEBUG(logger,
-            " Existing ticket "<< current_ticket << " continued for " << callback);
-        else LOGDEBUG(logger,
-            " Existing ticket "<< current_ticket << " ending with " << callback);
+        if (is_still_atomic) {
+            //LOGDEBUG(logger,            " Existing ticket "<< current_ticket << " continued for " << callback);
+        } else  {
+            //LOGDEBUG(logger," Existing ticket "<< current_ticket << " ending with " << callback);
+        }
+
     }
 
     callback->addData(ICONN_SHARED_TICKET, current_ticket);

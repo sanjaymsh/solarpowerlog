@@ -85,7 +85,7 @@ void CSharedConnectionMaster::SetupLogger(const string& parentlogger,
 
 void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
 {
-    LOGDEBUG(logger, __PRETTY_FUNCTION__ << " now handling: " << Command);
+//    LOGDEBUG(logger, __PRETTY_FUNCTION__ << " now handling: " << Command << " (" << Command->getCmd() << "");
 
     // handling end of atomic blocks and issuing pending commands.
     switch (Command->getCmd()) {
@@ -94,10 +94,10 @@ void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
             // just been finished.
             // redirect the answer and clean up our stats.
             CMutexAutoLock m(&mutex); // mutex is needed....
-            LOGDEBUG(logger, "Ending Ticket " << active_ticket );
+//            LOGDEBUG(logger, "Ending Ticket " << active_ticket );
             assert(last_atomic_cmd);
             last_atomic_cmd->mergeData(*Command);
-            LOGDEBUG(logger, __PRETTY_FUNCTION__ << " scheduling " << last_atomic_cmd);
+//            LOGDEBUG(logger, __PRETTY_FUNCTION__ << " scheduling " << last_atomic_cmd);
             Registry::GetMainScheduler()->ScheduleWork(last_atomic_cmd);
             last_atomic_cmd = NULL;
             active_ticket = 0;
@@ -106,20 +106,22 @@ void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
             // first the "non-atomic-ones"
             // they can just be queued to the comms object
 
-            LOGDEBUG(logger,"non-atomic-backlog:" << non_atomic_icommands_pending.size());
+//            LOGDEBUG(logger,"non-atomic-backlog:" << non_atomic_icommands_pending.size());
 
             while (non_atomic_icommands_pending.size()) {
                 ICommand *cmd = non_atomic_icommands_pending.front();
                 non_atomic_icommands_pending.pop();
+//                LOGDEBUG(logger, "Dispatching1 " << cmd);
                 ICommandDispatcher(cmd);
              }
 
-            LOGDEBUG(logger,"atomic-backlog (blocks):" << atomic_icommands_pending.size());
+ //           LOGDEBUG(logger,"atomic-backlog (blocks):" << atomic_icommands_pending.size());
 
-            // after giving the non-atomic priority, lets resume atomic operation.
-            // we can also queue the next atomic block completly, but we need
-            // again to catch the cmd completing the block.
-            // as std::maps are ordered, we can just "pop" the first item#
+            // after giving the non-atomic priority, resume atomic operation.
+            // we can also queue the next atomic block completely, but we need
+            // again to catch the command completing the block.
+            // as std::maps are ordered, we can just "pop" the first item to
+            // get the next due ticket
             if (atomic_icommands_pending.size()) {
                 ICommand *cmd;
                 std::map<long, std::queue<ICommand*> >::iterator it =
@@ -129,11 +131,12 @@ void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
                 while (q->size() > 1) {
                     cmd = q->front();
                     q->pop();
+//                    LOGDEBUG(logger, "Dispatching2 " << cmd);
                     ICommandDispatcher(cmd);
                 }
 
                 // now we have one left in the queue, but this could be one
-                // finishing the queue (then we need to intercept the result)
+                // finishing the block (then we need to intercept the result)
                 // or it just one block in the middle of the atomic block
                 // in this case we can just submit the command to the comms.
                 assert(q->size() == 1);
@@ -146,13 +149,17 @@ void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
                     newcmd->mergeData(*cmd);
                     last_atomic_cmd = cmd;
                     cmd->RemoveData(); // free up some memory, data not needed.
+//                    LOGDEBUG(logger, "Dispatching3 " << cmd);
+                    ICommandDispatcher(newcmd);
                 } else {
+ //                   LOGDEBUG(logger, "Dispatching4 " << cmd);
                     ICommandDispatcher(cmd);
                 }
 
-                LOGDEBUG(logger, "New Ticket " << active_ticket );
+ //               LOGDEBUG(logger, "New Ticket " << active_ticket );
 
-                // we do not need to keep this map item anymore.
+                // we can delete the map entry for this ticket, as subsequent
+                // commands will be handled directly.
                 atomic_icommands_pending.erase(it);
             }
             break;
@@ -170,8 +177,7 @@ void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
             } catch (...) {
             }
 
-
-            // Submit everything to the slaves except timeout (handled by slaves)
+             // Submit everything to the slaves except timeout (handled by slaves)
             // and the aborted calls.
             if (err != -ECANCELED && err != -ETIMEDOUT) {
                 // call was not canceled, tha means transmit to all slaves.
@@ -181,7 +187,7 @@ void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
                     ICommand *c = new ICommand(
                         CSharedConnectionSlave::CMD_HANDLEREAD, *it);
                     c->mergeData(*Command);
-                    LOGDEBUG(logger, __PRETTY_FUNCTION__ << " read-results: now scheduling: " << c);
+                    //LOGDEBUG(logger, __PRETTY_FUNCTION__ << "Dispatching receive work to slave comms. " << c << " (slave:" << *it << ")");
                     Registry::GetMainScheduler()->ScheduleWork(c);
                 }
             }
@@ -195,9 +201,10 @@ void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
                     this);
                 long timeout = d.total_milliseconds();
                 c->addData(ICONN_TOKEN_TIMEOUT, timeout);
-                LOGDEBUG(logger, __PRETTY_FUNCTION__ << " rescheduling read: " << c);
+                LOGDEBUG(logger, __PRETTY_FUNCTION__ << " rescheduling read: " << c << " remaining timeout:" << d.total_milliseconds());
                 connection->Receive(c);
             } else {
+                LOGDEBUG(logger, __PRETTY_FUNCTION__ << " not rescheduling read");
                 readtimeout = boost::posix_time::not_a_date_time;
             }
         }
@@ -280,7 +287,7 @@ long CSharedConnectionMaster::GetTicket()
     ++ticket_cnt;
     // Overflow protection -- the zero is reserved for "no ticket"
     if (0 == ticket_cnt) ticket_cnt++;
-    LOGDEBUG(logger," New ticket requested:" << ticket_cnt);
+    //LOGDEBUG(logger," New ticket requested:" << ticket_cnt);
     return ticket_cnt;
 }
 
@@ -349,7 +356,7 @@ void CSharedConnectionMaster::Receive(ICommand* callback,
         // LOGDEBUG(logger,"SharedComms switched to Non-Atomic read mode.");
     }
 
-    unsigned long timeout;
+    long timeout;
     try {
         timeout = boost::any_cast<long>(callback->findData(
                 ICONN_TOKEN_TIMEOUT));
@@ -365,6 +372,7 @@ void CSharedConnectionMaster::Receive(ICommand* callback,
 
     // check if we got already an read request pending.
     if (readtimeout == boost::posix_time::not_a_date_time) {
+ //       LOGDEBUG(logger, "We are not yet reading!");
         // not a pending read.
         // If no read is pending, directly issue a read commmand to the connection,
         // but divert result to our class for later distribution.
@@ -379,9 +387,11 @@ void CSharedConnectionMaster::Receive(ICommand* callback,
 
         callback->setTrgt(this);
         callback->setCmd(CMD_NONATOMIC_HANDLEREADCOMPLETION);
-        LOGDEBUG(logger, __PRETTY_FUNCTION__ << " sending non-atomic to own Execute(): " << callback);
+        callback->addData(ICONN_TOKEN_TIMEOUT, (long)1000);
+//        LOGDEBUG(logger, __PRETTY_FUNCTION__ << " sending non-atomic to own Execute(): " << callback);
         connection->Receive(callback);
     } else {
+        LOGDEBUG(logger, "We are ALREADY reading");
         // we've got already a read pending, just check if we need to update
         // the timeout value if necesary.
         if( readtimeout < ptimetmp) {
@@ -390,7 +400,7 @@ void CSharedConnectionMaster::Receive(ICommand* callback,
         }
         // in this case we do not need this callback anymore
         // as we own it, we delete it.
-        LOGDEBUG(logger, "CSharedConnectionMaster::Receive() deleting: " << callback);
+//        LOGDEBUG(logger, "CSharedConnectionMaster::Receive() deleting: " << callback);
         delete callback;
     }
 }
@@ -440,8 +450,7 @@ ICommand* CSharedConnectionMaster::HandleAtomicBlock(ICommand* cmd,
     }
 
     CMutexAutoLock m(&mutex);
-    LOGDEBUG(logger,"Ticket for this command is: "<< ticket << " (current ticket is "
-        << active_ticket << ")");
+    //LOGDEBUG(logger,"Ticket for this command is: "<< ticket << " (current ticket is "    << active_ticket << ")");
 
     // check if this received work is part of an atomic block
     if (ticket) {
@@ -450,7 +459,7 @@ ICommand* CSharedConnectionMaster::HandleAtomicBlock(ICommand* cmd,
         if (!active_ticket) {
             // nope, this will start it.
             active_ticket = ticket;
-            LOGDEBUG(logger, "New ticket: "<< ticket);
+            //LOGDEBUG(logger, "New ticket: "<< ticket);
         }
 
         if (active_ticket == ticket) {
@@ -459,7 +468,7 @@ ICommand* CSharedConnectionMaster::HandleAtomicBlock(ICommand* cmd,
                 //-> yes: this ends the atomic block.
                 // So save Icommand and create a new one to redirect to own
                 // for completion handling in own ICommandTrgt. Send new one to comms.
-                LOGDEBUG(logger, "Ticket: "<< ticket << " ends soon");
+                //LOGDEBUG(logger, "Ticket: "<< ticket << " ends soon");
                 ICommand *newcmd = new ICommand(CMD_HANDLEENDOFBLOCK, this);
                 newcmd->mergeData(*cmd);
                 assert(!last_atomic_cmd);
@@ -470,7 +479,7 @@ ICommand* CSharedConnectionMaster::HandleAtomicBlock(ICommand* cmd,
             } else {
                 //-> no: just send to comms directly,
                 // the communication will handle it with its fifo.
-                LOGDEBUG(logger, "Ticket: "<< ticket << " continues");
+                //LOGDEBUG(logger, "Ticket: "<< ticket << " continues");
                 return cmd;
             }
         } else {
@@ -479,7 +488,7 @@ ICommand* CSharedConnectionMaster::HandleAtomicBlock(ICommand* cmd,
             cmd->addData(ICONN_SHAREDCOMMS_APIID, id);
             // check if this sets a completly new atomic block
             if (!atomic_icommands_pending.count(ticket)) {
-                LOGDEBUG(logger, "Ticket: "<< ticket << " new backlog entry");
+                //LOGDEBUG(logger, "Ticket: "<< ticket << " new backlog entry");
 
                 // Yes, we need a new map-entry.
                 std::pair<long, std::queue<ICommand*> > p;
@@ -488,7 +497,7 @@ ICommand* CSharedConnectionMaster::HandleAtomicBlock(ICommand* cmd,
                 atomic_icommands_pending.insert(p);
             } else {
                 // No, just append to queue.
-                LOGDEBUG(logger, "Ticket: "<< ticket << " new backlog entry to queue");
+                //LOGDEBUG(logger, "Ticket: "<< ticket << " new backlog entry to queue");
                 std::map<long, std::queue<ICommand*> >::iterator it =
                     atomic_icommands_pending.find(ticket);
                 it->second.push(cmd);

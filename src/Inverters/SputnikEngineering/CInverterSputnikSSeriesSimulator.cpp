@@ -406,6 +406,7 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
         // fall-through ok
 
         case CMD_SIM_WAITDISCONNECT: {
+            LOGDEBUG(logger, "new state: CMD_SIM_WAITDISCONNECT");
             cmd = new ICommand(CMD_SIM_CONNECTED, this);
             connection->Accept(cmd);
             break;
@@ -503,7 +504,6 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 
 		// make answer and send it.
 		s = parsereceivedstring(s);
-        cmd = new ICommand(CMD_SIM_WAIT_SENT,this);
         // only response if parsing was successful.
 		if (s.size()) {
 		LOGTRACE(logger, "Response :" << s << " len: " << s.size());

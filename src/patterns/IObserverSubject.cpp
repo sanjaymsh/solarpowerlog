@@ -90,6 +90,6 @@ IObserverSubject::IObserverSubject()
 
 IObserverSubject::~IObserverSubject()
 {
-	listobservers.empty();
+	listobservers.clear();
 	// TODO Auto-generated destructor stub
 }

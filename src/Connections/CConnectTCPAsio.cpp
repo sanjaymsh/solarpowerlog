@@ -636,7 +636,7 @@ void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 /** handles async sending */
 void CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 
-    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": now handling: " << cmd->callback);
+//    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": now handling: " << cmd->callback);
     std::string s;
 	boost::system::error_code ec;
 	boost::system::error_code write_handlerec;
@@ -679,7 +679,7 @@ void CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 		cfghelper.GetConfig("tcptimeout", timeout, 3000UL);
 	}
 #endif
-	    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 1");
+//	    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 1");
 
 	deadline_timer timer(*(this->ioservice));
 	boost::posix_time::time_duration td = boost::posix_time::millisec(timeout);
@@ -694,33 +694,33 @@ void CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 	// run one of the scheduled services
 	size_t num = ioservice->run_one(ec);
 
-    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2");
+//    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2");
 
 	// ioservice error or timeout
 	if (num == 0 || result_timer) {
-	    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2a");
+//	    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2a");
 
 		timer.cancel(ec);
 		sockt->cancel(ec);
-		   LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2b");
+//		   LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2b");
 
 		LOGTRACE(logger,"Async write timeout");
 		cmd->callback->addData(ICMD_ERRNO, -ETIMEDOUT);
-		   LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2c");
+////		   LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2c");
 
 		cmd->HandleCompletion();
 		ioservice->poll();
-   LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2d");
+//   LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2d");
 
 		return ;
 	}
 
-	LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2e");
+//	LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2e");
 	// cancel the timer, and catch the completion handler
 	timer.cancel();
-    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2f");
+//    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2f");
 	ioservice->poll();
-    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 3");
+//    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 3");
 
 	LOGTRACE(logger,"Sent " << wrote_bytes << " Bytes");
 	if (write_handlerec) {
@@ -737,10 +737,10 @@ void CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 		return ;
 	}
 
-    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 4 " << (void*) &s);
+//    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 4 " << (void*) &s);
 
 	if (s.length() != wrote_bytes) {
-	    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 5 ");
+//	    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 5 ");
 		LOGDEBUG(logger,"Sent "
 				<< wrote_bytes << " but expected "<< s.length() );
 		cmd->callback->addData(ICMD_ERRNO, -EIO);
@@ -748,7 +748,7 @@ void CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 		return ;
 	}
 
-    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 6 " << (void*) &s);
+//    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 6 " << (void*) &s);
 	cmd->callback->addData(ICMD_ERRNO, 0);
 	cmd->HandleCompletion();
 	return ;

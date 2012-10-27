@@ -93,6 +93,7 @@ CConnectTCPAsio::CConnectTCPAsio( const string &configurationname ) :
 	// Generate our own asio ioservice
 	// TODO check if one central would do that too...
     configured_as_server = false;
+    _connected = false;
 	ioservice = new io_service;
 	sockt = new ip::tcp::socket(*ioservice);
 	sem_init(&cmdsemaphore, 0, 0);
@@ -101,11 +102,12 @@ CConnectTCPAsio::CConnectTCPAsio( const string &configurationname ) :
 CConnectTCPAsio::~CConnectTCPAsio()
 {
     // Try a clean shutdown
-    boost::system::error_code ec;
+
     mutex.lock();
     cmds.clear();
     ioservice->stop();
-    if (sockt->is_open()) {
+    if (_connected) {
+        boost::system::error_code ec;
         sockt->cancel(ec);
         sockt->close(ec);
     }
@@ -171,7 +173,9 @@ void CConnectTCPAsio::Accept(ICommand *callback)
 
 bool CConnectTCPAsio::IsConnected( void )
 {
-	if (!this->sockt) return false;
+	return _connected;
+
+	// old code -- needs https://svn.boost.org/trac/boost/ticket/7392 fixed.
 	mutex.lock();
 	bool ret = sockt->is_open();
 	mutex.unlock();
@@ -391,8 +395,9 @@ void CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 		return ;
 	}
 
-	LOGDEBUG(logger, "Connected to " << strhost );
-	// Signal success.
+	// Report successful connection
+    LOGDEBUG(logger, "Connected to " << strhost );
+	_connected = true;
 	cmd->callback->addData(ICMD_ERRNO, 0);
 	cmd->HandleCompletion();
 	return ;
@@ -431,6 +436,7 @@ void CConnectTCPAsio::HandleDisconnect( CAsyncCommand *cmd )
 		message = message + ec2.message();
 	}
 
+	_connected = false;
 	cmd->callback->addData(ICMD_ERRNO, error);
 	if (!message.empty()) {
 		cmd->callback->addData(ICMD_ERRNO_STR, ec.message());
@@ -814,6 +820,7 @@ void CConnectTCPAsio::HandleAccept(CAsyncCommand *cmd)
     }
 
     LOGTRACE(logger, "Connected.");
+    _connected = true;
     cmd->callback->addData(ICMD_ERRNO, 0);
     cmd->HandleCompletion();
     return;

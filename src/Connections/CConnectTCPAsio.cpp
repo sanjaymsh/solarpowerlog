@@ -694,20 +694,33 @@ void CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 	// run one of the scheduled services
 	size_t num = ioservice->run_one(ec);
 
+//    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2");
+
 	// ioservice error or timeout
 	if (num == 0 || result_timer) {
+//	    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2a");
+
 		timer.cancel(ec);
 		sockt->cancel(ec);
+//		   LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2b");
+
 		LOGTRACE(logger,"Async write timeout");
 		cmd->callback->addData(ICMD_ERRNO, -ETIMEDOUT);
+////		   LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2c");
+
 		cmd->HandleCompletion();
 		ioservice->poll();
+//   LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2d");
+
 		return ;
 	}
 
+//	LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2e");
 	// cancel the timer, and catch the completion handler
 	timer.cancel();
-	ioservice->poll(ec);
+//    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2f");
+	ioservice->poll();
+//    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 3");
 
 	LOGTRACE(logger,"Sent " << wrote_bytes << " Bytes");
 	if (write_handlerec) {
@@ -724,7 +737,10 @@ void CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 		return ;
 	}
 
+//    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 4 " << (void*) &s);
+
 	if (s.length() != wrote_bytes) {
+//	    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 5 ");
 		LOGDEBUG(logger,"Sent "
 				<< wrote_bytes << " but expected "<< s.length() );
 		cmd->callback->addData(ICMD_ERRNO, -EIO);
@@ -732,6 +748,7 @@ void CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 		return ;
 	}
 
+//    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 6 " << (void*) &s);
 	cmd->callback->addData(ICMD_ERRNO, 0);
 	cmd->HandleCompletion();
 	return ;
@@ -802,20 +819,23 @@ void CConnectTCPAsio::HandleAccept(CAsyncCommand *cmd)
         acceptor.listen();
         acceptor.accept(*sockt, ec);
     } catch (boost::system::system_error &e) {
-        LOGDEBUG(logger, "Boost: exception received while accepting.");
-        ec = e.code();
+        std::string errmsg = e.what();
+        LOGDEBUG(logger, "Boost: exception received while accepting: " << errmsg);
+        cmd->callback->addData(ICMD_ERRNO,(long)-EIO);
+        cmd->callback->addData(ICMD_ERRNO_STR, errmsg);
+        cmd->HandleCompletion();
+        return;
     }
     if (ec) {
         int eval = -ec.value();
-        if (!eval) { eval = -1; }
+        if (!eval) { eval = -EIO; }
         cmd->callback->addData(ICMD_ERRNO, eval);
         if (!ec.message().empty()) {
             cmd->callback->addData(ICMD_ERRNO_STR, ec.message());
         }
         cmd->HandleCompletion();
-        LOGDEBUG( logger,
-                "Connection failed. Error " << eval <<
-                "(" << ec.message() << ")");
+        LOGDEBUG( logger, "Connection failed. Error " << eval << "("
+            << ec.message() << ")");
         return;
     }
 

@@ -181,6 +181,9 @@ void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
             // and the aborted calls.
             if (err != -ECANCELED && err != -ETIMEDOUT) {
                 // call was not canceled, tha means transmit to all slaves.
+                if (err < 0 ) {
+                    LOGDEBUG(logger, "NOT Timeout and NOT CANCELED "<< err);
+                }
                 for (std::list<CSharedConnectionSlave *>::iterator it =
                     _reading_slaves.begin(); it != _reading_slaves.end();
                     it++) {
@@ -190,16 +193,22 @@ void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
                     //LOGDEBUG(logger, __PRETTY_FUNCTION__ << "Dispatching receive work to slave comms. " << c << " (slave:" << *it << ")");
                     Registry::GetMainScheduler()->ScheduleWork(c);
                 }
+
+                // All other errors than timeouts ends the current read requests.
+                readtimeout = boost::posix_time::not_a_date_time;
+                LOGDEBUG(logger, "not rescheduling read due to err "<< err);
+                return;
             }
 
             // Restart receive if there is still time for reading.
             boost::posix_time::ptime pt(
                 boost::posix_time::microsec_clock::universal_time());
-            if (!readtimeout.is_special() && pt < readtimeout && err == -ECANCELED) {
+            if (!readtimeout.is_special() && pt < readtimeout) {
                 boost::posix_time::time_duration d = readtimeout - pt;
                 ICommand *c = new ICommand(CMD_NONATOMIC_HANDLEREADCOMPLETION,
                     this);
                 long timeout = d.total_milliseconds();
+                if (timeout >= 1000) timeout = 1000;
                 c->addData(ICONN_TOKEN_TIMEOUT, timeout);
                 LOGDEBUG(logger, __PRETTY_FUNCTION__ << " rescheduling read: " << c << " remaining timeout:" << d.total_milliseconds());
                 connection->Receive(c);
@@ -584,7 +593,7 @@ void CSharedConnectionMaster::_HandleNonAtomicReceiveInterrupts(void)
 
     _nam_interrupted = true;
     // ok, we AbortAll() now, this will cancel the receive.
-    connection->AbortAll();
+    //connection->AbortAll();
 }
 
 

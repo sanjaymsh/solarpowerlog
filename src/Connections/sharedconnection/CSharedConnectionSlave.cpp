@@ -149,14 +149,15 @@ void CSharedConnectionSlave::Receive(ICommand *callback)
         cmd = new ICommand(CMD_HANDLETIMEOUTS, this);
         timespec ts;
         ts.tv_sec = timeout / 1000;
-        ts.tv_nsec = (timeout % 1000) * 1000 * 1000;
-        LOGDEBUG(logger, __PRETTY_FUNCTION__ << ": submitting timeout work: "<<callback);
+        ts.tv_nsec = (timeout % 1000) * 1000 * 1000UL;
+//        LOGDEBUG(logger, __PRETTY_FUNCTION__ << ": submitting timeout work: "<< cmd);
         Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
     }
 }
 
 void CSharedConnectionSlave::Accept(ICommand* callback)
 {
+//    LOGDEBUG(logger, __PRETTY_FUNCTION__ << ": callback: "<<callback);
     assert(callback);
     assert(master);
     (void)HandleTickets(callback);
@@ -260,9 +261,9 @@ void CSharedConnectionSlave::ExecuteCommand(const ICommand* cmd)
                         it = pending_reads.erase(it);
                     }
                 } catch (...) {
-                    // malformed ICommnd.
-                    LOGDEBUG(logger,
-                        "BUG: CSharedConnectionSlave; Malformarted ICommand during CMD_HANDLETIMEOUTS");
+                    // malformed ICommand.
+                    LOGDEBUG(logger, __PRETTY_FUNCTION__ <<
+                        "BUG: Malformated ICommand during CMD_HANDLETIMEOUTS");
                     it = pending_reads.erase(it);
                 }
             }
@@ -291,13 +292,10 @@ void CSharedConnectionSlave::ExecuteCommand(const ICommand* cmd)
             for (std::list<ICommand *>::iterator it = pending_reads.begin();
                 it != pending_reads.end(); it++) {
 
-                // FIXME check: read-buffer is empty when there are queued reads, otherwise
-                // it would have been already answered in the receive API call.
                 // merge data and issue work
                 (*it)->mergeData(*cmd);
-                (*it)->DumpData(logger);
+                LOGDEBUG(logger, "Scheduling read-work " << *it << " to target " << (*it)->getTrgt());
                 Registry::GetMainScheduler()->ScheduleWork(*it);
-
             }
 
             pending_reads.clear();

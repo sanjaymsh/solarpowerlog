@@ -69,7 +69,11 @@ void CSharedConnectionSlave::Connect(ICommand *callback)
 
 void CSharedConnectionSlave::Disconnect(ICommand *callback)
 {
-    mutex.lock(); read_buffer.clear(); mutex.unlock();
+    mutex.lock();
+    read_buffer.clear();
+    master->SubscribeSlave(this,false);
+    slave_registered = false;
+    mutex.unlock();
     LOGDEBUG(logger, "CSharedConnectionSlave::Disconnect: callback:"<<callback);
     assert(callback);
     (void)HandleTickets(callback);
@@ -141,7 +145,7 @@ void CSharedConnectionSlave::Receive(ICommand *callback)
         // master comm will get ownership of object, it may also delete it!
         // (note: the icommand has an implicit copy-constructor which is ok)
         cmd = new ICommand(*callback);
-        LOGDEBUG(logger, __PRETTY_FUNCTION__ << ": submitting work: "<<cmd);
+//        LOGTRACE(logger, __PRETTY_FUNCTION__ << ": submitting work: "<<cmd);
         master->Receive(cmd, this);
 
         // Handle Timeout

@@ -120,7 +120,6 @@ private:
     /// Buffer for non-atomic reads while no read is pending.
     /// Will be reset by Connect and Disconnect.
     std::string read_buffer;
-
 };
 
 #endif

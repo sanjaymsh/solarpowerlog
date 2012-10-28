@@ -1,20 +1,20 @@
 /* ----------------------------------------------------------------------------
  solarpowerlog -- photovoltaic data logging
 
-Copyright (C) 2009-2012 Tobias Frost
+ Copyright (C) 2009-2012 Tobias Frost
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU Lesser General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Lesser General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU Lesser General Public License for more details.
 
-    You should have received a copy of the GNU Lesser General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ You should have received a copy of the GNU Lesser General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
  ----------------------------------------------------------------------------
  */
@@ -47,10 +47,11 @@ Copyright (C) 2009-2012 Tobias Frost
  * The Sputnik S-Series are an inverter family by Sputnik Engineering
  * Please see the manufactor's homepage for details.
  */
-class CInverterSputnikSSeriesSimulator: public IInverterBase
+class CInverterSputnikSSeriesSimulator : public IInverterBase
 {
 public:
-    struct simulator_commands {
+    struct simulator_commands
+    {
         const char *token;
         float scale1;
         IValue *value;
@@ -61,24 +62,24 @@ public:
 
 public:
 
-	CInverterSputnikSSeriesSimulator(const string & name,
-			const string & configurationpath);
-	virtual ~CInverterSputnikSSeriesSimulator();
+    CInverterSputnikSSeriesSimulator(const string & name,
+        const string & configurationpath);
+    virtual ~CInverterSputnikSSeriesSimulator();
 
-	virtual bool CheckConfig();
+    virtual bool CheckConfig();
 
-	/** implements the ICommandTarget interface */
-	virtual void ExecuteCommand(const ICommand *Command);
+    /** implements the ICommandTarget interface */
+    virtual void ExecuteCommand(const ICommand *Command);
 
 protected:
-	/** calculate the checksum for the telegram stored in str */
-	static unsigned int CalcChecksum(const char* str, int len);
+    /** calculate the checksum for the telegram stored in str */
+    static unsigned int CalcChecksum(const char* str, int len);
 
 private:
 
-	/// Commands for the Workscheduler
-	enum Commands
-	{
+    /// Commands for the Workscheduler
+    enum Commands
+    {
         // broadcast event.
         CMD_BRC_SHUTDOWN = BasicCommands::CMD_BRC_SHUTDOWN,
 
@@ -96,30 +97,29 @@ private:
         CMD_CTRL_CONNECTED, ///< Wait for incoming data (cmd-server).
         CMD_CTRL_PARSERECEIVE, ///< Parse incoming data (cmd-server) and send response.
         CMD_CTRL_WAIT_SENT  ///< Wait till response sent.
-	};
+    };
 
-	/// Dataports of the sputnik inverters.
-	enum Ports
-	{
-		QUERY = 100, COMMAND = 200, ALARM = 300,
-		INTERFACE = 1000
-	};
+    /// Dataports of the sputnik inverters.
+    enum Ports
+    {
+        QUERY = 100, COMMAND = 200, ALARM = 300, INTERFACE = 1000
+    };
 
-	/// parse the answer of the inverter.
-	std::string parsereceivedstring(const string& s);
+    /// parse the answer of the inverter.
+    std::string parsereceivedstring(const string& s);
 
-	/// parser for the control server.
-	std::string parsereceivedstring_ctrlserver(std::string s);
+    /// parser for the control server.
+    std::string parsereceivedstring_ctrlserver(std::string s);
 
-	/// Adress to use as "our" adress for communication
-	/// This can be set by the conffile and the parameter ownadr
-	/// defaults to 0xFB
-	/// unsigned int ownadr;
-	void tokenizer(const char *delimiters, const string& s,
-			vector<string> &tokens);
+    /// Adress to use as "our" adress for communication
+    /// This can be set by the conffile and the parameter ownadr
+    /// defaults to 0xFB
+    /// unsigned int ownadr;
+    void tokenizer(const char *delimiters, const string& s,
+        vector<string> &tokens);
 
-	/// cache for inverters comm adr.
-	unsigned int commadr;
+    /// cache for inverters comm adr.
+    unsigned int commadr;
 
     struct simulator_commands *scommands;
 

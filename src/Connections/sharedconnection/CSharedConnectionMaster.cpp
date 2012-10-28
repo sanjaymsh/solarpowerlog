@@ -199,6 +199,14 @@ void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
                 return;
             }
 
+            if (_reading_slaves.empty()) {
+                // if there are no longer slaves listening, we can cease
+                // reading.
+                readtimeout = boost::posix_time::not_a_date_time;
+                LOGDEBUG(logger, "Not rescheduling read as no reading slaves");
+                return;
+            }
+
             // Restart receive if there is still time for reading.
             boost::posix_time::ptime pt(
                 boost::posix_time::microsec_clock::universal_time());

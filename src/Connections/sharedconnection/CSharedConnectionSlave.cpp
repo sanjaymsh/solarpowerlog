@@ -139,6 +139,7 @@ void CSharedConnectionSlave::Receive(ICommand *callback)
         // copy-construct a ICommand for the master comm object and submit work.
         // note that target and commmand will be rewritten by the master comm
         // master comm will get ownership of object, it may also delete it!
+        // (note: the icommand has an implicit copy-constructor which is ok)
         cmd = new ICommand(*callback);
         LOGDEBUG(logger, __PRETTY_FUNCTION__ << ": submitting work: "<<cmd);
         master->Receive(cmd, this);

@@ -85,6 +85,7 @@ private:
         CMD_INIT = BasicCommands::CMD_USER_MIN,
         // Simulator commands
         CMD_SIM_INIT, ///< Wait for incoming connections.
+        CMD_SIM_DISCONNECTED, ///< ctrl server forced us "disconnected"
         CMD_SIM_WAITDISCONNECT, ///< if connected, wait for disconnection.
         CMD_SIM_CONNECTED, ///< Wait for incoming data
         CMD_SIM_EVALUATE_RECEIVE, ///< Parse incoming data and send response
@@ -129,6 +130,17 @@ private:
     /// event.
     bool _shutdown_requested;
 
+    /// if queries should be answered at all or if the inverter should be simulated as offline
+    /// note: in offline mode it will still accept connections, just not answer them.
+    bool _offline;
+
+    /// the inverter should not accept() connections anymore.
+    bool _disconnect;
+
+    /// tracking if we are already connected and thus if we need to
+    /// accept again when ctrl server allows us again to connect.
+    /// \sa _disconnect
+    bool _isconnected;
 };
 
 #endif

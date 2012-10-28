@@ -138,12 +138,13 @@ struct CInverterSputnikSSeriesSimulator::simulator_commands simcommands[] = {
 };
 
 
-/// helper to convert a string to a CValue
-/// ivalue -> will be updated.
-/// valur -> stringvalue
-/// scale -> applied to the decoded value, if sputnikmode=true
-/// sputnikmode -> if true, expect hexvalues, raw.
-/// returns false if string did not convert.
+/** helper to convert a string to a CValue
+ * \param ivalue will be updated.
+ * \param value stringvalue
+ * \param scale applied to the decoded value, if sputnikmode=true
+ * \param sputnikmode if true, expect hexvalue (raw value in telegramm).
+ * \return false if string could not be converted.
+ */
 static bool converttovalue(IValue *ivalue, const std::string &value, float scale=1.0, bool sputnikmode = false) {
     float tmp;
     if (!sputnikmode) {
@@ -198,12 +199,15 @@ static std::string convert2sputnikhex(IValue *value, float scale) {
     return buf;
 }
 
-
 CInverterSputnikSSeriesSimulator::CInverterSputnikSSeriesSimulator(const string &name,
 		const string & configurationpath) :
 	IInverterBase::IInverterBase(name, configurationpath, "inverter")
 {
 	commadr = 0x01;
+	_disconnect = false;
+	_offline = false;
+    _shutdown_requested = false;
+    _isconnected = false;
 	// will be initialized later.
 	ctrlserver = NULL;
 
@@ -260,8 +264,6 @@ CInverterSputnikSSeriesSimulator::CInverterSputnikSSeriesSimulator(const string 
 
     // Register for broadcast events
     Registry::GetMainScheduler()->RegisterBroadcasts(this);
-    _shutdown_requested = false;
-
 }
 
 CInverterSputnikSSeriesSimulator::~CInverterSputnikSSeriesSimulator()
@@ -274,7 +276,6 @@ CInverterSputnikSSeriesSimulator::~CInverterSputnikSSeriesSimulator()
     delete[] scommands;
 
     if (ctrlserver) delete ctrlserver;
-
 }
 
 bool CInverterSputnikSSeriesSimulator::CheckConfig()
@@ -384,10 +385,6 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
             Registry::GetMainScheduler()->ScheduleWork(cmd);
 		}
 		break;
-
-		// storage of objects in boost::any
-		//cmd->addData("TEST", cmd);
-		//cmd = boost::any_cast<ICommand*>(cmd->findData("TEST"));
 	}
 
         case CMD_SIM_INIT: // Wait for incoming connections.
@@ -400,22 +397,40 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
             if (connection->IsConnected()) {
                 cmd = new ICommand(CMD_SIM_WAITDISCONNECT, this);
                 connection->Disconnect(cmd);
+                _isconnected = false;
                 break;
             }
         }
         // fall-through ok
+        case CMD_SIM_DISCONNECTED:
+            LOGDEBUG(logger, "new state: CMD_SIM_DISCONNECTED");
+            LOGINFO(logger, "Disconnecting because we are in disconnected mode");
+            // we will wait here until we were allowed to connect again.
+            // in this case the ctrl server will issue a work with
+            // CMD_SIM_DISCONNECTED as target and let fall through here.
+
+            // avoid race with ctrl server.
+            if (_disconnect) break;
+
+            // if we are still connected, do not accept -- otherwise we are
+            // "double" accepting.
+            if (_isconnected) break;
 
         case CMD_SIM_WAITDISCONNECT: {
             LOGDEBUG(logger, "new state: CMD_SIM_WAITDISCONNECT");
-            cmd = new ICommand(CMD_SIM_CONNECTED, this);
-            connection->Accept(cmd);
+            if (!_disconnect) {
+                cmd = new ICommand(CMD_SIM_CONNECTED, this);
+                connection->Accept(cmd);
+                break;
+            }
+            // else wait here until reactivation.
+            LOGDEBUG(logger, "waiting for _disconnect getting false");
             break;
         }
 
 	case CMD_SIM_CONNECTED: // Wait for
 	{
 		LOGDEBUG(logger, "new state: CMD_SIM_CONNECTED");
-
 		int err = -1;
 		// CMD_CONNECTED: Accept succeeded of failure.
 		try {
@@ -437,11 +452,19 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 			cmd = new ICommand(CMD_SIM_INIT, this);
 			Registry::GetMainScheduler()->ScheduleWork(cmd);
 			break;
+
+		}
+		if (!_disconnect) {
+            _isconnected = true;
+            cmd = new ICommand(CMD_SIM_EVALUATE_RECEIVE, this);
+            cmd->addData(ICONN_TOKEN_TIMEOUT,(long)3600*1000);
+            connection->Receive(cmd);
+            LOGINFO(logger,"Simulator connected.");
 		} else {
-	        cmd = new ICommand(CMD_SIM_EVALUATE_RECEIVE, this);
-	        cmd->addData(ICONN_TOKEN_TIMEOUT,(long)3600*1000);
-	        connection->Receive(cmd);
-	        LOGINFO(logger,"Simulator connected.");
+		    // tear down connection again after we've got instructed to
+		    // be in disconnected mode.
+            connection->Disconnect(new ICommand(CMD_SIM_DISCONNECTED, this));
+            LOGINFO(logger,"Simulator connected, but we shall disconnect.");
 		}
 	}
 		break;
@@ -502,22 +525,34 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
 			LOGTRACE(logger, "Received in hex: "<< st );
 		}
 
-		// make answer and send it.
-		s = parsereceivedstring(s);
+		if ( !_offline) {	// make answer and send it.
+            s = parsereceivedstring(s);
+		} else  {
+		    s.clear();
+		    LOGINFO(logger, "Not answering because we are in offline mode");
+		}
+
+		if (_disconnect) {
+           // ctrl server tells not to connect... so we disconnect now and do not
+		   // send the answer
+            cmd = new ICommand(CMD_SIM_DISCONNECTED,this);
+            connection->Disconnect(cmd);
+            _isconnected = false;
+		}
+
         // only response if parsing was successful.
 		if (s.size()) {
-		LOGTRACE(logger, "Response :" << s << " len: " << s.size());
-		    cmd = new ICommand(CMD_SIM_WAIT_SENT,this);
+            LOGTRACE(logger, "Response :" << s << " len: " << s.size());
+            cmd = new ICommand(CMD_SIM_WAIT_SENT, this);
             cmd->addData(ICONN_TOKEN_TIMEOUT,(long)3000);
             cmd->addData(ICONN_TOKEN_SEND_STRING, s);
             connection->Send(cmd);
-		} else {
+        } else {
             cmd = new ICommand(CMD_SIM_EVALUATE_RECEIVE,this);
             cmd->addData(ICONN_TOKEN_TIMEOUT, (long) 3600 * 1000);
             connection->Receive(cmd);
 		}
 	}
-
 		break;
 
     case CMD_SIM_WAIT_SENT:
@@ -544,6 +579,8 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
         break;
         }
 
+
+    // ##### CONTROL SEVER #####
         case CMD_CTRL_INIT: {
             // only if no shutdown have been requested.
             if (_shutdown_requested) break;
@@ -656,13 +693,25 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
             LOGTRACE(logger, "Received in hex: " << st);
         }
 
+        bool disconnect_old = _disconnect;
         // make answer and send it.
         s = parsereceivedstring_ctrlserver(s);
         LOGTRACE(logger, "Response (ctrl-server):" << s << "len: " << s.size());
+
         cmd = new ICommand(CMD_CTRL_WAIT_SENT,this);
         cmd->addData(ICONN_TOKEN_TIMEOUT,((long)3000));
         cmd->addData(ICONN_TOKEN_SEND_STRING, s);
+        if ( s == "BYE!\n") {
+            cmd->setCmd(CMD_CTRL_INIT);
+        }
         ctrlserver->Send(cmd);
+
+        // detect if we re-enable the connection of the simulator
+        if (disconnect_old && !_disconnect) {
+            LOGDEBUG(logger,"Re-enabling connection");
+            Registry::GetMainScheduler()->ScheduleWork(
+                new ICommand(CMD_SIM_DISCONNECTED, this));
+        }
         break;
     }
 
@@ -685,7 +734,7 @@ void CInverterSputnikSSeriesSimulator::ExecuteCommand(const ICommand *Command)
         }
 
         cmd = new ICommand(CMD_CTRL_PARSERECEIVE, this);
-        cmd->addData(ICONN_TOKEN_TIMEOUT, (unsigned long) 3600 * 1000);
+        cmd->addData(ICONN_TOKEN_TIMEOUT, (long) 3600 * 1000);
         ctrlserver->Receive(cmd);
         break;
     }
@@ -860,6 +909,30 @@ std::string CInverterSputnikSSeriesSimulator::parsereceivedstring_ctrlserver(std
 
     // remove whitespaces.
     boost::algorithm::trim(s);
+
+    // special commmands .. those commands must be the only command supplied on
+    // the the line.
+    if (s == "offline") {
+        _offline = true;
+        LOGDEBUG(logger, "offline");
+        return ("DONE\n");
+    } else if (s == "online") {
+        _offline = false;
+        LOGDEBUG(logger, "online");
+        return ("DONE\n");
+    }
+
+    if (s == "disconnect") {
+        _disconnect = true;
+        return ("DONE\n");
+    } else if (s == "connect") {
+        _disconnect = false;
+        return ("DONE\n");
+    } else if (s == "quit") {
+        return ("BYE!\n");
+    } else if (s == "version") {
+        return PACKAGE_STRING + std::string("\n");
+    }
 
     size_t first = s.find_first_of(':');
     if (s.length() > first) {

@@ -66,7 +66,11 @@ ILogger::ILogger()
 void ILogger::Setup( const std::string & parent,
 	const std::string & specialization )
 {
-	loggername_ = parent + "." + specialization;
+    if (specialization.empty()) {
+        loggername_ = parent;
+    } else {
+        loggername_ = parent + "." + specialization;
+    }
 	log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger(loggername_));
 	log4cxx::LevelPtr ptr=logger->getEffectiveLevel();
 	currentloggerlevel_ = ptr->toInt();

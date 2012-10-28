@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([solarpowerlog],[0.24-dev],[tobi@coldtobi.de])
+AC_INIT([solarpowerlog],[0.24~rc1],[tobi@coldtobi.de])
 AC_PREREQ([2.68])
 
 # use own directory for the autotools stuff
@@ -79,16 +79,16 @@ fi
 
 # Sputnik Simulator support.
 AC_ARG_ENABLE([sputniksimulator],
-    [AS_HELP_STRING([--enable-sputniksimulator],
+    [AS_HELP_STRING([--disable-sputniksimulator],
             [Simulates a Sputnik engineering inverter.])
     ]
 )
 
-if test "x$enable_sputniksimulator" = "xyes" ; then
+if test "x$enable_sputniksimulator" != "xno" ; then
     AC_DEFINE([HAVE_INV_SPUTNIKSIMULATOR], [1], [Sputnik simulator])
     enable_sputniksimulator=yes
 else
-    AC_MSG_NOTICE([Support for sputnik invertor simulation disabled -- default.])
+    AC_MSG_NOTICE([Support for sputnik invertor simulation disabled as requested.])
     enable_sputniksimulator=no
 fi
 
@@ -202,12 +202,12 @@ fi
 
 # Shared Connection provider
 AC_ARG_ENABLE([sharedcomms],
-   [AS_HELP_STRING([--enable-sharedcomms],
+   [AS_HELP_STRING([--disable-sharedcomms],
             ["Support sharing a communication object between two or more inverters. (experimental)"])
     ]
 )
 
-if test "x$enable_sharedcomms" = "xyes" ; then
+if test "x$enable_sharedcomms" != "xno" ; then
     AC_DEFINE([HAVE_COMMS_SHAREDCONNECTION], [1], [Shared communication support])
     enable_sharedcomms=yes
 else
@@ -349,14 +349,14 @@ fi
 AC_MSG_NOTICE([Commandline options: ....................... $enable_commandlineoptions])
 
 AC_MSG_NOTICE([INVERTERS:]);
-AC_MSG_NOTICE([Sputnik support: ........................... $enable_sputnik])
-AC_MSG_NOTICE([Sputnik simulator: (default off) ........... $enable_sputniksimulator])
-AC_MSG_NOTICE([Dummy inverter: (default off) .............. $enable_dummyinverter])
+AC_MSG_NOTICE([Sputnik inverter support: .................. $enable_sputnik])
+AC_MSG_NOTICE([Sputnik simulator: ......................... $enable_sputniksimulator])
+AC_MSG_NOTICE([Dummy inverter: ............................ $enable_dummyinverter])
 
 AC_MSG_NOTICE([COMMUNICATIONS:]);
 AC_MSG_NOTICE([TCP/IP: .................................... $enable_tcpcomms])
 AC_MSG_NOTICE([Serial Ports: .............................. $enable_serialcomms])
-AC_MSG_NOTICE([Shared Communication: (default off) ........ $enable_sharedcomms])
+AC_MSG_NOTICE([Shared Communication: ...................... $enable_sharedcomms])
 
 AC_MSG_NOTICE([FILTERS AND LOGGERS:]);
 AC_MSG_NOTICE([CSV logger support: ........................ $enable_csvlogger])

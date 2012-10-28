@@ -21,7 +21,6 @@ configure
 src/config.h.in
 src/solarpowerlog
 *.a
-extlibs/ctemplate/template
 libtool
 m4/libtool.m4
 m4/lt~obsolete.m4
@@ -36,6 +35,5 @@ extlibs/dbixx/install-sh
 extlibs/dbixx/libtool
 extlibs/dbixx/ltmain.sh
 extlibs/dbixx/missing
-
 documentation/doxygen/html
 INSTALL

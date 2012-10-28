@@ -73,7 +73,7 @@ protected:
 
     virtual void Disconnect(ICommand *callback);
 
-    virtual void SetupLogger(const string& parentlogger, const string & = "");
+    virtual void SetupLogger(const string& parentlogger, const string &spezialisation = "");
 
     virtual void Send(ICommand *cmd);
 

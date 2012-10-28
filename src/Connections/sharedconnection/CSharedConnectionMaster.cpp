@@ -76,11 +76,10 @@ CSharedConnectionMaster::~CSharedConnectionMaster()
 }
 
 void CSharedConnectionMaster::SetupLogger(const string& parentlogger,
-    const string &)
+    const string &specalization)
 {
-    IConnect::SetupLogger(parentlogger, "");
-    if (connection) connection->SetupLogger(parentlogger, "");
-    ownslave->SetupLogger(parentlogger);
+    IConnect::SetupLogger(parentlogger, specalization);
+    ownslave->SetupLogger(logger.getLoggername(),"ownslave");
 }
 
 void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
@@ -269,7 +268,7 @@ bool CSharedConnectionMaster::CheckConfig(void)
     // connection always valid -- the factory returns a dummy
     // object if it does not know the comms.
     if (connection) {
-        connection->SetupLogger(logger.getLoggername(),"realcomms");
+        connection->SetupLogger(logger.getLoggername());
         return connection->CheckConfig();
     }
     LOGFATAL(logger,"Could not create real communication object");

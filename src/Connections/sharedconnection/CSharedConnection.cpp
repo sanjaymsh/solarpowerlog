@@ -80,11 +80,8 @@ bool CSharedConnection::CreateSharedConnectionObject()
 		return false;
 	}
 
-	concreteSharedConnection->SetupLogger(this->logger.getLoggername(),
-			"SharedTarget");
-
-	return true;
-
+    concreteSharedConnection->SetupLogger(logger.getLoggername());
+    return true;
 }
 
 bool CSharedConnection::CheckConfig(void)

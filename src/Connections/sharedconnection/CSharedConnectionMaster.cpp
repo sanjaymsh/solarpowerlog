@@ -435,7 +435,6 @@ void CSharedConnectionMaster::Noop(ICommand* callback,
 void CSharedConnectionMaster::Accept(ICommand* callback,
     CSharedConnectionSlave* s)
 {
-#warning handle accept here as connect!
     assert(callback);
     assert(s);
     _HandleNonAtomicReceiveInterrupts();
@@ -591,6 +590,9 @@ bool CSharedConnectionMaster::CanAccept(void)
 
 void CSharedConnectionMaster::_HandleNonAtomicReceiveInterrupts(void)
 {
+    return;
+    // due to the bug in boost::asio this method  is curently empty.
+#if 0
     // if non-atomic mode, every command during a receive() will interrupt said
     // read, but this interrupt must only happen once until.
     CMutexAutoLock cma(&mutex);
@@ -600,7 +602,8 @@ void CSharedConnectionMaster::_HandleNonAtomicReceiveInterrupts(void)
 
     _nam_interrupted = true;
     // ok, we AbortAll() now, this will cancel the receive.
-    //connection->AbortAll();
+    connection->AbortAll();
+#endif
 }
 
 

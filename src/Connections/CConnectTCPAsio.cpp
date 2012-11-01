@@ -324,8 +324,6 @@ void CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 {
     //LOGTRACE(logger, __PRETTY_FUNCTION__ << " handling " << cmd << "with ICmd " << cmd->callback );
 	string strhost, port;
-	unsigned long timeout = -1;
-
 	// if connected, ignore the commmand, pretend success.
 	if (IsConnected()) {
 	    LOGDEBUG(logger, __PRETTY_FUNCTION__ << " Already connected");
@@ -345,12 +343,8 @@ void CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 
 	CConfigHelper cfghelper(ConfigurationPath);
 
-#warning timeouts should be only configured in the calling objects! \
-	Otherwise it is hard to differenicate between commands! \
-	So depreciate tcptimeout and configure this in the inverter class!
-#warning rework: Should be only needed from the configuration, as the \
-	calling object needs not be aware of these issues (should be transparent)
-
+#if 0
+	unsigned long timeout = -1;
     try {
         timeout = boost::any_cast<long>(
             cmd->callback->findData(ICONN_TOKEN_TIMEOUT));
@@ -362,6 +356,7 @@ void CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
                  << ICONN_TOKEN_TIMEOUT);
         timeout = TCP_ASIO_DEFAULT_TIMEOUT;
     }
+#endif
 
 	cfghelper.GetConfig("tcpadr", strhost);
 	cfghelper.GetConfig("tcpport", port);

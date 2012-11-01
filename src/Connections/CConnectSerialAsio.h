@@ -73,22 +73,24 @@ protected:
 public:
 	virtual ~CConnectSerialAsio();
 
-	virtual void Connect(ICommand *callback);
+    virtual void Accept(ICommand *callback);
 
-	virtual void Disconnect(ICommand *callback);
+    virtual void Connect(ICommand *callback);
 
-	virtual void SetupLogger(const string& parentlogger, const string & = "")
-	{
-		IConnect::SetupLogger(parentlogger, "Comms_Serial_ASIO");
-	}
+    virtual void Disconnect(ICommand *callback);
 
-	virtual void Send(ICommand *callback);
+    virtual void SetupLogger(const string& parentlogger, const string & = "")
+    {
+        IConnect::SetupLogger(parentlogger, "Comms_Serial_ASIO");
+    }
 
-	virtual void Receive(ICommand *callback);
+    virtual void Send(ICommand *callback);
 
-	virtual bool CheckConfig(void);
+    virtual void Receive(ICommand *callback);
 
-	virtual bool IsConnected(void);
+    virtual bool CheckConfig(void);
+
+    virtual bool IsConnected(void);
 
     virtual bool AbortAll();
 
@@ -118,8 +120,6 @@ private:
 	 */
 	bool PushWork(CAsyncCommand *cmd);
 
-	/// cancel all current work.
-	//void CancelWork( void );
 
 	/** Handle "Connect-Command"
 	 *
@@ -146,7 +146,6 @@ private:
 
 	list<CAsyncCommand*> cmds;
 	sem_t cmdsemaphore;
-
 };
 
 #endif /* HAVE_COMMS_ASIOSERIAL */

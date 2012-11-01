@@ -589,35 +589,21 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
                 LOGERROR(logger, "Error while sending. (" << -err << ")");
             }
 
-            // Issue an fire-and-forget API call to stop the atomic session
-            cmd = new ICommand(BasicCommands::CMD_INVALID, NULL);
+            // Hint the shard comms to stop the atomic session
+            // and then disconnect.
+            cmd = new ICommand(CMD_DISCONNECTED, this);
             cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_CEASE);
             connection->Noop(cmd);
-
-            cmd = new ICommand(CMD_DISCONNECTED,this);
-            Registry::GetMainScheduler()->ScheduleWork(cmd);
             break;
-		}
+        }
 
-#warning this code can be reverted --> it was preperation for the sharedcomms \
-    but direction taken is now different and this solved by atomic blocks.
-        // record deadline after confirmation that request has been sent.
-        _deadline_receive = boost::posix_time::microsec_clock::universal_time()
-            + boost::posix_time::milliseconds(_cfg_response_timeout_ms*1000.0);
-
-	}
-	// Fall through ok.
-
-	case CMD_WAIT_RECEIVE:
-	{
-		LOGDEBUG(logger, "new state: CMD_WAIT_RECEIVE");
-		cmd = new ICommand(CMD_EVALUATE_RECEIVE, this);
+        cmd = new ICommand(CMD_EVALUATE_RECEIVE, this);
         cmd->addData(ICONN_TOKEN_TIMEOUT, (long)_cfg_response_timeout_ms);
-        // maintain this atomic block (shared comms hinting)
-        cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_REQUEST);
-		connection->Receive(cmd);
-	}
-		break;
+        // finish this atomic block (shared comms hinting)
+        cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_CEASE);
+        connection->Receive(cmd);
+        }
+    break;
 
 	case CMD_EVALUATE_RECEIVE:
 	{
@@ -653,11 +639,6 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		}
 
 		if (err < 0) {
-			// Issue an fire-and-forget API call to stop the atomic session
-			cmd = new ICommand(BasicCommands::CMD_INVALID, NULL);
-		    cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_CEASE);
-		    connection->Noop(cmd);
-
 		    // Schedule new connection later.
 			cmd = new ICommand(CMD_DISCONNECTED,this);
 			Registry::GetMainScheduler()->ScheduleWork(cmd);
@@ -680,69 +661,21 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 			LOGTRACE(logger, "Received in hex: "<< st );
 		}
 
-		int parseresult=-1;
-		part_received += s;
-		std::string tmp = part_received;
-
-		// Check all the telgrams in the buffer (if there are more than one...)
-		// note: if there are more than one in the buffer only one can be
-		// for this inverter. (as we are playing a answer-question)
-		// it wont hurt to call the loop more than once, though.
-		while ( part_received.length()) {
-		    int tmpresult = 0;
-		    parseresult = parsereceivedstring();
-		    // stop parsing if a partial telegram is detected.
-		    if ( parseresult == 0 || parseresult == 1) {
-		        // make sure that we do not hide an error in the previous
-		        // telegramm when receiving a telegram not for us or a
-		        // partial telegram.
-		        if (tmpresult < 0) parseresult = tmpresult;
-		    } else {
-		        // in all other cases, update tmpresult
-		        tmpresult = parseresult;
-		    }
-		    // break on partial.
-		    if ( parseresult == 1) break;
-		}
+		int parseresult = parsereceivedstring(s);
+		// parseresult =>
+		//      -1 on error,
+		//      0 if the string indicated that it is not for us
+		//      1 on success.
 
 		// get the result from the last parse
 		// yes, in the unlikely event that we parsed more than one telegram in one
 		// session, we discard the result of the first one, and do not detect
 		// an error here (but the last telegram for us needed to be successful)...
-		if (0 > parseresult ) {
+		if (1 != parseresult) {
 			// Reconnect on parse errors.
-			LOGERROR(logger, "Parse error on received string: \""<< tmp <<"\"");
-            cmd = new ICommand(BasicCommands::CMD_INVALID, NULL);
-            cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_CEASE);
-            connection->Noop(cmd);
-			cmd = new ICommand(CMD_DISCONNECTED, this);
+			LOGERROR(logger, "Parse error on received string.");
+ 			cmd = new ICommand(CMD_DISCONNECTED, this);
 			Registry::GetMainScheduler()->ScheduleWork(cmd);
-			break;
-		} else if ( parseresult == 0 || parseresult == 1 ) {
-			// if 0 => The received data seems not to be for our inverter.
-			// Can happen on a shared connection.
-		    // if 1 => We did only receive a partial telegram. Can happen on
-		    // eg. serial connections.
-			// So lets wait again.
-		    boost::posix_time::ptime now =
-		        boost::posix_time::microsec_clock::universal_time();
-
-            if (now > _deadline_receive) {
-                // deadline exceeded, stop retrying.
-                LOGTRACE(logger, "Internal timeout");
-                cmd = new ICommand(BasicCommands::CMD_INVALID, NULL);
-                cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_CEASE);
-                connection->Noop(cmd);
-                cmd = new ICommand(CMD_DISCONNECTED, this);
-                Registry::GetMainScheduler()->ScheduleWork(cmd);
-                break;
-            }
-
-            LOGTRACE(logger, "Resume partial reading");
-            // reissue receive command to get rest of telegramm.
-			ICommand *cmd = new ICommand(CMD_EVALUATE_RECEIVE, this);
-            cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_REQUEST);
-			connection->Receive(cmd);
 			break;
 		}
 
@@ -754,13 +687,6 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
             (*it)->CommandNotAnswered();
         }
         notansweredcommands.clear();
-
-        LOGTRACE(logger, "Clearing atomic comm status");
-        // In any case, the atomic block is now complete.
-        // Hint that ...
-        cmd = new ICommand(BasicCommands::CMD_INVALID, NULL);
-        cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_CEASE);
-        connection->Noop(cmd);
 
 		// if there are still pending commands, issue them first before
 		// filling the queue again.
@@ -865,51 +791,29 @@ string CInverterSputnikSSeries::assemblequerystring()
     return telegram;
 }
 
-int CInverterSputnikSSeries::parsereceivedstring() {
+int CInverterSputnikSSeries::parsereceivedstring(std::string &rcvd) {
 
     unsigned int i;
     size_t pos;
+    // extract telegram to get "{...}" only
     // ensure that we get a "{" as first character.
-    pos = part_received.find_last_of('{');
+    pos = rcvd.find_last_of('{');
     if (pos != 0 && (std::string::npos != pos)) {
-        part_received = part_received.substr(pos);
+        rcvd = rcvd.substr(pos);
     }
 
     // check if we got an complete telegram
-    pos = part_received.find('}');
-    if ( pos == std::string::npos) {
+    pos = rcvd.find('}');
+    if (pos == std::string::npos) {
         // no "}" seen
-        // discard telegram if it grows too large. However, we will make sure
-        // that there is no second "{" in the stream. (as then appearantly the "}" was lost)
-        pos = part_received.find_last_of('{');
-        if (pos != 0 && pos != std::string::npos) {
-            part_received = part_received.substr(pos);
-        }
-
-        // On Sputnik, max telegram is 255, due to the size field.
-        // so we can clear the buffer if its larger.
-        if (part_received.size() > 256) {
-            part_received.clear();
-            LOGINFO(logger,"parsereceivedstring: Discarded too long partial telegram");
-            return -1;
-        }
-
-        // signal caller that we have a partial telegramm here.
-        return 1;
+        return -1;
     }
 
     // both { and } found -- extract the telegramm...
     // pos still contains result from pos = part_received.find('}');
-    std::string telegram = part_received.substr(0,pos+1);
-    if (part_received.size()-1 > pos) {
-        part_received = part_received.substr(pos + 1);
-    }
-    else {
-        part_received.clear();
-    }
+    rcvd = rcvd.substr(0,pos+1);
 
     // check for basic constraints...
-    // ensured already. if (telegram[0] != '{' || telegram[telegram.length() - 1] != '}') return -1;
     // tokenizer (taken from
     // http://oopweb.com/CPP/Documents/CPPHOWTO/Volume/C++Programming-HOWTO-7.html
     // but  modified.
@@ -922,7 +826,7 @@ int CInverterSputnikSSeries::parsereceivedstring() {
     vector<string> tokens;
     {
         char delimiters[] = "{;|:}";
-        tokenizer(delimiters, telegram, tokens);
+        tokenizer(delimiters, rcvd, tokens);
     }
     // Debug: Print all received tokens
 #if defined DEBUG_TOKENIZER
@@ -938,7 +842,7 @@ int CInverterSputnikSSeries::parsereceivedstring() {
         return -1;
     }
 
-    if (tmp != CalcChecksum(telegram.c_str(), telegram.length() - 6)) {
+    if (tmp != CalcChecksum(rcvd.c_str(), rcvd.length() - 6)) {
         LOGDEBUG(logger, "Checksum error on received telegram");
         return -1;
     }
@@ -968,14 +872,14 @@ int CInverterSputnikSSeries::parsereceivedstring() {
         return -1;
     }
 
-    if (tmp != telegram.length()) {
+    if (tmp != rcvd.length()) {
         LOGDEBUG(logger, "wrong telegram length ");
         return -1;
     }
 
     {
 
-        int ret = 2;
+        int ret = 1;
         const char delimiters[] = "=,";
         for (i = 4; i < tokens.size() - 1; i++) {
             vector<std::string> subtokens;
@@ -997,7 +901,7 @@ int CInverterSputnikSSeries::parsereceivedstring() {
                 }
             }
         }
-        // we return either -1 (error) or 2 (all ok)
+        // we return either -1 (error) or 1 (all ok)
         return ret;
     }
 

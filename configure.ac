@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT([solarpowerlog],[0.24~rc2],[tobi@coldtobi.de])
-AC_PREREQ([2.68])
+AC_PREREQ([2.69])
 
 # use own directory for the autotools stuff
 AC_CONFIG_AUX_DIR(config)

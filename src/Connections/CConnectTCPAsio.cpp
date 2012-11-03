@@ -69,10 +69,8 @@ using namespace libconfig;
 struct asyncASIOCompletionHandler
 {
 	asyncASIOCompletionHandler( size_t *b, boost::system::error_code *ec )
-	{
-		bytes = b;
-		this->ec = ec;
-	}
+	    : bytes(b), ec(ec)
+	{ }
 
 	void operator()( const boost::system::error_code& e,
 			std::size_t bytes_transferred )
@@ -342,7 +340,6 @@ void CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
     boost::system::error_code handlerec;
     struct asyncASIOCompletionHandler connect_handler(NULL, &handlerec);
 
-
 	// if connected, ignore the commmand, pretend success.
 	if (IsConnected()) {
 	    LOGDEBUG(logger, __PRETTY_FUNCTION__ << " Already connected");
@@ -392,55 +389,57 @@ void CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
     timer.async_wait(
             boost::bind(&boosthelper_set_result, (int*) &result_timer, 1));
 
-	// TODO timeouts not yet considered -- change to async_connect
-	//
-	while (iter != end) {
-		ip::tcp::endpoint endpoint = *iter++;
-		LOGDEBUG(logger, "Connecting to " << endpoint );
-		sockt->async_connect(endpoint, connect_handler);
-		size_t num = ioservice->run_one(ec);
-		if ( num == 0) {
-		    LOGDEBUG(logger, __PRETTY_FUNCTION__ << "WTF: no service run!!!");
-		}
-		if (result_timer) {
-	        cmd->callback->addData(ICMD_ERRNO, -ETIMEDOUT);
-	        cmd->HandleCompletion();
-	        sockt->cancel(ec);
-	        ioservice->poll();
-	        return ;
-		}
-		if (ioservice->stopped()) {
+    while (iter != end) {
+        ip::tcp::endpoint endpoint = *iter++;
+        LOGDEBUG(logger, "Connecting to " << endpoint);
+        handlerec.clear();
+        sockt->async_connect(endpoint, connect_handler);
+        size_t num = ioservice->run_one(ec);
+        if (num == 0) {
+            LOGDEBUG(logger, __PRETTY_FUNCTION__ << "WTF: no service run!!!");
+        }
+        if (result_timer) {
+            LOGDEBUG(logger, "Connection timeout");
+            cmd->callback->addData(ICMD_ERRNO, -ETIMEDOUT);
+            cmd->callback->addData(ICMD_ERRNO_STR,
+                                   std::string("Connection timeout"));
+            cmd->HandleCompletion();
+            sockt->cancel(ec);
+            ioservice->poll();
+            return;
+        }
+        if (ioservice->stopped()) {
+            LOGDEBUG(logger, "Connection canceled");
             cmd->callback->addData(ICMD_ERRNO, -ECANCELED);
+            cmd->callback->addData(ICMD_ERRNO_STR,
+                                   std::string("Connection aborted"));
             cmd->HandleCompletion();
             ioservice->poll();
             return;
-		}
+        }
+
         // not timer, so it must be the connect that returned.
-		if (!handlerec) {
-		    timer.cancel();
-		    ioservice->poll(ec);
-		    break;
-		}
-	}
+        if (handlerec.value() == 0) {
+            break;
+        }
+    }
 
-	// preset name, but only needed if we gonna log on these levels.
-	if (logger.IsEnabled(ILogger::LL_ERROR) || logger.IsEnabled(ILogger::LL_DEBUG))
-		cfghelper.GetConfig("name", strhost);
+    timer.cancel(ec);
+    ioservice->poll(ec);
 
-	if (handlerec) {
-		cmd->callback->addData(ICMD_ERRNO, -ECONNREFUSED);
-		if (!handlerec.message().empty())
-			cmd->callback->addData(ICMD_ERRNO_STR, ec.message());
-		cmd->HandleCompletion();
-		return ;
-	}
+    if (handlerec) {
+        cmd->callback->addData(ICMD_ERRNO, -ECONNREFUSED);
+        if (!handlerec.message().empty())
+        cmd->callback->addData(ICMD_ERRNO_STR, ec.message());
+        cmd->HandleCompletion();
+        return;
+    }
 
-	// Report successful connection
-    LOGDEBUG(logger, "Connected to " << strhost );
-	_connected = true;
-	cmd->callback->addData(ICMD_ERRNO, 0);
-	cmd->HandleCompletion();
-	return ;
+    LOGDEBUG(logger, "Connected to " << strhost);
+    _connected = true;
+    cmd->callback->addData(ICMD_ERRNO, 0);
+    cmd->HandleCompletion();
+    return;
 }
 
 void CConnectTCPAsio::HandleDisconnect( CAsyncCommand *cmd )

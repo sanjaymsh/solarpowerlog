@@ -3,13 +3,13 @@ WHAT IS SOLARPOWERLOG?
 
 The program's purpose is to track and log data from photo-voltaic inverters,
 collect power data and store them. Also a purpose is to provide an interface
-to extract these data, allowing applications like web site stats of the system.
+to extract the data, allowing applications like web site stats of the system.
 
 Currently, solarpowerlog is working with the Sputnik Solarmax inverter, but the
-framework is planned to support any kind of inverters and even other
-energy generation systems.
+framework supports any kind of inverters and even other energy generation systems.
+(Some coding required -- all it needs is to create the inverter class)
 
-Solarpowerlog, even if already doing something, is still under development.
+Solarpowerlog, even some years old and quite stable, is alsway under development.
 If you are a coder, want to write docs, please see the "help wanted" section ;-)
 
 
@@ -35,35 +35,40 @@ http://sourceforge.net/mail/?group_id=259217
 HELP WANTED
 ===========
 
-Any idea? Some programming skills? Missin a feature? Lots of spare time?
-You're at the right place! Please consider bringing your dreams to reality and contribute
-them. Don't forget, this is open source.
+Any idea? Some programming skills? Missing a feature? Some spare time?
+You're at the right place! Any contribution is very welcome.
+Don't forget, this is the spirit of open source!
 
 Especially this fields needs support:
-- Support for other inverters that the sputnik ones (to test the code, you have to own them)
+- Write some user documentation.
+- Support for other inverters beside the Sputnik ones (to test the code, you
+  should have acces to one)
 - Programming for some tools making use of the data.
 - Documentation (manuals, code documentation, examples, ....)
-- and bug crushing. (not that I am aware of bugs)
-
+- and bug crushing. (not that I am aware of bugs, but I'm sure they are hiding)
+- porters for Windows
 
 GETTING THE SOURCE
 ==================
 
-You either need to grab the sources as tarball from http://sourceforge.net/projects/solarpowerlog/files/solarpowerlog/
+You either need to grab the sources as tarball from
+http://sourceforge.net/projects/solarpowerlog/files/solarpowerlog/
 or you can use the git repository to get the latest source.
 
-The repository is located at: git://solarpowerlog.git.sourceforge.net/gitroot/solarpowerlog/solarpowerlog and a
-git clone git://solarpowerlog.git.sourceforge.net/gitroot/solarpowerlog/solarpowerlog should make you a copy
+The repository is located at:
+git://solarpowerlog.git.sourceforge.net/gitroot/solarpowerlog/solarpowerlog
+and the command
+git clone git://solarpowerlog.git.sourceforge.net/gitroot/solarpowerlog/solarpowerlog
+should get you a copy.
 
 solarpowerlog has currently those main branches:
 
-trunk		-- latest changes
-master  	-- (will probably removed soon), usually points to the last release.
-		   However, this will be depreceated in favour of upstream/x.yy
+trunk		-- development trunk
 debian  	-- repository to store debian packaging files
 upstream/x.yy   -- snapshot for the releases (starting at 0.21)
+(master 	-- this was an ancient branch for the last release -- please do not use it)
 
-I recommend using the repository instead the relased tarballs. If you contribue, please make sure that you work on trunk.
+I recommend using the repository instead the relased tarballs. If you want to contribue, please make sure that you work on trunk.
 
 BUILDING
 ========
@@ -75,22 +80,24 @@ To build solarpowerlog, just use the usual
 ./configure
 make
 
-for a guide, please see the file INSTALL. (which will be created by ./bootstrap)
+for a guide, please see the file INSTALL. (it will be created by ./bootstrap)
 
-Option b) make a debian package
 
-Note: for this option you need the debian branch of the git repository.
+Option b) make a Debian package
 
-b1) Checkout the debian branch, fast-forward the changes from the branch trunk (if wanted) and then build the package
+Note: you'll need the Debian branch of the git repository.
+
+b1) Checkout the Debian branch, fast-forward the changes from the branch trunk
+(if wanted) and then build the package
 
 git checkout debian
 git merge trunk  # merge latest changes (optional)
 dpkg-buildpackage
 
 b2) using tools/make-slp-dist
-Of course, you can also use make-slp-dist (in tools) to automate the building. However, you need to have
+You can also use make-slp-dist (in tools) to automate the building. However, you need to have
 - git installed and the solarpowerlog git repository available
-- a pbuilder installed and setup
+- pbuilder installed and setup
 - git2cl installed.
 
 make-slp-dist will then do the following:
@@ -115,227 +122,14 @@ libdbi-dev
 Full-fledged (additional)
 liblog4cxx10-dev
 
+Note: dpkg-buildpackage will always ask for the full set and it will tell you
+if something is missing.
+
+Note: apt-get build-dep solarpowerlog will get you started.
 
 CONFIGURATION FILE
 ==================
 
-solarpowerlog reads at startup the file solarpowerlog.conf
-
-Here's an example how it can looks like The format is the one from libconfig++, see
-http://config-plus.sourceforge.net/ for documentation of the format.
-
-The example below currently shows all the available options for the time
-being.
-
-The example also shows, how 3 inverters and 3 data filters interact:
-A Inverter is always the datasource, and by its name, it exports the date
-too alĺ interesting "loggers":
-Inverter_1 sends it data to SimpleDumper_1
-Inverter_2 sends it data to SimpleDumper_2
-Inverter_3 sends it data to SimpleDumper_3
-
-
-================================ snip =====================
-# This is a sample configuation file for solarpowerlog.
-#
-# Please note, the file is parsed by libconfig.
-
-
-application:
-{
-	# how often query the information from the inveters
-	# the value specified the time between queries in seconds.
-	# should be a  float.
-	pollinginterval = 5.0;
-
-
-};
-
-inverter :
-{
-	 inverters = (
-  		{ # (REQUIRED) Name of the Inverter (Will be used as reference in the program)
-  		  name   = "Inverter_1";
-
-  		  # (REQUIRED) "Human Readable Description of the fine piece of hardware. Not interpreted by this software"
-  		  description = "A Inverter inverting";
-
-  		  # (REQUIRED) Selects the family of the inverters.
-  		  # (In SW-Speak: Specifies the family of factory to generate. The generated factory will instanciate the correct model class
-  		  # specified by "model"
-  		  manufactor =  "SPUTNIK_ENGINEERING";
-
-          # (REQUIRED) Which model we about to talk too
-          # Your choice is "S-Series" (currently)
-          model ="S-Series";
-
-          # (REQUIRED BY SPUTNIK, S-Series)
-          # mode of comm
-          #		"TCP/IP",          Ethernet
-          #	(planned:	"RS485,            RS485  )
-          #	(planned: 	"RS485overTCPIP"   Daisy-Chained modules with one over ethernet, the others chained to the rs485 output.)
-          comms =  "TCP/IP";
-
-     	  # TCP/IP options. Address and Port.
-      	  # Port can also be a so-called "well-known-port" named as string. Example: "http"
-          tcpadr =  "192.168.0.201";
-
-          tcpport = 12345;
-          # optional: Wait maximum this time to connect to the inverter.
-          # default: 3 seconds (value: 3000)
-          # Note: Currently blocks the logger until timeout or connection!
-          # NOTE: FEATURE CURRENTLY NOT IMPLEMENTED!
-          tcptimeout = 3000;
-
-          # Communication address of the inverter (as set in the menu of the inverter)
-          commadr = 1;
-          # Adress to use as "our" adress for communication
-		  # defaults to 0xFB
-          ownadr = 0xfb;
-
-          # How often should the inverter be queried
-          # The value specifies how long the class will *wait*
-          # after one query has been answered.
-          # The value can be a float.
-          # This value is optional and defaults to 5 seconds
-          queryinterval=5;
-		},
-		{
-		  name   = "Inverter_2";
-
-  		  # (REQUIRED) "Human Readable Description of the fine piece of hardware. Not interpreted by this software"
-  		  description = "A Inverter inverting";
-
-  		  # (REQUIRED) Selects the family of the inverters.
-  		  # (In SW-Speak: Specifies the family of factory to generate. The generated factory will instanciate the correct model class
-  		  # specified by "model"
-  		  manufactor =  "SPUTNIK_ENGINEERING";
-
-          # (REQUIRED) Which model we about to talk too
-          # Your choice is "S-Series" (currently)
-          model ="S-Series";
-
-          # (REQUIRED BY SPUTNIK, S-Series)
-          # mode of comm (planned:
-          #		"TCP/IP",          Ethernet
-          #		"RS485,            RS485
-          #		"RS485overTCPIP"   Daisy-Chained modules with one over ethernet, the others chained to the rs485 output.
-          comms =  "TCP/IP";
-
-      	  # TCP/IP options. Address and Port.
-      	  # Port can also be a so-called "well-known-port" named as string. Example: "http"
-          tcpadr =  "192.168.0.202";
-
-          tcpport = 12345;
-          # optional: Wait maximum this time to connect to the inverter.
-          # default: 3 seconds (value: 3000)
-          # Note: Currently blocks the logger until timeout or connection!
-          # NOTE: FEATURE CURRENTLY NOT IMPLEMENTED!
-          tcptimeout = 3000;
-
-          # Communication address of the inverter (as set in the menu of the inverter)
-          commadr = 2;
-          # Adress to use as "our" adress for communication
-		  # defaults to 0xFB
-          ownadr = 0xfb;
-
-          # How often should the inverter be queried
-          # The value specifies how long the class will *wait*
-          # after one query has been answered.
-          # The value can be a float.
-          # This value is optional and defaults to 5 seconds
-          queryinterval=5;
-		},
-		{
-		  name   = "Inverter_3";
-
-  		  # (REQUIRED) "Human Readable Description of the fine piece of hardware. Not interpreted by this software"
-  		  description = "A Inverter inverting";
-
-  		  # (REQUIRED) Selects the family of the inverters.
-  		  # (In SW-Speak: Specifies the family of factory to generate. The generated factory will instanciate the correct model class
-  		  # specified by "model"
-  		  manufactor =  "SPUTNIK_ENGINEERING";
-
-          # (REQUIRED) Which model we about to talk too
-          # Your choice is "S-Series" (currently)
-          model ="S-Series";
-
-          # (REQUIRED BY SPUTNIK, S-Series)
-          # mode of comm (planned:
-          #		"TCP/IP",          Ethernet
-          #		"RS485,            RS485
-          #		"RS485overTCPIP"   Daisy-Chained modules with one over ethernet, the others chained to the rs485 output.
-          comms =  "TCP/IP";
-
-      	  # TCP/IP options. Address and Port.
-      	  # Port can also be a so-called "well-known-port" named as string. Example: "http"
-          tcpadr =  "192.168.0.203";
-
-          tcpport = 12345;
-          # optional: Wait maximum this time to connect to the inverter.
-          # default: 3 seconds (value: 3000)
-          # Note: Currently blocks the logger until timeout or connection!
-          # NOTE: FEATURE CURRENTLY NOT IMPLEMENTED!
-          tcptimeout = 3000;
-
-          # Communication address of the inverter (as set in the menu of the inverter)
-          commadr = 1;
-          # Adress to use as "our" adress for communication
-		  # defaults to 0xFB
-          ownadr = 0xfb;
-
-          # How often should the inverter be queried
-          # The value specifies how long the class will *wait*
-          # after one query has been answered.
-          # The value can be a float.
-          # This value is optional and defaults to 5 seconds
-          queryinterval=5;
-		}
-     );
-};
-
-
-logger:
-{
-	loggers = (
-		{
-			# This dumper is known as (required)
-			name = "Simple Dumper 1";
-			# It is of type
-			type = "DumbDumper";
-			# And gets its data from
-			datasource = "Inverter_1";
-			# Yes, it should clean the screen before dumping
-			# (optional, defaults to false (off)
-			# use true to enable it.
-			clearscreen = true;
-		},
-		{
-			# This dumper is known as (required)
-			name = "Simple Dumper 2";
-			# It is of type
-			type = "DumbDumper";
-			# And gets its data from
-			datasource = "Inverter_2";
-			# Yes, it should clean the screen before dumping
-			# (optional, defaults to false (off)
-			# use true to enable it.
-			clearscreen = false;
-		},
-		{
-			# This dumper is known as (required)
-			name = "Simple Dumper 3";
-			# It is of type
-			type = "DumbDumper";
-			# And gets its data from
-			datasource = "Inverter_3";
-			# Yes, it should clean the screen before dumping
-			# (optional, defaults to false (off)
-			# use true to enable it.
-			clearscreen = false;
-		}
-		);
-};
-
-############################################# snip #############################
+Please see the directory example_confs for examples how to configure solarpowerlog.
+You can specify the config file to be used with the -c parameter:
+solarpowerlog -c <path-to-config-file> 

@@ -46,7 +46,7 @@ Copyright (C) 2009-2012 Tobias Frost
 #endif
 
 #ifdef HAVE_COMMS_SHAREDCONNECTION
-#include "Connections/CSharedConnection.h"
+#include "Connections/sharedconnection/CSharedConnection.h"
 #endif
 
 using namespace std;

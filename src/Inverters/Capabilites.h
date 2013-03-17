@@ -30,7 +30,10 @@ Copyright (C) 2009-2012 Tobias Frost
  *
  *
  *  Created on: May 22, 2009
- *      Author: tobi
+ *      Author: Tobias Frost
+ *
+ *      Contributors:
+ *         E.A.Neonakis <eaneonakis@freemail.gr>
  */
 
 #ifndef CAPABILITES_H_
@@ -57,7 +60,7 @@ Copyright (C) 2009-2012 Tobias Frost
  *
  * THIS CAPABILITY IS REQUIRED -- EVERY INVERTER HAS THIS ONE.  */
 #define CAPA_CAPAS_UPDATED  	 "CapabilityList Updated"
-#define CAPA_CAPAS_UPDATED_TYPE  IValue::bool_type
+#define CAPA_CAPAS_UPDATED_TYPE  bool
 
 
 /** Some Capabilites are now void and the observers have to unsubscribe.
@@ -82,7 +85,7 @@ Copyright (C) 2009-2012 Tobias Frost
  *
  * THIS CAPABILITY IS REQUIRED -- EVERY INVERTER HAS THIS ONE.*/
 #define CAPA_CAPAS_REMOVEALL 		"CapabilityList Please Unsubscribe"
-#define CAPA_CAPAS_REMOVEALL_TYPE 	IValue::bool_type
+#define CAPA_CAPAS_REMOVEALL_TYPE 	bool
 
 
 /** Is data the provided by the inverter valid?
@@ -92,7 +95,7 @@ Copyright (C) 2009-2012 Tobias Frost
  *
  * THIS IS A MUST CAPABILITY -- EVERY INVERTER HAS THIS ONE.  */
 #define CAPA_INVERTER_DATASTATE  "Data Validity"
-#define CAPA_INVERTER_DATASTATE_TYPE  IValue::bool_type
+#define CAPA_INVERTER_DATASTATE_TYPE  bool
 
 /** How often are the datas queried
  *
@@ -103,7 +106,7 @@ Copyright (C) 2009-2012 Tobias Frost
  * optional
  */
 #define CAPA_INVERTER_QUERYINTERVAL  "Data Query Interval"
-#define CAPA_INVERTER_QUERYINTERVAL_TYPE  IValue::float_type
+#define CAPA_INVERTER_QUERYINTERVAL_TYPE  float
 
 
 
@@ -115,7 +118,7 @@ Copyright (C) 2009-2012 Tobias Frost
  */
 
 #define CAPA_INVERTER_MANUFACTOR_NAME "Inverter Manufactor"
-#define CAPA_INVERTER_MANUFACTOR_TYPE IValue::string_type
+#define CAPA_INVERTER_MANUFACTOR_TYPE std::string
 
 
 /** Basic information for the user -- these information are usually not
@@ -126,13 +129,13 @@ Copyright (C) 2009-2012 Tobias Frost
  */
 
 #define CAPA_INVERTER_MODEL "Inverter Model"
-#define CAPA_INVERTER_MODEL_TYPE IValue::string_type
+#define CAPA_INVERTER_MODEL_TYPE std::string
 
 
 /** Basic information again -- how is the inverter named in the config file
  * Note: This has to be added by the concrete inverter class. */
 #define CAPA_INVERTER_CONFIGNAME "Inverter Name"
-#define CAPA_INVERTER_CONFIGNAME_TYPE IValue::string_type
+#define CAPA_INVERTER_CONFIGNAME_TYPE std::string
 
 
 
@@ -148,10 +151,10 @@ Copyright (C) 2009-2012 Tobias Frost
 */
 
 #define CAPA_INVERTER_FIRMWARE "Firmware Version"
-#define CAPA_INVERTER_FIRMWARE_TYPE IValue::string_type
+#define CAPA_INVERTER_FIRMWARE_TYPE std::string
 
 
-/** Total power feeding
+/** Total power feeding AC,DC
  *
  * On inverters which feeds more than one phase, this is the
  * sum of all phases.
@@ -161,7 +164,9 @@ Copyright (C) 2009-2012 Tobias Frost
  * Recommended for every inverter, but still optional
 */
 #define CAPA_INVERTER_ACPOWER_TOTAL "Current Grid Feeding Power"
-#define CAPA_INVERTER_ACPOWER_TOTAL_TYPE IValue::float_type
+#define CAPA_INVERTER_ACPOWER_TOTAL_TYPE float
+#define CAPA_INVERTER_DCPOWER_TOTAL "DC Power"
+#define CAPA_INVERTER_DCPOWER_TOTAL_TYPE float
 
 /** Power On Hours
  *
@@ -172,8 +177,18 @@ Copyright (C) 2009-2012 Tobias Frost
  * Optional.
 */
 #define CAPA_INVERTER_PON_HOURS "Inverter Power On Hours"
-#define CAPA_INVERTER_PON_HOURS_TYPE IValue::float_type
+#define CAPA_INVERTER_PON_HOURS_TYPE float
 
+/** Total Inverter Startups
+ *
+ * Counts inverter startups
+ *
+ * Type: Integer
+ *
+ * Optional.
+*/
+#define CAPA_INVERTER_STARTUPS "Inverter Startups"
+#define CAPA_INVERTER_STARTUPS_TYPE long
 
 
 /** Feeded Energy Y2D
@@ -185,7 +200,7 @@ Copyright (C) 2009-2012 Tobias Frost
  * Optional.
 */
 #define CAPA_INVERTER_KWH_Y2D "Energy produced this year (kWh)"
-#define CAPA_INVERTER_KWH_Y2D_TYPE IValue::float_type
+#define CAPA_INVERTER_KWH_Y2D_TYPE float
 
 
 /** Feeded Energy M2D
@@ -197,9 +212,9 @@ Copyright (C) 2009-2012 Tobias Frost
  * Optional.
 */
 #define CAPA_INVERTER_KWH_M2D "Energy produced this month (kWh)"
-#define CAPA_INVERTER_KWH_M2D_TYPE IValue::float_type
+#define CAPA_INVERTER_KWH_M2D_TYPE float
 
-/** Feeded Energy Today
+/** Feeded Energy Today,Yesterday
  *
  * Today the inverter has produced this amount of energy. (kWh)
  *
@@ -208,7 +223,9 @@ Copyright (C) 2009-2012 Tobias Frost
  * Optional.
 */
 #define CAPA_INVERTER_KWH_2D "Energy produced today (kWh)"
-#define CAPA_INVERTER_KWH_2D_TYPE IValue::float_type
+#define CAPA_INVERTER_KWH_2D_TYPE float
+#define CAPA_INVERTER_KWH_YD "Energy produced yesterday (kWh)"
+#define CAPA_INVERTER_KWH_YD_TYPE float
 
 /** Feeded Energy Total
  *
@@ -219,7 +236,7 @@ Copyright (C) 2009-2012 Tobias Frost
  * Optional.
 */
 #define CAPA_INVERTER_KWH_TOTAL_NAME "Energy produced accumulated all time (kWh)"
-#define CAPA_INVERTER_KWH_TOTAL_TYPE IValue::float_type
+#define CAPA_INVERTER_KWH_TOTAL_TYPE float
 
 /** Installed Power
  *
@@ -235,7 +252,7 @@ Copyright (C) 2009-2012 Tobias Frost
  *
  * */
 #define CAPA_INVERTER_INSTALLEDPOWER_NAME "Installed solar power (Wp)"
-#define CAPA_INVERTER_INSTALLEDPOWER_TYPE IValue::float_type
+#define CAPA_INVERTER_INSTALLEDPOWER_TYPE float
 
 /** Current AC Power Frequency
  *
@@ -246,7 +263,7 @@ Copyright (C) 2009-2012 Tobias Frost
  *
  * */
 #define CAPA_INVERTER_NET_FREQUENCY_NAME "Net frequency (Hz)"
-#define CAPA_INVERTER_NET_FREQUENCY_TYPE IValue::float_type
+#define CAPA_INVERTER_NET_FREQUENCY_TYPE float
 
 /** relative power
  *
@@ -262,7 +279,7 @@ Copyright (C) 2009-2012 Tobias Frost
  *
  * */
 #define CAPA_INVERTER_RELPOWER_NAME "relative Power (%)"
-#define CAPA_INVERTER_RELPOWER_TYPE IValue::float_type
+#define CAPA_INVERTER_RELPOWER_TYPE float
 
 /** DC Input Voltage
  *
@@ -274,7 +291,16 @@ Copyright (C) 2009-2012 Tobias Frost
  *
  * */
 #define CAPA_INVERTER_INPUT_DC_VOLTAGE_NAME "DC voltage in (V)"
-#define CAPA_INVERTER_INPUT_DC_VOLTAGE_TYPE IValue::float_type
+#define CAPA_INVERTER_INPUT_DC_VOLTAGE_TYPE float
+
+#define CAPA_INVERTER_INPUT_DC_VOLTAGE_T1_NAME "DC voltage Tracker 1 in (V)"
+#define CAPA_INVERTER_INPUT_DC_VOLTAGE_T1_TYPE float
+
+#define CAPA_INVERTER_INPUT_DC_VOLTAGE_T2_NAME "DC voltage Tracker 2 in (V)"
+#define CAPA_INVERTER_INPUT_DC_VOLTAGE_T2_TYPE float
+
+#define CAPA_INVERTER_INPUT_DC_VOLTAGE_T3_NAME "DC voltage Tracker 3 in (V)"
+#define CAPA_INVERTER_INPUT_DC_VOLTAGE_T3_TYPE float
 
 /** DC Input Current
  *
@@ -286,8 +312,32 @@ Copyright (C) 2009-2012 Tobias Frost
  *
  * */
 #define CAPA_INVERTER_INPUT_DC_CURRENT_NAME "DC current in (A)"
-#define CAPA_INVERTER_INPUT_DC_CURRENT_TYPE IValue::float_type
+#define CAPA_INVERTER_INPUT_DC_CURRENT_TYPE float
 
+#define CAPA_INVERTER_INPUT_DC_CURRENT_T1_NAME "DC current Tracker 1 in (A)"
+#define CAPA_INVERTER_INPUT_DC_CURRENT_T1_TYPE float
+
+#define CAPA_INVERTER_INPUT_DC_CURRENT_T2_NAME "DC current Tracker 2 in (A)"
+#define CAPA_INVERTER_INPUT_DC_CURRENT_T2_TYPE float
+
+#define CAPA_INVERTER_INPUT_DC_CURRENT_T3_NAME "DC current Tracker 3 in (A)"
+#define CAPA_INVERTER_INPUT_DC_CURRENT_T3_TYPE float
+
+/** Power feeding DC per Tracker
+ *
+ * Type: float
+ *
+ * Optional.
+ * 
+ * */
+#define CAPA_INVERTER_DCPOWER_T1_NAME "DC Power Tracker 1"
+#define CAPA_INVERTER_DCPOWER_T1_TYPE float
+
+#define CAPA_INVERTER_DCPOWER_T2_NAME "DC Power Tracker 2"
+#define CAPA_INVERTER_DCPOWER_T2_TYPE float
+
+#define CAPA_INVERTER_DCPOWER_T3_NAME "DC Power Tracker 3"
+#define CAPA_INVERTER_DCPOWER_T3_TYPE float
 
 /** AC Grid Voltage
  *
@@ -299,7 +349,13 @@ Copyright (C) 2009-2012 Tobias Frost
  *
  * */
 #define CAPA_INVERTER_GRID_AC_VOLTAGE_NAME "AC grid voltage (V)"
-#define CAPA_INVERTER_GRID_AC_VOLTAGE_TYPE IValue::float_type
+#define CAPA_INVERTER_GRID_AC_VOLTAGE_TYPE float
+
+#define CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE2_NAME "AC grid L2 voltage (V)"
+#define CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE2_TYPE float
+
+#define CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE3_NAME "AC grid L3 voltage (V)"
+#define CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE3_TYPE float
 
 /** AC Grid Current
  *
@@ -311,7 +367,13 @@ Copyright (C) 2009-2012 Tobias Frost
  *
  * */
 #define CAPA_INVERTER_GRID_AC_CURRENT_NAME "AC grid feeding current (A)"
-#define CAPA_INVERTER_GRID_AC_CURRENT_TYPE IValue::float_type
+#define CAPA_INVERTER_GRID_AC_CURRENT_TYPE float
+
+#define CAPA_INVERTER_GRID_AC_CURRENT_PHASE2_NAME "AC grid L2 feeding current (A)"
+#define CAPA_INVERTER_GRID_AC_CURRENT_PHASE2_TYPE float
+
+#define CAPA_INVERTER_GRID_AC_CURRENT_PHASE3_NAME "AC grid L3 feeding current (A)"
+#define CAPA_INVERTER_GRID_AC_CURRENT_PHASE3_TYPE float
 
 /** Inverter internal temperature
  *
@@ -327,7 +389,34 @@ Copyright (C) 2009-2012 Tobias Frost
  *
  * */
 #define CAPA_INVERTER_TEMPERATURE_NAME "Inverter Temperature (C)"
-#define CAPA_INVERTER_TEMPERATURE_TYPE IValue::float_type
+#define CAPA_INVERTER_TEMPERATURE_TYPE float
+
+#define CAPA_INVERTER_TEMPERATURE_PHASE2_NAME "Inverter Temperature 2 (C)"
+#define CAPA_INVERTER_TEMPERATURE_PHASE2_TYPE float
+
+#define CAPA_INVERTER_TEMPERATURE_PHASE3_NAME "Inverter Temperature 3 (C)"
+#define CAPA_INVERTER_TEMPERATURE_PHASE3_TYPE float
+
+
+// IEE IEA IED
+
+/** Error Currents +Ground Voltage
+ *
+ * 
+ *
+ * Type: Float
+ *
+ * Optional.
+ *
+ * */
+#define CAPA_INVERTER_ERROR_CURRENT_NAME "Error current in (mA)"
+#define CAPA_INVERTER_ERROR_CURRENT_TYPE float
+#define CAPA_INVERTER_DC_ERROR_CURRENT_NAME "DC Error current in (mA)"
+#define CAPA_INVERTER_DC_ERROR_CURRENT_TYPE float
+#define CAPA_INVERTER_AC_ERROR_CURRENT_NAME "AC Error current in (mA)"
+#define CAPA_INVERTER_AC_ERROR_CURRENT_TYPE float
+#define CAPA_INVERTER_GROUND_VOLTAGE_NAME "Voltage to Ground (V)"
+#define CAPA_INVERTER_GROUND_VOLTAGE_TYPE float
 
 /** Inverter Status Codes
  *
@@ -379,7 +468,7 @@ enum InverterStatusCodes
 */
 
 #define CAPA_INVERTER_STATUS_NAME "Inverter Overall Status (int)"
-#define CAPA_INVERTER_STATUS_TYPE IValue::int_type
+#define CAPA_INVERTER_STATUS_TYPE long
 
 /** Inverter Overall status -- human readable version
  *
@@ -400,13 +489,13 @@ enum InverterStatusCodes
 */
 
 #define CAPA_INVERTER_STATUS_READABLE_NAME "Inverter Overall Status"
-#define CAPA_INVERTER_STATUS_READABLE_TYPE IValue::string_type
+#define CAPA_INVERTER_STATUS_READABLE_TYPE std::string
 
 // Filter "CSVDumper" provides the current logging filename in this value.
 // Present only if CSV Dumper is in the chain.
 // Empty, if the file could not be opened.
 #define CAPA_CSVDUMPER_FILENAME "CSVDumper::Filename"
-#define CAPA_CSVDUMPER_FILENAME_TYPE IValue::string_type
+#define CAPA_CSVDUMPER_FILENAME_TYPE std::string
 
 // Filer "CSVDumper" logges these capabilites.
 // Note: This lis might change over runtime, as only in "log everything" mode
@@ -414,7 +503,7 @@ enum InverterStatusCodes
 // in your CSV!
 // The Capabilites are "Comma seperated", with no blank in between.
 #define CAPA_CSVDUMPER_LOGGEDCAPABILITES "CSVDumper::LoggedCaps"
-#define CAPA_CSVDUMPER_LOGGEDCAPABILITES_TYPE IValue::string_type
+#define CAPA_CSVDUMPER_LOGGEDCAPABILITES_TYPE std::string
 
 
 #endif /* CAPABILITES_H_ */

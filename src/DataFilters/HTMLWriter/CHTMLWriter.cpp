@@ -73,27 +73,27 @@ void CHTMLWriter::ScheduleCyclicEvent(enum Commands cmd)
 	CCapability *c;
 	struct timespec ts;
 
-	if (derivetiming) {
-		c = GetConcreteCapability(CAPA_INVERTER_QUERYINTERVAL);
-		if (c && c->getValue()->GetType() == IValue::float_type) {
-			CValue<float> *v = (CValue<float> *) c->getValue();
-			ts.tv_sec = v->Get();
-			ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
-		} else {
-			LOGINFO(logger,
-					"INFO: The associated inverter does not specify the "
-					"queryinterval. Defaulting to 300 seconds. Consider specifying writeevery");
-			ts.tv_sec = 300;
-			ts.tv_nsec = 0;
-		}
-	} else if (writeevery > 0.0001) {
-		ts.tv_sec = writeevery;
-		ts.tv_nsec = ((long) (writeevery - ts.tv_sec)) * 1e9;
-	} else {
-		// writevery 0.
-		ts.tv_sec = 300;
-		ts.tv_nsec = 0;
-	}
+    if (derivetiming) {
+        c = GetConcreteCapability(CAPA_INVERTER_QUERYINTERVAL);
+        if (c && CValue<float>::IsType(c->getValue())) {
+            CValue<float> *v = (CValue<float> *)c->getValue();
+            ts.tv_sec = v->Get();
+            ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
+        } else {
+            LOGINFO(logger,
+                "INFO: The associated inverter does not specify the "
+                "queryinterval. Defaulting to 300 seconds. Consider specifying writeevery");
+            ts.tv_sec = 300;
+            ts.tv_nsec = 0;
+        }
+    } else if (writeevery > 0.0001) {
+        ts.tv_sec = writeevery;
+        ts.tv_nsec = ((long)(writeevery - ts.tv_sec)) * 1e9;
+    } else {
+        // writevery 0.
+        ts.tv_sec = 300;
+        ts.tv_nsec = 0;
+    }
 
 	Registry::GetMainScheduler()->ScheduleWork(ncmd, ts);
 }
@@ -199,8 +199,8 @@ void CHTMLWriter::Update(const IObserverSubject *subject)
 		// but -- to be nice -- update the value first
 		ourcap = IInverterBase::GetConcreteCapability(CAPA_CAPAS_REMOVEALL);
 		assert (ourcap);
-		assert (ourcap->getValue()->GetType() == CAPA_CAPAS_REMOVEALL_TYPE);
-		assert (parentcap->getValue()->GetType() == CAPA_CAPAS_REMOVEALL_TYPE);
+		assert (CValue<CAPA_CAPAS_REMOVEALL_TYPE>::IsType(ourcap->getValue()));
+		assert (CValue<CAPA_CAPAS_REMOVEALL_TYPE>::IsType(parentcap->getValue()));
 
 		CValue<bool> *a, *b;
 		a = (CValue<bool> *) (ourcap->getValue());
@@ -276,18 +276,14 @@ void CHTMLWriter::ExecuteCommand(const ICommand *cmd)
 		break;
 
 	case CMD_CYCLIC:
-	{
-
 		DoCyclicCmd(cmd);
 		ScheduleCyclicEvent(CMD_CYCLIC);
-	}
+	break;
 
 	case CMD_UPDATED:
-	{
 		// prepared for the next version.
 		// "do on update mode"
 		break;
-	}
 	}
 
 }
@@ -393,18 +389,13 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 		// cache the name of the capability
 		std::string templatename = cappair.first.c_str();
 
-//	 LOG_TRACE(logger, "Capability: " << cappair.first << "\tValue: "<< value);
-
-//	 if ( formattermap.find(templatename) != formattermap.end())
-//	 {
-//		 LOG_TRACE(logger, "****");
-//	 }
-
+		//	 LOG_TRACE(logger, "Capability: " << cappair.first << "\tValue: "<< value);
 		// TODO Rip this part into its own function -- this way, we can also do some daisy-chain
 		// formatting: Modify value x to value y, modify value y to value z ....
 
-	// debug code: dump the multimap find results.
+
 #if 0
+		// debug code: dump the multimap find results.
 		for (it = formattermap.find(cappair.first); it != formattermap.end(); it++) {
 
 		LOGTRACE(logger, "***** " << templatename <<": found 1st=" << (*it).first << " 2nd " << (*it).second[0]);
@@ -416,7 +407,7 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 			IFormater *frmt;
 
 			// the multimap returns everything after the first result
-			// so we have to recheck we really want this result.
+			// so we have to recheck if we really want this result.
 			// FIXME the multimap seems not to be best for the task, so maybe
 			// code should be reworked to use another container.
 			if (cappair.first != (*it).first ) break;

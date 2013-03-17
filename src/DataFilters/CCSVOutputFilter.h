@@ -209,6 +209,7 @@ Copyright (C) 2009-2012 Tobias Frost
 #include "boost/date_time/local_time/local_time.hpp"
 
 #include "DataFilters/interfaces/IDataFilter.h"
+#include "Inverters/BasicCommands.h"
 
 
 /** This class implements a logger to write the data to a CSV File
@@ -258,13 +259,13 @@ private:
 	 *  */
 	void DoCYCLICmd(const ICommand *);
 
-	enum Commands
-	{
-		CMD_INIT,
-		CMD_CYCLIC,
-		CMD_ROTATE ///<Rotate logfile
-	};
-
+    enum Commands
+    {
+        CMD_BRC_SHUTDOWN = BasicCommands::CMD_BRC_SHUTDOWN,
+        CMD_INIT = BasicCommands::CMD_USER_MIN,
+        CMD_CYCLIC,
+        CMD_ROTATE ///<Rotate logfile
+    };
 
 	/** has the header been outputted to the file */
 	bool headerwritten;

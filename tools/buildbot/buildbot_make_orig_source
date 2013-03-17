@@ -12,6 +12,7 @@
 
 set -e
 
+PWD=$(pwd)
 
 VERSION=$(grep "PACKAGE_VERSION=" configure | cut -d"=" -f 2- | tr --delete "\'")
 
@@ -23,11 +24,25 @@ mv solarpowerlog-$VERSION.tar.gz stagedir_debbuild/solarpowerlog_$VERSION.orig.t
 # extract it
 ( cd stagedir_debbuild && tar xzf solarpowerlog_$VERSION.orig.tar.gz)
 
-# copy debian dir 
-cp -r debian stagedir_debbuild/solarpowerlog-$VERSION 
+# copy debian dir
+cp -r debian stagedir_debbuild/solarpowerlog-$VERSION
 
 # record that we are autobuilding.
 GIT_DESCRIBE=$(git describe)
-( cd stagedir_debbuild/solarpowerlog-$VERSION && dch -M -a "buildbot built. git-describe: $GIT_DESCRIBE" )
+cd stagedir_debbuild/solarpowerlog-$VERSION
+DEB_VERSION=$(head -n1 debian/changelog | cut -d\( -f 2 | cut -d\) -f -1 | rev | cut -d- -f 2- | rev)
+
+[[ "x$DEB_VERSION" == "x" ]] && ( echo "cannot determine existing debian version"; exit 1)
+echo "DEB_VERSION = $DEB_VERSION"
+if [[ "$DEB_VERSION" != "$VERSION" ]]
+then
+   dch -M --newversion $VERSION-1 "New upstream version $VERSION"
+   dch -M -a "upstream git reference: $GIT_DESCRIBE"
+else
+   dch -M -a "upstream git reference: $GIT_DESCRIBE"
+fi
+
+cd $PWD
+
 
 

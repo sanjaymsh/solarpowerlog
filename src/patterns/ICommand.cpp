@@ -56,8 +56,9 @@ ICommand::~ICommand()
 /** Delegate the command to the one that should do the work */
 void ICommand::execute()
 {
-	assert(trgt);
-	trgt->ExecuteCommand(this);
+    // Allow also "fire-and-forget" commmands which will be done but never a
+    // callback issued.
+	if (trgt) trgt->ExecuteCommand(this);
 }
 
 /** Getter for the private cmd field (field is for Commandees use) */
@@ -79,13 +80,17 @@ const boost::any ICommand::findData(const std::string &key) const
 
 void ICommand::mergeData(const ICommand &other)
 {
-	// first delete all duplicate data
-	std::map<std::string, boost::any>::const_iterator it;
-	for(it = other.dat.begin(); it != other.dat.end(); it++)
-	{
-		if(dat.count(it->first)) dat.erase(it->first);
-	}
-
+	// first delete all duplicate data, but only if the containers have data.
+    // (this is needed as std::map insert won't change the content if a key is
+    // alredy there)
+    // FIXME: missed optimization: iterate only over the shorter one of both containers.
+    if (dat.size() && other.dat.size()) {
+        std::map<std::string, boost::any>::const_iterator it;
+        for(it = dat.begin(); it != dat.end(); it++)
+        {
+            if(other.dat.count(it->first)) dat.erase(it->first);
+        }
+    }
 	// and then merge the others data into the map
 	dat.insert(other.dat.begin(), other.dat.end());
 }

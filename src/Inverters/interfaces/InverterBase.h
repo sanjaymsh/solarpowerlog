@@ -209,7 +209,7 @@ class ICapaIterator;
 
 using namespace std;
 
-/// connectiontimeout: Wait this long for the connection attempt to time out
+/// connection_timeout: Wait this long for the connection attempt to time out
 /// note: currently FIXME (not implemented in ASIO TCP)
 /// note: This tweak is optional. The Connection method needs not to honor
 /// this parameter (especially if the success/failure is immediately known)
@@ -279,6 +279,7 @@ public:
 
 protected:
 	/// Add a Capability for the inverter.
+	friend class ISputnikCommand;
 	virtual void AddCapability(CCapability* capa);
 
 	/** returns a iterator of the Capabilties. The iterator is inizialized at the begin of the map.*/
@@ -311,6 +312,8 @@ protected:
 
 	map<string, CCapability*> CapabilityMap;
 
+	// Allow sub-objects of the inverter accessing the logger.
+public:
 	/// The Logger Class for Debugging, Error reporting etc...
 	ILogger logger;
 };

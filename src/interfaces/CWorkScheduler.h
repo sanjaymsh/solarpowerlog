@@ -35,9 +35,9 @@ Copyright (C) 2009-2012 Tobias Frost
 
 #include <time.h>
 #include <list>
+#include <set>
 
 #include <semaphore.h>
-#include <map>
 
 #include <boost/thread/mutex.hpp>
 
@@ -46,8 +46,6 @@ Copyright (C) 2009-2012 Tobias Frost
 class ICommand;
 class ICommandTarget;
 class CTimedWork;
-
-using namespace std;
 
 
 /** This class implements the work scheduler:
@@ -73,10 +71,37 @@ public:
 	CWorkScheduler();
 	virtual ~CWorkScheduler();
 
-	void ScheduleWork(ICommand *Command);
+	/** Schedule an immediate work
+	 *
+	 * \param Command to be issued
+	 * \param tryonly does not issue the work if the underlying mutex cannot be
+	 * obtained immediately (useful if called from e.g signal handler)
+	 *
+	 * \returns true if work has been scheduled, false if not
+	 * It is guaranteed to return true if tryonly is false.
+	*/
+	bool ScheduleWork(ICommand *Command, bool tryonly=false);
 
 	/** Schedule a work for later */
 	void ScheduleWork(ICommand *Commmand, struct timespec ts);
+
+	/** Register for broadcast events.
+	 *
+	 * There (will) be some broadcast events, and if your datafilter/inverter
+	 * is interested in those.
+	 *
+	 * See the file BasicCommands.h for defined broadcast events, but those
+	 * events are only broadcasted through the mainscheduler.
+	 *
+	 * A specialty about broadcast events is, that they will have no callback
+	 * in the ICommand. This is asserted by ScheduleWork().
+	 *
+	 * \param target which wants to receive the broadcast events
+	 * \param subscribe set to false if you want to unsubscribe to the events.
+	 *
+	 * \note solarpowerlog will only issue
+	*/
+	void RegisterBroadcasts(ICommandTarget *target, bool subscribe=true);
 
 	/** Call this method to do dispatch due work.
 	 * Note: Returns after each piece of work has been done!
@@ -90,33 +115,26 @@ public:
 
 private:
 
+	/// Stores the CTimedWork Object, the handler for works to be executed in
+	/// at a specific time.
 	CTimedWork *timedwork;
 
-	list<ICommand*> CommandsDue;
-
-#if 0
-	struct timepec_compare
-	{
-		 bool operator()(const struct timespec t1, const struct timespec t2) const
-		  {
-			 if(t1.tv_sec < t2.tv_sec) return true;
-			 if(t1.tv_sec > t2.tv_sec) return false;
-			 if(t1.tv_nsec < t2.tv_nsec) return true;
-			 return false;
-		  };
-	};
-
-	multimap<struct timespec, ICommand*, timepec_compare> TimedCommands;
-#endif
+	/// Stores the pending work
+	std::list<ICommand*> CommandsDue;
 
 	/** get the next new command in the list.
 	 * (Thread safe)*/
 	ICommand *getnextcmd(void);
 
 private:
+	/// Semaphore to wait on until work arrives (probably via timed works
 	sem_t semaphore;
 
+	/// stores for the mainscheduler the list of broadcast subscribers
+	std::set<ICommandTarget*> *broadcast_subscribers;
+
 protected:
+	/// Mutex to protect against concurrent accesses.
 	boost::mutex mut;
 
 private:

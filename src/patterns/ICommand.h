@@ -30,7 +30,18 @@ Copyright (C) 2009-2012 Tobias Frost
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
+#include "porting.h"
 #endif
+
+/// #define ICMD_WITH_DUMP_MEMBER
+
+#ifdef HAVE_INV_DUMMY
+    /// Debug-Helper, define and you have the DumpData Member to dump at runtime
+    /// A Icommand,
+    /// (Will be automatically enabled if you have the dummy inverter enabled...)
+#define ICMD_WITH_DUMP_MEMBER
+#endif
+
 
 #include <string>
 #include <map>
@@ -39,6 +50,8 @@ Copyright (C) 2009-2012 Tobias Frost
 #include <boost/any.hpp>
 
 #include "configuration/ILogger.h"
+#include "Inverters/BasicCommands.h"
+#include <assert.h>
 
 // Tokens for ICommands (general meanings)
 
@@ -59,6 +72,12 @@ class ICommandTarget;
  * to check for completion, etc...
  *
  * NOTE: The one that calls execute should delete the object afterwards!
+ * (like CWorkScheduler does...)
+ *
+ * \note New from Oct 2012: "Fire-and-forget"-ICommands. This are commands whose
+ * ICommandTarget is NULL. They will be be answered, just deleted...
+ * Purpose is to allow calls to subsystems which takes ICommands as callbacks
+ * (like the IConnect ones) when the actual callback is unimportant.
  *
  */
 class ICommand
@@ -71,8 +90,10 @@ public:
 
 	virtual ~ICommand();
 
+	/// excecute the command
 	void execute();
 
+	/// Getter for the command
 	int getCmd() const;
 
 	/** Find Data in Command
@@ -85,20 +106,27 @@ public:
 	 * \throw std::invalid_argument { throws this if data is not existant. The
 	 * data of the invalid_argument is the key which was not found }
 	 */
-
 	const boost::any findData(const std::string & key) const
 			throw(std::invalid_argument);
 
 
+	///  Setter for Command
 	void setCmd(int cmd)
 	{
 		this->cmd = cmd;
 	}
 
+	/// Setter for the target of the command
 	void setTrgt(ICommandTarget *trgt)
 	{
 		this->trgt = trgt;
 	}
+
+
+    /// Getter for the target
+    ICommandTarget* getTrgt() const {
+        return trgt;
+    }
 
 	/** Remove Data from Command
 	 *
@@ -110,6 +138,16 @@ public:
 	{
 		dat.erase(key);
 	}
+
+    /** Remove all data from command.
+     *
+     * \note: As the underlaying storage is a std::map,
+     * the associated boost::any objects will be deleted.
+     */
+    inline void RemoveData()
+    {
+        dat.clear();
+    }
 
 	/** Add/Replace Data from the Command
 	 *
@@ -125,17 +163,27 @@ public:
 		dat.insert(std::pair<std::string, boost::any>(key, data));
 	}
 
-	// Merge data from other ICommand into this one.
+	/// Merge data from other ICommand into this one.
 	void mergeData(const ICommand &other);
 
-	void DumpData(ILogger &logger) const {
-		std::map<std::string, boost::any>::const_iterator it;
-		LOGDEBUG(logger,"dumping available data: ");
-		for(it=dat.begin(); it != dat.end(); it++) {
-			LOGDEBUG(logger, it->first);
-		}
-		LOGDEBUG(logger,"dumping done.");
-	}
+#ifdef ICMD_WITH_DUMP_MEMBER
+    /// Debug-Helper to dump all data which is stored in the ICommand.
+    void DumpData(ILogger& logger) const {
+        std::map<std::string, boost::any>::const_iterator it;
+        LOGDEBUG(logger, "ICommand::DumpData() with command " << this->cmd);
+        if (this->cmd < BasicCommands::CMD_BROADCAST_MAX) {
+            LOGDEBUG(logger, "(BROADCAST COMMAND) " << this->cmd);
+        } else {
+            assert(this->trgt);
+            LOGDEBUG(logger, "Target: " << trgt);
+        }
+        LOGDEBUG(logger, "dumping available data: ");
+        for (it = dat.begin(); it != dat.end(); it++) {
+            LOGDEBUG(logger, it->first);
+        }
+        LOGDEBUG(logger, "dumping done.");
+    }
+#endif
 
 private:
 	int cmd;

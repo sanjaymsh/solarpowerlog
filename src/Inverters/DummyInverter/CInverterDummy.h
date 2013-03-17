@@ -29,9 +29,15 @@ Copyright (C) 2011-2012 Tobias Frost
 #ifndef CINVERTERDUMMY_H_
 #define CINVERTERDUMMY_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#include "porting.h"
+#endif
+
 #ifdef HAVE_INV_DUMMY
 
 #include "Inverters/interfaces/InverterBase.h"
+#include "Inverters/BasicCommands.h"
 
 class CInverterDummy: public IInverterBase
 {
@@ -48,7 +54,7 @@ public:
 
 private:
 	enum CMDs {
-		CMD_INIT
+		CMD_INIT = BasicCommands::CMD_USER_MIN
 	};
 
 };

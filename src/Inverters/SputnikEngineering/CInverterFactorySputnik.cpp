@@ -32,13 +32,20 @@ Copyright (C) 2009-2012 Tobias Frost
 
 #include "Inverters/SputnikEngineering/CInverterFactorySputnik.h"
 #include "Inverters/SputnikEngineering/CInverterSputnikSSeries.h"
+#include "CInverterSputnikSSeriesSimulator.h"
 
 using namespace std;
-
-#if defined HAVE_INV_SPUTNIK
+#if defined HAVE_INV_SPUTNIK || defined HAVE_INV_SPUTNIKSIMULATOR
 
 static const string supportedmodels =
-		"S-Series: \tModels 2000S, 3000S, 4200S, 6000S \n ";
+#if defined HAVE_INV_SPUTNIK
+		"S-Series: \tModels 2000S, 3000S, 4200S, 6000S and similar\n "
+#endif
+#if defined HAVE_INV_SPUTNIKSIMULATOR
+        "Simulator:\tModels a S-Series Inverter\n";
+#else
+;
+#endif
 
 CInverterFactorySputnik::CInverterFactorySputnik() {
 	// TODO Auto-generated constructor stub
@@ -48,9 +55,16 @@ CInverterFactorySputnik::CInverterFactorySputnik() {
 IInverterBase *CInverterFactorySputnik::Factory(const string & type,
 		const string& name, const string & configurationpath) {
 
+#if defined HAVE_INV_SPUTNIK
 	if (type == "S-Series") {
 		return new CInverterSputnikSSeries(name, configurationpath);
 	}
+#endif
+#if defined HAVE_INV_SPUTNIKSIMULATOR
+	if (type == "Simulator") {
+	    return new CInverterSputnikSSeriesSimulator(name,configurationpath);
+	}
+#endif
 
 	return NULL;
 }

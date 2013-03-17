@@ -30,7 +30,6 @@ Copyright (C) 2009-2012 Tobias Frost
 #endif
 
 #include <boost/exception/all.hpp>
-
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
 
@@ -43,11 +42,16 @@ Copyright (C) 2009-2012 Tobias Frost
 #include "semaphore.h"
 #include "interfaces/CMutexHelper.h"
 
+#include "patterns/ICommandTarget.h"
+#include "configuration/Registry.h"
+
 using namespace std;
 
 CWorkScheduler::CWorkScheduler()
     : dhc("CWorkScheduler")
 {
+
+    broadcast_subscribers = NULL;
 
     works_received=0;
     works_completed=0;
@@ -69,47 +73,108 @@ CWorkScheduler::CWorkScheduler()
 CWorkScheduler::~CWorkScheduler()
 {
 	delete timedwork;
+	if (broadcast_subscribers) delete broadcast_subscribers;
 }
 
-bool CWorkScheduler::DoWork( bool block )
-{
-	if (!block) {
-		CMutexAutoLock mutex(&(this->mut));
-		if (CommandsDue.empty()) {
-			return false;
-		}
-	}
+bool CWorkScheduler::DoWork(bool block) {
+    if (!block) {
+        CMutexAutoLock cma(&mut);
+        if (CommandsDue.empty()) {
+            return false;
+        }
+    }
 
-	sem_wait(&semaphore);
-	ICommand *cmd = getnextcmd();
-	cmd->execute();
-	delete cmd;
-	return true;
+    sem_wait(&semaphore);
+    ICommand *cmd = getnextcmd();
+    if (cmd->getCmd() > BasicCommands::CMD_BROADCAST_MAX) {
+        cmd->execute();
+    } else {
+        if (broadcast_subscribers) {
+            LOGDEBUG(Registry::GetMainLogger(),
+                "Handling broadcast-event cmd=" << cmd->getCmd() << " subscribers=" << broadcast_subscribers->size());
+            std::set<ICommandTarget*>::iterator it;
+            for (it = broadcast_subscribers->begin();
+                it != broadcast_subscribers->end(); it++) {
+                (*it)->ExecuteCommand(cmd);
+            }
+        } else {
+            LOGDEBUG(Registry::GetMainLogger(),
+                "Handling broadcast-event cmd=" << cmd->getCmd() << " NO subscribers");
+        }
+    }
+    delete cmd;
+    return true;
+}
+
+void CWorkScheduler::RegisterBroadcasts(ICommandTarget* target,
+    bool subscribe) {
+
+    if (!broadcast_subscribers) {
+        broadcast_subscribers = new std::set<ICommandTarget*>;
+    }
+
+    if (subscribe) {
+        broadcast_subscribers->insert(target);
+    }
+    else {
+        broadcast_subscribers->erase(target);
+    }
 }
 
 ICommand *CWorkScheduler::getnextcmd( void )
 {
 	// Obtain Mutex to make sure...
-	this->mut.lock();
+    CMutexAutoLock cma(&mut);
 	ICommand *cmd = CommandsDue.front();
 	CommandsDue.pop_front();
-	this->works_completed++;
-	this->mut.unlock();
+	works_completed++;
 	return cmd;
 }
 
-void CWorkScheduler::ScheduleWork( ICommand *Command )
-{
-	this->mut.lock();
-	CommandsDue.push_back(Command);
-	this->works_received++;
-	this->mut.unlock();
-	sem_post(&semaphore);
+bool CWorkScheduler::ScheduleWork(ICommand *Command, bool tryonly) {
+    // assert if a broadcast event has a ITarget set. (This indicates a bug)
+    //LOGERROR(Registry::GetMainLogger(),"cmd=" <<Command->getCmd() << " trgt="<< Command->getTrgt());
+
+    assert( !(( Command->getCmd() <= BasicCommands::CMD_BROADCAST_MAX
+        && Command->getTrgt())));
+
+    if( Command->getCmd() >= BasicCommands::CMD_BROADCAST_MAX &&
+        !Command->getTrgt()) {
+       // Fire-and-Forget commmand. Just delete it.
+        delete Command;
+        return true;
+    }
+
+    if (tryonly) {
+        if (!mut.try_lock()) return false;
+    } else {
+        mut.lock();
+    }
+
+    if (Command->getCmd() <= BasicCommands::CMD_BROADCAST_MAX) {
+        LOGDEBUG(Registry::GetMainLogger(),"Broadcast event accepted cmd=" << Command->getCmd() );
+    }
+
+    CommandsDue.push_back(Command);
+    works_received++;
+    mut.unlock();
+    sem_post(&semaphore);
+    return true;
 }
 
-void CWorkScheduler::ScheduleWork( ICommand *Command, struct timespec ts )
-{
+void CWorkScheduler::ScheduleWork(ICommand *Command, struct timespec ts) {
+    // assert if a broadcast event has a ITarget set. (This indicates a bug)
+    assert( !(( Command->getCmd() <= BasicCommands::CMD_BROADCAST_MAX
+        && Command->getTrgt())));
+
+    if( Command->getCmd() >= BasicCommands::CMD_BROADCAST_MAX &&
+        !Command->getTrgt()) {
+       // Fire-and-Forget commmand. Just delete it.
+        delete Command;
+        return;
+    }
+
     works_timed_scheduled++;
-	timedwork->ScheduleWork(Command, ts);
+    timedwork->ScheduleWork(Command, ts);
 }
 

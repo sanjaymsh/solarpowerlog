@@ -40,8 +40,8 @@ public:
 		DISCONNECT, /// Tear down a connection
 		CONNECT, /// Connect
 		SEND, /// Send data
-		RECEIVE,
-	/// Try to receive data
+		RECEIVE, /// Try to receive data
+		ACCEPT   /// "Server-Mode" for inbound connections.
 	};
 
 	/** Constructor which create the object

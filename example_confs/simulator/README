@@ -1,0 +1,98 @@
+## License of this README: GPL3+
+
+Using the solarpowerlog sputnik simulator
+=========================================
+
+Compiling and example configurations
+------------------------------------
+
+Solarpowerlog has its own embedded simulator, superceeding netcat
+based scripts used to be found at tools/sputnik-simulator
+With release 0.24 those scripts have beeen removed from the distribution.
+
+The simulator models a Sputnik inverter and can be used to get a feeling of
+solarpowerlog though its primary goal is to be a help for debugging even at
+night.
+
+To use the simulator, please make sure that it is enabled at compile time.
+If it is not enabled you need to recompile solarpowerlog and enable the
+feature with
+ ./configure --enable-sputniksimulator
+See the file INSTALL for details how to compile solarpowerlog.
+
+In this directory (example_confs/simulator) you find to example configuration
+files to help you getting started with the simulator.
+	solarpowerlog.conf
+	solarpowerlog_simulator.conf
+
+(the file solarpowerlog_shared_sim.conf shows how to simulate using
+a shared connection, its config-counterpart is solarpowerlog_shared.conf))
+
+The first file defines a inverter which to connect to a simulator on
+localhost:12345 and the second file defines this simulator.
+
+So running those two commands (in two terminals) will show how they work
+together:
+solarpowerlog -c example_confs/simulator/solarpowerlog.conf
+solarpowerlog -c example_confs/simulator/solarpowerlog_simulator.conf
+
+Control server
+--------------
+The simulator can also offer a control server. This allows setting the values
+the simulator will return as well as turning commands off an on.
+
+The control server allows manipulation of the responses of the simulated
+inverter, like tweaking values and turning commands to be answered off and on.
+
+To connect to the control server you can e.g use telnet or netcat:
+
+Example: (using port 12346)
+ telnet localhost 12346
+or
+ echo "PIN=2500" | netcat localhost 12346
+
+Note: Strangely, with telnet the first byte is not received by solarpowerlog,
+but subsequent commands work fine.
+
+The control server is enabled by the simulators' config, so if you cannot
+connect, make sure it is configured. Watch the log for a
+"Sputnik-Simulator control server ready."
+
+To set a value, use this syntax:
+<token>=<value>[,value2][;<token2>=<value3>[,<value4>]](...)
+
+where "token" is one of the inverter's commands, like
+(for example the PIN, power installed)
+
+If a token takes more thn one value (like the SYS) you seperate
+it by a comma.
+
+More than one value can be set at a time. Just seperate the tokens by a ";"
+
+Examples:
+PIN=2500
+TNF=49.95
+SYS=20004,0
+PIN=2500;SYS=20004,0
+
+To disable commands, you can use the special value "off" and to reenable "on":
+PIN=off
+PIN=on
+
+You can feed complete sputnik telegrams, they just must include the {..}
+(note: lenght, checksum and adresses will be ignored in this case
+so you can modify the string as you wish and it will be accepted.)
+
+Example how to use the control server with a sputnik telegram:
+echo "{01;FB;97|64:PAC=0;KHR=138E;PIN=11F8;KT0=863;KYR=1;KMT=1;KDY=1;KT0=863;UDC=80A;IDC=4;IL1=0;UL1=8F5;TKK=18;TNF=1384;SYS=4E22,0|246E}" | netcat localhost 12346
+
+With 0.24 the control server also supports the following commands:
+quit        - closes the connection to the ctrl server
+version     - prints the version of solarpowerlog
+offline     - "offlines" the simulator but stays connected
+online      - go "online" again, reverts offline
+disconnect  - disconnects the simulator (including closing of the connection)
+connect     - reverts "disconnect"
+
+These commmands may not be combined with other commands.
+

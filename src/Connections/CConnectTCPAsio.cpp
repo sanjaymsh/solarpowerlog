@@ -48,6 +48,8 @@ Copyright (C) 2009-2012 Tobias Frost
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/streambuf.hpp>
 
+#include <boost/scoped_ptr.hpp>
+
 #include "interfaces/CMutexHelper.h"
 
 #include <errno.h>
@@ -55,6 +57,7 @@ Copyright (C) 2009-2012 Tobias Frost
 #include <boost/asio/placeholders.hpp>
 #include <boost/date_time/posix_time/posix_time_config.hpp>
 #include <boost/bind.hpp>
+#include <memory>
 
 using namespace boost::posix_time;
 
@@ -66,10 +69,8 @@ using namespace libconfig;
 struct asyncASIOCompletionHandler
 {
 	asyncASIOCompletionHandler( size_t *b, boost::system::error_code *ec )
-	{
-		bytes = b;
-		this->ec = ec;
-	}
+	    : bytes(b), ec(ec)
+	{ }
 
 	void operator()( const boost::system::error_code& e,
 			std::size_t bytes_transferred )
@@ -78,16 +79,33 @@ struct asyncASIOCompletionHandler
 		*ec = e;
 	}
 
+	void operator() (const boost::system::error_code& e)
+	{
+	    *ec = e;
+	}
+
+private:
 	// note, we need pointer as boost seems to make a copy of our handler...
 	size_t *bytes;
 	boost::system::error_code *ec;
 };
+
+/** Helping function for timeout and receive, will be called by boost::asio.
+ *  this handler just will set the int store with the value value.
+*/
+static void boosthelper_set_result( int* store, int value )
+{
+    if (store)
+        *store = value;
+}
 
 CConnectTCPAsio::CConnectTCPAsio( const string &configurationname ) :
 	IConnect(configurationname)
 {
 	// Generate our own asio ioservice
 	// TODO check if one central would do that too...
+    configured_as_server = false;
+    _connected = false;
 	ioservice = new io_service;
 	sockt = new ip::tcp::socket(*ioservice);
 	sem_init(&cmdsemaphore, 0, 0);
@@ -95,23 +113,28 @@ CConnectTCPAsio::CConnectTCPAsio( const string &configurationname ) :
 
 CConnectTCPAsio::~CConnectTCPAsio()
 {
-	if (IsConnected()) {
-		Disconnect(NULL);
-	}
+    // Try a clean shutdown
 
-	if (sockt)
-		delete sockt;
-	if (ioservice)
-		delete ioservice;
+    mutex.lock();
+    cmds.clear();
+    ioservice->stop();
+    if (_connected) {
+        boost::system::error_code ec;
+        sockt->cancel(ec);
+        sockt->close(ec);
+    }
+    mutex.unlock();
 
+    if (sockt) delete sockt;
+    if (ioservice) delete ioservice;
 }
 
 // ASYNCED!!
 void CConnectTCPAsio::Connect( ICommand *callback )
 {
 	assert(callback);
-	CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::CONNECT, callback);
-	PushWork(commando);
+	CAsyncCommand *co = new CAsyncCommand(CAsyncCommand::CONNECT, callback);
+	PushWork(co);
 }
 
 /* Disconnect
@@ -126,25 +149,9 @@ void CConnectTCPAsio::Disconnect( ICommand *callback )
 	// note: internally we still use the sync interface in the destructor!
 	// to ensure that the port is closed when we tear down everything.
 
-	sem_t semaphore;
-
-	CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::DISCONNECT,
-			callback);
-	// if callback is NULL, fallback to synchronous operation.
-	// (we will do the job asynchronous, but wait for completion here)
-	if (!callback) {
-		sem_init(&semaphore, 0, 0);
-		commando->SetSemaphore(&semaphore);
-	}
-
-	PushWork(commando);
-
-	if (!callback) {
-		// wait for async job completion
-		sem_wait(&semaphore);
-		LOGTRACE(logger, "destroying CAsyncCommando " << commando );
-		delete commando;
-	}
+    assert(callback);
+	CAsyncCommand *co = new CAsyncCommand(CAsyncCommand::DISCONNECT, callback);
+	PushWork(co);
 }
 
 void  CConnectTCPAsio::Send( ICommand *callback)
@@ -168,9 +175,19 @@ void CConnectTCPAsio::Receive( ICommand *callback )
 	PushWork(commando);
 }
 
+void CConnectTCPAsio::Accept(ICommand *callback)
+{
+    assert(callback); // does not support sync operation!
+    CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::ACCEPT,
+            callback);
+    PushWork(commando);
+}
+
 bool CConnectTCPAsio::IsConnected( void )
 {
-	if (!this->sockt) return false;
+	return _connected;
+
+	// old code -- needs https://svn.boost.org/trac/boost/ticket/7392 fixed.
 	mutex.lock();
 	bool ret = sockt->is_open();
 	mutex.unlock();
@@ -181,13 +198,28 @@ bool CConnectTCPAsio::CheckConfig( void )
 {
 	string setting;
 	bool fail = false;
-
 	CConfigHelper cfghelper(ConfigurationPath);
 
-	fail |= !cfghelper.CheckConfig("tcpadr", libconfig::Setting::TypeString);
-	fail |= !cfghelper.CheckConfig("tcpport", libconfig::Setting::TypeString);
-	fail |= !cfghelper.CheckConfig("tcptimeout", libconfig::Setting::TypeInt,
-			false);
+	if (cfghelper.GetConfig("tcpmode",setting)) {
+	    if (setting == "server") {
+	        fail |= !cfghelper.CheckConfig("tcpadr", libconfig::Setting::TypeString,true);
+	        fail |= !cfghelper.CheckConfig("tcpport", libconfig::Setting::TypeInt);
+	        if (!fail) this->configured_as_server = true;
+	    }
+	}
+
+	if (!configured_as_server) {
+        fail |= !cfghelper.CheckConfig("tcpadr", libconfig::Setting::TypeString);
+        fail |= !cfghelper.CheckConfig("tcpport", libconfig::Setting::TypeString);
+        fail |= !cfghelper.CheckConfig("tcptimeout", libconfig::Setting::TypeInt,
+                true);
+
+        if (cfghelper.CheckConfig("tcptimeout", libconfig::Setting::TypeInt,
+                true,false)) {
+            LOGWARN(logger,"Tcptimeout configuration parameter has changed and might not work anymore! It will be removed soon.");
+            LOGWARN(logger,"Timeouts are now configured in the inverter class, see documentation.");
+        }
+	}
 
 	if (!fail) {
 		StartWorkerThread();
@@ -201,11 +233,11 @@ void CConnectTCPAsio::_main( void )
 {
 	LOGTRACE(logger, "Starting helper thread");
 
+    std::auto_ptr<boost::asio::io_service::work> work(new boost::asio::io_service::work(*ioservice));
+
 	while (!IsTermRequested()) {
 		int syscallret;
 
-		// wait for work or signals.
-		// FIXME Test this if this works ;-)
 		LOGTRACE(logger, "Waiting for work");
 		syscallret = sem_wait(&cmdsemaphore);
 		if (syscallret == 0) {
@@ -215,79 +247,70 @@ void CConnectTCPAsio::_main( void )
 			if (!cmds.empty()) {
 				bool delete_cmd;
 				CAsyncCommand *donow = cmds.front();
-				// cache info if to delete the objet later,
+				cmds.pop_front();
+				// cache info if to delete the object later,
 				// as later it might be already gone.
 				delete_cmd = donow->IsAsynchronous();
+				// reset the ioservice for the next commmand.
+				// (must be done during holding the mutex to avoid a race
+				// with the AbortAll() call.
+
+				// if the ioservice has been stopped (e.g abortall call)
+				// reset it and spawn a new boost::asio::io_service::work if the ioservice has been stopped.
+				if(ioservice->stopped()) {
+				    work.reset(new boost::asio::io_service::work(*ioservice));
+				    LOGDEBUG(logger,"ioservice stopped");
+				    ioservice->reset();
+				}
 
 				mutex.unlock();
 
-				LOGTRACE(logger, "Received command " << donow << " with callback " << donow->callback );
-
 				switch (donow->c) {
 				case CAsyncCommand::CONNECT:
-					if (HandleConnect(donow)) {
-						LOGTRACE(logger, "Check command " << donow << " with callback " << donow->callback );
-						mutex.lock();
-						LOGTRACE(logger, "Front is " <<cmds.front() );
-						cmds.pop_front();
-						// check if we have to delete the object
-						// or -- in case of sync operation --
-						// the caller will do that for us.
-						// the "sign" is, that donow->callback is non NULL
-						// (as the object can be already gone, if
-						// the sync command had already deleted it)
-						if (delete_cmd) {
-							LOGTRACE(logger, "Deleting " << donow);
-							delete donow;
-						}
-						mutex.unlock();
-					}
-					break;
+					HandleConnect(donow);
+                    // check if we have to delete the object
+                    // or -- in case of sync operation --
+                    // the caller will do that for us.
+                    // the "sign" is, that donow->callback is non NULL
+                    // (as the object can be already gone, if
+                    // the sync command had already deleted it)
+                    if (delete_cmd) {
+                        delete donow;
+                    }
+				break;
 
 				case CAsyncCommand::DISCONNECT:
-					if (HandleDisConnect(donow)) {
-						mutex.lock();
-						cmds.pop_front();
-						if (delete_cmd) {
-							LOGTRACE(logger, "Deleting " << donow);
-							delete donow;
-						}
-						mutex.unlock();
+					HandleDisconnect(donow);
+					if (delete_cmd) {
+						delete donow;
 					}
 					break;
 
 				case CAsyncCommand::RECEIVE:
-					if (HandleReceive(donow)) {
-						mutex.lock();
-						cmds.pop_front();
-						if (delete_cmd) {
-							LOGTRACE(logger, "Deleting " << donow);
-							delete donow;
-						}
-						mutex.unlock();
-					}
+					HandleReceive(donow);
+                    if (delete_cmd) {
+                        delete donow;
+                    }
 					break;
 
 				case CAsyncCommand::SEND:
-				{
-					if(HandleSend(donow)) {
-						mutex.lock();
-						cmds.pop_front();
-						if (delete_cmd) {
-							LOGTRACE(logger, "Deleting " << donow);
-							delete donow;
-						}
-						mutex.unlock();
+					HandleSend(donow);
+					if (delete_cmd) {
+						delete donow;
 					}
-				}
 				break;
 
+                case CAsyncCommand::ACCEPT:
+                    HandleAccept(donow);
+                    if (delete_cmd) {
+                       delete donow;
+                    }
+                break;
+
 				default:
-				{
 					LOGFATAL(logger, "Unknown command received.");
 					abort();
 					break;
-				}
 			}
 
 		} else {
@@ -296,13 +319,11 @@ void CConnectTCPAsio::_main( void )
 
 		}
 	}
-
 	IConnect::_main();
 }
 
 bool CConnectTCPAsio::PushWork( CAsyncCommand *cmd )
 {
-	LOGTRACE(logger, "Pushing command " << cmd << " with callback " << cmd->callback );
 	mutex.lock();
 	cmds.push_back(cmd);
 	mutex.unlock();
@@ -311,36 +332,45 @@ bool CConnectTCPAsio::PushWork( CAsyncCommand *cmd )
 	return true;
 }
 
-bool CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
+void CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 {
+    //LOGTRACE(logger, __PRETTY_FUNCTION__ << " handling " << cmd << "with ICmd " << cmd->callback );
 	string strhost, port;
-	unsigned long timeout = -1;
+    volatile int result_timer = 0;
+    boost::system::error_code handlerec;
+    struct asyncASIOCompletionHandler connect_handler(NULL, &handlerec);
 
 	// if connected, ignore the commmand, pretend success.
 	if (IsConnected()) {
+	    LOGDEBUG(logger, __PRETTY_FUNCTION__ << " Already connected");
 		cmd->callback->addData(ICMD_ERRNO, 0);
 		cmd->HandleCompletion();
-		return true;
+		return ;
 	}
+
+	// fail, if we are configured for inbound connections.
+    if (configured_as_server) {
+        LOGTRACE(logger,"Configured as server!");
+        cmd->callback->addData(ICMD_ERRNO,-EPERM);
+        cmd->callback->addData(ICMD_ERRNO_STR, std::string("TCP/IP Comms configured as server. Cannot use connect method!"));
+        cmd->HandleCompletion();
+        return ;
+    }
 
 	CConfigHelper cfghelper(ConfigurationPath);
 
-#warning timeouts should be only configured in the calling objects! \
-	Otherwise it is hard to differenicate between commands! \
-	So depreciate tcptimeout and configure this in the inverter class!
-
-#warning rework: Should be only needed from the configuration, as the \
-	calling object needs not be aware of these issues (should be transparent)
-	try {
-		timeout = boost::any_cast<long>(cmd->callback->findData(
-				ICONN_TOKEN_TIMEOUT));
-	} catch (std::invalid_argument &e) {
-		cfghelper.GetConfig("tcptimeout", timeout, TCP_ASIO_DEFAULT_TIMEOUT);
-	} catch (boost::bad_any_cast &e) {
-		LOGDEBUG(logger,
-				"BUG: Handling Connect: Bad cast for " << ICONN_TOKEN_TIMEOUT);
-		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
-	}
+	unsigned long timeout = -1;
+    try {
+        timeout = boost::any_cast<long>(
+            cmd->callback->findData(ICONN_TOKEN_TIMEOUT));
+    } catch (std::invalid_argument &e) {
+        cfghelper.GetConfig("tcptimeout", timeout, TCP_ASIO_DEFAULT_TIMEOUT);
+        LOGDEBUG(logger, "Depreciated fallback to tcptimeout");
+    } catch (boost::bad_any_cast &e) {
+        LOGDEBUG(logger, "BUG: Handling Connect: Bad cast for "
+                 << ICONN_TOKEN_TIMEOUT);
+        timeout = TCP_ASIO_DEFAULT_TIMEOUT;
+    }
 
 	cfghelper.GetConfig("tcpadr", strhost);
 	cfghelper.GetConfig("tcpport", port);
@@ -353,37 +383,69 @@ bool CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 	ip::tcp::resolver::iterator iter = resolver.resolve(query, ec);
 	ip::tcp::resolver::iterator end; // ... which is a "End marker" itself.
 
-#warning TODO Change to async connect for better timeout handling.
-	while (iter != end) {
-		ip::tcp::endpoint endpoint = *iter++;
-		LOGDEBUG(logger, "Connecting to " << endpoint );
-		sockt->connect(endpoint, ec);
-		if (!ec)
-			break;
-	}
+    boost::asio::deadline_timer timer(*ioservice);
+    boost::posix_time::time_duration td = boost::posix_time::millisec(timeout);
+    timer.expires_from_now(td);
+    timer.async_wait(
+            boost::bind(&boosthelper_set_result, (int*) &result_timer, 1));
 
-	// preset name, but only needed if we gonna log on these levels.
-	if (logger.IsEnabled(ILogger::LL_ERROR) || logger.IsEnabled(ILogger::LL_DEBUG))
-		cfghelper.GetConfig("name", strhost);
+    while (iter != end) {
+        ip::tcp::endpoint endpoint = *iter++;
+        LOGDEBUG(logger, "Connecting to " << endpoint);
+        handlerec.clear();
+        sockt->async_connect(endpoint, connect_handler);
+        size_t num = ioservice->run_one(ec);
+        if (num == 0) {
+            LOGDEBUG(logger, __PRETTY_FUNCTION__ << "WTF: no service run!!!");
+        }
+        if (result_timer) {
+            LOGDEBUG(logger, "Connection timeout");
+            cmd->callback->addData(ICMD_ERRNO, -ETIMEDOUT);
+            cmd->callback->addData(ICMD_ERRNO_STR,
+                                   std::string("Connection timeout"));
+            cmd->HandleCompletion();
+            sockt->cancel(ec);
+            ioservice->poll();
+            return;
+        }
+        if (ioservice->stopped()) {
+            LOGDEBUG(logger, "Connection canceled");
+            cmd->callback->addData(ICMD_ERRNO, -ECANCELED);
+            cmd->callback->addData(ICMD_ERRNO_STR,
+                                   std::string("Connection aborted"));
+            cmd->HandleCompletion();
+            ioservice->poll();
+            return;
+        }
 
-	if (ec) {
-		cmd->callback->addData(ICMD_ERRNO, -ECONNREFUSED);
-		if (!ec.message().empty())
-			cmd->callback->addData(ICMD_ERRNO_STR, ec.message());
-		cmd->HandleCompletion();
-		return true;
-	}
+        // not timer, so it must be the connect that returned.
+        if (handlerec.value() == 0) {
+            break;
+        }
+    }
 
-	LOGDEBUG(logger, "Connected to " << strhost );
-	// Signal success.
-	cmd->callback->addData(ICMD_ERRNO, 0);
-	cmd->HandleCompletion();
-	return true;
+    timer.cancel(ec);
+    ioservice->poll(ec);
 
+    if (handlerec) {
+        cmd->callback->addData(ICMD_ERRNO, -ECONNREFUSED);
+        if (!handlerec.message().empty())
+        cmd->callback->addData(ICMD_ERRNO_STR, ec.message());
+        cmd->HandleCompletion();
+        return;
+    }
+
+    LOGDEBUG(logger, "Connected to " << strhost);
+    _connected = true;
+    cmd->callback->addData(ICMD_ERRNO, 0);
+    cmd->HandleCompletion();
+    return;
 }
 
-bool CConnectTCPAsio::HandleDisConnect( CAsyncCommand *cmd )
+void CConnectTCPAsio::HandleDisconnect( CAsyncCommand *cmd )
 {
+//    LOGTRACE(logger, __PRETTY_FUNCTION__ << " handling " << cmd << "with ICmd " << cmd->callback );
+
 	boost::system::error_code ec, ec2;
 	std::string message;
 	int error = 0;
@@ -391,7 +453,7 @@ bool CConnectTCPAsio::HandleDisConnect( CAsyncCommand *cmd )
 	if (!IsConnected()) {
 		cmd->callback->addData(ICMD_ERRNO, 0);
 		cmd->HandleCompletion();
-		return true;
+		return ;
 	}
 
 	// according boost:asio documentation, one should call shutdown before
@@ -413,108 +475,140 @@ bool CConnectTCPAsio::HandleDisConnect( CAsyncCommand *cmd )
 		message = message + ec2.message();
 	}
 
+	_connected = false;
 	cmd->callback->addData(ICMD_ERRNO, error);
 	if (!message.empty()) {
 		cmd->callback->addData(ICMD_ERRNO_STR, ec.message());
 	}
 	cmd->HandleCompletion();
-	return true;
-}
-
-/// Helping function for timeout and receive, will be called by boosts' asio.
-/// this handler just will set the int store with the value value.
-static void boosthelper_set_result( int* store, int value )
-{
-	if (store)
-		*store = value;
+	return ;
 }
 
 /** Handle Receive -- asynchronous read from the asio socket with timeout.
  *
  * Strategy:
- * -- get timeout config from configuration
- * -- spawn timer with timeoput setting
- * -- run timer in background (async)
- * -- setup async read operation of one byte (to detect incoming comms)
- * -- check if we got byte or timeout
- * -- if got the byte, try to read all available bytes
+ * -- get timeout config from caller or configuration (depreciated)
+ *    -- spawn timer with timeout setting in background
+ *    -- run timer in background (async)
+ * -- setup async read operation of one byte (to detect incoming communication)
+ * -- check if we got a byte or timeout
+ * -- if got the byte, try to read all available bytes (ASIO tells us how many
+ *    are pending)
  * -- if got the timer, cancel socket read and return error.
- *
- * HandleReceive expects a std::string in CAsyncCommand->auxData.
- */
-bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
+*/
+void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 {
-	boost::system::error_code ec, handlerec;
-
+//    LOGTRACE(logger, __PRETTY_FUNCTION__ << " handling " << cmd << "with ICmd " << cmd->callback );
+	boost::system::error_code ec;
+	boost::system::error_code read_handlerec;
 	volatile int result_timer = 0;
-	size_t bytes;
-	unsigned long timeout;
+	size_t read_bytes = 0;
+	long timeout = 0;
 	char buf[2];
-	struct asyncASIOCompletionHandler read_handler(&bytes, &handlerec);
-	// timeout setup
-	ioservice->reset();
+	struct asyncASIOCompletionHandler read_handler(&read_bytes, &read_handlerec);
 
+    // when running out of work.
+	// on deletion of this object the ioserver might get stopped, if not
+	// externally AbortAll has been called.
+	// timeout setup
 	try {
-		timeout = boost::any_cast<unsigned long>(cmd->callback->findData(
-				ICONN_TOKEN_TIMEOUT));
+		timeout = boost::any_cast<long>(
+				cmd->callback->findData(ICONN_TOKEN_TIMEOUT));
 	} catch (std::invalid_argument &e) {
 		CConfigHelper cfghelper(ConfigurationPath);
 		cfghelper.GetConfig("tcptimeout", timeout, TCP_ASIO_DEFAULT_TIMEOUT);
+        LOGDEBUG(logger, "Depreciated fallback to tcptimeout");
 	} catch (boost::bad_any_cast &e) {
-		LOGDEBUG(logger, "Unexpected exception in HandleReceive: Bad cast" << e.what());
+		LOGDEBUG(logger,
+				"Unexpected exception in HandleReceive: Bad cast " << e.what());
 		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
 	}
 
 	deadline_timer timer(*(this->ioservice));
 	boost::posix_time::time_duration td = boost::posix_time::millisec(timeout);
 	timer.expires_from_now(td);
-	timer.async_wait(boost::bind(&boosthelper_set_result, (int*) &result_timer,
-			1));
+	timer.async_wait(
+			boost::bind(&boosthelper_set_result, (int*) &result_timer, 1));
 
 	// socket preparation
-	//  async_read. However, boost:asio seems not to allow auto-buffers,
+	// async_read: boost:asio seems not to allow auto-buffers,
 	// so we will just read one byte and when this is available, we'll
 	// check for if there are some others left
-	sockt->async_read_some(boost::asio::buffer(&buf, 1), read_handler);
 
-	size_t num = ioservice->run_one(ec);
+	// seen when connecting to localhost: ioservice returns, with ec = eof,
+	// but still connected. So if retry to async_read_some as long as timeout
+	// not expired. (but we will limit to a few times in case of a real eof and
+	// a long timeout)
+	size_t num = 0;
+	int maxsleep = 5; // we limit the hack to 5 times.
+	do {
+		bool sleep = false;
+		if (!sleep) {
+			boost::posix_time::time_duration td2 = boost::posix_time::millisec(
+					25);
+			deadline_timer timer(*ioservice, td2);
+			try {
+				timer.wait();
+				maxsleep--;
+			} catch (...) {
+			}
+		}
+		sleep = true;
+		sockt->async_read_some(boost::asio::buffer(&buf, 1), read_handler);
+		num = ioservice->run_one(ec);
+	} while (maxsleep != 0 && !result_timer && 0 == read_bytes);
 
 	// ioservice error or timeout
-	if (num == 0 || result_timer) {
-		timer.cancel(ec);
-		sockt->cancel(ec);
-		LOGTRACE(logger,"Async read timeout");
-		cmd->callback->addData(ICMD_ERRNO_STR, std::string("Read timeout"));
-		cmd->callback->addData(ICMD_ERRNO, -ETIMEDOUT);
-		cmd->HandleCompletion();
-		ioservice->poll();
-		return true;
-	}
+    if (num == 0 || result_timer) {
+        if (result_timer) {
+            LOGTRACE(logger, "Read timeout");
+            cmd->callback->addData(ICMD_ERRNO_STR, std::string("Read timeout"));
+            cmd->callback->addData(ICMD_ERRNO, -ETIMEDOUT);
+        } else if (ioservice->stopped()){
+            LOGTRACE(logger, "ioservice stopped (1)");
+            cmd->callback->addData(ICMD_ERRNO_STR, std::string("Aborted 1"));
+            cmd->callback->addData(ICMD_ERRNO, -ECANCELED);
+       } else {
+            LOGTRACE(logger, "IO Service error: " << ec.message());
+            cmd->callback->addData(ICMD_ERRNO_STR, std::string("IO-service error " + ec.message()));
+            cmd->callback->addData(ICMD_ERRNO, -EIO);
+        }
+        cmd->HandleCompletion();
+        timer.cancel(ec);
+        sockt->cancel(ec);
+        ioservice->poll(ec);
+        return;
+    }
 
 	timer.cancel();
 	ioservice->poll(ec);
 
-	if (*read_handler.ec) {
-		if (*read_handler.ec != boost::asio::error::eof) {
-			LOGDEBUG(logger,"Async read failed with ec=" << *read_handler.ec
-					<< " msg="<< read_handler.ec->message());
+	if (read_handlerec || ioservice->stopped()) {
+		if (read_handlerec != boost::asio::error::eof) {
+			LOGDEBUG(logger,"Async read failed with ec=" << read_handlerec
+					<< " msg="<< read_handlerec.message());
 			cmd->callback->addData(ICMD_ERRNO, -EIO);
-			cmd->callback->addData(ICMD_ERRNO_STR, read_handler.ec->message());
-
-		} else {
+			cmd->callback->addData(ICMD_ERRNO_STR, read_handlerec.message());
+		} else if (ioservice->stopped()){
+            cmd->callback->addData(ICMD_ERRNO_STR, std::string("Aborted 2"));
+            cmd->callback->addData(ICMD_ERRNO, -ECANCELED);
+            LOGTRACE(logger, "ioservice stopped (2)");
+        } else {
 			cmd->callback->addData(ICMD_ERRNO, -ENOTCONN);
 			LOGTRACE(logger, "Received eof on socket read");
 		}
 		cmd->HandleCompletion();
-		return true;
+//       ioservice->poll(ec);
+        return ;
 	}
 
-	if (1 != *read_handler.bytes) {
+	if (1 != read_bytes) {
 		LOGDEBUG(logger,"Received "
-				<< *read_handler.bytes << " but expected only 1 byte");
+				<< read_bytes << " but expected only 1 byte");
 		cmd->callback->addData(ICMD_ERRNO, -EIO);
 		cmd->HandleCompletion();
-		return true;
+//        ioservice->poll(ec);
+		return ;
 	}
 
 	size_t avail = sockt->available();
@@ -527,7 +621,14 @@ bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 	recved[0] = buf[0];
 	while (avail > 0) {
 		tmp = sockt->read_some(asio::buffer(&recved[numrecvd], avail), ec);
-		LOGTRACE(logger, "Read " << tmp << " of these");
+        if (ioservice->stopped()) {
+            cmd->callback->addData(ICMD_ERRNO_STR, std::string("Aborted 3"));
+            cmd->callback->addData(ICMD_ERRNO, -ECANCELED);
+            LOGTRACE(logger, "ioservice stopped. (3)");
+            cmd->HandleCompletion();
+//            ioservice->poll(ec);
+            return;
+        }
 		avail -= tmp;
 		numrecvd += tmp;
 		// check if error occured.
@@ -540,6 +641,7 @@ bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 				break;
 			default:
 				error = -EIO;
+				break;
 			}
 
 			// give everything we got before the error.
@@ -548,7 +650,8 @@ bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 			cmd->callback->addData(ICMD_ERRNO_STR, ec.message());
 			cmd->callback->addData(ICMD_ERRNO, error);
 			cmd->HandleCompletion();
-			return true;
+//	        ioservice->poll(ec);
+			return ;
 		}
 	}
 
@@ -556,23 +659,21 @@ bool CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 	cmd->callback->addData(ICONN_TOKEN_RECEIVE_STRING, receivestr);
 	cmd->callback->addData(ICMD_ERRNO, 0);
 	cmd->HandleCompletion();
-
-	return true;
+    //ioservice->poll(ec);
+	return ;
 }
 
-
 /** handles async sending */
-bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
+void CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 
-	boost::system::error_code ec, handlerec;
+//    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": now handling: " << cmd->callback);
+    std::string s;
+	boost::system::error_code ec;
+	boost::system::error_code write_handlerec;
 	volatile int result_timer = 0;
-	size_t bytes;
+	size_t wrote_bytes = 0;
 	unsigned long timeout;
-	struct asyncASIOCompletionHandler write_handler(&bytes, &handlerec);
-	// timeout setup
-	ioservice->reset();
-	std::string s;
-
+	struct asyncASIOCompletionHandler write_handler(&wrote_bytes, &write_handlerec);
 	try {
 		s = boost::any_cast<std::string>(cmd->callback->findData(ICONN_TOKEN_SEND_STRING));
 	}
@@ -583,22 +684,23 @@ bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 	}
 	catch (boost::bad_any_cast &e)
 	{
-		LOGDEBUG(logger, "Unexpected exception in HandleSend: Bad cast" << e.what());
+		LOGDEBUG(logger, "Unexpected exception in HandleSend: Bad cast " << e.what());
 	}
 #else
 	catch (...);
 #endif
 
 	try {
-		timeout = boost::any_cast<unsigned long>(cmd->callback->findData(
+		timeout = boost::any_cast<long>(cmd->callback->findData(
 				ICONN_TOKEN_TIMEOUT));
 	}
 #ifdef DEBUG_TCPASIO
 		catch (std::invalid_argument &e) {
 		CConfigHelper cfghelper(ConfigurationPath);
 		cfghelper.GetConfig("tcptimeout", timeout, 3000UL);
+        LOGDEBUG(logger, "Depreciated fallback to tcptimeout");
 	} catch (boost::bad_any_cast &e) {
-		LOGDEBUG(logger, "Unexpected exception in HandleSend: Bad cast" << e.what());
+		LOGDEBUG(logger, "Unexpected exception in HandleSend: Bad cast " << e.what());
 		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
 	}
 #else
@@ -607,6 +709,7 @@ bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 		cfghelper.GetConfig("tcptimeout", timeout, 3000UL);
 	}
 #endif
+//	    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 1");
 
 	deadline_timer timer(*(this->ioservice));
 	boost::posix_time::time_duration td = boost::posix_time::millisec(timeout);
@@ -621,46 +724,156 @@ bool CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 	// run one of the scheduled services
 	size_t num = ioservice->run_one(ec);
 
+//    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2");
+
 	// ioservice error or timeout
 	if (num == 0 || result_timer) {
+//	    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2a");
+
 		timer.cancel(ec);
 		sockt->cancel(ec);
+//		   LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2b");
+
 		LOGTRACE(logger,"Async write timeout");
 		cmd->callback->addData(ICMD_ERRNO, -ETIMEDOUT);
+////		   LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2c");
+
 		cmd->HandleCompletion();
 		ioservice->poll();
-		return true;
+//   LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2d");
+
+		return ;
 	}
 
+//	LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2e");
 	// cancel the timer, and catch the completion handler
 	timer.cancel();
-	ioservice->poll(ec);
+//    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2f");
+	ioservice->poll();
+//    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 3");
 
-	if (*write_handler.ec) {
-		if (*write_handler.ec != boost::asio::error::eof) {
-			LOGDEBUG(logger,"Async write failed with ec=" << *write_handler.ec
-					<< " msg="<< write_handler.ec->message());
+	LOGTRACE(logger,"Sent " << wrote_bytes << " Bytes");
+	if (write_handlerec) {
+		if (write_handlerec != boost::asio::error::eof) {
+			LOGDEBUG(logger,"Async write failed with ec=" << write_handlerec
+					<< " msg="<< write_handlerec.message());
 			cmd->callback->addData(ICMD_ERRNO, -EIO);
-			cmd->callback->addData(ICMD_ERRNO_STR, write_handler.ec->message());
+			cmd->callback->addData(ICMD_ERRNO_STR, write_handlerec.message());
 		} else {
 			cmd->callback->addData(ICMD_ERRNO, -ENOTCONN);
 			LOGTRACE(logger, "Received eof on socket write");
 		}
 		cmd->HandleCompletion();
-		return true;
+		return ;
 	}
 
-	if (s.length() != *write_handler.bytes) {
+//    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 4 " << (void*) &s);
+
+	if (s.length() != wrote_bytes) {
+//	    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 5 ");
 		LOGDEBUG(logger,"Sent "
-				<< *write_handler.bytes << " but expected "<< s.length() );
+				<< wrote_bytes << " but expected "<< s.length() );
 		cmd->callback->addData(ICMD_ERRNO, -EIO);
 		cmd->HandleCompletion();
-		return true;
+		return ;
 	}
 
+//    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 6 " << (void*) &s);
 	cmd->callback->addData(ICMD_ERRNO, 0);
 	cmd->HandleCompletion();
-	return true;
+	return ;
+}
+
+bool CConnectTCPAsio::AbortAll(void)
+{
+    // obtain mutex
+    mutex.lock();
+    LOGDEBUG(logger, __PRETTY_FUNCTION__ << " Aborting " << cmds.size() << " backlog entries");
+    // abort all pending commands.
+    std::list<CAsyncCommand *>::iterator it = cmds.begin();
+    for (it = cmds.begin(); it != cmds.end(); it++) {
+        CAsyncCommand *c = *it;
+        c->callback->addData(ICMD_ERRNO, -ECANCELED);
+        c->HandleCompletion();
+    }
+    // stop any run ioservices.
+    ioservice->stop();
+    mutex.unlock();
+    LOGDEBUG(logger, __PRETTY_FUNCTION__ << " Done");
+    return true;
+}
+
+// Server mode. Listen to incoming connections.
+void CConnectTCPAsio::HandleAccept(CAsyncCommand *cmd)
+{
+    //LOGDEBUG(logger, __PRETTY_FUNCTION__ << " handling " << cmd << "with ICmd " << cmd->callback );
+    int port;
+    std::string ipadr;
+    // Do not accept if already connected.
+    // Pretend success in this case.
+    if (IsConnected()) {
+        cmd->callback->addData(ICMD_ERRNO, 0);
+        cmd->HandleCompletion();
+        return;
+    }
+
+    // Fail if this is not configured as a server.
+    if (!configured_as_server) {
+        cmd->callback->addData(ICMD_ERRNO,-EPERM);
+        cmd->HandleCompletion();
+        return;
+    }
+
+    CConfigHelper cfghelper(ConfigurationPath);
+
+    cfghelper.GetConfig("tcpadr", ipadr,std::string("any"));
+    cfghelper.GetConfig("tcpport", port);
+
+    boost::scoped_ptr<ip::tcp::endpoint> endpoint;
+
+    if (ipadr == "any") {
+        endpoint.reset(new ip::tcp::endpoint(ip::tcp::v4(),port));
+    } else if ( ipadr == "any_v6")
+    {
+       endpoint.reset(new ip::tcp::endpoint(ip::tcp::v6(),port));
+    } else {
+        ip::address adr = ip::address::from_string(ipadr);
+       endpoint.reset(new ip::tcp::endpoint(adr,port));
+    }
+
+    boost::system::error_code ec;
+    LOGDEBUG(logger,"Waiting for inbound connection on " << ipadr << ":" << port);
+
+    try {
+        ip::tcp::acceptor acceptor(*ioservice, *endpoint);
+        acceptor.listen();
+        acceptor.accept(*sockt, ec);
+    } catch (boost::system::system_error &e) {
+        std::string errmsg = e.what();
+        LOGDEBUG(logger, "Boost: exception received while accepting: " << errmsg);
+        cmd->callback->addData(ICMD_ERRNO,(long)-EIO);
+        cmd->callback->addData(ICMD_ERRNO_STR, errmsg);
+        cmd->HandleCompletion();
+        return;
+    }
+    if (ec) {
+        int eval = -ec.value();
+        if (!eval) { eval = -EIO; }
+        cmd->callback->addData(ICMD_ERRNO, eval);
+        if (!ec.message().empty()) {
+            cmd->callback->addData(ICMD_ERRNO_STR, ec.message());
+        }
+        cmd->HandleCompletion();
+        LOGDEBUG( logger, "Connection failed. Error " << eval << "("
+            << ec.message() << ")");
+        return;
+    }
+
+    LOGTRACE(logger, "Connected.");
+    _connected = true;
+    cmd->callback->addData(ICMD_ERRNO, 0);
+    cmd->HandleCompletion();
+    return;
 }
 
 #endif /* HAVE_COMMS_ASIOTCPIO */

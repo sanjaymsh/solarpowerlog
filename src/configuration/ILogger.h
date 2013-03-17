@@ -192,7 +192,7 @@ public:
 	 *
 	 * \param name of the logger
 	 * \param configurationpath where to retrieve the config
-	 * \param sectin where to place the logger
+	 * \param section where to place the logger
 	 *
 	 */
 	void Setup( const std::string &name, const std::string &configuration,

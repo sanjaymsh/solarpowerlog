@@ -10,6 +10,7 @@
 ### END INIT INFO
 
 # Author: Tobias Frost <tobi@coldtobi.de>
+# License GPL3 or later
 
 # Do NOT "set -e"
 
@@ -56,11 +57,11 @@ SCRIPTNAME=/etc/init.d/$NAME
 do_start()
 {
 	# As we want to run as non-privilegded user, we need to create a helper directory
-	[[ ! -e $PIDDIR ]] && mkdir -p $PIDDIR && chown $USER $PIDDIR
+	[ ! -e $PIDDIR ] && mkdir -p $PIDDIR && chown $USER $PIDDIR
 
 	# The same applies to the programm logs. We need to ensure that solarpowerlog can
 	# access it.
-	[[ ! -e $LOGDIR ]] && mkdir -p $LOGDIR && chown $USER $LOGDIR
+	[ ! -e $LOGDIR ] && mkdir -p $LOGDIR && chown $USER $LOGDIR
 
 	# Return
 	#   0 if daemon has been started

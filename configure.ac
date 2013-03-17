@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([solarpowerlog],[0.23a],[tobi@coldtobi.de])
+AC_INIT([solarpowerlog],[0.24],[tobi@coldtobi.de])
 AC_PREREQ([2.68])
 
 # use own directory for the autotools stuff
@@ -17,7 +17,7 @@ AC_CONFIG_HEADERS(src/config.h)
 # TODO
 #AC_COPYRIGHT (copyright-notice )
 
-AM_INIT_AUTOMAKE(solarpowerlog, 0.23a)
+AM_INIT_AUTOMAKE([1.9 tar-pax])
 
 AC_CONFIG_SRCDIR([src/solarpowerlog.cpp])
 
@@ -77,18 +77,34 @@ else
 	AC_MSG_NOTICE([Support for Sputnik inverters disabled as requested.])
 fi
 
-# Dummy Inverter
-AC_ARG_ENABLE([dummyinverter],
-    [AS_HELP_STRING([--disable-dummyinverter],
-            [Do not support the dummy inverter.])
+# Sputnik Simulator support.
+AC_ARG_ENABLE([sputniksimulator],
+    [AS_HELP_STRING([--disable-sputniksimulator],
+            [Simulates a Sputnik engineering inverter.])
     ]
 )
 
-if test "x$enable_dummyinverter" != "xno" ; then
+if test "x$enable_sputniksimulator" != "xno" ; then
+    AC_DEFINE([HAVE_INV_SPUTNIKSIMULATOR], [1], [Sputnik simulator])
+    enable_sputniksimulator=yes
+else
+    AC_MSG_NOTICE([Support for sputnik invertor simulation disabled as requested.])
+    enable_sputniksimulator=no
+fi
+
+# Dummy Inverter
+AC_ARG_ENABLE([dummyinverter],
+    [AS_HELP_STRING([--enable-dummyinverter],
+            [Build the dummy inverter (development example).])
+    ]
+)
+
+if test "x$enable_dummyinverter" = "xyes" ; then
     AC_DEFINE([HAVE_INV_DUMMY], [1], [Dummy inverter support])
     enable_dummyinverter=yes
 else
-    AC_MSG_NOTICE([Dummy inverter support disabled as requested.])
+    AC_MSG_NOTICE([Dummy inverter support disabled (default).])
+    enable_dummyinverter=no
 fi
 
 
@@ -186,12 +202,12 @@ fi
 
 # Shared Connection provider
 AC_ARG_ENABLE([sharedcomms],
-   [AS_HELP_STRING([--enable-sharedcomms],
+   [AS_HELP_STRING([--disable-sharedcomms],
             ["Support sharing a communication object between two or more inverters. (experimental)"])
     ]
 )
 
-if test "x$enable_sharedcomms" = "xyes" ; then
+if test "x$enable_sharedcomms" != "xno" ; then
     AC_DEFINE([HAVE_COMMS_SHAREDCONNECTION], [1], [Shared communication support])
     enable_sharedcomms=yes
 else
@@ -333,7 +349,8 @@ fi
 AC_MSG_NOTICE([Commandline options: ....................... $enable_commandlineoptions])
 
 AC_MSG_NOTICE([INVERTERS:]);
-AC_MSG_NOTICE([Sputnik support: ........................... $enable_sputnik])
+AC_MSG_NOTICE([Sputnik inverter support: .................. $enable_sputnik])
+AC_MSG_NOTICE([Sputnik simulator: ......................... $enable_sputniksimulator])
 AC_MSG_NOTICE([Dummy inverter: ............................ $enable_dummyinverter])
 
 AC_MSG_NOTICE([COMMUNICATIONS:]);

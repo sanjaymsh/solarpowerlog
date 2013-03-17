@@ -27,11 +27,25 @@ DataFilters/interfaces/IDataFilter.cpp DataFilters/CDumpOutputFilter.cpp \
 DataFilters/CCSVOutputFilter.cpp DataFilters/HTMLWriter/CHTMLWriter.cpp \
 configuration/Registry.cpp configuration/ILogger.cpp \
 Connections/CAsyncCommand.cpp Connections/CConnectDummy.cpp \
-Connections/CSharedConnection.cpp Connections/CSharedConnectionMaster.cpp \
-Connections/CSharedConnectionSlave.cpp Connections/CConnectSerialAsio.cpp \
+Connections/sharedconnection/CSharedConnection.cpp \
+Connections/sharedconnection/CSharedConnectionMaster.cpp \
+Connections/sharedconnection/CSharedConnectionSlave.cpp \
+Connections/CConnectSerialAsio.cpp \
 Connections/factories/IConnectFactory.cpp Connections/CConnectTCPAsio.cpp \
-solarpowerlog.cpp Inverters/SputnikEngineering/CInverterFactorySputnik.cpp \
+solarpowerlog.cpp daemon.cpp \
+Inverters/SputnikEngineering/CInverterFactorySputnik.cpp \
 Inverters/SputnikEngineering/CInverterSputnikSSeries.cpp \
+Inverters/SputnikEngineering/CInverterSputnikSSeriesSimulator.cpp \
+Inverters/SputnikEngineering/SputnikCommand/CSputnikCommand.cpp \
+Inverters/SputnikEngineering/SputnikCommand/ISputnikCommand.cpp \
+Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSoftwareVersion.cpp \
+Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSYS.cpp \
+Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandTYP.cpp \
+Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/ISputnikCommandBackoffStrategy.cpp \
+Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOAlways.cpp \
+Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOOnce.cpp \
+Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOIfSupported.cpp \
+Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOTimed.cpp \
 Inverters/DummyInverter/CInverterDummy.cpp  \
 Inverters/DummyInverter/CInverterFactoryDummy.cpp \
 Inverters/interfaces/CNestedCapaIterator.cpp \
@@ -40,7 +54,7 @@ patterns/ICommandTarget.cpp patterns/IValue.cpp patterns/ICommand.cpp \
 patterns/IObserverObserver.cpp patterns/IObserverSubject.cpp \
 configuration/CConfigHelper.cpp ctemplate/ctemplate.c \
 interfaces/CDebugHelper.cpp \
-Inverters/BasicCommands.h \
+daemon.h Inverters/BasicCommands.h \
 interfaces/CCapability.h interfaces/CMutexHelper.h \
 Inverters/factories/InverterFactoryFactory.h \
 Inverters/factories/IInverterFactory.h interfaces/CWorkScheduler.h \
@@ -53,11 +67,24 @@ DataFilters/interfaces/IDataFilter.h DataFilters/CDumpOutputFilter.h \
 DataFilters/CCSVOutputFilter.h DataFilters/HTMLWriter/CHTMLWriter.h \
 configuration/Registry.h configuration/ILogger.h \
 Connections/CAsyncCommand.h Connections/CConnectDummy.h \
-Connections/CSharedConnection.h Connections/CSharedConnectionMaster.h \
-Connections/CSharedConnectionSlave.h Connections/CConnectSerialAsio.h \
+Connections/sharedconnection/CSharedConnection.h \
+Connections/sharedconnection/CSharedConnectionMaster.h \
+Connections/sharedconnection/CSharedConnectionSlave.h \
+Connections/CConnectSerialAsio.h \
 Connections/factories/IConnectFactory.h Connections/CConnectTCPAsio.h \
 Inverters/SputnikEngineering/CInverterFactorySputnik.h \
 Inverters/SputnikEngineering/CInverterSputnikSSeries.h \
+Inverters/SputnikEngineering/CInverterSputnikSSeriesSimulator.h \
+Inverters/SputnikEngineering/SputnikCommand/CSputnikCommand.h \
+Inverters/SputnikEngineering/SputnikCommand/ISputnikCommand.h \
+Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSoftwareVersion.h \
+Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSYS.h \
+Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandTYP.h \
+Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/ISputnikCommandBackoffStrategy.h \
+Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOAlways.h \
+Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOOnce.h \
+Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOIfSupported.h \
+Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOTimed.h \
 Inverters/DummyInverter/CInverterDummy.h  \
 Inverters/DummyInverter/CInverterFactoryDummy.h \
 Inverters/interfaces/CNestedCapaIterator.h \

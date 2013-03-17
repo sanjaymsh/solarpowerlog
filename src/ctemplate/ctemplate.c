@@ -243,7 +243,7 @@ newtemplate(const char *filename, const char *tmplstr,
             S_ISREG(stb.st_mode) != 0 &&
             (buf = (char *) mymalloc(stb.st_size + 1)) != 0 &&
             (stb.st_size == 0 ||
-            fread(buf, 1, stb.st_size, fp) == stb.st_size))
+            fread(buf, 1, stb.st_size, fp) == (size_t)stb.st_size))
         {
             fclose(fp);
             buf[stb.st_size] = 0;
@@ -352,6 +352,11 @@ freetag(tagnode *tag) {
             free(t);
         }
         break;
+
+    default:
+        // remove compiler warnings about unised enums:
+        // tag_text tag_else tag_endif tag_break tag_cont and tag_endloop
+        break;
     }
     freetag(tag->next);
     free(tag);
@@ -382,6 +387,8 @@ tagname(tag_kind kind) {
         return "TMPL_CONTINUE";
     case tag_endloop:
         return "/TMPL_LOOP";
+    default:
+        break; // remove warning "enumeration value tag_next not handled"
     }
     return "unknown";
 }
@@ -630,6 +637,11 @@ scantag(template *t, const char *p) {
         {
             p = scanspaces(t, t->scanptr);
         }
+        break;
+
+    default:
+        // remove compiler warning for unhandled enum values tag_text,
+        // tag_else, tag_endif and tag_endloop
         break;
     }
 
@@ -922,7 +934,7 @@ parseloop(template *t, int stop) {
 
 static tagnode *
 parselist(template *t, int stop) {
-    tagnode *list = 0, *tail, *tag;
+    tagnode *list = 0, *tail = NULL, *tag;
 
     scan(t);
     while ((tag = t->curtag) != 0) {
@@ -1263,7 +1275,14 @@ walk(template *t, tagnode *tag, const TMPL_varlist *varlist) {
         walk(t2, t2->roottag, varlist);
         t->error = t2->error;
         break;
+
+    default:
+        // remove compiler warning for unhandled enum values:
+        // tag_else, tag_endif and tag_endloop
+        break;
+
     }
+
     walk(t, tag->next, varlist);
 }
 

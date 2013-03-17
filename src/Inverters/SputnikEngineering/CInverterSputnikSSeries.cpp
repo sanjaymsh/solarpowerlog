@@ -32,7 +32,11 @@ Copyright (C) 2009-2012 Tobias Frost
 /** \file CInverterSputnikSSeries.cpp
  *
  *  Created on: May 21, 2009
- *      Author: tobi
+ *
+ *  Author: Tobias Frost
+ *
+ *  Contributors:
+ *      E.A.Neonakis <eaneonakis@freemail.gr>
  */
 
 #ifdef HAVE_CONFIG_H
@@ -46,11 +50,6 @@ Copyright (C) 2009-2012 Tobias Frost
 
 #include "CInverterSputnikSSeries.h"
 
-#include <libconfig.h++>
-#include <iostream>
-#include <sstream>
-#include <cstring>
-
 #include "patterns/ICommand.h"
 
 #include "interfaces/CWorkScheduler.h"
@@ -60,76 +59,39 @@ Copyright (C) 2009-2012 Tobias Frost
 
 #include "configuration/ILogger.h"
 
-#include <cstring>
+#include "Inverters/SputnikEngineering/SputnikCommand/CSputnikCommand.h"
+#include "Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSoftwareVersion.h"
+#include "Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSYS.h"
+#include "Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandTYP.h"
+#include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOOnce.h"
+#include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOTimed.h"
+#include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOIfSupported.h"
 
-using namespace libconfig;
+#include <errno.h>
 
-static struct
-{
-	unsigned int typ;
-	const char *description;
+#undef DEBUG_TOKENIZER
+// Debug: Print all received tokens
+#if defined DEBUG_TOKENIZER
+void DEBUG_tokenprinter(ILogger &logger, std::vector<std::string> tokens) {
+    int i;
+    if (logger.IsEnabled(ILogger::LL_TRACE)) {
+        std::stringstream ss;
+        vector<string>::iterator it;
+        for (i = 0, it = tokens.begin(); it != tokens.end() - 1; it++) {
+            ss << i++ << ": " << (*it) << "\tlen: " << (*it).length() << endl;
+        }
+        LOGTRACE(logger, ss);
+    }
+
 }
-		model_lookup[] = {
-				{ 2001, "SolarMax 2000 E" },
-				{ 3001, "SolarMax 3000 E" },
-				{ 4000, "SolarMax 4000 E" },
-				{ 6000, "SolarMax 6000 E" },
-				{ 2010, "SolarMax 2000 C" },
-				{ 3010, "SolarMax 3000 C" },
-				{ 4010, "SolarMax 4000 C" },
-				{ 4200, "SolarMax 4200 C" },
-				{ 6010, "SolarMax 6000 C" },
-				{ 20010, "SolarMax 2000 S" },
-				{ 20020, "SolarMax 3000 S" },
-				{ 20030, "SolarMax 4200 S" },
-				{ 20040, "SolarMax 6000 S" },
-				{ 20, "SolarMax 20 C" },
-				{ 25, "SolarMax 25 C" },
-				{ 30, "SolarMax 30 C" },
-				{ 35, "SolarMax 35 C" },
-				{ 50, "SolarMax 50 C" },
-				{ 80, "SolarMax 80 C" },
-				{ 100, "SolarMax 100 C" },
-				{ 300, "SolarMax 300 C" },
-				{
-						-1,
-						"UKNOWN MODEL. PLEASE FILE A BUG WITH THE REPORTED ID, ALONG WITH ALL INFOS YOU HAVE" } };
-
-static struct
-{
-	unsigned int code;
-	enum InverterStatusCodes status;
-	const char *description;
-}
-		statuscodes[] = {
-				{ 20002, NOT_FEEDING_OK, "Solar radiation too low" },
-				{ 20003, NOT_FEEDING_OK, "Inverter Starting up" },
-				{ 20004, FEEDING_MPP, "Feeding on MPP" },
-
-				{ 20006, FEEDING_MAXPOWER, "Feeding. Inverter at power limit" },
-				{ 20008, FEEDING, "Feeding" },
-
-				{ 20115, NOT_FEEDING_EXTEVENT, "Off-grid" },
-				{ 20116, NOT_FEEDING_EXTEVENT, "Grid Frequency too high" },
-				{ 20117, NOT_FEEDING_EXTEVENT, "Grid Frequency too low" },
-
-				{
-						-1,
-						STATUS_UNAVAILABLE,
-						"Unknown Statuscode -- PLEASE FILE A BUG WITH AS MUCH INFOS AS YOU CAN FIND OUT -- BEST, READ THE DISPLAY OF THE INVERTER." }, };
-
-using namespace std;
+#endif
 
 CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 		const string & configurationpath) :
 	IInverterBase::IInverterBase(name, configurationpath, "inverter")
 {
-
-	swversion = swbuild = 0;
-	ownadr = 0xfb;
-	commadr = 0x01;
-	laststatuscode = (unsigned int) -1;
-	errcnt_ = 0;
+    _cfg_ownadr = 0xfb;
+    _cfg_commadr = 0x01;
 
 	// Add the capabilites that this inverter has
 	// Note: The "must-have" ones CAPA_CAPAS_REMOVEALL and CAPA_CAPAS_UPDATED are already instanciated by the base class constructor.
@@ -139,7 +101,7 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	IValue *v;
 	CCapability *c;
 	s = CAPA_INVERTER_MANUFACTOR_NAME;
-	v = IValue::Factory(CAPA_INVERTER_MANUFACTOR_TYPE);
+	v = CValueFactory::Factory<CAPA_INVERTER_MANUFACTOR_TYPE>();
 	((CValue<string>*) v)->Set("Sputnik Engineering");
 	c = new CCapability(s, v, this);
 	AddCapability(c);
@@ -152,18 +114,35 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	float interval;
 	cfghlp.GetConfig("queryinterval", interval, 5.0f);
 
+	bool disable_3phase;
+	cfghlp.GetConfig("disable_3phase_commands",disable_3phase,(bool) false);
+
 	// Query settings needed and default all optional settings.
-	cfghlp.GetConfig("ownadr", ownadr, 0xFBu);
-	cfghlp.GetConfig("commadr", commadr, 0x01u);
+	cfghlp.GetConfig("ownadr", _cfg_ownadr, 0xFBu);
+	cfghlp.GetConfig("commadr", _cfg_commadr, 0x01u);
+	cfghlp.GetConfig("response_timeout",_cfg_response_timeout_ms,3.0F);
+	// cfg-file ha unit "seconds", but we need "milliseconds" later.
+	_cfg_response_timeout_ms *= 1000.0;
+
+    cfghlp.GetConfig("connection_timeout",_cfg_connection_timeout_ms,3.0F);
+    // cfg-file ha unit "seconds", but we need "milliseconds" later.
+    _cfg_connection_timeout_ms *= 1000.0;
+
+    cfghlp.GetConfig("send_timeout",_cfg_send_timeout_ms,3.0F);
+    // cfg-file ha unit "seconds", but we need "milliseconds" later.
+    _cfg_send_timeout_ms *= 1000.0;
+
+    cfghlp.GetConfig("reconnect_delay",_cfg_reconnectdelay_s,15.0F);
+     // cfg-file ha unit "seconds", but we need "milliseconds" later.
 
 	s = CAPA_INVERTER_QUERYINTERVAL;
-	v = IValue::Factory(CAPA_INVERTER_QUERYINTERVAL_TYPE);
+	v = CValueFactory::Factory<CAPA_INVERTER_QUERYINTERVAL_TYPE>();
 	((CValue<float>*) v)->Set(interval);
 	c = new CCapability(s, v, this);
 	AddCapability(c);
 
 	s = CAPA_INVERTER_CONFIGNAME;
-	v = IValue::Factory(CAPA_INVERTER_CONFIGNAME_TYPE);
+	v = CValueFactory::Factory<CAPA_INVERTER_CONFIGNAME_TYPE>();
 	((CValue<std::string>*) v)->Set(name);
 	c = new CCapability(s, v, this);
 	AddCapability(c);
@@ -171,15 +150,223 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	LOGDEBUG(logger,"Inverter configuration:");
 	LOGDEBUG(logger,"class CInverterSputnikSSeries ");
 	LOGDEBUG(logger,"Query Interval: "<< interval);
-	LOGDEBUG(logger,"Ownadr: " << ownadr << " Commadr: " << commadr);
+	LOGDEBUG(logger,"Ownadr: " << _cfg_ownadr << " Commadr: " << _cfg_commadr);
 	cfghlp.GetConfig("comms", s, (string) "unset");
 	LOGDEBUG(logger,"Communication: " << s);
 
+	// Initialize vector of supported commands.
+	// Handles the "TYP" command, which will identifiy the model
+	// and handles CAPA_INVERTER_MODEL.
+    commands.push_back(new CSputnikCommandTYP(logger, this, new CSputnikCmdBOOnce));
+
+    // Gets SW version
+    commands.push_back(
+        new CSputnikCommandSoftwareVersion(logger, this, CAPA_INVERTER_FIRMWARE, new CSputnikCmdBOOnce));
+
+//	needs special handling this->commands.push_back(CSputnikCommand<unsigned long>("EC*",27,0));
+
+    // AC Power
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_ACPOWER_TOTAL_TYPE>(logger, "PAC", 9, 0.5,
+            this, CAPA_INVERTER_ACPOWER_TOTAL));
+
+    // DC Power
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_DCPOWER_TOTAL_TYPE>(logger, "PDC", 9, 0.5,
+            this, CAPA_INVERTER_DCPOWER_TOTAL));
+
+    // On Time inverter in hours.
+    boost::posix_time::time_duration time_between(boost::posix_time::hours(0)+boost::posix_time::minutes(1));;
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_PON_HOURS_TYPE>(logger, "KHR", 9, 1.0, this,
+            CAPA_INVERTER_PON_HOURS,
+            new CSputnikCmdBOTimed(time_between)));
+
+    // Number of startups -- only once per connection.
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_STARTUPS_TYPE>(logger, "CAC", 9, 1.0, this,
+            CAPA_INVERTER_STARTUPS, new CSputnikCmdBOOnce));
+
+// not implemented  this->commands.push_back(CSputnikCommand<unsigned long>("DYR",7,0));
+// not implemented	this->commands.push_back(CSputnikCommand<unsigned long>("DDY",7,0));
+// not implemented  this->commands.push_back(CSputnikCommand<unsigned long>("DMT",7,0));
+
+    // Number of kwH this year.
+    // as the unit is one kWh, we can reduce the query time to e.g two times a minute
+    // (which would need 120kW feeding power ;-)
+    time_between = boost::posix_time::seconds(30);
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_KWH_Y2D_TYPE>(logger, "KYR", 9, 1.0, this,
+            CAPA_INVERTER_KWH_Y2D, new CSputnikCmdBOTimed(time_between)));
+
+    // Number of kwH today. Same logic as for KYR, limiting to 2 times a minute.
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_KWH_M2D_TYPE>(logger, "KMT", 7, 1.0, this,
+            CAPA_INVERTER_KWH_M2D, new CSputnikCmdBOTimed(time_between)));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_KWH_2D_TYPE>(logger, "KDY", 10, 0.1, this,
+            CAPA_INVERTER_KWH_2D));
+
+    // kwH produced yesterday.
+    // Only once a session.
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_KWH_YD_TYPE>(logger, "KLD", 10, 0.1, this,
+            CAPA_INVERTER_KWH_YD, new CSputnikCmdBOOnce));
+
+    // All-time kwH
+    // also only 2 times a minute.
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_KWH_TOTAL_TYPE>(logger, "KT0", 10, 1.0, this,
+            CAPA_INVERTER_KWH_TOTAL_NAME,
+            new CSputnikCmdBOTimed(time_between)));
+
+    // Installed power .. will not change over a session.
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_INSTALLEDPOWER_TYPE>(logger, "PIN", 9, 0.5,
+            this, CAPA_INVERTER_INSTALLEDPOWER_NAME, new CSputnikCmdBOOnce));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_NET_FREQUENCY_TYPE>(logger, "TNF", 10, 0.01,
+            this, CAPA_INVERTER_NET_FREQUENCY_NAME));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_RELPOWER_TYPE>(logger, "PRL", 10, 1.0, this,
+            CAPA_INVERTER_RELPOWER_NAME));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_INPUT_DC_VOLTAGE_TYPE>(logger, "UDC", 10, 0.1,
+            this, CAPA_INVERTER_INPUT_DC_VOLTAGE_NAME));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGE_TYPE>(logger, "UL1", 10, 0.1,
+            this, CAPA_INVERTER_GRID_AC_VOLTAGE_NAME));
+
+    if (disable_3phase) {
+        // First, implement the "this command is not supported" scheme.
+        commands.push_back(
+            new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE2_TYPE>(logger, "UL2",
+                10, 0.1, this, CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE2_NAME,
+                new CSputnikCmdBOIfSupported));
+
+        commands.push_back(
+            new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE3_TYPE>(logger, "UL3",
+                10, 0.1, this, CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE3_NAME,
+                new CSputnikCmdBOIfSupported));
+    }
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_INPUT_DC_CURRENT_TYPE>(logger, "IDC", 10,
+            0.01, this, CAPA_INVERTER_INPUT_DC_CURRENT_NAME));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_TYPE>(logger, "IL1", 10, 0.01,
+            this, CAPA_INVERTER_GRID_AC_CURRENT_NAME));
+
+    if (disable_3phase) {
+        commands.push_back(
+            new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_PHASE2_TYPE>(logger, "IL2", 10, 0.01,
+                this, CAPA_INVERTER_GRID_AC_CURRENT_PHASE2_NAME, new CSputnikCmdBOIfSupported));
+
+        commands.push_back(
+            new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_PHASE3_TYPE>(logger, "IL3", 10, 0.01,
+                this, CAPA_INVERTER_GRID_AC_CURRENT_PHASE3_NAME, new CSputnikCmdBOIfSupported));
+    }
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_TYPE>(logger, "TKK", 10, 1.0,
+            this, CAPA_INVERTER_TEMPERATURE_NAME));
+
+    if (disable_3phase) {
+        commands.push_back(
+            new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_PHASE2_TYPE>(logger, "TK2", 10, 1.0, this,
+                CAPA_INVERTER_TEMPERATURE_PHASE2_NAME, new CSputnikCmdBOIfSupported));
+
+        commands.push_back(
+            new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_PHASE3_TYPE>(logger, "TK3", 10, 1.0, this,
+                CAPA_INVERTER_TEMPERATURE_PHASE3_NAME, new CSputnikCmdBOIfSupported));
+    }
+
+	// DC Tracker 1-3 voltage, current, power
+	// For multi tracker inverters (MT Series)
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_INPUT_DC_VOLTAGE_T1_TYPE>(logger, "UD01", 10, 0.1,
+            this, CAPA_INVERTER_INPUT_DC_VOLTAGE_T1_NAME, new CSputnikCmdBOIfSupported));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_INPUT_DC_VOLTAGE_T2_TYPE>(logger, "UD02", 10, 0.1,
+            this, CAPA_INVERTER_INPUT_DC_VOLTAGE_T2_NAME, new CSputnikCmdBOIfSupported));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_INPUT_DC_VOLTAGE_T3_TYPE>(logger, "UD03", 10, 0.1,
+            this, CAPA_INVERTER_INPUT_DC_VOLTAGE_T3_NAME, new CSputnikCmdBOIfSupported));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_INPUT_DC_CURRENT_T1_TYPE>(logger, "ID01", 10,
+            0.01, this, CAPA_INVERTER_INPUT_DC_CURRENT_T1_NAME));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_INPUT_DC_CURRENT_T2_TYPE>(logger, "ID02", 10,
+            0.01, this, CAPA_INVERTER_INPUT_DC_CURRENT_T2_NAME, new CSputnikCmdBOIfSupported));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_INPUT_DC_CURRENT_T3_TYPE>(logger, "ID03", 10,
+            0.01, this, CAPA_INVERTER_INPUT_DC_CURRENT_T3_NAME, new CSputnikCmdBOIfSupported));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_DCPOWER_T1_TYPE>(logger, "PD01", 9, 0.5,
+            this, CAPA_INVERTER_DCPOWER_T1_NAME, new CSputnikCmdBOIfSupported));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_DCPOWER_T2_TYPE>(logger, "PD02", 9, 0.5,
+            this, CAPA_INVERTER_DCPOWER_T2_NAME, new CSputnikCmdBOIfSupported));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_DCPOWER_T3_TYPE>(logger, "PD03", 9, 0.5,
+            this, CAPA_INVERTER_DCPOWER_T3_NAME, new CSputnikCmdBOIfSupported));
+
+
+    // Get Inverter Timestamp / (Hour:Minute)
+    // Should be s special implementation!
+    // But the clock is rather inaccurate, so the computer's timestamp is
+    // far more precice.
+    // Note: It is possible to set the time/hour via the interface, but
+    // not implemented
+    // this->commands.push_back(CSputnikCommand<unsigned long>("TMI",10,0));
+    // not implemented
+    // this->commands.push_back(CSputnikCommand<unsigned long>("THR",10,0));
+
+    // Handles the SYS Command, which handles the CAPA_INVERTER_STATUS_NAME
+    // and CAPA_INVERTER_STATUS_READABLE_NAME capabilities.
+    commands.push_back(new CSputnikCommandSYS(logger, this));
+
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_ERROR_CURRENT_TYPE>(logger, "IEE", 10, 0.1,
+            this, CAPA_INVERTER_ERROR_CURRENT_NAME));
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_DC_ERROR_CURRENT_TYPE>(logger, "IED", 10, 0.1,
+            this, CAPA_INVERTER_DC_ERROR_CURRENT_NAME));
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_AC_ERROR_CURRENT_TYPE>(logger, "IEA", 10, 0.1,
+            this, CAPA_INVERTER_AC_ERROR_CURRENT_NAME));
+    commands.push_back(
+        new CSputnikCommand<CAPA_INVERTER_GROUND_VOLTAGE_TYPE>(logger, "UGD", 10, 0.1,
+            this, CAPA_INVERTER_GROUND_VOLTAGE_NAME));
+
+    // Register for broadcast events
+    Registry::GetMainScheduler()->RegisterBroadcasts(this);
+    _shutdown_requested = false;
 }
 
 CInverterSputnikSSeries::~CInverterSputnikSSeries()
 {
-	// TODO Auto-generated destructor stub
+    /* delete all commands allocated in the constructor. */
+	vector<ISputnikCommand*>::iterator it;
+	for (it=commands.begin(); it!=commands.end(); it++) {
+	    delete *it;
+	    *it= NULL;
+	}
+	commands.clear();
 }
 
 bool CInverterSputnikSSeries::CheckConfig()
@@ -190,18 +377,27 @@ bool CInverterSputnikSSeries::CheckConfig()
 	bool fail = false;
 
 	CConfigHelper hlp(configurationpath);
-	fail |= (true != hlp.CheckConfig("comms", Setting::TypeString));
+	fail |= (true != hlp.CheckConfig("comms", libconfig::Setting::TypeString));
 	// Note: Queryinterval is optional. But CConfigHelper handle also opt.
 	// parameters and checks for type.
-	fail
-			|= (true != hlp.CheckConfig("queryinterval", Setting::TypeFloat,
-					true));
-	fail |= (true != hlp.CheckConfig("commadr", Setting::TypeInt));
+	fail |= (true != hlp.CheckConfig("queryinterval",
+	    libconfig::Setting::TypeFloat, true));
+	fail |= (true != hlp.CheckConfig("commadr", libconfig::Setting::TypeInt));
 
-	// Check config of the component, if already instanciated.
+	// Check config of the communication component, if already instanciated.
 	if (connection) {
 		fail |= (true != connection->CheckConfig());
 	}
+
+	// syntax check for option to disable 3-phase commands.
+	// default: non-enabled.
+	fail |= (true != hlp.CheckConfig("disable_3phase_commands",libconfig::Setting::TypeBoolean,true));
+
+	/// syntax check for communication timeouts
+    fail |= (true != hlp.CheckConfig("response_timeout",libconfig::Setting::TypeFloat,true));
+    fail |= (true != hlp.CheckConfig("connection_timeout",libconfig::Setting::TypeFloat,true));
+    fail |= (true != hlp.CheckConfig("send_timeout",libconfig::Setting::TypeFloat,true));
+    fail |= (true != hlp.CheckConfig("reconnect_delay",libconfig::Setting::TypeFloat,true));
 
 	LOGTRACE(logger, "Check Configuration result: " << !fail);
 	return !fail;
@@ -215,7 +411,7 @@ bool CInverterSputnikSSeries::CheckConfig()
  * the checksum.
  *
  * This routine assumes, that you give it the complete
- * telegram, and only the checkszum and the } is missing.
+ * telegram, and only the checksum and the } is missing.
  */
 unsigned int CInverterSputnikSSeries::CalcChecksum(const char *str, int len)
 {
@@ -230,8 +426,6 @@ unsigned int CInverterSputnikSSeries::CalcChecksum(const char *str, int len)
 
 void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 {
-	bool dbg = true;
-
 	string commstring = "";
 	string reccomm = "";
 	ICommand *cmd;
@@ -247,40 +441,55 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		// Next-State: INIT (Try to connect)
 		LOGDEBUG(logger, "new state: CMD_DISCONNECTED");
 
-        // Timeout on reception
-		// we assume that we are now disconnected.
-		// so lets schedule a reconnection.
-		// TODO this time should be configurable.
-		cmd = new ICommand(CMD_DISCONNECTED_WAIT, this);
-		connection->Disconnect(cmd);
-
 		// Tell everyone that all data is now invalid.
 		CCapability *c = GetConcreteCapability(CAPA_INVERTER_DATASTATE);
 		CValue<bool> *v = (CValue<bool> *) c->getValue();
 		v->Set(false);
 		c->Notify();
+
+		// reset the backoff algorithms for the commands.
+		this->pendingcommands.clear();
+		this->notansweredcommands.clear();
+		vector<ISputnikCommand *>::iterator it;
+		for (it=this->commands.begin(); it!=commands.end(); it++) {
+		    (*it)->InverterDisconnected();
+		}
+
+        cmd = new ICommand(CMD_DISCONNECTED_WAIT, this);
+        if (connection->IsConnected()) {
+            connection->Disconnect(cmd);
+        } else {
+            Registry::GetMainScheduler()->ScheduleWork(cmd);
+        }
+
 		break;
 	}
 
 	case CMD_DISCONNECTED_WAIT:
 	{
-		LOGTRACE(logger, "new state: CMD_DISCONNECTED_WAIT");
+		LOGDEBUG(logger, "new state: CMD_DISCONNECTED_WAIT");
 		cmd = new ICommand(CMD_INIT, this);
 		timespec ts;
-		ts.tv_sec = 15;
-		ts.tv_nsec = 0;
+		float fraction, intpart;
+		fraction = modf(_cfg_reconnectdelay_s, &intpart);
+		ts.tv_sec = (long) intpart;
+		ts.tv_nsec =  (long) (fraction*1E9);
 		Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
 		break;
 	}
 
 	case CMD_INIT:
 	{
+        LOGDEBUG(logger, "new state: CMD_INIT");
+	    // initiate new connection only if no shutdown was requested.
+	    if (_shutdown_requested) break;
+
 		// INIT: Try to connect to the comm partner
 		// Action Connection Attempt
 		// Next-State: Wait4Connection
-		LOGDEBUG(logger, "new state: CMD_INIT");
 
 		cmd = new ICommand(CMD_WAIT4CONNECTION, this);
+		cmd->addData(ICONN_TOKEN_TIMEOUT,((long)_cfg_connection_timeout_ms));
 		connection->Connect(cmd);
 		break;
 
@@ -309,7 +518,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 
 		if (err < 0) {
 			try {
-				LOGERROR(logger, "Error while connecting: " <<
+				LOGERROR(logger, "Error while connecting: (" << -err << ") " <<
 						boost::any_cast<string>(Command->findData(ICMD_ERRNO_STR)));
 			} catch (...) {
 				LOGERROR(logger, "Unknown error while connecting.");
@@ -318,54 +527,45 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 			cmd = new ICommand(CMD_DISCONNECTED, this);
 			Registry::GetMainScheduler()->ScheduleWork(cmd);
 		} else {
-			cmd = new ICommand(CMD_QUERY_IDENTIFY, this);
+			cmd = new ICommand(CMD_QUERY_POLL, this);
 			Registry::GetMainScheduler()->ScheduleWork(cmd);
 		}
 	}
 		break;
 
-	case CMD_QUERY_IDENTIFY:
-		LOGDEBUG(logger, "new state: CMD_QUERY_IDENTIFY ");
-
-		pushinverterquery(TYP);
-		pushinverterquery(SWV);
-		pushinverterquery(BUILDVER);
-		/// this fall through is intended.
-
 	case CMD_QUERY_POLL:
+	{
 		LOGDEBUG(logger, "new state: CMD_QUERY_POLL ");
 
-		pushinverterquery(PAC);
-		pushinverterquery(KHR);
-		pushinverterquery(PIN);
-		pushinverterquery(KT0);
-		pushinverterquery(DDY);
-		pushinverterquery(KYR);
-		pushinverterquery(KMT);
-		pushinverterquery(KDY);
-		pushinverterquery(KT0);
-		pushinverterquery(PRL);
-
-		pushinverterquery(UDC);
-		pushinverterquery(IDC);
-		pushinverterquery(IL1);
-		pushinverterquery(UL1);
-		pushinverterquery(TKK);
-		pushinverterquery(TMI);
-		pushinverterquery(THR);
-		pushinverterquery(TNF);
-		pushinverterquery(SYS);
-		/// this fall through is intended.
+		// Collect all queries to be issued.
+		std::vector<ISputnikCommand*>::iterator it;
+		for (it=commands.begin(); it!= commands.end(); it++) {
+		    if ((*it)->ConsiderCommand()) {
+#ifdef DEBUG_BACKOFFSTRATEGIES
+		        LOGTRACE(logger,"Considering Command " << (*it)->command );
+#endif
+		        pendingcommands.push_back(*it);
+		    }
+#ifdef DEBUG_BACKOFFSTRATEGIES
+		    else {
+		        LOGTRACE(logger," Command " << (*it)->command << " not to be considered.");
+		    }
+#endif
+		}
+	}
+	// fall through intended.
 
 	case CMD_SEND_QUERIES:
 	{
 		LOGDEBUG(logger, "new state: CMD_SEND_QUERIES ");
-
 		commstring = assemblequerystring();
-		LOGTRACE(logger, "Sending: " << commstring << " Len: "<< commstring.size());
+		LOGDEBUG(logger, "Sending: " << commstring << " Len: "<< commstring.size());
 
 		cmd = new ICommand(CMD_WAIT_SENT, this);
+		// Start an atomic communication block (to hint any shared comms)
+		cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_REQUEST);
 		cmd->addData(ICONN_TOKEN_SEND_STRING, commstring);
+		cmd->addData(ICONN_TOKEN_TIMEOUT,((long)_cfg_send_timeout_ms));
 		connection->Send(cmd);
 	}
 		break;
@@ -378,25 +578,32 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 			err = boost::any_cast<int>(Command->findData(ICMD_ERRNO));
 		} catch (...) {
 			LOGDEBUG(logger, "BUG: Unexpected exception.");
-			err = -1;
+			err = -EINVAL;
 		}
 
-		if (err < 0) {
-			cmd = new ICommand(CMD_DISCONNECTED, this);
-			Registry::GetMainScheduler()->ScheduleWork(cmd);
-			break;
-		}
-	}
-	// Fall through ok.
+        if (err < 0) {
+            try {
+                LOGERROR( logger,
+                    "Error while sending: (" << -err << ") " << boost::any_cast<string>(Command->findData(ICMD_ERRNO_STR)));
+            } catch (...) {
+                LOGERROR(logger, "Error while sending. (" << -err << ")");
+            }
 
-	case CMD_WAIT_RECEIVE:
-	{
-		LOGDEBUG(logger, "new state: CMD_WAIT_RECEIVE");
+            // Hint the shard comms to stop the atomic session
+            // and then disconnect.
+            cmd = new ICommand(CMD_DISCONNECTED, this);
+            cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_CEASE);
+            connection->Noop(cmd);
+            break;
+        }
 
-		cmd = new ICommand(CMD_EVALUATE_RECEIVE, this);
-		connection->Receive(cmd);
-	}
-		break;
+        cmd = new ICommand(CMD_EVALUATE_RECEIVE, this);
+        cmd->addData(ICONN_TOKEN_TIMEOUT, (long)_cfg_response_timeout_ms);
+        // finish this atomic block (shared comms hinting)
+        cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_CEASE);
+        connection->Receive(cmd);
+        }
+    break;
 
 	case CMD_EVALUATE_RECEIVE:
 	{
@@ -408,32 +615,38 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 			err = boost::any_cast<int>(Command->findData(ICMD_ERRNO));
 		} catch (...) {
 			LOGDEBUG(logger, "BUG: Unexpected exception.");
-			err = -1;
+			err = -EINVAL;
 		}
 
 		if (err < 0) {
-			// we do not differenziate the error here, a error is a error....
-			cmd = new ICommand(CMD_DISCONNECTED, this);
-			Registry::GetMainScheduler()->ScheduleWork(cmd);
+			// we do not differentiate the error here, an error is an error....
+		    // try to log the error message, if any.
 			try {
 				s = boost::any_cast<std::string>(Command->findData(
 						ICMD_ERRNO_STR));
-				LOGERROR(logger, "Receive Error: " << s);
+				LOGERROR(logger, "Receive Error: (" <<-err <<") "<< s);
 			} catch (...) {
 				LOGERROR(logger, "Receive Error: " << strerror(-err));
 			}
-			break;
 		}
 
 		try {
 			s = boost::any_cast<std::string>(Command->findData(
 					ICONN_TOKEN_RECEIVE_STRING));
 		} catch (...) {
-			LOGDEBUG(logger, "Unexpected Exception");
+			LOGERROR(logger, "Retrieving string: Unexpected Exception");
+			err = -EINVAL;
+		}
+
+		if (err < 0) {
+		    // Schedule new connection later.
+			cmd = new ICommand(CMD_DISCONNECTED,this);
+			Registry::GetMainScheduler()->ScheduleWork(cmd);
 			break;
 		}
 
-		LOGTRACE(logger, "Received :" << s << "len: " << s.size());
+		LOGTRACE(logger, "Received :" << s << " len: " << s.size());
+
 		if (logger.IsEnabled(ILogger::LL_TRACE)) {
 			string st;
 			char buf[32];
@@ -449,33 +662,42 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		}
 
 		int parseresult = parsereceivedstring(s);
-		if (0 > parseresult ) {
-			// Reconnect on parse errors.
-			LOGERROR(logger, "Parse error while receiving.");
-			LOGDEBUG(logger, "Received: " << s);
-			cmd = new ICommand(CMD_DISCONNECTED, this);
-			Registry::GetMainScheduler()->ScheduleWork(cmd);
-			break;
-		} else if ( parseresult == 0) {
-			// The received data seems not to be for our inverter.
-			// Can happen on a shared connection.
-			// So lets wait again.
+		// parseresult =>
+		//      -1 on error,
+		//      0 if the string indicated that it is not for us
+		//      1 on success.
 
-			ICommand *cmd = new ICommand(CMD_EVALUATE_RECEIVE, this);
-			connection->Receive(cmd);
+		// get the result from the last parse
+		// yes, in the unlikely event that we parsed more than one telegram in one
+		// session, we discard the result of the first one, and do not detect
+		// an error here (but the last telegram for us needed to be successful)...
+		if (1 != parseresult) {
+			// Reconnect on parse errors.
+			LOGERROR(logger, "Parse error on received string.");
+ 			cmd = new ICommand(CMD_DISCONNECTED, this);
+			Registry::GetMainScheduler()->ScheduleWork(cmd);
 			break;
 		}
 
-		// check if there are queries left in this cycle.
-		if (!cmdqueue.empty()) {
+        // all issued commands should have been answered,
+        // those in the not-answered set, were un-answered and we notify
+        // the commands to pass that information to their backoff algorithms.
+        std::set<ISputnikCommand*>::iterator it;
+        for (it=notansweredcommands.begin();it!=notansweredcommands.end();it++) {
+            (*it)->CommandNotAnswered();
+        }
+        notansweredcommands.clear();
+
+		// if there are still pending commands, issue them first before
+		// filling the queue again.
+		if (!pendingcommands.empty()) {
+		    LOGTRACE(logger, "Querying remaining commands");
 			cmd = new ICommand(CMD_SEND_QUERIES, this);
-			// there are more. finish them before setting the data valid.
 			Registry::GetMainScheduler()->ScheduleWork(cmd);
 			break;
 		}
 
 		// TODO differenciate between identify query and "normal" runtime queries
-		cmd = new ICommand(CMD_QUERY_POLL, this);
 
 		CCapability *c = GetConcreteCapability(CAPA_INVERTER_DATASTATE);
 		CValue<bool> *vb = (CValue<bool> *) c->getValue();
@@ -486,782 +708,203 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		CValue<float> *v = (CValue<float> *) c->getValue();
 		ts.tv_sec = v->Get();
 		ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
+		cmd = new ICommand(CMD_QUERY_POLL, this);
 		Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
+
 	}
 		break;
 
+		// Broadcast events
+	case CMD_BRC_SHUTDOWN:
+        LOGDEBUG(logger, "new state: CMD_BRC_SHUTDOWN");
+	    // stop all pending I/Os, as we will exit soon.
+	    connection->AbortAll();
+	    _shutdown_requested = true;
+	    break;
+
+
 	default:
-		LOGFATAL(logger, "Unknown CMD received");
-		abort();
-		break; // to have one code-analysis warning less.
+	    if (Command->getCmd() <= BasicCommands::CMD_BROADCAST_MAX) {
+	        // broadcast event
+	        LOGDEBUG(logger, "Unhandled broadcast event received " << Command->getCmd());
+	        break;
+	    }
+		LOGERROR(logger, "Unknown CMD received: "<< Command->getCmd());
+		break;
 	}
 
-}
-
-void CInverterSputnikSSeries::pushinverterquery(enum query q)
-{
-	cmdqueue.push(q);
 }
 
 string CInverterSputnikSSeries::assemblequerystring()
 {
-	if (cmdqueue.empty()) {
-		LOGTRACE(logger, "assemblequerystring: empty task lisk.");
-		return "";
-	}
 
-	int len = 0;
-	int expectedanswerlen = 0;
-	int currentport = 0;
-	string nextcmd;
-	string querystring, tmp;
-	bool cont = true;
-	char formatbuffer[256];
+    // ensure two things:
+    // - telegram len does not exceed 255 bytes in total,
+    // while there are 16 header bytes and 6 trailing bytes to be considered.
+    // - answer is not exceeding 255 bytes
+    // (here, we reserve a saftey of 10 bytes additionally).
+    int telegramlen = 254-22;
+    int expectedanswerlen = 255-31;
+    int currentport = QUERY; // At the moment only QUERY's are supported.
+    std::string telegram;
 
-	do {
-		switch (cmdqueue.front())
-		{
+    if (pendingcommands.empty()) return "";
+    // assemble string to send out of pending commands.
 
-		case TYP:
-		{
-			if (currentport && currentport != QUERY) {
-				// Changing ports are not supported.
-				// Different ports means a different message.
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "TYP";
-			expectedanswerlen += 9;
-			break;
-		}
+    // get the max amount of commands up to the max size
+    // (we also ensure max answer len, as on observations fragmentation of
+    // the telgramm does break it -- at least on my inverters' firmware.
+    std::vector<ISputnikCommand*>::iterator it = pendingcommands.begin();
+    while (it != pendingcommands.end()) {
+        int alen = (*it)->GetMaxAnswerLen();
+        int clen = (*it)->GetCommandLen();
+        if ( alen < expectedanswerlen && clen < telegramlen ) {
+            if (!telegram.empty()) {
+                // Add seperator if this is not the first command in the string.
+                telegram += ";";
+                telegramlen--;
+            }
+            telegram += (*it)->GetCommand();
+            telegramlen -= clen;
+            expectedanswerlen -=alen;
+            notansweredcommands.insert(*it);
+            it = pendingcommands.erase(it);
+        }
+        else
+        {
+            it++;
+        }
+    }
 
-		case SWV:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "SWV";
-			expectedanswerlen += 7;
-			break;
-		}
-
-		case BUILDVER:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "BDN";
-			expectedanswerlen += 9;
-			break;
-		}
-
-		case EC00:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "EC00";
-			expectedanswerlen += 27;
-			break;
-		}
-
-		case EC01:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "EC01";
-			expectedanswerlen += 27;
-			break;
-		}
-
-		case EC02:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "EC02";
-			expectedanswerlen += 27;
-			break;
-		}
-
-		case EC03:
-		{
-
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "EC03";
-			expectedanswerlen += 27;
-			break;
-		}
-
-		case EC04:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "EC04";
-			expectedanswerlen += 27;
-			break;
-		}
-
-		case EC05:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "EC05";
-			expectedanswerlen += 27;
-			break;
-		}
-
-		case EC06:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "EC06";
-			expectedanswerlen += 27;
-			break;
-		}
-
-		case EC07:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "EC07";
-			expectedanswerlen += 27;
-			break;
-		}
-
-		case EC08:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "EC08";
-			expectedanswerlen += 27;
-			break;
-		}
-
-		case PAC:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "PAC";
-			expectedanswerlen += 9;
-			break;
-		}
-
-		case KHR:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "KHR";
-			expectedanswerlen += 9;
-			break;
-		}
-
-		case DYR:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "DYR";
-			expectedanswerlen += 7;
-			break;
-		}
-
-		case DMT:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "DMT";
-			// TODO check answer len
-			expectedanswerlen += 7;
-			break;
-		}
-
-		case DDY:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "DDY";
-			expectedanswerlen += 7;
-			break;
-		}
-
-		case KYR:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "KYR";
-			expectedanswerlen += 9;
-			break;
-		}
-
-		case KMT:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "KMT";
-			expectedanswerlen += 7;
-			break;
-		}
-
-		case KDY:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "KDY";
-			expectedanswerlen += 10;
-			break;
-		}
-
-		case KT0:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "KT0";
-			expectedanswerlen += 10;
-			break;
-		}
-
-		case PIN:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "PIN";
-			expectedanswerlen += 9;
-			break;
-		}
-
-		case TNF:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "TNF";
-			// TODO check answer len
-			expectedanswerlen += 10;
-			break;
-		}
-
-		case PRL:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "RPL";
-			// TODO check answer len
-			expectedanswerlen += 10;
-			break;
-		}
-
-		case UDC:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "UDC";
-			// TODO check answer len
-			expectedanswerlen += 10;
-			break;
-		}
-
-		case UL1:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "UL1";
-			// TODO check answer len
-			expectedanswerlen += 10;
-			break;
-		}
-
-		case UL2:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "UL2";
-			// TODO check answer len
-			expectedanswerlen += 10;
-			break;
-		}
-
-		case UL3:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "UL3";
-			// TODO check answer len
-			expectedanswerlen += 10;
-			break;
-		}
-
-		case IDC:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "IDC";
-			// TODO check answer len
-			expectedanswerlen += 10;
-			break;
-		}
-
-		case IL1:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "IL1";
-			// TODO check answer len
-			expectedanswerlen += 10;
-			break;
-		}
-
-		case IL2:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "IL2";
-			// TODO check answer len
-			expectedanswerlen += 10;
-			break;
-		}
-
-		case IL3:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "IL3";
-			// TODO check answer len
-			expectedanswerlen += 10;
-			break;
-		}
-
-		case TKK:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "TKK";
-			// TODO check answer len
-			expectedanswerlen += 10;
-			break;
-		}
-
-		case TK2:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "TK2";
-			// TODO check answer len
-			expectedanswerlen += 10;
-			break;
-		}
-
-		case TK3:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "TK3";
-			// TODO check answer len
-			expectedanswerlen += 10;
-			break;
-		}
-
-		case TMI:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "TMI";
-			// TODO check answer len
-			expectedanswerlen += 10;
-			break;
-		}
-
-		case THR:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "THR";
-			// TODO check answer len
-			expectedanswerlen += 10;
-			break;
-		}
-
-		case SYS:
-		{
-			if (currentport && currentport != QUERY) {
-				cont = false;
-				break;
-			}
-			currentport = QUERY;
-			nextcmd = "SYS";
-			// TODO check answer len
-			expectedanswerlen += 10;
-			break;
-		}
-
-		}
-
-		if (cont) {
-			// check if command will fit into max. telegram len
-			// note: 255 = max len, 15 = header "{xx;yy;zz|pppp:", 6 = tail "|CHKS}"
-			// (plus one byte for the seperator.)
-			// note: this is not squeezed to its end, as we will usually not
-			// fill up to 255 bytes because lacking commands...
-			if (nextcmd.length() + len <= (255 - 15 - 6) - 1 &&
-			// use our assumption to limit the expected receive telegram
-					// add a safety margin of 10.
-					expectedanswerlen <= (255 - 15 - 6 - 1 - 10)) {
-				// Check if we need to insert a seperator.
-				if (len) {
-					querystring += ";";
-					len++;
-				}
-				// Add the prepared command and remove it from the queue.
-				querystring += nextcmd;
-				len += nextcmd.length();
-				cmdqueue.pop();
-			} else {
-				cont = false;
-			}
-		}
-	} while (cont && !cmdqueue.empty());
-
-	sprintf(formatbuffer, "%X:", currentport);
-	len = strlen(formatbuffer) + querystring.length() + 10 + 6;
-
-	// finally prepare Header "{<from>;<to>;<len>|<port>:"
-	sprintf(formatbuffer, "{%02X;%02X;%02X|%X:", ownadr, commadr, len,
-			currentport);
-
-	tmp = formatbuffer + querystring + '|';
-	querystring = tmp;
-
-	sprintf(formatbuffer, "%04X}", CalcChecksum(querystring.c_str(),
-			querystring.length()));
-
-	querystring += formatbuffer;
-	return querystring;
+    int len = 0;
+    char buf[32];
+    snprintf(buf, 32,"%X:", currentport);
+    len = strlen(buf) + telegram.length() + 10 + 6;
+    snprintf(buf, 32, "{%02X;%02X;%02X|%X:", _cfg_ownadr, _cfg_commadr, len,
+            currentport);
+    // Insert header at beginning, add trailing "|"
+    telegram.insert(0,buf);
+    telegram.append("|");
+    snprintf(buf,32,"%04X}", CalcChecksum(telegram.c_str(),
+        telegram.length()));
+    telegram.append(buf);
+    return telegram;
 }
 
-int CInverterSputnikSSeries::parsereceivedstring(const string & s)
-{
+int CInverterSputnikSSeries::parsereceivedstring(std::string &rcvd) {
 
-	unsigned int i;
+    unsigned int i;
+    size_t pos;
+    // extract telegram to get "{...}" only
+    // ensure that we get a "{" as first character.
+    pos = rcvd.find_last_of('{');
+    if (pos != 0 && (std::string::npos != pos)) {
+        rcvd = rcvd.substr(pos);
+    }
 
-	// check for basic constraints...
-	if (s[0] != '{' || s[s.length() - 1] != '}')
-		return -1;
+    // check if we got an complete telegram
+    pos = rcvd.find('}');
+    if (pos == std::string::npos) {
+        // no "}" seen
+        return -1;
+    }
 
-	// tokenizer (taken from
-	// http://oopweb.com/CPP/Documents/CPPHOWTO/Volume/C++Programming-HOWTO-7.html
-	// but  modified.
+    // both { and } found -- extract the telegramm...
+    // pos still contains result from pos = part_received.find('}');
+    rcvd = rcvd.substr(0,pos+1);
 
-	// we take the received string and "split" it into smaller pieces.
-	// the pieces ("tokens") then assemble one single information to be
-	// for this, we split by:
-	// ";" "|" ":" (and "{}")
+    // check for basic constraints...
+    // tokenizer (taken from
+    // http://oopweb.com/CPP/Documents/CPPHOWTO/Volume/C++Programming-HOWTO-7.html
+    // but  modified.
 
-	vector<string> tokens;
-	char delimiters[] = "{;|:}";
-	tokenizer(delimiters, s, tokens);
+    // we take the received string and "split" it into smaller pieces.
+    // the pieces ("tokens") then assemble one single information to be
+    // for this, we split by:
+    // ";" "|" ":" (and "{}")
 
-	// Debug: Print all received tokens
+    vector<string> tokens;
+    {
+        char delimiters[] = "{;|:}";
+        tokenizer(delimiters, rcvd, tokens);
+    }
+    // Debug: Print all received tokens
 #if defined DEBUG_TOKENIZER
-	if (logger.IsEnabled(ILogger::LL_TRACE)) {
-		std::stringstream ss;
-		vector<string>::iterator it;
-		for (i = 0, it = tokens.begin(); it != tokens.end() - 1; it++) {
-			ss << i++ << ": " << (*it) << "\tlen: "
-			<< (*it).length() << endl;
-		}
-		LOGTRACE(logger,ss);
-	}
+    DEBUG_tokenprinter(this->logger, tokens);
 #endif
 
-	unsigned int tmp;
-	if (1 != sscanf(tokens.back().c_str(), "%x", &tmp)) {
-		LOGDEBUG(logger, "could not parse checksum. Token was:" );
-		return -1;
-	}
+        // Minimum tokens are {<from>;<to>;<len>|<port>: .... |<chksum>} - 5 tokens
+    if (tokens.size() <= 5 ) return -1;
 
-	if (tmp != CalcChecksum(s.c_str(), s.length() - 6)) {
-		LOGDEBUG(logger, "Checksum error on received telegram");
-		return -1;
-	}
+    unsigned int tmp;
+    if (1 != sscanf(tokens.back().c_str(), "%x", &tmp)) {
+        LOGDEBUG(logger, "could not parse checksum. Token was:");
+        return -1;
+    }
 
-	if (1 != sscanf(tokens[0].c_str(), "%x", &tmp)) {
-		LOGDEBUG(logger, " could not parse from address");
-		return -1;
-	}
+    if (tmp != CalcChecksum(rcvd.c_str(), rcvd.length() - 6)) {
+        LOGDEBUG(logger, "Checksum error on received telegram");
+        return -1;
+    }
 
-	if (tmp != commadr) {
-		LOGDEBUG(logger, "Received string is not for us: Wrong Sender");
-		return 0;
-	}
+    if (1 != sscanf(tokens[0].c_str(), "%x", &tmp)) {
+        LOGDEBUG(logger, " could not parse from address");
+        return -1;
+    }
 
-	if (1 != sscanf(tokens[1].c_str(), "%x", &tmp)) {
-		LOGDEBUG(logger, "could not parse to-address");
-		return -1;
-	}
+    if (tmp != _cfg_commadr) {
+        LOGDEBUG(logger, "Received string is not for us: Wrong Sender");
+        return 0;
+    }
 
-	if (tmp != ownadr) {
-		LOGDEBUG(logger, "Received string is not for us: Wrong receiver");
-		return 0;
-	}
+    if (1 != sscanf(tokens[1].c_str(), "%x", &tmp)) {
+        LOGDEBUG(logger, "could not parse to-address");
+        return -1;
+    }
 
-	if (1 != sscanf(tokens[2].c_str(), "%x", &tmp)) {
-		LOGDEBUG(logger, "could not parse telegram length");
-		return -1;
-	}
+    if (tmp != _cfg_ownadr) {
+        LOGDEBUG(logger, "Received string is not for us: Wrong receiver");
+        return 0;
+    }
 
-	if (tmp != s.length()) {
-		LOGDEBUG(logger, "wrong telegram length ");
-		return -1;
-	}
+    if (1 != sscanf(tokens[2].c_str(), "%x", &tmp)) {
+        LOGDEBUG(logger, "could not parse telegram length");
+        return -1;
+    }
 
-	// TODO FIXME: Currently the data port is simply "ignored"
-	// parsetoken should get a second argument to get the port infos.
+    if (tmp != rcvd.length()) {
+        LOGDEBUG(logger, "wrong telegram length ");
+        return -1;
+    }
 
-	int  ret = 1;
-	for (i = 4; i < tokens.size() - 1; i++) {
-		if (!parsetoken(tokens[i])) {
-			LOGDEBUG(logger,
-					"BUG: Parse Error at token " << tokens[i]
-					<< ". Received: " << s << "If the token is unknown or you subject a bug, please report it giving the  token ans received string"
-			);
-			ret = -1;
-		}
-	}
-	return ret;
-}
+    {
 
-bool CInverterSputnikSSeries::parsetoken(string token)
-{
+        int ret = 1;
+        const char delimiters[] = "=,";
+        for (i = 4; i < tokens.size() - 1; i++) {
+            vector<std::string> subtokens;
+            tokenizer(delimiters, tokens[i], subtokens);
+            if (subtokens.empty()) continue;
+            vector<ISputnikCommand*>::iterator it;
+            for (it = commands.begin(); it != commands.end(); it++) {
+                if ((*it)->IsHandled(subtokens[0])) {
+                    LOGTRACE(logger,"Now handling: " << tokens[i]);
+                    bool result = (*it)->handle_token(subtokens);
+                    if (!result)  {
+                        LOGTRACE(logger,"failed parsing " + tokens[i]);
+                        ret = -1;
+                    }
+                    else {
+                        notansweredcommands.erase(*it);
+                    }
+                    break;
+                }
+            }
+        }
+        // we return either -1 (error) or 1 (all ok)
+        return ret;
+    }
 
-	vector<string> subtokens;
-	const char delimiters[] = "=,";
-	tokenizer(delimiters, token, subtokens);
-
-	// TODO rewrite this section: Lookup the strings and functions in a table, call
-	// by function pointer.
-
-	if (subtokens[0] == "TYP") {
-		return token_TYP(subtokens);
-	}
-
-	if (subtokens[0] == "SWV") {
-		return token_SWVER(subtokens);
-	}
-
-	if (subtokens[0] == "BDN") {
-		return token_BUILDVER(subtokens);
-	}
-
-	if (subtokens[0].substr(0, 2) == "EC") {
-		return token_ECxx(subtokens);
-	}
-
-	if (subtokens[0] == "PAC") {
-		return token_PAC(subtokens);
-	}
-
-	if (subtokens[0] == "KHR") {
-		return token_KHR(subtokens);
-	}
-
-	if (subtokens[0] == "DYR") {
-		return token_DYR(subtokens);
-	}
-
-	if (subtokens[0] == "DMT") {
-		return token_DMT(subtokens);
-	}
-
-	if (subtokens[0] == "DDY") {
-		return token_DDY(subtokens);
-	}
-
-	if (subtokens[0] == "KYR") {
-		return token_KYR(subtokens);
-	}
-
-	if (subtokens[0] == "KMT") {
-		return token_KMT(subtokens);
-	}
-
-	if (subtokens[0] == "KDY") {
-		return token_KDY(subtokens);
-	}
-
-	if (subtokens[0] == "KT0") {
-		return token_KT0(subtokens);
-	}
-
-	if (subtokens[0] == "PIN") {
-		return token_PIN(subtokens);
-	}
-
-	if (subtokens[0] == "TNF") {
-		return token_TNF(subtokens);
-	}
-	if (subtokens[0] == "PRL") {
-		return token_PRL(subtokens);
-	}
-	if (subtokens[0] == "UDC") {
-		return token_UDC(subtokens);
-	}
-
-	if (subtokens[0] == "UL1") {
-		return token_UL1(subtokens);
-	}
-
-	if (subtokens[0] == "UL2") {
-		return token_UL2(subtokens);
-	}
-
-	if (subtokens[0] == "UL3") {
-		return token_UL3(subtokens);
-	}
-
-	if (subtokens[0] == "IDC") {
-		return token_IDC(subtokens);
-	}
-	if (subtokens[0] == "IL1") {
-		return token_IL1(subtokens);
-	}
-
-	if (subtokens[0] == "IL2") {
-		return token_IL2(subtokens);
-	}
-
-	if (subtokens[0] == "IL3") {
-		return token_IL3(subtokens);
-	}
-
-	if (subtokens[0] == "TKK") {
-		return token_TKK(subtokens);
-	}
-
-	if (subtokens[0] == "TK2") {
-		return token_TK2(subtokens);
-	}
-
-	if (subtokens[0] == "TK3") {
-		return token_TK3(subtokens);
-	}
-
-	if (subtokens[0] == "TMI") {
-		return token_TMI(subtokens);
-	}
-
-	if (subtokens[0] == "THR") {
-		return token_THR(subtokens);
-	}
-
-	if (subtokens[0] == "SYS") {
-		return token_SYS(subtokens);
-	}
-
-	return true;
 }
 
 void CInverterSputnikSSeries::tokenizer(const char *delimiters,
@@ -1325,956 +968,6 @@ void CInverterSputnikSSeries::tokenizer(const char *delimiters,
 	// Check if we have an "end-token" (not seperated)
 	if (lastPos != s.length()) {
 		tokens.push_back(s.substr(lastPos, s.length() - lastPos));
-	}
-}
-
-bool CInverterSputnikSSeries::token_TYP(const vector<string> & tokens)
-{
-
-	string strmodel;
-	unsigned int i = 0;
-
-	// Check syntax
-	if (tokens.size() != 2)
-		return false;
-	unsigned int model;
-	sscanf(tokens[1].c_str(), "%x", &model);
-
-	do {
-		if (model_lookup[i].typ == model)
-			break;
-	} while (model_lookup[++i].typ != (unsigned int) -1);
-
-	if (model_lookup[i].typ == (unsigned int) -1) {
-		LOGWARN(logger, "Identified a " << model_lookup[i].description);
-		LOGWARN(logger, "Received TYP was " << tokens[0] << "=" << tokens[1]);
-	}
-
-	// lookup if we already know that information.
-	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_MODEL);
-
-	if (!cap) {
-		string s;
-		IValue *v;
-		CCapability *c;
-		s = CAPA_INVERTER_MODEL;
-		v = IValue::Factory(CAPA_INVERTER_MODEL_TYPE);
-		((CValue<string>*) v)->Set(model_lookup[i].description);
-		c = new CCapability(s, v, this);
-		AddCapability(c);
-
-		// TODO: Check if we schould derefer (using a scheduled work) this.
-		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
-		cap->Notify();
-	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_MODEL_TYPE) {
-		CValue<string> *val = (CValue<string>*) cap->getValue();
-		if (model_lookup[i].description != val->Get()) {
-
-			LOGDEBUG(logger, "WEIRD: Updating inverter type from "
-					<< val->Get() << " to "
-					<< model_lookup[i].description);
-
-			val->Set(model_lookup[i].description);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_MODEL << " not a string ");
-	}
-
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_SWVER(const vector<string> & tokens)
-{
-	int tmp;
-	string ver;
-
-	// Check syntax
-	if (tokens.size() != 2)
-		return false;
-
-	sscanf(tokens[1].c_str(), "%x", &tmp);
-
-	// Been there, seen that.
-	if (swversion == tmp)
-		return true;
-	swversion = tmp;
-
-	create_versioncapa();
-
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_BUILDVER(const vector<string> & tokens)
-{
-	int tmp;
-	string ver;
-
-	// Check syntax
-	if (tokens.size() != 2)
-		return false;
-
-	sscanf(tokens[1].c_str(), "%x", &tmp);
-
-	// Been there, seen that.
-	if (swbuild == tmp)
-		return true;
-
-	swbuild = tmp;
-	create_versioncapa();
-
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_ECxx(const vector<string> & tokens)
-{
-	// FIXME TODO Implement me!
-	// Will be implemented later, as currently not-so-important
-	// (and just unsure, how to handle the different entries. Probably as an ring-
-	// buffer, with just updating the last.
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_PAC(const vector<string> & tokens)
-{
-	if (tokens.size() != 2)
-		return false;
-
-	unsigned int pac;
-	float fpac;
-	sscanf(tokens[1].c_str(), "%x", &pac);
-
-	fpac = pac / 2.0;
-
-	// lookup if we already know that information.
-	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_ACPOWER_TOTAL);
-
-	if (!cap) {
-		string s;
-		IValue *v;
-		CCapability *c;
-		s = CAPA_INVERTER_ACPOWER_TOTAL;
-		v = IValue::Factory(CAPA_INVERTER_ACPOWER_TOTAL_TYPE);
-		((CValue<float>*) v)->Set(fpac);
-		c = new CCapability(s, v, this);
-		AddCapability(c);
-
-		// TODO: Check if we schould derefer (using a scheduled work) this.
-		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
-		cap->Notify();
-	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_ACPOWER_TOTAL_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
-
-		if (val -> Get() != fpac) {
-			val->Set(fpac);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_ACPOWER_TOTAL
-				<< " not a float ");
-	}
-
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_KHR(const vector<string> & tokens)
-{
-	// Power-On-Hours
-	if (tokens.size() != 2)
-		return false;
-
-	unsigned int tmp;
-	float f;
-	sscanf(tokens[1].c_str(), "%x", &tmp);
-
-	f = tmp;
-
-	// lookup if we already know that information.
-	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_PON_HOURS);
-
-	if (!cap) {
-		string s;
-		IValue *v;
-		CCapability *c;
-		s = CAPA_INVERTER_PON_HOURS;
-		v = IValue::Factory(CAPA_INVERTER_PON_HOURS_TYPE);
-		((CValue<float>*) v)->Set(f);
-		c = new CCapability(s, v, this);
-		AddCapability(c);
-
-		// TODO: Check if we schould derefer (using a scheduled work) this.
-		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
-		cap->Notify();
-	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_PON_HOURS_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
-		if (val -> Get() != f) {
-			val->Set(f);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_PON_HOURS << " not a float ");
-	}
-
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_DYR(const vector<string> & tokens)
-{
-	// FIXME TODO Implement me!
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_DMT(const vector<string> & tokens)
-{
-	// FIXME TODO Implement me!
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_DDY(const vector<string> & tokens)
-{
-	// FIXME TODO Implement me!
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_KYR(const vector<string> & tokens)
-{
-	// Unit kwH
-	if (tokens.size() != 2)
-		return false;
-
-	unsigned int raw;
-	float kwh;
-	sscanf(tokens[1].c_str(), "%x", &raw);
-
-	kwh = raw;
-
-	// lookup if we already know that information.
-	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_KWH_Y2D);
-
-	if (!cap) {
-		string s;
-		IValue *v;
-		CCapability *c;
-		s = CAPA_INVERTER_KWH_Y2D;
-		v = IValue::Factory(CAPA_INVERTER_KWH_Y2D_TYPE);
-		((CValue<float>*) v)->Set(kwh);
-		c = new CCapability(s, v, this);
-		AddCapability(c);
-
-		// TODO: Check if we schould derefer (using a scheduled work) this.
-		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
-		cap->Notify();
-	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_KWH_Y2D_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
-
-		if (val -> Get() != kwh) {
-			val->Set(kwh);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_Y2D << " not a float ");
-	}
-
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_KMT(const vector<string> & tokens)
-{
-	// Unit kwH
-	if (tokens.size() != 2)
-		return false;
-
-	unsigned int raw;
-	float kwh;
-	sscanf(tokens[1].c_str(), "%x", &raw);
-
-	kwh = raw;
-
-	// lookup if we already know that information.
-	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_KWH_M2D);
-
-	if (!cap) {
-		string s;
-		IValue *v;
-		CCapability *c;
-		s = CAPA_INVERTER_KWH_M2D;
-		v = IValue::Factory(CAPA_INVERTER_KWH_M2D_TYPE);
-		((CValue<float>*) v)->Set(kwh);
-		c = new CCapability(s, v, this);
-		AddCapability(c);
-
-		// TODO: Check if we schould derefer (using a scheduled work) this.
-		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
-		cap->Notify();
-	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_KWH_M2D_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
-
-		if (val -> Get() != kwh) {
-			val->Set(kwh);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_M2D << " not a float ");
-	}
-
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_KDY(const vector<string> & tokens)
-{
-	// Unit 0.1 kwH
-	if (tokens.size() != 2)
-		return false;
-
-	unsigned int raw;
-	float kwh;
-	sscanf(tokens[1].c_str(), "%x", &raw);
-
-	kwh = raw / 10.0;
-
-	// lookup if we already know that information.
-	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_KWH_2D);
-	if (!cap) {
-		string s;
-		IValue *v;
-		CCapability *c;
-		s = CAPA_INVERTER_KWH_2D;
-		v = IValue::Factory(CAPA_INVERTER_KWH_2D_TYPE);
-		((CValue<float>*) v)->Set(kwh);
-		c = new CCapability(s, v, this);
-		AddCapability(c);
-
-		// TODO: Check if we schould derefer (using a scheduled work) this.
-		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
-		cap->Notify();
-	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_KWH_2D_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
-
-		if (val -> Get() != kwh) {
-			val->Set(kwh);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_2D << " not a float ");
-	}
-
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_KT0(const vector<string> & tokens)
-{
-	// FIXME TODO Implement me!
-	// Unit kwH
-	if (tokens.size() != 2)
-		return false;
-
-	unsigned int raw;
-	float kwh;
-	sscanf(tokens[1].c_str(), "%x", &raw);
-
-	kwh = raw;
-
-	// lookup if we already know that information.
-	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_KWH_TOTAL_NAME);
-
-	if (!cap) {
-		string s;
-		IValue *v;
-		CCapability *c;
-		s = CAPA_INVERTER_KWH_TOTAL_NAME;
-		v = IValue::Factory(CAPA_INVERTER_KWH_TOTAL_TYPE);
-		((CValue<float>*) v)->Set(kwh);
-		c = new CCapability(s, v, this);
-		AddCapability(c);
-
-		// TODO: Check if we schould derefer (using a scheduled work) this.
-		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
-		cap->Notify();
-	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_KWH_TOTAL_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
-
-		if (val -> Get() != kwh) {
-			val->Set(kwh);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_KWH_TOTAL_NAME
-				<< " not a float ");
-	}
-
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_PIN(const vector<string> & tokens)
-{
-	// Unit 0.5 Watts
-	if (tokens.size() != 2)
-		return false;
-
-	unsigned int raw;
-	float f;
-	sscanf(tokens[1].c_str(), "%x", &raw);
-
-	f = raw * 0.5;
-	// lookup if we already know that information.
-	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_INSTALLEDPOWER_NAME);
-
-	if (!cap) {
-		string s;
-		IValue *v;
-		CCapability *c;
-		s = CAPA_INVERTER_INSTALLEDPOWER_NAME;
-		v = IValue::Factory(CAPA_INVERTER_INSTALLEDPOWER_TYPE);
-		((CValue<float>*) v)->Set(f);
-		c = new CCapability(s, v, this);
-		AddCapability(c);
-
-		// TODO: Check if we schould derefer (using a scheduled work) this.
-		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
-		cap->Notify();
-	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_INSTALLEDPOWER_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
-
-		if (val -> Get() != f) {
-			val->Set(f);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_INSTALLEDPOWER_NAME
-				<< " not a float ");
-	}
-
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_TNF(const vector<string> & tokens)
-{
-	// FIXME TODO Implement me!
-	// Unit us
-	// f = 1 / T , T = x / 1E6
-	if (tokens.size() != 2)
-		return false;
-
-	unsigned int raw;
-	float f;
-	sscanf(tokens[1].c_str(), "%x", &raw);
-
-	f = raw / 100.0;
-	// lookup if we already know that information.
-	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_NET_FREQUENCY_NAME);
-
-	if (!cap) {
-		string s;
-		IValue *v;
-		CCapability *c;
-		s = CAPA_INVERTER_NET_FREQUENCY_NAME;
-		v = IValue::Factory(CAPA_INVERTER_NET_FREQUENCY_TYPE);
-		((CValue<float>*) v)->Set(f);
-		c = new CCapability(s, v, this);
-		AddCapability(c);
-
-		// TODO: Check if we schould derefer (using a scheduled work) this.
-		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
-		cap->Notify();
-	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_NET_FREQUENCY_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
-
-		if (val -> Get() != f) {
-			val->Set(f);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_NET_FREQUENCY_NAME
-				<< " not a float ");
-	}
-
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_PRL(const vector<string> & tokens)
-{
-	// Unit 1 %
-	if (tokens.size() != 2)
-		return false;
-
-	unsigned int raw;
-	float f;
-	sscanf(tokens[1].c_str(), "%x", &raw);
-
-	f = raw;
-	// lookup if we already know that information.
-	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_RELPOWER_NAME);
-
-	if (!cap) {
-		string s;
-		IValue *v;
-		CCapability *c;
-		s = CAPA_INVERTER_RELPOWER_NAME;
-		v = IValue::Factory(CAPA_INVERTER_RELPOWER_TYPE);
-		((CValue<float>*) v)->Set(f);
-		c = new CCapability(s, v, this);
-		AddCapability(c);
-
-		// TODO: Check if we schould derefer (using a scheduled work) this.
-		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
-		cap->Notify();
-	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_RELPOWER_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
-
-		if (val -> Get() != f) {
-			val->Set(f);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_RELPOWER_NAME
-				<< " not a float ");
-	}
-
-	return true;
-
-	// FIXME TODO Implement me!
-
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_UDC(const vector<string> & tokens)
-{
-	// Unit 0.1 Volts
-	if (tokens.size() != 2)
-		return false;
-
-	unsigned int raw;
-	float f;
-	sscanf(tokens[1].c_str(), "%x", &raw);
-
-	f = raw * 0.1;
-	// lookup if we already know that information.
-	CCapability *cap = GetConcreteCapability(
-			CAPA_INVERTER_INPUT_DC_VOLTAGE_NAME);
-
-	if (!cap) {
-		string s;
-		IValue *v;
-		CCapability *c;
-		s = CAPA_INVERTER_INPUT_DC_VOLTAGE_NAME;
-		v = IValue::Factory(CAPA_INVERTER_INPUT_DC_VOLTAGE_TYPE);
-		((CValue<float>*) v)->Set(f);
-		c = new CCapability(s, v, this);
-		AddCapability(c);
-
-		// TODO: Check if we schould derefer (using a scheduled work) this.
-		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
-		cap->Notify();
-	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_INPUT_DC_VOLTAGE_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
-
-		if (val -> Get() != f) {
-			val->Set(f);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_INPUT_DC_VOLTAGE_NAME
-				<< " not a float ");
-	}
-
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_UL1(const vector<string> & tokens)
-{ // Unit 0.1 Volts
-	if (tokens.size() != 2)
-		return false;
-
-	unsigned int raw;
-	float f;
-	sscanf(tokens[1].c_str(), "%x", &raw);
-
-	f = raw * 0.1;
-	// lookup if we already know that information.
-	CCapability *cap =
-			GetConcreteCapability(CAPA_INVERTER_GRID_AC_VOLTAGE_NAME);
-
-	if (!cap) {
-		string s;
-		IValue *v;
-		CCapability *c;
-		s = CAPA_INVERTER_GRID_AC_VOLTAGE_NAME;
-		v = IValue::Factory(CAPA_INVERTER_GRID_AC_VOLTAGE_TYPE);
-		((CValue<float>*) v)->Set(f);
-		c = new CCapability(s, v, this);
-		AddCapability(c);
-
-		// TODO: Check if we schould derefer (using a scheduled work) this.
-		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
-		cap->Notify();
-	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_GRID_AC_VOLTAGE_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
-
-		if (val -> Get() != f) {
-			val->Set(f);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_GRID_AC_VOLTAGE_NAME
-				<< " not a float");
-	}
-
-	return true;
-}
-
-// TODO generate a more fitting concept for multi-phase invertes
-// like "pseudo-inverters"
-bool CInverterSputnikSSeries::token_UL2(const vector<string> & tokens)
-{
-	// FIXME TODO Implement me!
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_UL3(const vector<string> & tokens)
-{
-	// FIXME TODO Implement me!
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_IDC(const vector<string> & tokens)
-{ // Unit 0.01 Amps
-	if (tokens.size() != 2)
-		return false;
-
-	unsigned int raw;
-	float f;
-	sscanf(tokens[1].c_str(), "%x", &raw);
-
-	f = raw * 0.01;
-	// lookup if we already know that information.
-	CCapability *cap = GetConcreteCapability(
-			CAPA_INVERTER_INPUT_DC_CURRENT_NAME);
-
-	if (!cap) {
-		string s;
-		IValue *v;
-		CCapability *c;
-		s = CAPA_INVERTER_INPUT_DC_CURRENT_NAME;
-		v = IValue::Factory(CAPA_INVERTER_INPUT_DC_CURRENT_TYPE);
-		((CValue<float>*) v)->Set(f);
-		c = new CCapability(s, v, this);
-		AddCapability(c);
-
-		// TODO: Check if we schould derefer (using a scheduled work) this.
-		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
-		cap->Notify();
-	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_INPUT_DC_CURRENT_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
-
-		if (val -> Get() != f) {
-			val->Set(f);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_INPUT_DC_CURRENT_NAME
-				<< " not a float");
-	}
-
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_IL1(const vector<string> & tokens)
-{
-	// unit: 0.01 Amps
-	if (tokens.size() != 2)
-		return false;
-
-	unsigned int raw;
-	float f;
-	sscanf(tokens[1].c_str(), "%x", &raw);
-
-	f = raw * 0.01;
-	// lookup if we already know that information.
-	CCapability *cap =
-			GetConcreteCapability(CAPA_INVERTER_GRID_AC_CURRENT_NAME);
-
-	if (!cap) {
-		string s;
-		IValue *v;
-		CCapability *c;
-		s = CAPA_INVERTER_GRID_AC_CURRENT_NAME;
-		v = IValue::Factory(CAPA_INVERTER_GRID_AC_CURRENT_TYPE);
-		((CValue<float>*) v)->Set(f);
-		c = new CCapability(s, v, this);
-		AddCapability(c);
-
-		// TODO: Check if we schould derefer (using a scheduled work) this.
-		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
-		cap->Notify();
-	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_GRID_AC_CURRENT_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
-
-		if (val -> Get() != f) {
-			val->Set(f);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_GRID_AC_CURRENT_NAME
-				<< " not a float");
-	}
-
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_IL2(const vector<string> & tokens)
-{
-	// FIXME TODO Implement me!
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_IL3(const vector<string> & tokens)
-{
-	// FIXME TODO Implement me!
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_TKK(const vector<string> & tokens)
-{
-	// Unit 1 °C
-	if (tokens.size() != 2)
-		return false;
-
-	unsigned int raw;
-	float f;
-	sscanf(tokens[1].c_str(), "%x", &raw);
-
-	f = raw;
-	// lookup if we already know that information.
-	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_TEMPERATURE_NAME);
-
-	if (!cap) {
-		string s;
-		IValue *v;
-		CCapability *c;
-		s = CAPA_INVERTER_TEMPERATURE_NAME;
-		v = IValue::Factory(CAPA_INVERTER_TEMPERATURE_TYPE);
-		((CValue<float>*) v)->Set(f);
-		c = new CCapability(s, v, this);
-		AddCapability(c);
-
-		// TODO: Check if we schould derefer (using a scheduled work) this.
-		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
-		cap->Notify();
-	}
-	// Capa already in the list. Check if we need to update it.
-	else if (cap->getValue()->GetType() == CAPA_INVERTER_TEMPERATURE_TYPE) {
-		CValue<float> *val = (CValue<float>*) cap->getValue();
-
-		if (val -> Get() != f) {
-			val->Set(f);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_TEMPERATURE_NAME
-				<< " not a float");
-	}
-
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_TK2(const vector<string> & tokens)
-{
-	// FIXME TODO Implement me!
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_TK3(const vector<string> & tokens)
-{
-	// FIXME TODO Implement me!
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_TMI(const vector<string> & tokens)
-{
-	// FIXME TODO Implement me!
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_THR(const vector<string> & tokens)
-{
-	// FIXME TODO Implement me!
-	return true;
-}
-
-bool CInverterSputnikSSeries::token_SYS(const vector<string> &tokens)
-{
-	// gets the system state of the inverter.
-	// note: Alarms are handled with another command, SAL.
-
-	// SYS reponses a code (eg. 20004) and a second parameter, which I
-	// never saw != 0.
-	if (tokens.size() != 3)
-		return false;
-
-	if (tokens[2] != "0") {
-		LOGINFO(logger, "Received an unknown SYS response. Please file a bug"
-				<< " along with the following: " << tokens[0] << ","
-				<< tokens[1] << "," << tokens[2]);
-	}
-
-	unsigned int code;
-	sscanf(tokens[1].c_str(), "%x", &code);
-
-	string description;
-
-	int i = 0;
-	do {
-		if (statuscodes[i].code == code)
-			break;
-	} while (statuscodes[++i].code != (unsigned int) -1);
-
-	if (laststatuscode != (unsigned int) -1 && statuscodes[i].code
-			== (unsigned int) -1) {
-		LOGINFO(logger, "SYS reported an (too us) unknown status code of "
-				<< tokens[0] << "=" << tokens[1] << "," << tokens[2]
-		);
-		LOGINFO (logger,
-				" PLEASE file a with all information you have, for example,"
-				<< " reading the display of the inverter and of course the infors given above."
-		);
-	}
-
-	laststatuscode = statuscodes[i].code;
-
-	/* Update the status */
-	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_STATUS_NAME);
-	if (!cap) {
-		string s;
-		IValue *v;
-		CCapability *c;
-		s = CAPA_INVERTER_STATUS_NAME;
-		v = IValue::Factory(CAPA_INVERTER_STATUS_TYPE);
-		((CValue<int>*) v)->Set(statuscodes[i].status);
-		c = new CCapability(s, v, this);
-		AddCapability(c);
-
-		// TODO: Check if we schould derefer (using a scheduled work) this.
-		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
-		cap->Notify();
-	} else if (cap->getValue()->GetType() == CAPA_INVERTER_STATUS_TYPE) {
-		CValue<int> * val = (CValue<int> *) cap->getValue();
-		if (val->Get() != statuscodes[i].status) {
-			val->Set(statuscodes[i].status);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_STATUS_NAME << " not a int");
-	}
-
-	// now also do the same with the string.
-	cap = GetConcreteCapability(CAPA_INVERTER_STATUS_READABLE_NAME);
-	if (!cap) {
-		string s;
-		IValue *v;
-		CCapability *c;
-		s = CAPA_INVERTER_STATUS_READABLE_NAME;
-		v = IValue::Factory(CAPA_INVERTER_STATUS_READABLE_TYPE);
-		((CValue<string>*) v)->Set(statuscodes[i].description);
-		c = new CCapability(s, v, this);
-		AddCapability(c);
-
-		// TODO: Check if we schould derefer (using a scheduled work) this.
-		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
-		cap->Notify();
-	} else if (cap->getValue()->GetType() == CAPA_INVERTER_STATUS_READABLE_TYPE) {
-		CValue<string> * val = (CValue<string> *) cap->getValue();
-		if (val->Get() != statuscodes[i].description) {
-			val->Set(statuscodes[i].description);
-			cap->Notify();
-		}
-	} else {
-		LOGDEBUG(logger, "BUG: " << CAPA_INVERTER_STATUS_READABLE_NAME
-				<< " not a string ");
-	}
-
-	return true;
-}
-
-/** helper that builds the firmware version capability.
- *
- * Will only build the data, if at least the main version (major version)
- * is known.
- * Adds the build version if available.
- *
- * Note: This should only be called if any change is detected!
- */
-void CInverterSputnikSSeries::create_versioncapa(void)
-{
-	string ver;
-	char buf[128];
-
-	unsigned int major, minor;
-
-	// Won't build a version string if the "major" version is unknown.
-	if (!swversion)
-		return;
-
-	major = swversion / 10;
-	minor = swversion % 10;
-
-	if (swbuild) {
-		sprintf(buf, "%d.%d Build %d", major, minor, swbuild);
-	} else {
-		sprintf(buf, "%d.%d", major, minor);
-	}
-
-	ver = buf;
-
-	// lookup if we already know that information.
-	CCapability *cap = GetConcreteCapability(CAPA_INVERTER_FIRMWARE);
-
-	if (!cap) {
-		string s;
-		IValue *v;
-		CCapability *c;
-		s = CAPA_INVERTER_FIRMWARE;
-		v = IValue::Factory(CAPA_INVERTER_FIRMWARE_TYPE);
-		((CValue<string>*) v)->Set(ver);
-		c = new CCapability(s, v, this);
-		AddCapability(c);
-
-		// TODO: Check if we schould derefer (using a scheduled work) this.
-		cap = GetConcreteCapability(CAPA_CAPAS_UPDATED);
-		cap->Notify();
-	} else if (cap->getValue()->GetType() == IValue::string_type) {
-		CValue<string> *val = (CValue<string>*) cap->getValue();
-		if (ver != val->Get()) {
-			val->Set(ver);
-			cap->Notify();
-		}
 	}
 }
 

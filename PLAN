@@ -1,109 +1,108 @@
-SolarPowerLog
+solarpowerlog
 
-ROADMAP 
+This file is some random thought collection and gives some ideas what direction
+solarpowerlog goes...
 
-Version 0.2 
-HTML Writing Plugin
+ROADMAP
 
-Later (not sorted, no implied priorities):
+Next Version: (which will probably be version 0.24)
+
+-> Rework of the Sputnik Inverters (complete)
+	Current version had basically copy-paste code for every command and
+        was ugly to maintain. The new version encapsulates all commands that
+        the Sputnik inverter undertands in a set of templated and special
+	classes.
+	As a side-effect adding new commands is now (usually) child-play.
+
+-> Sputnik Simulator integrated in solarpowerlog (complete)
+	The "existing" netcat based inverter was too static, and therefore,
+	based on the CSputnikInverter a simulator has been embedded.
+	After compiling with simulator support and configurating it, it will
+	listen e.g TCP/IP and answer queries from e.g. another instance of
+	solarpowerlog (or other programms that support the Sputnik Inverters)
+	Additionally, it will provide a control server, so the answers to the
+	queries can be tweaked (values changed, commands turned off/on)
+
+-> Improved SIGTERM Handling (complete)
+	Current versions took some time from SIGTERM to actual termination due
+	to the internal handling of events (WorkScheduler had to finish a work
+ 	before checking the status.) Worst-case syvinit sent SIGKILL before we
+	handled SIGTERM and this could lead that some buffers are not flushed.
+
+	The new handling inserts a "Work" when SIGTERM is received and
+	therefore actively informing the inverters/datafilters of the imminent
+	termination, so that appropiate actions can be performded.
+
+-> SharedComms (complete)
+	SharedComms are still experimental and there are several ugly race-condtions,
+	especially when receiving data from the inverter.
+	The problem is that in the time betwen the first read request is completed and
+	the time until the inverter will request the next one bytes can get lost.
+	Solution is to introduce some caching, so the SharedComms will always read,
+	even without an read request and buffer until the inverter actually requests
+	to read.
+
+-> Comms/Inverter interaction, configuration. (complete)
+	-> The inverters should specify timeouts, not the communication objects
+	This allows more fine-grade settings, in respect to context.
+
+=======================================
+
+Scheduled for next+1 versions:
+
+-> Documentation update
+	solarpowerlog needs some better documentation. The current docs are quite
+	outdated and incompete.
+
+-> Development documents update
+	The same for the dev docs
+
+-> Docs are not well maintainable
+	They are maintained "out of the source" and this is hard to keep in
+	sync. So bring the docs into the source tree and auto-generate docs at
+	buildtime
+
+=======================================
+
+open, but no release goal yet:
+
+-> Sputnik Inverter
+	-> Make the "event log" available, (EC* commands.)
+	-> Support setting the date/time of the inverters
+
+-> CVS Inverters
+	-> Specify the time between flushes, not only "flush every time"
+
+-> Configuration System
+	-> Allow all classes to cache config info and cache them locally in
+	member variables (as dynamic reconfiguration has been dropped as
+	design goal)
+	This should reduce complexity (lower CPU at the cost of memory, but
+	will increase readability of the code)
+
+-> SQL datafilter
+
+-> JSON/XML output
+
+-> Communication: The cases where callbacks are allowed to be NULL are now gone
+    Check if deletion of the commands in the task of the ASIO based classes still needs
+    to be done or if this can be removed.
+
+-> Complete the HTML Writer to allow plotting more than one inverter.
+
+
+-----------------------------------------------
+random ideas....
+
 - Rework the Capability interface, maybe a helper class that will update
-  the variables by callbacks or by direct accessing members: This is a common 
-  coding for all filters, so having code reuse will might this easier and 
-  better 
-- witty-application or XML-REquest interface (to make some ajaxiation ;-)
-- "End of Day" Filter -- for just one dataset reflecting the whole day. 
-- porting for mipsel/arm (Frizbox, la fonera
+  the variables by callbacks or by direct accessing members: This is a common
+  coding for all filters, so having code reuse will might this easier and
+  better
+- witty-application or XML-Request interface (to make some ajaxiation ;-)
+- "End of Day" Filter -- for just one dataset reflecting the whole day.
 - Adding some other inverters
-- Sharing of a communication between inverters (sputniks "daisy chain" mode)
 - additional filters, for monthly, yearly reports, comparisions of inverters, string)
+- mail plugin to report errors (or a daily mail)
+- reporting not only to mail, but also to *** (e.g. twitter)
+- solar weather forecast (there was a post debian-mentors)
 
------------------
-HTML WRITER PLAN:
------------------
-
-Note: First prio is to get it running for one inverter.
-
-The HTML Writer plugin should just serve a file logged datas. It is for the user
-without webserver running, so there needs not to be any scripting / Feedback 
-beside that what is possible with templates.  
-
-Beside the plugin, this should also include some examples, how to use the plugin
-and how to make own template sets. 
-
-- Mapping all capabilites to HTMLTemplate variables
-- To get all the infos, all inverters can be bound to one interface 
-  (master-slave concept)
-- The modes: 
-    - standalone -- only this inverter will be used 
-    - combound -- specified inverters are bound using html-template-loop, this instance the master
-
-- Some capabilities might to be tewaked, as for example, filenames, are to be modified for the http-root.
-( plan 1: just remove the "http-root" path from the capabiity )
-( maybe later: copy/link the file to the right posisiton
-
-- Writing out template based html files evey xxx-secods, or "always on change"
-- Create the files with date-syntax (like CSVWriter), so having a "rotate" functionallity.
-
-HTML WRITER CONFIGURATION OPTIONS: (out of above "spec")
----------------------------------- 
-- mode of operation (default: standalone)
-- if not standalone: names of other Data-filter-chains to be used: NOTE: 
- on combound mode, the data-chain for the second and third are not passed on.
-We cannot differenicate the data stream later on. (n-arrows-in,one-out)
-- http-root (which to strip)
-- to-be-stripped capabilites (optional, if not present, try to stip all)
-- pathoffile where to write, including filename template
-- writeevery="0" ---> how often should we write. "0" always on update 
-
-ADDED CAPABILITES
---------------------
-- yesterdays filename (for linking)
-
-
--------------------------------------------------------------------------------------------------
--- note this section is a little outdated, but reflects some mayor design criterias.
--- so left in place for the moment. 
-BRAIN STORMING
---> at least two-fold software:
-  a) data acquisition and storage
-      aqui:
-        -> aqc. using interfaces
-        -> more than inverter should be supported
-      storage
-          -> storage in database, (sql csv, xml, whatever, file....)
-	    -> format should be flexible enough to support additional inverters as well as 
-	       ones that does not support all data or supply extra ones. (expect no minimal data set!) 
-	       --> defining some types of data, describing the property of the data entry 
-	         like, "flag", "plot"
-	  -> what to do with proposes non-standard features
-	  -> maybe secondary storage for more volatile datas like system state, error display....
-	  -> 
-	 
-  b) visualization 
-      -> generate graphs 
-	  -> up-to-now
-	  -> prognosen
-      -> display current state of the system
-      -> generate graphs (pictures, html, ....) with 
-	  -> statistics, 
-	  -> logbook (events)
-	  
-      
-  c) reporting
-      -> alerting on system problems (using mail, for example)
-      -> reporting statistics to mail (mailing)
-      (Mailing not considered for embedded pltforms)
-  
--->  DESIGN CONSIDERATIONS
-  a) aquisition and storage : daemon 
-  b) visualization: can be web application (php) or stand alone program
-    --> a) need web server running, bad on small devices
-    --> b) conflicts with an existing web server.... 
-    --> php has large overhead.
-  c) should share configuration files
-  
-CHANGE ME
- a) (done) Change logging to a logging library -- it is currently hardwired to cerr.
-
- 
- 

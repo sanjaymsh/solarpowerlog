@@ -85,22 +85,25 @@ CCSVOutputFilter::CCSVOutputFilter( const string & name,
 
 	// However, to help following plugins, we will publish some data here:
 	// (this enables other plugins to use our files as data source)
-	c = new CCapability(CAPA_CSVDUMPER_FILENAME, CAPA_CSVDUMPER_FILENAME_TYPE, this);
-	AddCapability(c);
+    c = new CCapability(CAPA_CSVDUMPER_FILENAME,
+        new CValue<CAPA_CSVDUMPER_FILENAME_TYPE>, this);
+    AddCapability(c);
 
 	// A comma-seperated list of parameters which are currently logged.
 	// note: This list might grow over time, so when parsing the CSV File,
 	// be prepared that there might be not all given from the beginning of the
 	// file
-	c = new CCapability(CAPA_CSVDUMPER_LOGGEDCAPABILITES, CAPA_CSVDUMPER_LOGGEDCAPABILITES_TYPE, this);
-	AddCapability(c);
+    c = new CCapability(CAPA_CSVDUMPER_LOGGEDCAPABILITES,
+        new CValue<CAPA_CSVDUMPER_LOGGEDCAPABILITES_TYPE>, this);
+    AddCapability(c);
+
+    Registry::GetMainScheduler()->RegisterBroadcasts(this);
 }
 
 CCSVOutputFilter::~CCSVOutputFilter()
 {
 	if (file.is_open())
 		file.close();
-	// TODO Auto-generated destructor stub
 }
 
 bool CCSVOutputFilter::CheckConfig()
@@ -192,7 +195,7 @@ void CCSVOutputFilter::ExecuteCommand( const ICommand *cmd )
 
 		CCapability *c = GetConcreteCapability(
 			CAPA_INVERTER_QUERYINTERVAL);
-		if (c && c->getValue()->GetType() == IValue::float_type) {
+		if (c && CValue<float>::IsType(c->getValue())) {
 			CValue<float> *v = (CValue<float> *) c->getValue();
 			ts.tv_sec = v->Get();
 			ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
@@ -219,7 +222,7 @@ void CCSVOutputFilter::ExecuteCommand( const ICommand *cmd )
 
 		CCapability *c = GetConcreteCapability(
 			CAPA_INVERTER_QUERYINTERVAL);
-		if (c && c->getValue()->GetType() == IValue::float_type) {
+		if (c && CValue<float>::IsType(c->getValue())) {
 			CValue<float> *v = (CValue<float> *) c->getValue();
 			ts.tv_sec = v->Get();
 			ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
@@ -233,12 +236,20 @@ void CCSVOutputFilter::ExecuteCommand( const ICommand *cmd )
 	case CMD_ROTATE:
 		DoINITCmd(cmd);
 		break;
-	}
+
+
+	case CMD_BRC_SHUTDOWN:
+            // shutdown requested, we will terminate soon.
+            // So flush filesystem buffers.
+            if (file.is_open()) {
+                file.flush();
+            }
+        break;
+    }
 }
 
 void CCSVOutputFilter::DoINITCmd( const ICommand * )
 {
-	// Do init
 	string tmp;
 	CConfigHelper cfghlp(configurationpath);
 	// Config is already checked (exists, type ok)
@@ -320,11 +331,12 @@ void CCSVOutputFilter::DoINITCmd( const ICommand * )
 
 	// a new file needs a new header
 	headerwritten = false;
-	// Technically seen, the file is now empty and the we-are-logging-this capa
-	// CAPA_CSVDUMPER_LOGGEDCAPABILITES is wrong. But in some seconds, we probably
-	// write the same as the last day, so we set the changes later.
-	// (In other words: I told you, that in the file needs not to be all the
-	// datas we claim to be there here...
+    // Technically seen, the file is now empty and the we-are-logging-this
+	// capability CAPA_CSVDUMPER_LOGGEDCAPABILITES is wrong.
+	// But in some seconds, we probably write the same as the last day,
+	// so we set the changes later.
+	// (In other words: I told you, that the file needs not to contain all the
+    // datas we claim to be there here...)
 
 	// Set a timer to some seconds after midnight, to enforce rotating with correct date
 	boost::posix_time::ptime n =
@@ -340,7 +352,6 @@ void CCSVOutputFilter::DoINITCmd( const ICommand * )
 	ts.tv_nsec = 0;
 	ICommand *ncmd = new ICommand(CMD_ROTATE, this);
 	Registry::GetMainScheduler()->ScheduleWork(ncmd, ts);
-
 }
 
 void CCSVOutputFilter::DoCYCLICmd( const ICommand * )

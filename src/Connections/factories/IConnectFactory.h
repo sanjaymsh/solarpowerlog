@@ -43,7 +43,7 @@ using namespace std;
 class IConnectFactory
 {
 public:
-	/** Facortry for generation of connection methods.
+	/** Factory for generation of connection methods.
 	 * Give it the configurationpath, and out of the config, it will
 	 * generate the right class.
 	 *

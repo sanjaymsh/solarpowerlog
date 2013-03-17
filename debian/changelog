@@ -1,3 +1,10 @@
+solarpowerlog (0.24-1) experimental; urgency=low
+
+  * New upstream release.
+  * Targeting experimental during the freeze
+
+ -- Tobias Frost <tobi@coldtobi.de>  Sun, 17 Mar 2013 19:24:46 +0100
+
 solarpowerlog (0.23a-2) unstable; urgency=low
 
   * Fix "bashism in the init.d file (Closes: #690632)

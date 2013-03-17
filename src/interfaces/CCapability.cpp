@@ -44,14 +44,6 @@ CCapability::CCapability( const string& descr, IValue *val,
 	value = val;
 }
 
-CCapability::CCapability( const string &descr, IValue::factory_types type,
-	IInverterBase *datasrc )
-{
-	description = descr;
-	source = datasrc;
-	value = IValue::Factory(type);
-}
-
 CCapability::~CCapability()
 {
 	if (value)

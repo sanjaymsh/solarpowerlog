@@ -52,8 +52,8 @@ Copyright (C) 2010-2012 Tobias Frost
 #include "Connections/CAsyncCommand.h"
 
 /// Default timeout for all operations, if not configured
-#define TCP_ASIO_DEFAULT_TIMEOUT (3000UL)
-#define TCP_ASIO_DEFAULT_INTERBYTETIMEOUT (50UL)
+#define SERIAL_ASIO_DEFAULT_TIMEOUT (3000UL)
+#define SERIAL_ASIO_DEFAULT_INTERBYTETIMEOUT (50UL)
 
 using namespace std;
 
@@ -73,37 +73,39 @@ protected:
 public:
 	virtual ~CConnectSerialAsio();
 
-	virtual void Connect(ICommand *callback);
+    virtual void Accept(ICommand *callback);
 
-	virtual void Disconnect(ICommand *callback);
+    virtual void Connect(ICommand *callback);
 
-	virtual void SetupLogger(const string& parentlogger, const string & = "")
-	{
-		IConnect::SetupLogger(parentlogger, "Comms_TCP_ASIO");
-	}
+    virtual void Disconnect(ICommand *callback);
 
-	virtual void Send(ICommand *callback);
+    virtual void SetupLogger(const string& parentlogger, const string & = "")
+    {
+        IConnect::SetupLogger(parentlogger, "Comms_Serial_ASIO");
+    }
 
-	virtual void Receive(ICommand *callback);
+    virtual void Send(ICommand *callback);
 
-	virtual bool CheckConfig(void);
+    virtual void Receive(ICommand *callback);
 
-	virtual bool IsConnected(void);
+    virtual bool CheckConfig(void);
+
+    virtual bool IsConnected(void);
+
+    virtual bool AbortAll();
+
+    virtual bool CanAccept();
 
 private:
 	boost::asio::io_service *ioservice;
 	boost::asio::serial_port *port;
-	boost::asio::streambuf *data;
 
-	char characterlen;
-	boost::asio::serial_port_base::parity parity;
-	boost::asio::serial_port_base::stop_bits stopbits;
-	boost::asio::serial_port_base::flow_control flowctrl;
-	unsigned int baudrate;
+	char _cfg_characterlen;
+	boost::asio::serial_port_base::parity _cfg_parity;
+	boost::asio::serial_port_base::stop_bits _cfg_stopbits;
+	boost::asio::serial_port_base::flow_control _cfg_flowctrl;
+	unsigned int _cfg_baudrate;
 
-	time_t timer;
-
-	// async patch
 	virtual void _main(void);
 
 	/** push some new work to the worker thread.
@@ -118,8 +120,6 @@ private:
 	 */
 	bool PushWork(CAsyncCommand *cmd);
 
-	/// cancel all current work.
-	//void CancelWork( void );
 
 	/** Handle "Connect-Command"
 	 *
@@ -130,7 +130,7 @@ private:
 	 *
 	 *
 	 * */
-	bool HandleConnect(CAsyncCommand *cmd);
+	void HandleConnect(CAsyncCommand *cmd);
 
 	/** Handle the disconnect command.
 	 *
@@ -138,15 +138,14 @@ private:
 	 * be handled again
 	 */
 
-	bool HandleDisConnect(CAsyncCommand *cmd);
+	void HandleDisconnect(CAsyncCommand *cmd);
 
-	bool HandleReceive(CAsyncCommand *cmd);
+	void HandleReceive(CAsyncCommand *cmd);
 
-	bool HandleSend(CAsyncCommand *cmd);
+	void HandleSend(CAsyncCommand *cmd);
 
 	list<CAsyncCommand*> cmds;
 	sem_t cmdsemaphore;
-
 };
 
 #endif /* HAVE_COMMS_ASIOSERIAL */

@@ -42,13 +42,21 @@ Copyright (C) 2009-2012 Tobias Frost
 
 /** This class bundles a timed activity.
  *
- * Currently, activities are tasks, which when ending, will enque an immediatte action.
+ * The Timedwork are fed into a worker thread, which just waits for the time
+ * to come and signal the event back to the CWorkScheduler object.
+ *
+ * On new requests, the worker thread will only be interrupted if the new event
+ * expires earlier than the current one.
+ *
+ * \note: There was an bug in boost::thread in boost release 1.46 which
+ * caused solarpowerlog to freeze after a while. This is why the code is
+ * still littered with debug statements, enabled with the define
+ * CTIMEDWORK_DEBUG (via CTimedWork.cpp or via C[XX]FLAGS)
  */
 class CTimedWork
 {
 public:
-    /** Constructor: Takes the scheduler to inform, the command to execute and the time when.
-     */
+    /** Constructor: Takes the scheduler to inform, the command to execute and the time when */
     explicit CTimedWork( CWorkScheduler *sch );
 
     virtual ~CTimedWork();
@@ -56,6 +64,7 @@ public:
     /// Thread entry point.
     void run();
 
+    /// Issue work in the future. (when ts elapsed)
     void ScheduleWork( ICommand *Command, struct timespec ts );
 
     /// Ask thread to terminate.
@@ -72,7 +81,6 @@ private:
 
     void _main( void );
 
-#if 1
     struct time_compare
     {
         bool operator()( const boost::posix_time::ptime t1,
@@ -84,9 +92,8 @@ private:
         }
         ;
     };
+    std::multimap<boost::posix_time::ptime, ICommand*, time_compare> TimedCommands;
 
-    multimap<boost::posix_time::ptime, ICommand*, time_compare> TimedCommands;
-#endif
     /** holds the commmand */
     ICommand *cmd;
     /** holds the timespec */

@@ -22,7 +22,7 @@ override_dh_autoreconf:
 	# otherwise some files are missing.
 	dh_autoreconf ./bootstrap.sh
 
-	
 override_dh_clean:
 	dh_clean
 	rm -f debian/solarpowerlog.init debian/solarpowerlog.default
+	rm -f config/ltmain.sh m4/libtool.m4

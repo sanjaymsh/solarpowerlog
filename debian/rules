@@ -9,7 +9,7 @@ ifneq (,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
    MAKEFLAGS += -j$(NUMJOBS)
 endif
 
-# enable hardeing
+# enable hardening
 export DEB_BUILD_HARDENING=1
 
 %:

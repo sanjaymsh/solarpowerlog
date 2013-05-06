@@ -2,8 +2,8 @@ Source: solarpowerlog
 Section: utils
 Priority: optional
 Maintainer: Tobias Frost <tobi@coldtobi.de>
-VCS-Browser: http://solarpowerlog.git.sourceforge.net/git/gitweb.cgi?p=solarpowerlog/solarpowerlog;a=shortlog;h=refs/heads/debian
-VCS-Git: git://solarpowerlog.git.sourceforge.net/gitroot/solarpowerlog/solarpowerlog
+Vcs-Browser: http://solarpowerlog.git.sourceforge.net/git/gitweb.cgi?p=solarpowerlog/solarpowerlog;a=shortlog;h=refs/heads/debian
+Vcs-Git: git://solarpowerlog.git.sourceforge.net/gitroot/solarpowerlog/solarpowerlog -b debian
 Build-Depends: autoconf,
                automake,
                autotools-dev,
@@ -19,7 +19,7 @@ Build-Depends: autoconf,
                liblog4cxx10-dev,
                libtool,
                pkg-config
-Standards-Version: 3.9.3
+Standards-Version: 3.9.4
 Homepage: http://solarpowerlog.coldtobi.de
 
 Package: solarpowerlog

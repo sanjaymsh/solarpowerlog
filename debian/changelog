@@ -4,6 +4,7 @@ solarpowerlog (0.24-1) experimental; urgency=low
   * Targeting experimental during the freeze
   * Missing b-d on libboost-date-time-dev
   * Patch "fix-solarpowerlog.init" applied upstream
+  * d/rules clean: remove some autoconf generated files.
 
  -- Tobias Frost <tobi@coldtobi.de>  Sun, 17 Mar 2013 19:24:46 +0100
 

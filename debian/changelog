@@ -1,7 +1,6 @@
-solarpowerlog (0.24-1) experimental; urgency=low
+solarpowerlog (0.24-1) unstable; urgency=low
 
   * New upstream release.
-  * Targeting experimental during the freeze
   * Missing b-d on libboost-date-time-dev
   * Patch "fix-solarpowerlog.init" applied upstream
   * d/rules clean: remove some autoconf generated files.

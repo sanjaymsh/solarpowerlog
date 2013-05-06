@@ -5,8 +5,9 @@ solarpowerlog (0.24-1) unstable; urgency=low
   * Patch "fix-solarpowerlog.init" applied upstream
   * d/rules clean: remove some autoconf generated files
   * Update to standard version 3.9.4: Add branch to Vcs-Git in d/control
+  * Depreciating hardening-wrapper in favour of dpkg-buildflags
 
- -- Tobias Frost <tobi@coldtobi.de>  Sun, 17 Mar 2013 19:24:46 +0100
+ -- Tobias Frost <tobi@coldtobi.de>  Tue, 07 May 2013 08:22:00 +0200
 
 solarpowerlog (0.23a-2) unstable; urgency=low
 

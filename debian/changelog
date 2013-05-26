@@ -1,3 +1,9 @@
+solarpowerlog (0.24-2) UNRELEASED; urgency=low
+
+  * Adding solarpowerlog.logrotate (cherry picked from upstream)
+
+ -- Tobias Frost <tobi@coldtobi.de>  Sun, 26 May 2013 18:09:04 +0200
+
 solarpowerlog (0.24-1) unstable; urgency=low
 
   * New upstream release.

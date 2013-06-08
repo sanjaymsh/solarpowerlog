@@ -33,5 +33,5 @@ override_dh_clean:
 
 override_dh_installdocs:
 	# do not install the GPL / LGPL license files
-	exit 1 
+	rm -f  debian/solarpowerlog/usr/share/doc/solarpowerlog/*GPL*
 	dh_installdocs -X GPL

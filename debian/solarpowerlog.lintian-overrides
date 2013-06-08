@@ -1,0 +1,3 @@
+# After discussion on debian-mentors, it is better to currently ignore this warning until discussion has been completed.
+# See #710519, #683654 and #710571
+solarpowerlog:  init.d-script-call-internal-API etc/init.d/solarpowerlog

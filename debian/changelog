@@ -1,3 +1,9 @@
+solarpowerlog (0.24-3) unstable; urgency=low
+
+  * Add patch for boost-1.54 (also needs new B-D boost-atomic-dev)
+
+ -- Tobias Frost <tobi@coldtobi.de>  Sun, 01 Sep 2013 20:43:43 +0200
+
 solarpowerlog (0.24-2) unstable; urgency=low
 
   * Adding solarpowerlog.logrotate (cherry picked from upstream)

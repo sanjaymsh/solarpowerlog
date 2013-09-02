@@ -737,7 +737,15 @@ BOOST_DEFUN([Program_Options],
                 [boost::program_options::options_description d("test");])
 ])# BOOST_PROGRAM_OPTIONS
 
-
+# BOOST_ATOMIC([PREFERRED-RT-OPT])
+# -----------------------------------------
+# Look for Boost.Atomic.  For the documentation of PREFERRED-RT-OPT,
+# see the documentation of BOOST_FIND_LIB above.
+BOOST_DEFUN([Atomic],
+[BOOST_FIND_LIB([atomic], [$1],
+                [boost/atomic.hpp],
+                [boost::atomic<bool> done (false);])
+])# BOOST_ATOMIC
 
 # _BOOST_PYTHON_CONFIG(VARIABLE, FLAG)
 # ------------------------------------
@@ -885,8 +893,13 @@ if test $boost_major_version -ge 149; then
 BOOST_SYSTEM([$1])
 fi # end of the Boost.System check.
 m4_pattern_allow([^BOOST_SYSTEM_(LIBS|LDFLAGS)$])dnl
-LIBS="$LIBS $BOOST_SYSTEM_LIBS $boost_cv_pthread_flag"
-LDFLAGS="$LDFLAGS $BOOST_SYSTEM_LDFLAGS"
+# At least on some archs, link-time dependency from thread to atomic was added as of 1.54
+if test $boost_major_version -ge 154; then
+BOOST_ATOMIC([$1])
+fi # end of the Boost.Atomic check.
+m4_pattern_allow([^BOOST_ATOMIC_(LIBS|LDFLAGS)$])dnl
+LIBS="$LIBS $BOOST_SYSTEM_LIBS $BOOST_ATOMIC_LIBS $boost_cv_pthread_flag"
+LDFLAGS="$LDFLAGS $BOOST_SYSTEM_LDFLAGS $BOOST_ATOMIC_LDFLAGS"
 # Yes, we *need* to put the -pthread thing in CPPFLAGS because with GCC3,
 # boost/thread.hpp will trigger a #error if -pthread isn't used:
 #   boost/config/requires_threads.hpp:47:5: #error "Compiler threading support
@@ -910,8 +923,8 @@ case $host_os in
   ;;
 esac
 
-BOOST_THREAD_LIBS="$BOOST_THREAD_LIBS $BOOST_SYSTEM_LIBS $boost_cv_pthread_flag"
-BOOST_THREAD_LDFLAGS="$BOOST_SYSTEM_LDFLAGS"
+BOOST_THREAD_LIBS="$BOOST_THREAD_LIBS $BOOST_SYSTEM_LIBS $BOOST_ATOMIC_LIBS $boost_cv_pthread_flag"
+BOOST_THREAD_LDFLAGS="$BOOST_SYSTEM_LDFLAGS $BOOST_ATOMIC_LDFLAGS"
 BOOST_CPPFLAGS="$BOOST_CPPFLAGS $boost_cv_pthread_flag"
 LIBS=$boost_threads_save_LIBS
 LDFLAGS=$boost_threads_save_LDFLAGS

@@ -70,10 +70,11 @@ This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
  # BOOST_GRAPH([PREFERRED-RT-OPT])
  # -------------------------------
  # Look for Boost.Graphs.  For the documentation of PREFERRED-RT-OPT, see the
-@@ -703,7 +737,26 @@
+@@ -703,7 +737,24 @@
                  [boost::program_options::options_description d("test");])
  ])# BOOST_PROGRAM_OPTIONS
  
+-
 +# BOOST_ATOMIC([PREFERRED-RT-OPT])
 +# -----------------------------------------
 +# Look for Boost.Atomic.  For the documentation of PREFERRED-RT-OPT,
@@ -89,15 +90,13 @@ This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
 +BOOST_FIND_LIB([atomic], [$1],
 +                [boost/atomic.hpp],
 +                [boost::atomic<bool> done (false);])
-+
 +LIBS=$boost_filesystem_save_LIBS
 +LDFLAGS=$boost_filesystem_save_LDFLAGS
- 
 +])# BOOST_ATOMIC
  
  # _BOOST_PYTHON_CONFIG(VARIABLE, FLAG)
  # ------------------------------------
-@@ -775,6 +828,14 @@
+@@ -775,6 +826,14 @@
  ])# BOOST_SIGNALS
  
  
@@ -112,42 +111,23 @@ This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
  # BOOST_SMART_PTR()
  # -----------------
  # Look for Boost.SmartPtr
-@@ -782,7 +843,7 @@
- [BOOST_FIND_HEADER([boost/scoped_ptr.hpp])
+@@ -783,7 +842,6 @@
  BOOST_FIND_HEADER([boost/shared_ptr.hpp])
  ])
--
-+ATOMIC
  
+-
  # BOOST_STATICASSERT()
  # --------------------
-@@ -794,7 +855,7 @@
- # BOOST_STRING_ALGO()
- # -------------------
- # Look for Boost.StringAlgo
--BOOST_DEFUN([String_Algo],
-+BOOST_DEFUN([String_AlgATOMICo],
- [BOOST_FIND_HEADER([boost/algorithm/string.hpp])
- ])
- 
-@@ -824,7 +885,7 @@
+ # Look for Boost.StaticAssert
+@@ -824,7 +882,6 @@
                 { return NULL; }])
  ])# BOOST_TEST
  
 -
-+ATOMIC
  # BOOST_THREADS([PREFERRED-RT-OPT])
  # ---------------------------------
  # Look for Boost.Thread.  For the documentation of PREFERRED-RT-OPT, see the
-@@ -836,17 +897,22 @@
- dnl -pthread on GNU/Linux.
- AC_REQUIRE([_BOOST_PTHREAD_FLAG])dnl
- boost_threads_save_LIBS=$LIBS
--boost_threads_save_LDFLAGS=$LDFLAGS
-+boost_threads_save_LDFLAATOMICGS=$LDFLAGS
- boost_threads_save_CPPFLAGS=$CPPFLAGS
- # Link-time dependency from thread to system was added as of 1.49.0.
- if test $boost_major_version -ge 149; then
+@@ -843,8 +900,13 @@
  BOOST_SYSTEM([$1])
  fi # end of the Boost.System check.
  m4_pattern_allow([^BOOST_SYSTEM_(LIBS|LDFLAGS)$])dnl
@@ -161,30 +141,21 @@ This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
 +LIBS="$LIBS $BOOST_SYSTEM_LIBS $BOOST_ATOMIC_LIBS $boost_cv_pthread_flag"
 +LDFLAGS="$LDFLAGS $BOOST_SYSTEM_LDFLAGS $BOOST_ATOMIC_LDFLAGS"
  # Yes, we *need* to put the -pthread thing in CPPFLAGS because with GCC3,
--# boost/thread.hpp will trigger a #error if -pthread isn't used:
-+# boost/thread.hpp will ATOMICtrigger a #error if -pthread isn't used:
+ # boost/thread.hpp will trigger a #error if -pthread isn't used:
  #   boost/config/requires_threads.hpp:47:5: #error "Compiler threading support
- #   is not turned on. Please set the correct command line options for
- #   threading: -pthread (Linux), -pthreads (Solaris) or -mthreads (Mingw32)"
-@@ -863,13 +929,13 @@
-     BOOST_THREAD_LIBS=$BOOST_THREAD_WIN32_LIBS
-   ;;
-   (*)
--    BOOST_FIND_LIB([thread], [$1],
-+    BOOST_FIND_LIB([thrATOMICead], [$1],
+@@ -867,9 +929,8 @@
                     [boost/thread.hpp], [boost::thread t; boost::mutex m;])
    ;;
  esac
 -
 -BOOST_THREAD_LIBS="$BOOST_THREAD_LIBS $BOOST_SYSTEM_LIBS $boost_cv_pthread_flag"
 -BOOST_THREAD_LDFLAGS="$BOOST_SYSTEM_LDFLAGS"
-+ATOMIC
 +BOOST_THREAD_LIBS="$BOOST_THREAD_LIBS $BOOST_SYSTEM_LIBS $BOOST_ATOMIC_LIBS $boost_cv_pthread_flag"
 +BOOST_THREAD_LDFLAGS="$BOOST_SYSTEM_LDFLAGS $BOOST_ATOMIC_LDFLAGS"
  BOOST_CPPFLAGS="$BOOST_CPPFLAGS $boost_cv_pthread_flag"
  LIBS=$boost_threads_save_LIBS
  LDFLAGS=$boost_threads_save_LDFLAGS
-@@ -922,6 +988,17 @@
+@@ -922,6 +983,17 @@
  [BOOST_FIND_HEADER([boost/variant/variant_fwd.hpp])
  BOOST_FIND_HEADER([boost/variant.hpp])])
  

@@ -1,3 +1,10 @@
+solarpowerlog (0.24-4) unstable; urgency=low
+
+  * chek for boost::atomic in boost.m4 was incomplete: Need also to check for
+    boost::system
+
+ -- Tobias Frost <tobi@coldtobi.de>  Fri, 06 Sep 2013 18:30:59 +0200
+
 solarpowerlog (0.24-3) unstable; urgency=low
 
   * Add patch for boost-1.54 (also needs new B-D boost-atomic-dev)

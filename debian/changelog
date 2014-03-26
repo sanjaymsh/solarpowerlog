@@ -2,6 +2,7 @@ solarpowerlog (0.24-5) unstable; urgency=medium
 
   * New patch 02-dont-ovewrite-cppflags.patch to avoid
     stomping over CPPFLAGS in configure.ac
+  * Update SV to 3.9.5, no changes required
 
  -- Tobias Frost <tobi@coldtobi.de>  Wed, 26 Mar 2014 10:18:51 +0100
 

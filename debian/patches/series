@@ -1,1 +1,2 @@
 boost-1.54.patch
+02-dont-ovewrite-cppflags.patch

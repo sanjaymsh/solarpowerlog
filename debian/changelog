@@ -1,3 +1,10 @@
+solarpowerlog (0.24-5) unstable; urgency=medium
+
+  * New patch 02-dont-ovewrite-cppflags.patch to avoid
+    stomping over CPPFLAGS in configure.ac
+
+ -- Tobias Frost <tobi@coldtobi.de>  Wed, 26 Mar 2014 10:18:51 +0100
+
 solarpowerlog (0.24-4) unstable; urgency=low
 
   * chek for boost::atomic in boost.m4 was incomplete: Need also to check for

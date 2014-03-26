@@ -4,8 +4,9 @@ solarpowerlog (0.24-5) unstable; urgency=medium
     stomping over CPPFLAGS in configure.ac
   * Update SV to 3.9.5, no changes required
   * Update VCS-Browser to reflect sf.net change
+  * Cleanup of d/rules
 
- -- Tobias Frost <tobi@coldtobi.de>  Wed, 26 Mar 2014 10:34:40 +0100
+ -- Tobias Frost <tobi@coldtobi.de>  Wed, 26 Mar 2014 15:03:43 +0100
 
 solarpowerlog (0.24-4) unstable; urgency=low
 

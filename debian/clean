@@ -1,0 +1,4 @@
+debian/solarpowerlog.init
+debian/solarpowerlog.default
+config/ltmain.sh
+m4/libtool.m4

@@ -2,7 +2,7 @@ Source: solarpowerlog
 Section: utils
 Priority: optional
 Maintainer: Tobias Frost <tobi@coldtobi.de>
-Vcs-Browser: http://solarpowerlog.git.sourceforge.net/git/gitweb.cgi?p=solarpowerlog/solarpowerlog;a=shortlog;h=refs/heads/debian
+Vcs-Browser: http://sourceforge.net/p/solarpowerlog/code/ci/debian/tree/
 Vcs-Git: git://solarpowerlog.git.sourceforge.net/gitroot/solarpowerlog/solarpowerlog -b debian
 Build-Depends: autoconf,
                automake,

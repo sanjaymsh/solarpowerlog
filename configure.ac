@@ -92,6 +92,22 @@ else
     enable_sputniksimulator=no
 fi
 
+# Danfoss support.
+AC_ARG_ENABLE([danfoss],
+    [AS_HELP_STRING([--enable-danfosssimulator],
+            [Support Danfoss inverters (experimental).])
+    ]
+)
+
+if test "x$enable_danfoss" = "xyes" ; then
+    AC_DEFINE([HAVE_INV_DANFOSS], [1], [Danfoss inverters support])
+    enable_danfoss=yes
+else
+    AC_MSG_NOTICE([Support for Danfoss inverters disabled (default).])
+    enable_danfoss=no
+fi
+
+
 # Dummy Inverter
 AC_ARG_ENABLE([dummyinverter],
     [AS_HELP_STRING([--enable-dummyinverter],
@@ -351,6 +367,7 @@ AC_MSG_NOTICE([Commandline options: ....................... $enable_commandlineo
 AC_MSG_NOTICE([INVERTERS:]);
 AC_MSG_NOTICE([Sputnik inverter support: .................. $enable_sputnik])
 AC_MSG_NOTICE([Sputnik simulator: ......................... $enable_sputniksimulator])
+AC_MSG_NOTICE([Danfoss inverter support: .................. $enable_danfoss])
 AC_MSG_NOTICE([Dummy inverter: ............................ $enable_dummyinverter])
 
 AC_MSG_NOTICE([COMMUNICATIONS:]);

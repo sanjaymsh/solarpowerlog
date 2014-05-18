@@ -41,9 +41,9 @@ Copyright (C) 2011-2014 Tobias Frost
 #include "patterns/CValue.h"
 #include "patterns/ICommand.h"
 
+#warning TODO
 
-
-CInverterDanfoss::CInverterDanfoss(const string &name,
+CInverterDanfoss::CInverterDanfoss(const string &type, const string &name,
 		const string &configurationpath) :
 		IInverterBase(name, configurationpath, "inverter")
 {

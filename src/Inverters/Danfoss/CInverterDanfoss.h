@@ -42,7 +42,7 @@ Copyright (C) 2011-2014 Tobias Frost
 class CInverterDanfoss: public IInverterBase
 {
 public:
-	CInverterDanfoss(const string &name, const string & configurationpath);
+	CInverterDanfoss(const string &type, const string &name, const string & configurationpath);
 
 	virtual ~CInverterDanfoss();
 

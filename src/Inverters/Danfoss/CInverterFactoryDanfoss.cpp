@@ -36,7 +36,7 @@ Copyright (C) 2011-2014 Tobias Frost
 #include "Inverters/Danfoss/CInverterFactoryDanfoss.h"
 #include "Inverters/Danfoss/CInverterDanfoss.h"
 
-static const std::string supported_models = "Dummy-Inverter: accepts any model";
+static const std::string supported_models = "Danfoss-Inverter: UniLynx TripleLynx";
 
 CInverterFactoryDanfoss::CInverterFactoryDanfoss()
 {
@@ -46,11 +46,14 @@ CInverterFactoryDanfoss::~CInverterFactoryDanfoss()
 {
 }
 
-IInverterBase *CInverterFactoryDanfoss::Factory(const string &,
+IInverterBase *CInverterFactoryDanfoss::Factory(const string &type,
 		const string & name, const string & configurationpath)
 {
-	// As this is a dummy, we are not picky and return a object on any model...
-	return new CInverterDanfoss(name, configurationpath);
+    if ( type == "UniLynx" || type == "TripleLynx" )
+    {
+        return new CInverterDanfoss(type, name, configurationpath);
+    }
+	return NULL;
 }
 
 const string & CInverterFactoryDanfoss::GetSupportedModels() const

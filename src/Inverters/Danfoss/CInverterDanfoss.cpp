@@ -56,7 +56,7 @@ CInverterDanfoss::CInverterDanfoss(const string &type, const string &name,
 	CCapability *c;
 	s = CAPA_INVERTER_MANUFACTOR_NAME;
 	v = CValueFactory::Factory<CAPA_INVERTER_MANUFACTOR_TYPE>();
-	((CValue<string>*) v)->Set("Dummy Inverter");
+	((CValue<string>*) v)->Set("Danfoss");
 	c = new CCapability(s, v, this);
 	AddCapability(c);
 
@@ -72,7 +72,6 @@ CInverterDanfoss::CInverterDanfoss(const string &type, const string &name,
 
 CInverterDanfoss::~CInverterDanfoss()
 {
-	// TODO Auto-generated destructor stub
 }
 
 

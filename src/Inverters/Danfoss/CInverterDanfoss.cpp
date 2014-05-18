@@ -210,18 +210,332 @@ bool CInverterDanfoss::CheckConfig()
 }
 
 void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
-{
-	// ICommandTarget hook -- will be called with any new command which is due..
+    {
 
-	LOGINFO(this->logger,
-			"CInverterDanfoss " << this->name << " command received! GetCmd:" <<
-			Command->getCmd());
-	LOGINFO(this->logger, "Data:");
+    ICommand *cmd;
+    timespec ts;
+
+    LOGTRACE(this->logger,
+        "CInverterDanfoss " << this->name << " command received! GetCmd:" <<
+        Command->getCmd());
 #ifdef ICMD_WITH_DUMP_MEMBER
-	Command->DumpData(this->logger);
+    LOGTRACE(this->logger, "Data:");
+    Command->DumpData(this->logger);
 #endif
 
-	// Probably you want to have a big switch-case here, covering all your CMD_xxx
+    // Probably you want to have a big switch-case here, covering all your CMD_xxx
+    switch ((Commands) Command->getCmd()) {
+        case CMD_DISCONNECTED:
+        {
+            // DISCONNECTED: Error detected, the link to the com partner is down.
+            // Action: Schedule connection retry in xxx seconds
+            // Next-State: INIT (Try to connect)
+            LOGDEBUG(logger, "new state: CMD_DISCONNECTED");
+
+            // Tell everyone that all data is now invalid.
+            CCapability *c = GetConcreteCapability(CAPA_INVERTER_DATASTATE);
+            CValue<bool> *v = (CValue<bool> *) c->getValue();
+            v->Set(false);
+            c->Notify();
+
+#if 0 // OLD CODE FROM SPUTNIK
+            // reset the backoff algorithms for the commands.
+            this->pendingcommands.clear();
+            this->notansweredcommands.clear();
+            vector<ISputnikCommand *>::iterator it;
+            for (it=this->commands.begin(); it!=commands.end(); it++) {
+                (*it)->InverterDisconnected();
+            }
+#endif
+
+            cmd = new ICommand(CMD_DISCONNECTED_WAIT, this);
+            if (connection->IsConnected()) {
+                connection->Disconnect(cmd);
+            } else {
+                Registry::GetMainScheduler()->ScheduleWork(cmd);
+            }
+
+            break;
+        }
+
+        case CMD_DISCONNECTED_WAIT:
+        {
+            LOGDEBUG(logger, "new state: CMD_DISCONNECTED_WAIT");
+            cmd = new ICommand(CMD_INIT, this);
+            timespec ts;
+            float fraction, intpart;
+            fraction = modf(_cfg_reconnectdelay_s, &intpart);
+            ts.tv_sec = (long) intpart;
+            ts.tv_nsec = (long) (fraction*1E9);
+            Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
+            break;
+        }
+
+        case CMD_INIT:
+        {
+            LOGDEBUG(logger, "new state: CMD_INIT");
+            // initiate new connection only if no shutdown was requested.
+            if (_shutdown_requested) break;
+
+            // INIT: Try to connect to the comm partner
+            // Action Connection Attempt
+            // Next-State: Wait4Connection
+
+            cmd = new ICommand(CMD_WAIT4CONNECTION, this);
+            cmd->addData(ICONN_TOKEN_TIMEOUT,((long)_cfg_connection_timeout_ms));
+            connection->Connect(cmd);
+            break;
+
+            // storage of objects in boost::any
+            //cmd->addData("TEST", cmd);
+            //cmd = boost::any_cast<ICommand*>(cmd->findData("TEST"));
+        }
+
+        case CMD_WAIT4CONNECTION:
+        {
+            LOGDEBUG(logger, "new state: CMD_WAIT4CONNECTION");
+
+            int err = -1;
+            // WAIT4CONNECTION: Wait until connection is up of failed to set up
+            // by the communication object.
+            // Action: Check success/error flag
+            // Next-State: Depending on success:
+            //      success IDENTIFY_COMM
+            //      error   DISCONNECTED
+            try {
+                err = boost::any_cast<int>(Command->findData(ICMD_ERRNO));
+            } catch (...) {
+                LOGDEBUG(logger,"CMD_WAIT4CONNECTION: unexpected exception");
+                err = -1;
+            }
+
+            if (err < 0) {
+                try {
+                    LOGERROR(logger, "Error while connecting: (" << -err << ") " <<
+                        boost::any_cast<string>(Command->findData(ICMD_ERRNO_STR)));
+                } catch (...) {
+                    LOGERROR(logger, "Unknown error while connecting.");
+                }
+
+                cmd = new ICommand(CMD_DISCONNECTED, this);
+                Registry::GetMainScheduler()->ScheduleWork(cmd);
+            } else {
+                cmd = new ICommand(CMD_QUERY_POLL, this);
+                Registry::GetMainScheduler()->ScheduleWork(cmd);
+            }
+        }
+        break;
+
+        case CMD_QUERY_POLL:
+        {
+            LOGDEBUG(logger, "new state: CMD_QUERY_POLL ");
+
+            // Collect all queries to be issued.
+#warning NOT IMPLEMENTED
+#if 0 // OLD CODE FROM SPUTNIK
+            std::vector<ISputnikCommand*>::iterator it;
+            for (it=commands.begin(); it!= commands.end(); it++) {
+                if ((*it)->ConsiderCommand()) {
+#ifdef DEBUG_BACKOFFSTRATEGIES
+                    LOGTRACE(logger,"Considering Command " << (*it)->command );
+#endif
+                    pendingcommands.push_back(*it);
+                }
+#ifdef DEBUG_BACKOFFSTRATEGIES
+                else {
+                    LOGTRACE(logger," Command " << (*it)->command << " not to be considered.");
+                }
+#endif
+            }
+#endif
+
+        }
+        // fall through intended.
+
+        case CMD_SEND_QUERIES:
+        {
+            LOGDEBUG(logger, "new state: CMD_SEND_QUERIES ");
+#warning NOT IMPLEMENTED
+#if 0 // OLD CODE FROM SPUTNIK
+            commstring = assemblequerystring();
+            LOGDEBUG(logger, "Sending: " << commstring << " Len: "<< commstring.size());
+
+            cmd = new ICommand(CMD_WAIT_SENT, this);
+            // Start an atomic communication block (to hint any shared comms)
+            cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_REQUEST);
+            cmd->addData(ICONN_TOKEN_SEND_STRING, commstring);
+            cmd->addData(ICONN_TOKEN_TIMEOUT,((long)_cfg_send_timeout_ms));
+            connection->Send(cmd);
+#endif
+
+        }
+        break;
+
+        case CMD_WAIT_SENT:
+        {
+            LOGDEBUG(logger, "new state: CMD_WAIT_SENT");
+            int err;
+            try {
+                err = boost::any_cast<int>(Command->findData(ICMD_ERRNO));
+            } catch (...) {
+                LOGDEBUG(logger, "BUG: Unexpected exception.");
+                err = -EINVAL;
+            }
+
+            if (err < 0) {
+                try {
+                    LOGERROR( logger,
+                        "Error while sending: (" << -err << ") " << boost::any_cast<string>(Command->findData(ICMD_ERRNO_STR)));
+                } catch (...) {
+                    LOGERROR(logger, "Error while sending. (" << -err << ")");
+                }
+
+                // Hint the shard comms to stop the atomic session
+                // and then disconnect.
+                cmd = new ICommand(CMD_DISCONNECTED, this);
+                cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_CEASE);
+                connection->Noop(cmd);
+                break;
+            }
+
+            cmd = new ICommand(CMD_EVALUATE_RECEIVE, this);
+            cmd->addData(ICONN_TOKEN_TIMEOUT, (long)_cfg_response_timeout_ms);
+            // finish this atomic block (shared comms hinting)
+            cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_CEASE);
+            connection->Receive(cmd);
+        }
+        break;
+
+        case CMD_EVALUATE_RECEIVE:
+        {
+            LOGDEBUG(logger, "new state: CMD_EVALUATE_RECEIVE");
+
+            int err;
+            std::string s;
+            try {
+                err = boost::any_cast<int>(Command->findData(ICMD_ERRNO));
+            } catch (...) {
+                LOGDEBUG(logger, "BUG: Unexpected exception.");
+                err = -EINVAL;
+            }
+
+            if (err < 0) {
+                // we do not differentiate the error here, an error is an error....
+                // try to log the error message, if any.
+                try {
+                    s = boost::any_cast<std::string>(Command->findData(
+                            ICMD_ERRNO_STR));
+                    LOGERROR(logger, "Receive Error: (" <<-err <<") "<< s);
+                } catch (...) {
+                    LOGERROR(logger, "Receive Error: " << strerror(-err));
+                }
+            }
+
+            try {
+                s = boost::any_cast<std::string>(Command->findData(
+                        ICONN_TOKEN_RECEIVE_STRING));
+            } catch (...) {
+                LOGERROR(logger, "Retrieving string: Unexpected Exception");
+                err = -EINVAL;
+            }
+
+            if (err < 0) {
+                // Schedule new connection later.
+                cmd = new ICommand(CMD_DISCONNECTED,this);
+                Registry::GetMainScheduler()->ScheduleWork(cmd);
+                break;
+            }
+
+            LOGTRACE(logger, "Received :" << s << " len: " << s.size());
+
+            if (logger.IsEnabled(ILogger::LL_TRACE)) {
+                string st;
+                char buf[32];
+                for (unsigned int i = 0; i < s.size(); i++) {
+                    sprintf(buf, "%02x", (unsigned char) s[i]);
+                    st = st + buf;
+                    if (i && i % 16 == 0)
+                    st = st + "\n";
+                    else
+                    st = st + ' ';
+                }
+                LOGTRACE(logger, "Received in hex: "<< st );
+            }
+
+#warning NOT IMPLEMENTED
+#if 0 // OLD CODE FROM SPUTNIK
+            int parseresult = parsereceivedstring(s);
+            // parseresult =>
+            //      -1 on error,
+            //      0 if the string indicated that it is not for us
+            //      1 on success.
+
+            // get the result from the last parse
+            // yes, in the unlikely event that we parsed more than one telegram in one
+            // session, we discard the result of the first one, and do not detect
+            // an error here (but the last telegram for us needed to be successful)...
+            if (1 != parseresult) {
+                // Reconnect on parse errors.
+                LOGERROR(logger, "Parse error on received string.");
+                cmd = new ICommand(CMD_DISCONNECTED, this);
+                Registry::GetMainScheduler()->ScheduleWork(cmd);
+                break;
+            }
+
+            // all issued commands should have been answered,
+            // those in the not-answered set, were un-answered and we notify
+            // the commands to pass that information to their backoff algorithms.
+            std::set<ISputnikCommand*>::iterator it;
+            for (it=notansweredcommands.begin();it!=notansweredcommands.end();it++) {
+                (*it)->CommandNotAnswered();
+            }
+            notansweredcommands.clear();
+
+            // if there are still pending commands, issue them first before
+            // filling the queue again.
+            if (!pendingcommands.empty()) {
+                LOGTRACE(logger, "Querying remaining commands");
+                cmd = new ICommand(CMD_SEND_QUERIES, this);
+                Registry::GetMainScheduler()->ScheduleWork(cmd);
+                break;
+            }
+
+            // TODO differenciate between identify query and "normal" runtime queries
+
+#endif
+            CCapability *c = GetConcreteCapability(CAPA_INVERTER_DATASTATE);
+            CValue<bool> *vb = (CValue<bool> *) c->getValue();
+            vb->Set(true);
+            c->Notify();
+
+            c = GetConcreteCapability(CAPA_INVERTER_QUERYINTERVAL);
+            CValue<float> *v = (CValue<float> *) c->getValue();
+            ts.tv_sec = v->Get();
+            ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
+            cmd = new ICommand(CMD_QUERY_POLL, this);
+            Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
+
+        }
+        break;
+
+        // Broadcast events
+        case CMD_BRC_SHUTDOWN:
+        LOGDEBUG(logger, "new state: CMD_BRC_SHUTDOWN");
+        // stop all pending I/Os, as we will exit soon.
+        connection->AbortAll();
+        _shutdown_requested = true;
+        break;
+
+        default:
+        if (Command->getCmd() <= BasicCommands::CMD_BROADCAST_MAX) {
+            // broadcast event
+            LOGDEBUG(logger, "Unhandled broadcast event received " << Command->getCmd());
+            break;
+        }
+        LOGERROR(logger, "Unknown CMD received: "<< Command->getCmd());
+        break;
+    }
+
 }
 
 #endif /* HAVE_INV_DUMMY */

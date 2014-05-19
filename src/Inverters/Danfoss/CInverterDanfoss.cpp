@@ -538,4 +538,72 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
 
 }
 
+/** The protocol uses byte-stuffing to avoid appearing magics in the telegram.
+ *
+ * 0x7D 0x5E -> 0x7E
+ * 0x7D 0x5D -> 0x7D
+ *
+ * \param input input string
+ * \returns de-bytestuffed input string.
+ *
+ * \note errors in the stuffing (e.g 0x7D is not followed
+ * by 0x5E or 0x5D are ignored and the bytes dropped.
+ * (A Warning will be written to the logger, though)
+ */
+std::string CInverterDanfoss::hdlc_debytestuff(const std::string& input)
+{
+    bool was_escaped = false;
+    std::string output;
+    std::string::const_iterator it = input.begin();
+    std::string::iterator it_dest = output.begin();
+    for (; it != input.end(); it++) {
+        if (was_escaped) {
+            if (*it == 0x5E) {
+                *it_dest++ = 0x7E;
+            }
+            else if (*it == 0x5D) {
+                *it_dest++ = 0x7D;
+            }
+            else {
+                LOGWARN(logger,
+                        "Ignoring De-stuffing error in received telegram.");
+            }
+            was_escaped = false;
+        } else if (*it == 0x7D) {
+            was_escaped = true;
+        } else {
+            *it_dest++ = *it;
+        }
+    }
+    return output;
+}
+
+/** The protocol uses byte-stuffing to avoid appearing magics in the telegram.
+ *
+ * The magics are 0x7E and 0x7D, which are escaped with 0x7D 0x5(E|D)
+ *
+ * \input input string
+ * \return bytestuffed string
+*/
+std::string CInverterDanfoss::hdlc_bytestuff(const std::string& input)
+{
+    std::string output;
+    std::string::const_iterator it = input.begin();
+    std::string::iterator it_dest = output.begin();
+    for (; it != input.end(); it++) {
+        if (*it == 0x7D || *it == 0x7E) {
+            *it_dest++ = 0x7D;
+            *it_dest++ = (*it & 0x5F); // Masks out the single bit...
+        } else
+        {
+            *it_dest++ = *it;
+        }
+    }
+    return output;
+}
+
+unsigned int CInverterDanfoss::hdlc_calcchecksum(const std::string& input)
+{
+}
+
 #endif /* HAVE_INV_DUMMY */

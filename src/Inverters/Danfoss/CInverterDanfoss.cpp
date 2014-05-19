@@ -555,14 +555,13 @@ std::string CInverterDanfoss::hdlc_debytestuff(const std::string& input)
     bool was_escaped = false;
     std::string output;
     std::string::const_iterator it = input.begin();
-    std::string::iterator it_dest = output.begin();
     for (; it != input.end(); it++) {
         if (was_escaped) {
             if (*it == 0x5E) {
-                *it_dest++ = 0x7E;
+                output.push_back(0x7E);
             }
             else if (*it == 0x5D) {
-                *it_dest++ = 0x7D;
+                output.push_back(0x7D);
             }
             else {
                 LOGWARN(logger,
@@ -572,8 +571,11 @@ std::string CInverterDanfoss::hdlc_debytestuff(const std::string& input)
         } else if (*it == 0x7D) {
             was_escaped = true;
         } else {
-            *it_dest++ = *it;
+            output.push_back(*it);
         }
+    }
+    if (was_escaped) {
+        LOGWARN(logger, "Ignoring De-stuffing error at end of telegram.");
     }
     return output;
 }
@@ -584,19 +586,21 @@ std::string CInverterDanfoss::hdlc_debytestuff(const std::string& input)
  *
  * \input input string
  * \return bytestuffed string
+ *
+ * \note the 0x7F marking the start and end should not be fed into this
+ * function as those are not to be stuffed.
 */
 std::string CInverterDanfoss::hdlc_bytestuff(const std::string& input)
 {
     std::string output;
     std::string::const_iterator it = input.begin();
-    std::string::iterator it_dest = output.begin();
     for (; it != input.end(); it++) {
         if (*it == 0x7D || *it == 0x7E) {
-            *it_dest++ = 0x7D;
-            *it_dest++ = (*it & 0x5F); // Masks out the single bit...
+            output.push_back(0x7D);
+            output.push_back(*it & 0x5F); // Masks out the single bit...
         } else
         {
-            *it_dest++ = *it;
+            output.push_back(*it);
         }
     }
     return output;

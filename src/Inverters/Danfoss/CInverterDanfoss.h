@@ -99,6 +99,14 @@ private:
     int _cfg_master_subnet_adr;
     int _cfg_master_adr;
 
+    // Protocol functions.
+    // (might be better of in a dedicated class, though...
+    std::string hdlc_debytestuff(const std::string &input);
+    std::string hdlc_bytestuff(const std::string &input);
+
+    unsigned int hdlc_calcchecksum(const std::string &input);
+
+
 };
 
 #endif /* HAVE_INV_DUMMY */

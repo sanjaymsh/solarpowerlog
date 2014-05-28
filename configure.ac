@@ -306,6 +306,11 @@ BOOST_STATIC()
 #Check for ASIO (header only file)
 BOOST_ASIO()
 
+#Check for boost::CRC (Needed for the Danfoss)
+if test "x$enable_danfoss" = "xyes"; then
+	BOOST_CRC()
+fi
+
 #Check for boost libraries
 BOOST_SYSTEM()
 BOOST_THREADS()

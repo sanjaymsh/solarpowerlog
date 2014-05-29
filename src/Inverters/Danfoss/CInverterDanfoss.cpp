@@ -31,7 +31,10 @@
 #include "porting.h"
 #endif
 
+
 #ifdef HAVE_INV_DANFOSS
+
+#define DANFOSS_CRC_GOOD (0xf0b8)
 
 #include "Inverters/Danfoss/CInverterDanfoss.h"
 #include "configuration/CConfigHelper.h"
@@ -66,13 +69,17 @@ void CInverterDanfoss::_localdebug(void) {
     unsigned char testmsg[] = { 0x7E, 0xFF, 0x03, 0xEE, 0xFE, 0x1F, 0xFF,
                                 0x00, 0x15, 0x1C, 0x6C, 0x7E };
 
+    unsigned char testmsg2[] = { 0x7E, 0xFF, 0x03, 0x00, 0x02, 0x7D, 0x5D,
+                                 0x7D, 0x5E, 0x00, 0x15, 0x99, 0xC9, 0x7E };
+
     std::string test, test2;
-    test.append( (char*)testmsg, sizeof(testmsg));
+    test.append( (char*)testmsg2, sizeof(testmsg2));
 
     LOGDEBUG(logger, "Input string:" << endl << hexdump(test));
 
+
     // removing first and last byte (0x7e's)
-    test.erase(test.length(), 1);
+    test.erase(test.length()-1, 1);
     test.erase(0, 1);
 
     LOGDEBUG(logger, "Input string after removing frame:" << endl << hexdump(test));
@@ -81,8 +88,23 @@ void CInverterDanfoss::_localdebug(void) {
 
     LOGDEBUG(logger, "Input string after debytestuff:" << endl << hexdump(test));
 
-    LOGDEBUG(logger, "Checksum is calculated as: " << this->hdlc_calcchecksum(test));
+    LOGDEBUG(logger, "Checksum is calculated as: 0x" << hex << this->hdlc_calcchecksum(test));
 
+    LOGDEBUG(logger,"Forward calc");
+    // Trying to calculate the CRC
+    test.erase(test.length()-2, 2);
+    LOGDEBUG(logger, "Input string for crccalc:" << endl << hexdump(test));
+
+    unsigned int checksum = this->hdlc_calcchecksum(test);
+    checksum ^= 0xffffU;
+    LOGDEBUG(logger, "Checksum^0xffff is calculated as: 0x" << hex << (checksum));
+
+    test.push_back(checksum & 0xff);
+    test.push_back((checksum >>8 ) & 0xff );
+
+    test = hdlc_bytestuff(test);
+
+    LOGDEBUG(logger,"Output would be:" << endl << hexdump(test));
 }
 
 CInverterDanfoss::CInverterDanfoss(const string &type, const string &name,
@@ -647,22 +669,30 @@ std::string CInverterDanfoss::hdlc_bytestuff(const std::string& input)
     return output;
 }
 
+/** Calculate the checksum of the protocol.
+ *
+ * Incoming: Calculate without the frame (the first byte) including to the checksunm.
+ * Result must be DANFOSS_CRC_GOOD.
+ *
+ * Outgoing: Calculate without the frame (the first byte) over all message bytes
+ * (stop befor the checksum bytes). XOR with 0xFFFF. That's your checksum for the protocol.
+ *
+ * \returns Checksum.
+ *
+ */
 unsigned int CInverterDanfoss::hdlc_calcchecksum(const std::string& input)
     {
     boost::crc_optimal<16, // bits
-        0x1021, // polynom
+        0x1021, // polynom (CCITT Polynom)
         0xffff, // initRem
-        0, // FinalXor
-        false, // ReflectIn
-        false // ReflectRem
+        0x0, // FinalXor
+        true, // ReflectIn
+        true // ReflectRem
     > crc;
 
-    std::string::const_iterator it;
-    for (it = input.begin(); it != input.end(); it++) {
-        crc.process_byte(*it);
-    }
-
+    crc.process_bytes(input.c_str(), input.length());
     return crc.checksum();
 }
+
 
 #endif /* HAVE_INV_DUMMY */

@@ -402,7 +402,7 @@ int main(int argc, char* argv[])
 			if (!inverter) {
 				LOGFATAL(mainlogger,
 						"Cannot create inverter model "
-						<< model << "for manufactor \""
+						<< model << " for manufactor \""
 						<< manufactor << '\"');
 
 				LOGFATAL(mainlogger,

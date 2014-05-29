@@ -41,7 +41,49 @@
 #include "patterns/CValue.h"
 #include "patterns/ICommand.h"
 
+#include <boost/crc.hpp>
+#include <boost/cstdint.hpp>
+
 #warning TODO
+
+std::string hexdump(const std::string &s) {
+
+    std::string st;
+    char buf[32];
+    for (unsigned int i = 0; i < s.size(); i++) {
+        sprintf(buf, "%02x", (unsigned char)s[i]);
+        st = st + buf;
+        if (i && i % 16 == 0)
+        st = st + "\n";
+        else
+        st = st + ' ';
+    }
+    return st;
+}
+
+void CInverterDanfoss::_localdebug(void) {
+    // local debug helper...
+    unsigned char testmsg[] = { 0x7E, 0xFF, 0x03, 0xEE, 0xFE, 0x1F, 0xFF,
+                                0x00, 0x15, 0x1C, 0x6C, 0x7E };
+
+    std::string test, test2;
+    test.append( (char*)testmsg, sizeof(testmsg));
+
+    LOGDEBUG(logger, "Input string:" << endl << hexdump(test));
+
+    // removing first and last byte (0x7e's)
+    test.erase(test.length(), 1);
+    test.erase(0, 1);
+
+    LOGDEBUG(logger, "Input string after removing frame:" << endl << hexdump(test));
+
+    test = this->hdlc_debytestuff(test);
+
+    LOGDEBUG(logger, "Input string after debytestuff:" << endl << hexdump(test));
+
+    LOGDEBUG(logger, "Checksum is calculated as: " << this->hdlc_calcchecksum(test));
+
+}
 
 CInverterDanfoss::CInverterDanfoss(const string &type, const string &name,
     const string &configurationpath)
@@ -607,7 +649,21 @@ std::string CInverterDanfoss::hdlc_bytestuff(const std::string& input)
 }
 
 unsigned int CInverterDanfoss::hdlc_calcchecksum(const std::string& input)
-{
+    {
+    boost::crc_optimal<16, // bits
+        0x1021, // polynom
+        0xffff, // initRem
+        0, // FinalXor
+        false, // ReflectIn
+        false // ReflectRem
+    > crc;
+
+    std::string::const_iterator it;
+    for (it = input.begin(); it != input.end(); it++) {
+        crc.process_byte(*it);
+    }
+
+    return crc.checksum();
 }
 
 #endif /* HAVE_INV_DUMMY */

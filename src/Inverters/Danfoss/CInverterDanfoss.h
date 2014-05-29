@@ -106,6 +106,7 @@ private:
 
     unsigned int hdlc_calcchecksum(const std::string &input);
 
+    void _localdebug(void);
 
 };
 

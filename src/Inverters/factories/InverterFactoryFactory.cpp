@@ -41,6 +41,11 @@ Copyright (C) 2009-2012 Tobias Frost
 #include "Inverters/DummyInverter/CInverterFactoryDummy.h"
 #endif
 
+#if defined HAVE_INV_DANFOSS
+    #include "Inverters/Danfoss/CInverterFactoryDanfoss.h"
+#endif
+
+
 InverterFactoryFactory::InverterFactoryFactory() {
 	// TODO Auto-generated constructor stub
 
@@ -58,6 +63,12 @@ IInverterFactory *InverterFactoryFactory::createInverterFactory(const string& ma
 #if defined HAVE_INV_DUMMY
 	if ( manufactor == "DUMMY_INVERTER") {
 		return new CInverterFactoryDummy;
+	}
+#endif
+
+#if defined HAVE_INV_DANFOSS
+	if ( manufactor == "DANFOSS") {
+	    return new CInverterFactoryDanfoss;
 	}
 #endif
 

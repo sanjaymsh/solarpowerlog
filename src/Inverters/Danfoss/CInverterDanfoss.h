@@ -90,9 +90,9 @@ private:
     float _cfg_reconnectdelay_s;
 
     /// Address information for the Inverter
-    int _cfg_dest_network_adr;
-    int _cfg_dest_subnet_adr;
-    int _cfg_dest_adr;
+    int _cfg_inv_network_adr;
+    int _cfg_inv_subnet_adr;
+    int _cfg_inv_adr;
 
     /// Address information for the Master
     int _cfg_master_network_adr;

@@ -118,9 +118,9 @@ CInverterDanfoss::CInverterDanfoss(const string &type, const string &name,
     cfghlp.GetConfig("reconnect_delay", _cfg_reconnectdelay_s, 15.0F);
 
     // We'll cache the network adresses here
-    cfghlp.GetConfig("inverter_network", _cfg_dest_network_adr);
-    cfghlp.GetConfig("inverter_subnet", _cfg_dest_subnet_adr);
-    cfghlp.GetConfig("inverter_address", _cfg_dest_adr);
+    cfghlp.GetConfig("inverter_network", _cfg_inv_network_adr);
+    cfghlp.GetConfig("inverter_subnet", _cfg_inv_subnet_adr);
+    cfghlp.GetConfig("inverter_address", _cfg_inv_adr);
 
     // Same for the master, but for those sensible defaults exits.
     // Default is  0:0:2
@@ -181,7 +181,6 @@ bool CInverterDanfoss::CheckConfig()
     // Note: Queryinterval is optional. But CConfigHelper handle also opt.
     // parameters and checks for type.
     fail |= (true != hlp.CheckConfig("queryinterval", libconfig::Setting::TypeFloat, true));
-    fail |= (true != hlp.CheckConfig("commadr", libconfig::Setting::TypeInt));
 
     // Check config of the communication component, if already instanciated.
     if (connection) {
@@ -205,17 +204,17 @@ bool CInverterDanfoss::CheckConfig()
     // range-checks
     // note: The variables have been initialized in the constructor.
     if (!fail) {
-        if (_cfg_dest_network_adr > 14 || _cfg_dest_network_adr < 0) {
+        if (_cfg_inv_network_adr > 14 || _cfg_inv_network_adr < 0) {
             LOGERROR(logger,
                      "inverter_network invalid. Must be between 0 and 14.");
             fail = true;
         }
-        if (_cfg_dest_subnet_adr > 14 || _cfg_dest_subnet_adr < 0) {
+        if (_cfg_inv_subnet_adr > 14 || _cfg_inv_subnet_adr < 0) {
             LOGERROR(logger,
                      "inverter_subnet invalid. Must be between 0 and 14.");
             fail = true;
         }
-        if (_cfg_dest_adr > 254 || _cfg_dest_adr < 0) {
+        if (_cfg_inv_adr > 254 || _cfg_inv_adr < 0) {
             LOGERROR(logger,
                      "inverter_address invalid. Must be between 0 and 254.");
             fail = true;
@@ -238,11 +237,11 @@ bool CInverterDanfoss::CheckConfig()
         }
 
         // Warnings -- they are non-fatal...
-        if ( _cfg_master_network_adr ) {
+        if (_cfg_master_network_adr) {
             LOGWARN(logger, "master_network should be 0.");
         }
-        if ( ! _cfg_dest_network_adr ) {
-            LOGWARN(logger, "dest_network should not be 0.");
+        if (!_cfg_inv_network_adr) {
+            LOGWARN(logger, "inverter_network should not be 0.");
         }
 
     }

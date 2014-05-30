@@ -62,7 +62,9 @@ private:
     std::string hdlc_debytestuff(const std::string &input);
     std::string hdlc_bytestuff(const std::string &input);
 
-    unsigned int hdlc_calcchecksum(const std::string &input);
+    uint16_t hdlc_calcchecksum(const std::string &input);
+
+    std::string assemblequerystring(void);
 
     enum Commands
      {
@@ -135,7 +137,9 @@ private:
      */
     int _cfg_master_adr;
 
-    // Handling of commands (like on the Sputnik inverter)
+    unsigned int _precalc_masteradr;
+    unsigned int _precalc_slaveadr;
+     // Handling of commands (like on the Sputnik inverter)
     /// stores supported commands.
     vector<ISputnikCommand*> commands;
 

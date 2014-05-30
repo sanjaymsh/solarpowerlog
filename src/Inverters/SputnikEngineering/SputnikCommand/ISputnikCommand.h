@@ -167,10 +167,16 @@ public:
      */
     virtual bool handle_token(const std::vector<std::string> &) = 0;
 
-    /** command was sent, but no answer received
-     *  (will only be called when there was no other error, like communication
-     * etc)
+    /** Convenience function to enhance the interface for other inverters as
+     * well
+     *
+     * TODO refactor interface so that handle_token can be more inverter
+     * related.
+     *
+     * The danfoss inverter just get oen string, not a vector.
+     *
      */
+    virtual bool handle_token(const std::string &) {return false;};
 
     /** Notify the class that the command has not been answered by the inverter
      *

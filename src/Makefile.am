@@ -50,6 +50,7 @@ Inverters/DummyInverter/CInverterDummy.cpp  \
 Inverters/DummyInverter/CInverterFactoryDummy.cpp \
 Inverters/Danfoss/CInverterDanfoss.cpp  \
 Inverters/Danfoss/CInverterFactoryDanfoss.cpp \
+Inverters/Danfoss/DanfossCommand/CDanfossCommand.cpp  \
 Inverters/interfaces/CNestedCapaIterator.cpp \
 Inverters/interfaces/ICapaIterator.cpp Inverters/interfaces/InverterBase.cpp \
 patterns/ICommandTarget.cpp patterns/IValue.cpp patterns/ICommand.cpp \
@@ -95,6 +96,7 @@ Inverters/DummyInverter/CInverterDummy.h  \
 Inverters/DummyInverter/CInverterFactoryDummy.h \
 Inverters/Danfoss/CInverterDanfoss.h  \
 Inverters/Danfoss/CInverterFactoryDanfoss.h \
+Inverters/Danfoss/DanfossCommand/CDanfossCommand.h  \
 Inverters/interfaces/CNestedCapaIterator.h \
 Inverters/interfaces/ICapaIterator.h Inverters/interfaces/InverterBase.h \
 patterns/ICommandTarget.h patterns/IValue.h patterns/ICommand.h \

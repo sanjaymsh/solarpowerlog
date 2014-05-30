@@ -39,6 +39,8 @@
 #include "Inverters/interfaces/InverterBase.h"
 #include "Inverters/BasicCommands.h"
 
+#include "Inverters/SputnikEngineering/SputnikCommand/ISputnikCommand.h"
+
 #include <string>
 
 class CInverterDanfoss : public IInverterBase
@@ -54,6 +56,14 @@ public:
     virtual void ExecuteCommand(const ICommand *Command);
 
 private:
+
+    // Protocol functions.
+    // (might be better of in a dedicated class, though...
+    std::string hdlc_debytestuff(const std::string &input);
+    std::string hdlc_bytestuff(const std::string &input);
+
+    unsigned int hdlc_calcchecksum(const std::string &input);
+
     enum Commands
      {
          // broadcast event.
@@ -89,24 +99,57 @@ private:
     /// Configuration Cache: Reconnect delay, unit s
     float _cfg_reconnectdelay_s;
 
-    /// Address information for the Inverter
+    /** Address information for the Inverter: Network
+     *
+     * This var caches a configuation option
+     */
     int _cfg_inv_network_adr;
+
+    /** Address information for the Inverter: Subnet
+     *
+     * This var caches a configuation option
+     */
     int _cfg_inv_subnet_adr;
+
+    /** Address information for the Inverter: Address
+     *
+     * This var caches a configuation option
+     */
     int _cfg_inv_adr;
 
-    /// Address information for the Master
+    /** Address information for the Master : Network
+     *
+     * This var caches a configuation option
+     */
     int _cfg_master_network_adr;
+
+    /** Address information for the Master : Subnet
+     *
+     * This var caches a configuation option
+     */
+
     int _cfg_master_subnet_adr;
+    /** Address information for the Master : Address
+     *
+     * This var caches a configuation option
+     */
     int _cfg_master_adr;
 
-    // Protocol functions.
-    // (might be better of in a dedicated class, though...
-    std::string hdlc_debytestuff(const std::string &input);
-    std::string hdlc_bytestuff(const std::string &input);
+    // Handling of commands (like on the Sputnik inverter)
+    /// stores supported commands.
+    vector<ISputnikCommand*> commands;
 
-    unsigned int hdlc_calcchecksum(const std::string &input);
+    /// stores pending commmands.
+    vector<ISputnikCommand*> pendingcommands;
+
+    /// stores not answered commands (by removing the ansewered ones)
+    set<ISputnikCommand*> notansweredcommands;
+
+
 
     void _localdebug(void);
+
+
 
 };
 

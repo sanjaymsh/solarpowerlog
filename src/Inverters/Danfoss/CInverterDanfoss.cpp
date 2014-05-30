@@ -34,9 +34,10 @@
 
 #ifdef HAVE_INV_DANFOSS
 
-#define DANFOSS_CRC_GOOD (0xf0b8)
+#define DANFOSS_CRC_GOOD (0xf0b8U)
 
 #include "Inverters/Danfoss/CInverterDanfoss.h"
+#include "Inverters/Danfoss/DanfossCommand/CDanfossCommand.h"
 #include "configuration/CConfigHelper.h"
 #include "Inverters/Capabilites.h"
 #include "patterns/IValue.h"
@@ -44,10 +45,18 @@
 #include "patterns/CValue.h"
 #include "patterns/ICommand.h"
 
+
+// We borrow those...
+#include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOOnce.h"
+#include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOTimed.h"
+#include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOIfSupported.h"
+
 #include <boost/crc.hpp>
 #include <boost/cstdint.hpp>
 
 #warning TODO
+
+using namespace DanfossCommand;
 
 std::string hexdump(const std::string &s) {
 
@@ -183,7 +192,34 @@ CInverterDanfoss::CInverterDanfoss(const string &type, const string &name,
 
     // Register for broadcast events
     Registry::GetMainScheduler()->RegisterBroadcasts(this);
+
+
+    // Register all CDanfossCommmands we'd like to handle.
+    // Note that there are differences between some models...
+    if (type == "UniLynx") {
+        commands.push_back(
+           new CDanfossCommand<CAPA_INVERTER_ACPOWER_TOTAL_TYPE>
+            (logger, 0x02, 0x01, 0x0D ,DanfossCommand::type_u32, this,
+                 CAPA_INVERTER_ACPOWER_TOTAL));
+        commands.push_back(
+            new CDanfossCommand<CAPA_INVERTER_KWH_2D_TYPE>
+             (logger, 0x01, 0x04, 0x0D, DanfossCommand::type_u32, this,
+              CAPA_INVERTER_KWH_2D));
+    }
+
+    if (type == "TripleLynx") {
+        commands.push_back(
+           new CDanfossCommand<CAPA_INVERTER_ACPOWER_TOTAL_TYPE>
+            (logger, 0x02, 0x46, 0x08 ,DanfossCommand::type_u32, this,
+                 CAPA_INVERTER_ACPOWER_TOTAL));
+        commands.push_back(
+            new CDanfossCommand<CAPA_INVERTER_KWH_2D_TYPE>
+             (logger, 0x02, 0xA7, 0x08, DanfossCommand::type_u32, this,
+              CAPA_INVERTER_KWH_2D));
+    }
+
 }
+
 
 CInverterDanfoss::~CInverterDanfoss()
 {
@@ -683,7 +719,7 @@ std::string CInverterDanfoss::hdlc_bytestuff(const std::string& input)
 unsigned int CInverterDanfoss::hdlc_calcchecksum(const std::string& input)
     {
     boost::crc_optimal<16, // bits
-        0x1021, // polynom (CCITT Polynom)
+        0x1021, // polynom (CCITT Polynome)
         0xffff, // initRem
         0x0, // FinalXor
         true, // ReflectIn

@@ -123,15 +123,26 @@ namespace DanfossCommand {
     };
 }
 
-/** Command Class template for all basic types with the support to scale.*/
+/** Command Class template to aid decoding data from the Danfoss inverters.*/
 template<class T>
 class CDanfossCommand : public ISputnikCommand
 {
 public:
-
-
-
-
+    /*** CDanfossCommand Constructor.
+     *
+     * The class needs a template arg which specifies the datatype for the Capabiltiy
+     *
+     * \param logger logger to be used for debugging
+     * \param paramindex Index of the data this command handles (needed for the protocol)
+     * \param subindex Index of the data this command handles (needed for the protocol)
+     * \param moduleid Id of the target module (also needed for the protocol to talk to the inverter)
+     * \param type the datatype the inverter speaks with that data
+     *      (not necessarily same as the template type -- we will convert if possible.
+     * \param inv pointer to the inverter owning this command
+     * \param capaname the Capability to be registered under this name
+     * \param backoff algortithm, if desired. default is "every time".
+     *
+     */
     CDanfossCommand(ILogger &logger,
         const uint8_t paramindex,
         const uint8_t subparamindex,

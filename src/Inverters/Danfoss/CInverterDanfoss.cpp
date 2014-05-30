@@ -65,7 +65,7 @@ std::string hexdump(const std::string &s) {
     for (unsigned int i = 0; i < s.size(); i++) {
         sprintf(buf, "%02x", (unsigned char)s[i]);
         st = st + buf;
-        if (i && i % 16 == 0)
+        if (i && i % 32 == 0)
         st = st + "\n";
         else
         st = st + ' ';
@@ -302,6 +302,13 @@ bool CInverterDanfoss::CheckConfig()
             LOGWARN(logger, "inverter_network should not be 0.");
         }
 
+        // Pre-Calculate the addresses we neeed.
+        _precalc_masteradr = (_cfg_master_network_adr << 12)
+            +  (_cfg_master_subnet_adr << 8) + _cfg_master_adr;
+
+        _precalc_slaveadr = (_cfg_inv_network_adr << 12)
+             +  (_cfg_inv_subnet_adr << 8) + _cfg_inv_adr;
+
     }
 
     LOGTRACE(logger, "Check Configuration result: " << !fail);
@@ -317,10 +324,6 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
     LOGTRACE(this->logger,
         "CInverterDanfoss " << this->name << " command received! GetCmd:" <<
         Command->getCmd());
-#ifdef ICMD_WITH_DUMP_MEMBER
-    LOGTRACE(this->logger, "Data:");
-    Command->DumpData(this->logger);
-#endif
 
     // Probably you want to have a big switch-case here, covering all your CMD_xxx
     switch ((Commands) Command->getCmd()) {
@@ -337,7 +340,6 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
             v->Set(false);
             c->Notify();
 
-#if 0 // OLD CODE FROM SPUTNIK
             // reset the backoff algorithms for the commands.
             this->pendingcommands.clear();
             this->notansweredcommands.clear();
@@ -345,7 +347,6 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
             for (it=this->commands.begin(); it!=commands.end(); it++) {
                 (*it)->InverterDisconnected();
             }
-#endif
 
             cmd = new ICommand(CMD_DISCONNECTED_WAIT, this);
             if (connection->IsConnected()) {
@@ -430,8 +431,6 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
             LOGDEBUG(logger, "new state: CMD_QUERY_POLL ");
 
             // Collect all queries to be issued.
-#warning NOT IMPLEMENTED
-#if 0 // OLD CODE FROM SPUTNIK
             std::vector<ISputnikCommand*>::iterator it;
             for (it=commands.begin(); it!= commands.end(); it++) {
                 if ((*it)->ConsiderCommand()) {
@@ -446,18 +445,19 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
                 }
 #endif
             }
-#endif
 
         }
         // fall through intended.
 
         case CMD_SEND_QUERIES:
         {
-            LOGDEBUG(logger, "new state: CMD_SEND_QUERIES ");
 #warning NOT IMPLEMENTED
-#if 0 // OLD CODE FROM SPUTNIK
+
+            std::string commstring;
+            LOGDEBUG(logger, "new state: CMD_SEND_QUERIES ");
             commstring = assemblequerystring();
-            LOGDEBUG(logger, "Sending: " << commstring << " Len: "<< commstring.size());
+
+            abort();
 
             cmd = new ICommand(CMD_WAIT_SENT, this);
             // Start an atomic communication block (to hint any shared comms)
@@ -465,7 +465,6 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
             cmd->addData(ICONN_TOKEN_SEND_STRING, commstring);
             cmd->addData(ICONN_TOKEN_TIMEOUT,((long)_cfg_send_timeout_ms));
             connection->Send(cmd);
-#endif
 
         }
         break;
@@ -637,6 +636,47 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
 
 }
 
+
+std::string CInverterDanfoss::assemblequerystring(void) {
+
+    if (pendingcommands.empty() ) return "";
+
+    std::string t,t2;
+    t.clear();
+   // t += 0x7e;
+    t += (char)0xff;
+    t += (char)0x03;
+
+    ISputnikCommand *cmd = pendingcommands.front();
+    t2 = cmd->GetCommand();
+    t2[DANFOSS_POS_HDR_SOURCE] = (_precalc_masteradr >> 8) & 0xFF;
+    t2[DANFOSS_POS_HDR_SOURCE + 1] = _precalc_masteradr & 0xFF;
+
+    t2[DANFOSS_POS_HDR_DEST] = (_precalc_slaveadr >> 8) & 0xFF;
+    t2[DANFOSS_POS_HDR_DEST + 1] = _precalc_slaveadr & 0xFF;
+
+    t += t2;
+    uint16_t crc = hdlc_calcchecksum(t);
+    crc ^= 0xffff;
+
+    LOGTRACE(logger, "Checksum 0x" << hex << crc);
+    LOGTRACE(logger, "Before CRC:" << endl << "7e " <<hexdump(t));
+
+    t += (char)(crc & 0xff);
+    t += (char)(crc >> 8);
+
+    LOGTRACE(logger, "Checksum reverse check (expected 0xf0b8) 0x" << hex << hdlc_calcchecksum(t));
+
+    LOGTRACE(logger, "Telegramm assembled:" << endl << "7e " <<hexdump(t));
+
+    t= (char)0x7e +  hdlc_bytestuff(t);
+    t += (char)0x7E;
+
+    LOGTRACE(logger, "Telegramm stuffed:" << endl << hexdump(t));
+
+    return t;
+}
+
 /** The protocol uses byte-stuffing to avoid appearing magics in the telegram.
  *
  * 0x7D 0x5E -> 0x7E
@@ -716,7 +756,7 @@ std::string CInverterDanfoss::hdlc_bytestuff(const std::string& input)
  * \returns Checksum.
  *
  */
-unsigned int CInverterDanfoss::hdlc_calcchecksum(const std::string& input)
+uint16_t CInverterDanfoss::hdlc_calcchecksum(const std::string& input)
     {
     boost::crc_optimal<16, // bits
         0x1021, // polynom (CCITT Polynome)

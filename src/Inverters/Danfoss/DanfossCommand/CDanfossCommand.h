@@ -48,6 +48,20 @@
 #include "configuration/ILogger.h"
 
 
+std::string mhexdump(const std::string &s) {
+
+    std::string st;
+    char buf[32];
+    for (unsigned int i = 0; i < s.size(); i++) {
+        sprintf(buf, "%02x", (unsigned char)s[i]);
+        st = st + buf;
+        if (i && i % 16 == 0)
+        st = st + "\n";
+        else
+        st = st + ' ';
+    }
+    return st;
+}
 
 /* Defines and handles a single commmand the Danfoss Inverter.
  *
@@ -158,23 +172,27 @@ public:
             _typeinfo(type)
     {
         // Lets initilize the command block...
-        _commandblock[DANFOSS_POS_HDR_SOURCE] = 0;
-        _commandblock[DANFOSS_POS_HDR_SOURCE+1] = 0;
-        _commandblock[DANFOSS_POS_HDR_DEST] = 0;
-        _commandblock[DANFOSS_POS_HDR_DEST+1] = 0;
-        _commandblock[DANFOSS_POS_HDR_SIZE] = 10;
-        _commandblock[DANFOSS_POS_HDR_TYPE] = 1;
+        char tmp[DANFOSS_BLOCK_SIZE];
+        tmp[DANFOSS_POS_HDR_SOURCE] = 0;
+        tmp[DANFOSS_POS_HDR_SOURCE+1] = 0;
+        tmp[DANFOSS_POS_HDR_DEST] = 0;
+        tmp[DANFOSS_POS_HDR_DEST+1] = 0;
+        tmp[DANFOSS_POS_HDR_SIZE] = 10;
+        tmp[DANFOSS_POS_HDR_TYPE] = 1;
 
-        _commandblock[DANFOSS_POS_DAT_DOCTYPE] = 0xC8;
-        _commandblock[DANFOSS_POS_DAT_DEST] = _moduleid;
-        _commandblock[DANFOSS_POS_DAT_SRC] = 0xD0;
-        _commandblock[DANFOSS_POS_DAT_PARAM] = _paramindex;
-        _commandblock[DANFOSS_POS_DAT_SUBPARAM] = _subparamindex;
-        _commandblock[DANFOSS_POS_DAT_DTYPE] = 0x80 | _typeinfo;
-        _commandblock[DANFOSS_POS_DAT_VALUE0] = 0;
-        _commandblock[DANFOSS_POS_DAT_VALUE1] = 0;
-        _commandblock[DANFOSS_POS_DAT_VALUE2] = 0;
-        _commandblock[DANFOSS_POS_DAT_VALUE3] = 0;
+        tmp[DANFOSS_POS_DAT_DOCTYPE] = 0xC8;
+        tmp[DANFOSS_POS_DAT_DEST] = _moduleid;
+        tmp[DANFOSS_POS_DAT_SRC] = 0xD0;
+        tmp[DANFOSS_POS_DAT_PARAM] = _paramindex;
+        tmp[DANFOSS_POS_DAT_SUBPARAM] = _subparamindex;
+        tmp[DANFOSS_POS_DAT_DTYPE] = 0x80 | _typeinfo;
+        tmp[DANFOSS_POS_DAT_VALUE0] = 0;
+        tmp[DANFOSS_POS_DAT_VALUE1] = 0;
+        tmp[DANFOSS_POS_DAT_VALUE2] = 0;
+        tmp[DANFOSS_POS_DAT_VALUE3] = 0;
+
+        _commandblock.assign(tmp,DANFOSS_BLOCK_SIZE);
+        LOGDEBUG(logger, "_commandblock for " << capname << " is " << mhexdump(_commandblock));
     }
 
     virtual bool handle_token(const std::string &token) {

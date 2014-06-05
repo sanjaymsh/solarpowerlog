@@ -55,7 +55,7 @@ std::string mhexdump(const std::string &s) {
     for (unsigned int i = 0; i < s.size(); i++) {
         sprintf(buf, "%02x", (unsigned char)s[i]);
         st = st + buf;
-        if (i && i % 16 == 0)
+        if (i && i % 32 == 0)
         st = st + "\n";
         else
         st = st + ' ';
@@ -185,7 +185,7 @@ public:
         tmp[DANFOSS_POS_DAT_SRC] = 0xD0;
         tmp[DANFOSS_POS_DAT_PARAM] = _paramindex;
         tmp[DANFOSS_POS_DAT_SUBPARAM] = _subparamindex;
-        tmp[DANFOSS_POS_DAT_DTYPE] = 0x80 | _typeinfo;
+        tmp[DANFOSS_POS_DAT_DTYPE] = 0x80;
         tmp[DANFOSS_POS_DAT_VALUE0] = 0;
         tmp[DANFOSS_POS_DAT_VALUE1] = 0;
         tmp[DANFOSS_POS_DAT_VALUE2] = 0;

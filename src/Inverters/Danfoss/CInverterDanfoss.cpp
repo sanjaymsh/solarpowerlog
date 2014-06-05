@@ -75,9 +75,6 @@ std::string hexdump(const std::string &s) {
 
 void CInverterDanfoss::_localdebug(void) {
     // local debug helper...
-    unsigned char testmsg[] = { 0x7E, 0xFF, 0x03, 0xEE, 0xFE, 0x1F, 0xFF,
-                                0x00, 0x15, 0x1C, 0x6C, 0x7E };
-
     unsigned char testmsg2[] = { 0x7E, 0xFF, 0x03, 0x00, 0x02, 0x7D, 0x5D,
                                  0x7D, 0x5E, 0x00, 0x15, 0x99, 0xC9, 0x7E };
 
@@ -451,21 +448,13 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
 
         case CMD_SEND_QUERIES:
         {
-#warning NOT IMPLEMENTED
-
-            std::string commstring;
             LOGDEBUG(logger, "new state: CMD_SEND_QUERIES ");
-            commstring = assemblequerystring();
-
-            abort();
-
             cmd = new ICommand(CMD_WAIT_SENT, this);
             // Start an atomic communication block (to hint any shared comms)
             cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_REQUEST);
-            cmd->addData(ICONN_TOKEN_SEND_STRING, commstring);
+            cmd->addData(ICONN_TOKEN_SEND_STRING, assemblequerystring());
             cmd->addData(ICONN_TOKEN_TIMEOUT,((long)_cfg_send_timeout_ms));
             connection->Send(cmd);
-
         }
         break;
 
@@ -488,7 +477,7 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
                     LOGERROR(logger, "Error while sending. (" << -err << ")");
                 }
 
-                // Hint the shard comms to stop the atomic session
+                // Hint the shared comms to stop the atomic session
                 // and then disconnect.
                 cmd = new ICommand(CMD_DISCONNECTED, this);
                 cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_CEASE);
@@ -544,24 +533,11 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
                 break;
             }
 
-            LOGTRACE(logger, "Received :" << s << " len: " << s.size());
-
-            if (logger.IsEnabled(ILogger::LL_TRACE)) {
-                string st;
-                char buf[32];
-                for (unsigned int i = 0; i < s.size(); i++) {
-                    sprintf(buf, "%02x", (unsigned char) s[i]);
-                    st = st + buf;
-                    if (i && i % 16 == 0)
-                    st = st + "\n";
-                    else
-                    st = st + ' ';
-                }
-                LOGTRACE(logger, "Received in hex: "<< st );
-            }
+            LOGTRACE(logger, "Received: len=" << s.size() << endl
+                << hexdump(s));
 
 #warning NOT IMPLEMENTED
-#if 0 // OLD CODE FROM SPUTNIK
+#if 1 // OLD CODE FROM SPUTNIK
             int parseresult = parsereceivedstring(s);
             // parseresult =>
             //      -1 on error,
@@ -636,18 +612,84 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
 
 }
 
+/** Check received message for correctness and pass data to CDanfossCommand
+ * instance
+ *
+ * 1) Check if complete telegramm
+ * 2) De-bytestuff
+ * 1) Check for correctness / completeness
+ *     -> CRC
+ *     -> Frame
+ *     -> Adressing
+ *     -> Errors reported
+ * 2) Feed to CDanfossCommand
+ *
+ *
+ *
+ * */
+int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
 
+    // Check first of we've got a complete telegram (that's two 0x7E)
+    size_t pos = rcvd.find_first_of(0x7E);
+    if (pos != 0 && (std::string::npos != pos)) {
+        rcvd = rcvd.substr(pos);
+    }
+
+    LOGTRACE(logger, "Telegramm received:" << endl << hexdump(rcvd));
+
+
+    pos = rcvd.find_last_of(0x7E);
+    if (! pos) return -1; // no second 0x7e -> discard telegram
+
+    if (pos < 6) {
+         return -1; // minimum length is 6 bytes.
+    }
+
+    // Check Frame
+    if ((unsigned char)rcvd[1] != 0xFF || rcvd[2] != 0x03) {
+        LOGDEBUG(logger, "Frame error.");
+        return -1;
+    }
+
+    // extract the telegramm but cut the 0x7E (othewise we would cut at 0 and pos+1)
+    rcvd = hdlc_debytestuff(rcvd.substr(1,pos));
+
+    LOGTRACE(logger, "Telegramm destuffed:" << endl << hexdump(rcvd));
+
+    if ( DANFOSS_CRC_GOOD != hdlc_calcchecksum(rcvd) ) {
+        LOGDEBUG(logger, "Checksum error: 0x"
+                 << hex << hdlc_calcchecksum(rcvd));
+        return -1;
+    }
+
+    // Basic checks done...
+    // Lets examine the telegramm closer.
+
+
+}
+
+/** Generate a telegramm to be sent out.
+ *
+ * 1) Get (if any) commmand to issue
+ * 2) Remove from pending list and add to tracking for nonanswered commands
+ * 3) Assemble telegramm (and use CDanfossCommand() to get the message block
+ * 4) Add checksum, bytestuff and add frame
+ * 5) Ready
+ *
+ *\returns string to be sent.
+ */
 std::string CInverterDanfoss::assemblequerystring(void) {
 
     if (pendingcommands.empty() ) return "";
 
     std::string t,t2;
-    t.clear();
-   // t += 0x7e;
-    t += (char)0xff;
-    t += (char)0x03;
 
     ISputnikCommand *cmd = pendingcommands.front();
+    pendingcommands.pop_front();
+    notansweredcommands.insert(cmd);
+
+    t += (char)0xff;
+    t += (char)0x03;
     t2 = cmd->GetCommand();
     t2[DANFOSS_POS_HDR_SOURCE] = (_precalc_masteradr >> 8) & 0xFF;
     t2[DANFOSS_POS_HDR_SOURCE + 1] = _precalc_masteradr & 0xFF;
@@ -660,19 +702,16 @@ std::string CInverterDanfoss::assemblequerystring(void) {
     crc ^= 0xffff;
 
     LOGTRACE(logger, "Checksum 0x" << hex << crc);
-    LOGTRACE(logger, "Before CRC:" << endl << "7e " <<hexdump(t));
 
     t += (char)(crc & 0xff);
     t += (char)(crc >> 8);
 
     LOGTRACE(logger, "Checksum reverse check (expected 0xf0b8) 0x" << hex << hdlc_calcchecksum(t));
 
-    LOGTRACE(logger, "Telegramm assembled:" << endl << "7e " <<hexdump(t));
-
     t= (char)0x7e +  hdlc_bytestuff(t);
     t += (char)0x7E;
 
-    LOGTRACE(logger, "Telegramm stuffed:" << endl << hexdump(t));
+    LOGTRACE(logger, "Telegramm stuffed & ready:" << endl << hexdump(t));
 
     return t;
 }

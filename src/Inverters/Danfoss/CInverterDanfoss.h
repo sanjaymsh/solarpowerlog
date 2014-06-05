@@ -66,6 +66,9 @@ private:
 
     std::string assemblequerystring(void);
 
+    /// parse the answer of the inverter.
+    int parsereceivedstring(std::string &rcvd);
+
     enum Commands
      {
          // broadcast event.
@@ -144,7 +147,7 @@ private:
     vector<ISputnikCommand*> commands;
 
     /// stores pending commmands.
-    vector<ISputnikCommand*> pendingcommands;
+    deque<ISputnikCommand*> pendingcommands;
 
     /// stores not answered commands (by removing the ansewered ones)
     set<ISputnikCommand*> notansweredcommands;

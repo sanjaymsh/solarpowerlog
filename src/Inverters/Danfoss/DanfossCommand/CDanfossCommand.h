@@ -93,8 +93,8 @@ std::string mhexdump(const std::string &s) {
  * use-cases for the bits in the headers later; for example the ping
  * and node info queries...)
  * However, the Inverter-Class will pre-validate already certain fields,
- * especially the message header. (addressing, error signaling in the header)
- * and drop/retry the data/message if necessary.
+ * in message header which requires detailed knowledge about the inverter
+ * instance, e.g. addressing and drop/retry the data/message if necessary.
  *
  * On outgoing messages, the CDanfossCommand is also expected to prepare the complete
  * frame. However, Source and Destination address will be filled (overwritten) by the
@@ -203,7 +203,23 @@ public:
                      << this->capaname);
             return false;
         }
-        uint8_t type = token[DANFOSS_POS_DAT_DTYPE];
+
+        // Doctype must be 0xC8
+        uint8_t type = token[DANFOSS_POS_DAT_DOCTYPE];
+        if ( type != 0xC8) {
+            LOGDEBUG(logger,"Doctype not 0xC8");
+            return false;
+        }
+
+        // Check dest module id. The inverter mirrors source module id
+        // of the request, so this should be 0xD (shifted by 4 bits -> 0xD)
+        type = token[DANFOSS_POS_DAT_DEST] & 0xF0;
+        if ( type != 0xD0) {
+            LOGDEBUG(logger,"Destination module id not 0xDx");
+            return false;
+        }
+
+        type = token[DANFOSS_POS_DAT_DTYPE];
         // check if type higher bits indicates an error
         if (type & 0x20) {
             LOGINFO(logger,

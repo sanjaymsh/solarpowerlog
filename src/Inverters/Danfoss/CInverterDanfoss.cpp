@@ -621,7 +621,6 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
  *     -> CRC
  *     -> Frame
  *     -> Adressing
- *     -> Errors reported
  * 2) Feed to CDanfossCommand
  *
  *
@@ -652,7 +651,8 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
     }
 
     // extract the telegramm but cut the 0x7E (othewise we would cut at 0 and pos+1)
-    rcvd = hdlc_debytestuff(rcvd.substr(1,pos));
+    // that is cut at pos 1 (2nd byte) with a length of pos-1
+    rcvd = hdlc_debytestuff(rcvd.substr(1,pos-1));
 
     LOGTRACE(logger, "Telegramm destuffed:" << endl << hexdump(rcvd));
 
@@ -664,7 +664,40 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
 
     // Basic checks done...
     // Lets examine the telegramm closer.
+    // remove the frame (3 bytes -- so we start at the 4th
+    // and the FCS -- this are the two last bytes.
+    // so the new string will be 5 bytes shorter.
+    rcvd = rcvd.substr(3,rcvd.length()-5);
 
+    LOGTRACE(logger, "Message extracted:" << endl << hexdump(rcvd));
+
+    // Check message correctness
+    // Adresses:
+    //  Source
+    uint16_t tmp = rcvd[DANFOSS_POS_HDR_SOURCE]
+                   | (((unsigned char)rcvd[DANFOSS_POS_HDR_SOURCE + 1]) << 8U);
+
+    if (tmp != _precalc_slaveadr) {
+        LOGTRACE(logger, "Not from this inverter." );
+        return -1;
+    }
+
+    tmp = rcvd[DANFOSS_POS_HDR_DEST]
+                       | (((unsigned char)rcvd[DANFOSS_POS_HDR_DEST + 1]) << 8U);
+
+    //  Dest
+    if (tmp != _precalc_mastereadr) {
+        LOGTRACE(logger, "Not for this inverter instance.");
+        return -1;
+    }
+
+    // Validation of telegram done.
+
+    // Iterate through pending commmands and try to find which one handles
+    // this....
+#warning TODO pendingcommand can be for the Danfoss just one element -- no vector required!
+
+#error incomplete!
 
 }
 

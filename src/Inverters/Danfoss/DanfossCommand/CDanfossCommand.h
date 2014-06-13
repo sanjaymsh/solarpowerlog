@@ -265,9 +265,11 @@ public:
      */
     virtual bool IsHandled(const std::string &token) {
 
+        if (token.length() < DANFOSS_BLOCK_SIZE) return false;
+
         if (token[DANFOSS_POS_DAT_PARAM] == this->_paramindex &&
             token[DANFOSS_POS_DAT_SUBPARAM] == this->_subparamindex)
-            {
+        {
             return true;
         }
         return false;

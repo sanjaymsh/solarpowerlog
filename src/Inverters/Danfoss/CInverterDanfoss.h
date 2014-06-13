@@ -149,7 +149,7 @@ private:
     /// stores pending commmands.
     deque<ISputnikCommand*> pendingcommands;
 
-    /// stores not answered commands (by removing the ansewered ones)
+    /// stores not answered commands (by removing the answered ones)
     set<ISputnikCommand*> notansweredcommands;
 
 

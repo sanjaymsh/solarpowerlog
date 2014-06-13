@@ -686,19 +686,32 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
                        | (((unsigned char)rcvd[DANFOSS_POS_HDR_DEST + 1]) << 8U);
 
     //  Dest
-    if (tmp != _precalc_mastereadr) {
+    if (tmp != _precalc_masteradr) {
         LOGTRACE(logger, "Not for this inverter instance.");
         return -1;
     }
 
     // Validation of telegram done.
 
-    // Iterate through pending commmands and try to find which one handles
+    // Iterate through  commmands and try to find which one handles
     // this....
-#warning TODO pendingcommand can be for the Danfoss just one element -- no vector required!
+    int ret = 1;
+    vector<ISputnikCommand*>::iterator it;
+    for (it = commands.begin(); it != commands.end(); it++) {
+        if ((*it)->IsHandled(rcvd)) {
+            bool result = (*it)->handle_token(rcvd);
+            if (!result)  {
+                // LOGTRACE(logger,"failed parsing " + tokens[i]);
+                ret = -1;
+            }
+            else {
+                notansweredcommands.erase(*it);
+            }
+            break;
+        }
+    }
 
-#error incomplete!
-
+    return ret;
 }
 
 /** Generate a telegramm to be sent out.

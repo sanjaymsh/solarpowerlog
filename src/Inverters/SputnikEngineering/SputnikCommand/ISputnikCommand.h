@@ -146,6 +146,10 @@ public:
         this->strat->Reset();
     }
 
+    virtual const std::string& GetCapaName(void) const {
+        return capaname;
+    }
+
 protected:
 
     /** Makes the complete capability handling:

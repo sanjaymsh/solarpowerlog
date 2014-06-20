@@ -195,13 +195,17 @@ CInverterDanfoss::CInverterDanfoss(const string &type, const string &name,
     // Note that there are differences between some models...
     if (type == "UniLynx") {
         commands.push_back(
-           new CDanfossCommand<CAPA_INVERTER_ACPOWER_TOTAL_TYPE>
-            (logger, 0x02, 0x01, 0x0D ,DanfossCommand::type_u32, this,
-                 CAPA_INVERTER_ACPOWER_TOTAL));
+            new CDanfossCommand<CAPA_INVERTER_KWH_TOTAL_TYPE>
+            (logger, 0x01, 0x02, 0x04, DanfossCommand::type_u32, this,
+            CAPA_INVERTER_KWH_TOTAL_NAME));
+        commands.push_back(
+            new CDanfossCommand<CAPA_INVERTER_ACPOWER_TOTAL_TYPE>
+            (logger, 0x02, 0x01, 0x0D, DanfossCommand::type_u32, this,
+            CAPA_INVERTER_ACPOWER_TOTAL));
         commands.push_back(
             new CDanfossCommand<CAPA_INVERTER_KWH_2D_TYPE>
-             (logger, 0x01, 0x04, 0x0D, DanfossCommand::type_u32, this,
-              CAPA_INVERTER_KWH_2D));
+            (logger, 0x01, 0x04, 0x04, DanfossCommand::type_u32, this,
+            CAPA_INVERTER_KWH_2D));
     }
 
     if (type == "TripleLynx") {
@@ -634,9 +638,6 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
         rcvd = rcvd.substr(pos);
     }
 
-    LOGTRACE(logger, "Telegramm received:" << endl << hexdump(rcvd));
-
-
     pos = rcvd.find_last_of(0x7E);
     if (! pos) return -1; // no second 0x7e -> discard telegram
 
@@ -650,9 +651,12 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
         return -1;
     }
 
+    rcvd = rcvd.substr(1,pos-1);
+    LOGTRACE(logger, "Frame removed:" << endl << hexdump(rcvd));
+
     // extract the telegramm but cut the 0x7E (othewise we would cut at 0 and pos+1)
     // that is cut at pos 1 (2nd byte) with a length of pos-1
-    rcvd = hdlc_debytestuff(rcvd.substr(1,pos-1));
+    rcvd = hdlc_debytestuff(rcvd);
 
     LOGTRACE(logger, "Telegramm destuffed:" << endl << hexdump(rcvd));
 
@@ -664,30 +668,36 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
 
     // Basic checks done...
     // Lets examine the telegramm closer.
-    // remove the frame (3 bytes -- so we start at the 4th
-    // and the FCS -- this are the two last bytes.
-    // so the new string will be 5 bytes shorter.
-    rcvd = rcvd.substr(3,rcvd.length()-5);
+    // remove the frame (2 more bytes -- so we start at the 3rd
+    // and remove the CRC (this are the two last bytes)
+    // so the new string will be 4 bytes shorter than before
+    rcvd = rcvd.substr(2,rcvd.length()-4);
 
     LOGTRACE(logger, "Message extracted:" << endl << hexdump(rcvd));
 
     // Check message correctness
     // Adresses:
     //  Source
-    uint16_t tmp = rcvd[DANFOSS_POS_HDR_SOURCE]
-                   | (((unsigned char)rcvd[DANFOSS_POS_HDR_SOURCE + 1]) << 8U);
+    uint16_t tmp = rcvd[DANFOSS_POS_HDR_SOURCE + 1]
+                   | (((unsigned char)rcvd[DANFOSS_POS_HDR_SOURCE]) << 8U);
 
     if (tmp != _precalc_slaveadr) {
-        LOGTRACE(logger, "Not from this inverter." );
+        LOGTRACE(logger, "Not from this inverter. 0x"
+                 << hex  << tmp << " != 0x"
+                 << hex << _precalc_slaveadr
+                 << " (<=expected)");
         return -1;
     }
 
-    tmp = rcvd[DANFOSS_POS_HDR_DEST]
-                       | (((unsigned char)rcvd[DANFOSS_POS_HDR_DEST + 1]) << 8U);
+    tmp = rcvd[DANFOSS_POS_HDR_DEST + 1]
+          | (((unsigned char)rcvd[DANFOSS_POS_HDR_DEST]) << 8U);
 
     //  Dest
     if (tmp != _precalc_masteradr) {
-        LOGTRACE(logger, "Not for this inverter instance.");
+        LOGTRACE(logger, "Not for this inverter instance. 0x"
+                 << hex << tmp << " != 0x"
+                 << hex << _precalc_masteradr
+                 << " (<=expected)");
         return -1;
     }
 
@@ -699,9 +709,10 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
     vector<ISputnikCommand*>::iterator it;
     for (it = commands.begin(); it != commands.end(); it++) {
         if ((*it)->IsHandled(rcvd)) {
+            LOGTRACE(logger, "Handler found:  " << (*it)->GetCapaName());
             bool result = (*it)->handle_token(rcvd);
             if (!result)  {
-                // LOGTRACE(logger,"failed parsing " + tokens[i]);
+                LOGTRACE(logger,"failed parsing " + (*it)->GetCapaName());
                 ret = -1;
             }
             else {

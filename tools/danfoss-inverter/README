@@ -1,0 +1,14 @@
+This is a simple set of shell scripts which will "simulate" a Danfoss Inverter.
+In "double quotes", because it its very simplified:
+- Will wait on any incoming bytes 
+- Won't do any check on these
+- Will answer with a static response.
+
+The purpose of this script is just initial debugging, so don't expect much of
+it. It should be replaced by a proper simulator class -- like for the Sputnik.
+
+Syntax:
+./netcat_danfoss <port-to-use>
+
+The example solarpowerlog.conf in this directory is crafted to be used with 
+./netcat_danfoss 12345

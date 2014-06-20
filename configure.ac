@@ -84,7 +84,7 @@ fi
 
 # Danfoss support.
 AC_ARG_ENABLE([danfoss],
-    [AS_HELP_STRING([--enable-danfosssimulator],
+    [AS_HELP_STRING([--enable-danfoss],
             [Support Danfoss inverters (experimental).])
     ]
 )

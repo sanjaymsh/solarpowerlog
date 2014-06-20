@@ -152,11 +152,7 @@ private:
     /// stores not answered commands (by removing the answered ones)
     set<ISputnikCommand*> notansweredcommands;
 
-
-
     void _localdebug(void);
-
-
 
 };
 

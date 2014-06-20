@@ -129,7 +129,7 @@ namespace DanfossCommand {
         type_u16 = 6,
         type_u32 = 7,
         type_float = 8,
-        // not imoplemented:
+        // not implemented:
         type_notdefined = 0,
         type_visible_string = 9,
         type_packed_bytes = 10,
@@ -213,9 +213,18 @@ public:
 
         // Check dest module id. The inverter mirrors source module id
         // of the request, so this should be 0xD (shifted by 4 bits -> 0xD)
-        type = token[DANFOSS_POS_DAT_DEST] & 0xF0;
-        if ( type != 0xD0) {
-            LOGDEBUG(logger,"Destination module id not 0xDx");
+        type = token[DANFOSS_POS_DAT_DEST] & 0x0F;
+        if ( type != 0x0D) {
+            LOGDEBUG(logger,"Destination module id not 0x0D but " << hex << (uint16_t) (type) );
+            return false;
+        }
+
+        // Check if source module id matches the one we defined
+        type = token[DANFOSS_POS_DAT_SRC] >> 4;
+        if (type != this->_moduleid) {
+            LOGDEBUG(logger,"Destination module id not 0x0"
+                     << hex << (uint16_t)_moduleid
+                     << " but " << hex << (uint16_t) (type) );
             return false;
         }
 
@@ -238,12 +247,15 @@ public:
         type &= 0x0F;
         try {
             T temp = handle_token_and_type(token, type);
-            CapabilityHandling<T>(temp);
+           CapabilityHandling<T>(temp);
+
 
         } catch (...) {
+            LOGDEBUG(logger, "ERROR while handling command!");
             return false;
         }
         this->strat->CommandAnswered();
+
         return true;
     }
 
@@ -265,12 +277,25 @@ public:
      */
     virtual bool IsHandled(const std::string &token) {
 
-        if (token.length() < DANFOSS_BLOCK_SIZE) return false;
+        if (token.length() < DANFOSS_BLOCK_SIZE) {
+            LOGTRACE(logger, "FAIL CHECK BLOCK SIZE");
+            return false;
+        }
 
         if (token[DANFOSS_POS_DAT_PARAM] == this->_paramindex &&
             token[DANFOSS_POS_DAT_SUBPARAM] == this->_subparamindex)
         {
             return true;
+        } else {
+            uint16_t t;
+            t = token[DANFOSS_POS_DAT_PARAM];
+             LOGTRACE(logger, "PARAM =0x" << hex << t
+                      << " but expected: 0x" << hex << (uint16_t) this->_paramindex);
+
+             t = token[DANFOSS_POS_DAT_SUBPARAM];
+             LOGTRACE(logger, "SUBPARAM =0x" << hex << t
+                      << " but expected: 0x" << hex << (uint16_t) this->_subparamindex);
+
         }
         return false;
     }
@@ -376,6 +401,8 @@ private:
             throw e;
         }
 
+        LOGTRACE(logger, "CDanfossCommmand for " << this->capaname <<
+            " conversion result: " << result);
         return result;
     }
 

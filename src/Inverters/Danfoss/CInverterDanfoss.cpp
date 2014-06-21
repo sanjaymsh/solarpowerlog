@@ -686,7 +686,7 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
                  << hex  << tmp << " != 0x"
                  << hex << _precalc_slaveadr
                  << " (<=expected)");
-        return -1;
+        return 0;
     }
 
     tmp = rcvd[DANFOSS_POS_HDR_DEST + 1]
@@ -698,7 +698,7 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
                  << hex << tmp << " != 0x"
                  << hex << _precalc_masteradr
                  << " (<=expected)");
-        return -1;
+        return 0;
     }
 
     // Validation of telegram done.

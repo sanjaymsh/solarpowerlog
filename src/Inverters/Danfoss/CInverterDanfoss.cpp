@@ -499,6 +499,10 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
 
         case CMD_EVALUATE_RECEIVE:
         {
+#warning: NOT HANDLED: Danfoss inverters *could* not answer an unsupported command, which would here lead to an disconnect and then a reconnect, \
+  leading to an loop.... So probably Danfoss needs to treat timeouts not necesserialy as errors, but only if they get massive...
+
+
             LOGDEBUG(logger, "new state: CMD_EVALUATE_RECEIVE");
 
             int err;
@@ -540,18 +544,26 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
             LOGTRACE(logger, "Received: len=" << s.size() << endl
                 << hexdump(s));
 
-#warning NOT IMPLEMENTED
-#if 1 // OLD CODE FROM SPUTNIK
             int parseresult = parsereceivedstring(s);
+
+            // TODO parsereceiedstring could handle more than one telegram per received string,
+            // but the statemachine currently doesn't... (as error detection becomes non-trivial:
+            // What to do if first telegramm OK, second a error or incomplete
+            // should we then disconnect or continue... Needs a quiet moment to think about it :)
+            // Also the returncode 0 means "not for us" could be handled somehow else than ignoring
+            // however this should not happen due to the locking mechanism.
+
             // parseresult =>
             //      -1 on error,
             //      0 if the string indicated that it is not for us
             //      1 on success.
 
-            // get the result from the last parse
-            // yes, in the unlikely event that we parsed more than one telegram in one
-            // session, we discard the result of the first one, and do not detect
-            // an error here (but the last telegram for us needed to be successful)...
+            if (0 == parseresult) {
+                LOGERROR(
+                    logger,
+                    "Command not for us? (This is currentley handeld same as an error)");
+            }
+
             if (1 != parseresult) {
                 // Reconnect on parse errors.
                 LOGERROR(logger, "Parse error on received string.");
@@ -578,9 +590,6 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
                 break;
             }
 
-            // TODO differenciate between identify query and "normal" runtime queries
-
-#endif
             CCapability *c = GetConcreteCapability(CAPA_INVERTER_DATASTATE);
             CValue<bool> *vb = (CValue<bool> *) c->getValue();
             vb->Set(true);

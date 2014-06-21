@@ -125,6 +125,7 @@ CInverterDanfoss::CInverterDanfoss(const string &type, const string &name,
     // Preset member variables.
     _invertertype = type;
     _shutdown_requested = false;
+    _notansweredcommand = NULL;
 
     // Load config with sensible defaults
     float interval;
@@ -342,8 +343,8 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
             c->Notify();
 
             // reset the backoff algorithms for the commands.
-            this->pendingcommands.clear();
-            this->notansweredcommands.clear();
+            pendingcommands.clear();
+            _notansweredcommand = NULL;
             vector<ISputnikCommand *>::iterator it;
             for (it=this->commands.begin(); it!=commands.end(); it++) {
                 (*it)->InverterDisconnected();
@@ -572,14 +573,11 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
                 break;
             }
 
-            // all issued commands should have been answered,
-            // those in the not-answered set, were un-answered and we notify
-            // the commands to pass that information to their backoff algorithms.
-            std::set<ISputnikCommand*>::iterator it;
-            for (it=notansweredcommands.begin();it!=notansweredcommands.end();it++) {
-                (*it)->CommandNotAnswered();
-            }
-            notansweredcommands.clear();
+            // the issued command should have been answered,
+            // if notansweredcommand is non-null, it has not.
+            // So notify the backoff algorithm(s).
+            if (_notansweredcommand) _notansweredcommand->CommandNotAnswered();
+            _notansweredcommand = NULL;
 
             // if there are still pending commands, issue them first before
             // filling the queue again.
@@ -728,8 +726,29 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
         return 0;
     }
 
-    // Validation of telegram done.
+    // Check for application error
 
+    // Validation of telegram done and succeeded.
+    // For Danfoss-inverters, there is only one query at a time,
+    // so our command must be in _notansweredcommand or there is a problem.
+    assert(_notansweredcommand);
+    if (!_notansweredcommand->IsHandled(localrcvd)) {
+        LOGDEBUG(logger, "Received response but not for this commmand. Weird.");
+        return -1;
+    }
+
+    bool result = _notansweredcommand->handle_token(localrcvd);
+     if (!result)  {
+         LOGTRACE(logger,"failed parsing " + _notansweredcommand->GetCapaName());
+         return -1;
+     }
+     else {
+         _notansweredcommand = NULL;
+         return 1;
+     }
+
+#if 0
+    // old code based on not utilizing the knowledge about the command we issued.
     // Iterate through  commmands and try to find which one handles
     // this....
     int ret = 1;
@@ -748,8 +767,8 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
             break;
         }
     }
+#endif
 
-    return ret;
 }
 
 /** Generate a telegramm to be sent out.
@@ -770,7 +789,7 @@ std::string CInverterDanfoss::assemblequerystring(void) {
 
     ISputnikCommand *cmd = pendingcommands.front();
     pendingcommands.pop_front();
-    notansweredcommands.insert(cmd);
+    _notansweredcommand = cmd;
 
     t += (char)0xff;
     t += (char)0x03;

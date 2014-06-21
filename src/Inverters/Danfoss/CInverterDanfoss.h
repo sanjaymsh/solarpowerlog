@@ -81,7 +81,6 @@ private:
          CMD_DISCONNECTED_WAIT,
          CMD_EVALUATE_RECEIVE,
          CMD_WAIT_SENT,
-         CMD_SEND_QUERIES,
          CMD_QUERY_POLL
      };
 
@@ -157,7 +156,8 @@ private:
     ISputnikCommand* _notansweredcommand;
 
     // Flag to check if the timeouts are somehow permament
-    bool _softtimeout;
+    bool _softerror;
+    bool _firstround;
 
     void _localdebug(void);
 

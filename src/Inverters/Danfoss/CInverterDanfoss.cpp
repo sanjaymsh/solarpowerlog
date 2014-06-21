@@ -31,7 +31,6 @@
 #include "porting.h"
 #endif
 
-
 #ifdef HAVE_INV_DANFOSS
 
 #define DANFOSS_CRC_GOOD (0xf0b8U)
@@ -44,7 +43,6 @@
 #include "interfaces/CCapability.h"
 #include "patterns/CValue.h"
 #include "patterns/ICommand.h"
-
 
 // We borrow those...
 #include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOOnce.h"
@@ -126,7 +124,8 @@ CInverterDanfoss::CInverterDanfoss(const string &type, const string &name,
     _invertertype = type;
     _shutdown_requested = false;
     _notansweredcommand = NULL;
-    _softtimeout= false;
+    _softerror = false;
+    _firstround = true;
 
     // Load config with sensible defaults
     float interval;
@@ -192,7 +191,6 @@ CInverterDanfoss::CInverterDanfoss(const string &type, const string &name,
     // Register for broadcast events
     Registry::GetMainScheduler()->RegisterBroadcasts(this);
 
-
     // Register all CDanfossCommmands we'd like to handle.
     // Note that there are differences between some models...
     if (type == "UniLynx") {
@@ -222,7 +220,6 @@ CInverterDanfoss::CInverterDanfoss(const string &type, const string &name,
     }
 
 }
-
 
 CInverterDanfoss::~CInverterDanfoss()
 {
@@ -358,7 +355,6 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
                 Registry::GetMainScheduler()->ScheduleWork(cmd);
             }
 
-            _softtimeout = false;
             break;
         }
 
@@ -424,6 +420,7 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
                 cmd = new ICommand(CMD_DISCONNECTED, this);
                 Registry::GetMainScheduler()->ScheduleWork(cmd);
             } else {
+                _firstround = true;
                 cmd = new ICommand(CMD_QUERY_POLL, this);
                 Registry::GetMainScheduler()->ScheduleWork(cmd);
             }
@@ -434,28 +431,44 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
         {
             LOGDEBUG(logger, "new state: CMD_QUERY_POLL ");
 
-            // Collect all queries to be issued.
-            std::vector<ISputnikCommand*>::iterator it;
-            for (it=commands.begin(); it!= commands.end(); it++) {
-                if ((*it)->ConsiderCommand()) {
-#ifdef DEBUG_BACKOFFSTRATEGIES
-                    LOGTRACE(logger,"Considering Command " << (*it)->command );
-#endif
-                    pendingcommands.push_back(*it);
+            // new round if pendingcommands is empty.
+            if (pendingcommands.empty()) {
+
+                // did we have ANY success the last round?
+                if (_softerror) {
+                    // no, no single command was successful.
+                    LOGTRACE(logger, "Soft-error: Giving up");
+                    _softerror = false;
+                    cmd = new ICommand(CMD_DISCONNECTED, this);
+                    Registry::GetMainScheduler()->ScheduleWork(cmd);
+                    break;
                 }
-#ifdef DEBUG_BACKOFFSTRATEGIES
-                else {
-                    LOGTRACE(logger," Command " << (*it)->command << " not to be considered.");
+
+                // reset flag for the new round.
+                _softerror = true;
+                // Collect all queries to be issued.
+                std::vector<ISputnikCommand*>::iterator it;
+                for (it = commands.begin(); it != commands.end(); it++) {
+                    if ((*it)->ConsiderCommand()) {
+                        pendingcommands.push_back(*it);
+                    }
                 }
-#endif
+
+                // on new round, defer execution by the query interval.
+                if (!_firstround) {
+                    _firstround = false;
+                    CCapability *c = GetConcreteCapability(
+                    CAPA_INVERTER_QUERYINTERVAL);
+                    CValue<float> *v = (CValue<float> *)c->getValue();
+                    ts.tv_sec = v->Get();
+                    ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
+                    cmd = new ICommand(CMD_QUERY_POLL, this);
+                    Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
+                    break;
+                }
             }
 
-        }
-        // fall through intended.
-
-        case CMD_SEND_QUERIES:
-        {
-            LOGDEBUG(logger, "new state: CMD_SEND_QUERIES ");
+            // generate a telegram to be sent and send it.
             cmd = new ICommand(CMD_WAIT_SENT, this);
             // Start an atomic communication block (to hint any shared comms)
             cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_REQUEST);
@@ -518,45 +531,26 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
             }
 
             if (err == -ETIMEDOUT) {
-                // Timeout occured -- can be that the inverter simply did not answer
+                /* Timeout occured -- can be that the inverter simply did not answer
+                 * because not ready -- soft-error
+                 * to avoid kept stuck in this situation a soft-error turns hard
+                 * if no single commmand has been positivily answered when've
+                 * tried all available commands in the pool.
+                 */
 
                 LOGDEBUG(logger, "Receive timeout");
                 assert(_notansweredcommand);
                 _notansweredcommand->CommandNotAnswered();
                 _notansweredcommand = NULL;
 
-                if (!pendingcommands.empty()) {
-                    LOGTRACE(logger, "Querying remaining commands");
-                    cmd = new ICommand(CMD_SEND_QUERIES, this);
-                    Registry::GetMainScheduler()->ScheduleWork(cmd);
-                    break;
-                } else {
-                    // _softtimeout will be reset to false if *any* telegram
-                    // has been answered. If its true here, we've got a permanent
-                    // problem.
-                    if (_softtimeout) {
-                        LOGTRACE(logger, "Soft-timeout: Giving up");
-                        _softtimeout = false;
-                        cmd = new ICommand(CMD_DISCONNECTED, this);
-                        Registry::GetMainScheduler()->ScheduleWork(cmd);
-                        break;
-                    }
-                    // no more pending commands -- repeat the cycle.
-                    // but remember that we need at least one good command the
-                    // next one, so if it stays true, we'll disconnect.
-                    _softtimeout = true;
-                    LOGTRACE(logger, "Soft-timeout: Give a new cycle a try");
-                    // repeat cycle after delay
-                    CCapability *c = GetConcreteCapability(CAPA_INVERTER_QUERYINTERVAL);
-                    CValue<float> *v = (CValue<float> *) c->getValue();
-                    ts.tv_sec = v->Get();
-                    ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
-                    cmd = new ICommand(CMD_QUERY_POLL, this);
-                    Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
-                    break;
-                }
+                // Depending on if there are still commmands left we need
+                LOGTRACE(logger, "Querying remaining commands");
+                cmd = new ICommand(CMD_QUERY_POLL, this);
+                Registry::GetMainScheduler()->ScheduleWork(cmd);
+                break;
+            }
 
-            } else  if (err < 0) {
+            if (err < 0) {
                 // we do not differentiate the error here, an error is an error....
                 // try to log the error message, if any.
                 try {
@@ -614,38 +608,32 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
                 break;
             }
 
+            if (1 == parseresult) {
+                // Success.
+                _softerror = false;
+            }
+
             // the issued command should have been answered,
             // if notansweredcommand is non-null, it has not.
             // So notify the backoff algorithm(s).
             if (_notansweredcommand) {
                 _notansweredcommand->CommandNotAnswered();
-            } else if(_softtimeout){
-                LOGTRACE(logger, "Soft-timeout: Resetted due to received command");
-                _softtimeout = false;
             }
             _notansweredcommand = NULL;
 
-            // if there are still pending commands, issue them first before
-            // filling the queue again.
-            if (!pendingcommands.empty()) {
-                LOGTRACE(logger, "Querying remaining commands");
-                cmd = new ICommand(CMD_SEND_QUERIES, this);
-                Registry::GetMainScheduler()->ScheduleWork(cmd);
-                break;
+            // if a complete command round has been issued, set data validity to
+            // valid, if at least one command was successful.
+
+            if (!_softerror && pendingcommands.empty()) {
+                CCapability *c = GetConcreteCapability(CAPA_INVERTER_DATASTATE);
+                CValue<bool> *vb = (CValue<bool> *)c->getValue();
+                vb->Set(true);
+                c->Notify();
             }
 
-            CCapability *c = GetConcreteCapability(CAPA_INVERTER_DATASTATE);
-            CValue<bool> *vb = (CValue<bool> *) c->getValue();
-            vb->Set(true);
-            c->Notify();
-
-            c = GetConcreteCapability(CAPA_INVERTER_QUERYINTERVAL);
-            CValue<float> *v = (CValue<float> *) c->getValue();
-            ts.tv_sec = v->Get();
-            ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
             cmd = new ICommand(CMD_QUERY_POLL, this);
-            Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
-
+            Registry::GetMainScheduler()->ScheduleWork(cmd);
+            break;
         }
         break;
 
@@ -821,6 +809,7 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
                 LOGDEBUG(
                     logger,
                     "Transmission error bit set: unknown error code " << tmp);
+            break;
         }
         return -1;
     }
@@ -1013,6 +1002,5 @@ uint16_t CInverterDanfoss::hdlc_calcchecksum(const std::string& input)
     crc.process_bytes(input.c_str(), input.length());
     return crc.checksum();
 }
-
 
 #endif /* HAVE_INV_DUMMY */

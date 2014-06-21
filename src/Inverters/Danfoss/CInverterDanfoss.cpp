@@ -632,37 +632,55 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
  * */
 int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
 
+    std::string localrcvd;
+
     // Check first of we've got a complete telegram (that's two 0x7E)
     size_t pos = rcvd.find_first_of(0x7E);
     if (pos != 0 && (std::string::npos != pos)) {
+        // Discard all chars in front of the 0x7e
         rcvd = rcvd.substr(pos);
     }
 
-    pos = rcvd.find_last_of(0x7E);
+    // Error if there is no 0x7e in the string.
+    if ( pos == std::string::npos ) {
+        return -1;
+    }
+
+    // Look for a/the second 0x7e
+    pos = rcvd.find(0x7E, 1);
     if (! pos) return -1; // no second 0x7e -> discard telegram
 
     if (pos < 6) {
          return -1; // minimum length is 6 bytes.
     }
 
+    // Extract telegramm.
+    localrcvd = rcvd.substr(1,pos-1);
+    LOGTRACE(logger, "Telegramm without frame:" << endl << hexdump(localrcvd));
+
+    if (rcvd.length() > pos) {
+        rcvd = rcvd.substr(pos + 1);
+        LOGTRACE(logger, "Remaining rcvd string:" << endl << hexdump(rcvd));
+    }
+    else {
+        rcvd.clear();
+    }
+
     // Check Frame
-    if ((unsigned char)rcvd[1] != 0xFF || rcvd[2] != 0x03) {
+    if ((unsigned char)localrcvd[0] != 0xFF || localrcvd[1] != 0x03) {
         LOGDEBUG(logger, "Frame error.");
         return -1;
     }
 
-    rcvd = rcvd.substr(1,pos-1);
-    LOGTRACE(logger, "Frame removed:" << endl << hexdump(rcvd));
-
     // extract the telegramm but cut the 0x7E (othewise we would cut at 0 and pos+1)
     // that is cut at pos 1 (2nd byte) with a length of pos-1
-    rcvd = hdlc_debytestuff(rcvd);
+    localrcvd = hdlc_debytestuff(localrcvd);
 
-    LOGTRACE(logger, "Telegramm destuffed:" << endl << hexdump(rcvd));
+    LOGTRACE(logger, "Telegramm destuffed:" << endl << hexdump(localrcvd));
 
-    if ( DANFOSS_CRC_GOOD != hdlc_calcchecksum(rcvd) ) {
+    if ( DANFOSS_CRC_GOOD != hdlc_calcchecksum(localrcvd) ) {
         LOGDEBUG(logger, "Checksum error: 0x"
-                 << hex << hdlc_calcchecksum(rcvd));
+                 << hex << hdlc_calcchecksum(localrcvd));
         return -1;
     }
 
@@ -671,15 +689,15 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
     // remove the frame (2 more bytes -- so we start at the 3rd
     // and remove the CRC (this are the two last bytes)
     // so the new string will be 4 bytes shorter than before
-    rcvd = rcvd.substr(2,rcvd.length()-4);
+    localrcvd = localrcvd.substr(2,localrcvd.length()-4);
 
-    LOGTRACE(logger, "Message extracted:" << endl << hexdump(rcvd));
+    LOGTRACE(logger, "Message extracted:" << endl << hexdump(localrcvd));
 
     // Check message correctness
     // Adresses:
     //  Source
-    uint16_t tmp = rcvd[DANFOSS_POS_HDR_SOURCE + 1]
-                   | (((unsigned char)rcvd[DANFOSS_POS_HDR_SOURCE]) << 8U);
+    uint16_t tmp = localrcvd[DANFOSS_POS_HDR_SOURCE + 1]
+                   | (((unsigned char)localrcvd[DANFOSS_POS_HDR_SOURCE]) << 8U);
 
     if (tmp != _precalc_slaveadr) {
         LOGTRACE(logger, "Not from this inverter. 0x"
@@ -689,8 +707,8 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
         return 0;
     }
 
-    tmp = rcvd[DANFOSS_POS_HDR_DEST + 1]
-          | (((unsigned char)rcvd[DANFOSS_POS_HDR_DEST]) << 8U);
+    tmp = localrcvd[DANFOSS_POS_HDR_DEST + 1]
+          | (((unsigned char)localrcvd[DANFOSS_POS_HDR_DEST]) << 8U);
 
     //  Dest
     if (tmp != _precalc_masteradr) {
@@ -708,9 +726,9 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
     int ret = 1;
     vector<ISputnikCommand*>::iterator it;
     for (it = commands.begin(); it != commands.end(); it++) {
-        if ((*it)->IsHandled(rcvd)) {
+        if ((*it)->IsHandled(localrcvd)) {
             LOGTRACE(logger, "Handler found:  " << (*it)->GetCapaName());
-            bool result = (*it)->handle_token(rcvd);
+            bool result = (*it)->handle_token(localrcvd);
             if (!result)  {
                 LOGTRACE(logger,"failed parsing " + (*it)->GetCapaName());
                 ret = -1;

@@ -433,6 +433,7 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
 
             // new round if pendingcommands is empty.
             if (pendingcommands.empty()) {
+                LOGTRACE(logger, "new round.");
 
                 // did we have ANY success the last round?
                 if (_softerror) {
@@ -454,9 +455,9 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
                     }
                 }
 
+                LOGTRACE(logger, " pending: " << pendingcommands.size() << " Cmds");
                 // on new round, defer execution by the query interval.
                 if (!_firstround) {
-                    _firstround = false;
                     CCapability *c = GetConcreteCapability(
                     CAPA_INVERTER_QUERYINTERVAL);
                     CValue<float> *v = (CValue<float> *)c->getValue();
@@ -465,10 +466,13 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
                     cmd = new ICommand(CMD_QUERY_POLL, this);
                     Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
                     break;
+                } else {
+                    _firstround = false;
                 }
             }
 
-            // generate a telegram to be sent and send it.
+            LOGTRACE(logger, "pending: " << pendingcommands.size() << " Cmds");
+             // generate a telegram to be sent and send it.
             cmd = new ICommand(CMD_WAIT_SENT, this);
             // Start an atomic communication block (to hint any shared comms)
             cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_REQUEST);
@@ -581,39 +585,37 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
 
             int parseresult = parsereceivedstring(s);
 
-            // TODO parsereceiedstring could handle more than one telegram per received string,
-            // but the statemachine currently doesn't... (as error detection becomes non-trivial:
-            // What to do if first telegramm OK, second a error or incomplete
-            // should we then disconnect or continue... Needs a quiet moment to think about it :)
-            // Also the returncode 0 means "not for us" could be handled somehow else than ignoring
-            // however this should not happen due to the locking mechanism.
-
             // parseresult =>
-            //      -1 on error,
-            //      0 if the string indicated that it is not for us
+            //      -1 on hard-errors (needs reconnect to recover),
+            //      0  on soft-errors (everything should still work...)
             //      1 on success.
 
-            if (0 == parseresult) {
-                LOGERROR(
-                    logger,
-                    "Command not for us? (This is currentley handeld same as an error)");
-            }
+            // Note on SOFT ERRORS
+            // "SoftErrors" can become "hard" if they are persistant.
+            // The implemented mechanism determines a SoftError to be hard if
+            // no single command can be parsed sucessfully while every command
+            // in the pool have been tried.
 
-            if (1 != parseresult) {
+            if (-1 == parseresult) {
                 // Reconnect on parse errors.
                 LOGERROR(logger, "Parse error on received string.");
                 cmd = new ICommand(CMD_DISCONNECTED, this);
                 Registry::GetMainScheduler()->ScheduleWork(cmd);
                 break;
-            }
-
-            if (1 == parseresult) {
-                // Success.
+            } else if (0 == parseresult) {
+                // Soft-Error reported.
+                // currently no special handling required.
+                LOGTRACE(logger, "Soft-error detected.");
+            } else if (1 == parseresult) {
+                // note that this round had at least one success.
                 _softerror = false;
             }
 
+            LOGTRACE(logger, "Soft-error state " << _softerror);
+
             // the issued command should have been answered,
-            // if notansweredcommand is non-null, it has not.
+            // if _notansweredcommand is non-null, it has not been answered
+            // or parsing went wrong.
             // So notify the backoff algorithm(s).
             if (_notansweredcommand) {
                 _notansweredcommand->CommandNotAnswered();
@@ -621,7 +623,7 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
             _notansweredcommand = NULL;
 
             // if a complete command round has been issued, set data validity to
-            // valid, if at least one command was successful.
+            // valid, if at least one command was successful in the last round.
 
             if (!_softerror && pendingcommands.empty()) {
                 CCapability *c = GetConcreteCapability(CAPA_INVERTER_DATASTATE);
@@ -636,73 +638,83 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
         }
         break;
 
-        // Broadcast events
+            // Broadcast events
         case CMD_BRC_SHUTDOWN:
-        LOGDEBUG(logger, "new state: CMD_BRC_SHUTDOWN");
-        // stop all pending I/Os, as we will exit soon.
-        connection->AbortAll();
-        _shutdown_requested = true;
+            LOGDEBUG(logger, "new state: CMD_BRC_SHUTDOWN");
+            // stop all pending I/Os, as we will exit soon.
+            connection->AbortAll();
+            _shutdown_requested = true;
         break;
 
         default:
-        if (Command->getCmd() <= BasicCommands::CMD_BROADCAST_MAX) {
-            // broadcast event
-            LOGDEBUG(logger, "Unhandled broadcast event received " << Command->getCmd());
-            break;
-        }
-        LOGERROR(logger, "Unknown CMD received: "<< Command->getCmd());
+            if (Command->getCmd() <= BasicCommands::CMD_BROADCAST_MAX) {
+                // broadcast event
+                LOGDEBUG(
+                    logger,
+                    "Unhandled broadcast event received " << Command->getCmd());
+                break;
+            }
+            LOGERROR(logger, "Unknown CMD received: "<< Command->getCmd());
         break;
     }
 
 }
 
-/** Check received message for correctness and pass data to CDanfossCommand
- * instance
+/** Handle received message pass to CDanfossCommand for interpretation
  *
- * 1) Check if complete telegramm
- * 2) De-bytestuff
- * 1) Check for correctness / completeness
- *     -> CRC
- *     -> Frame
- *     -> Adressing
- * 2) Feed to CDanfossCommand
+ * - Check if complete telegram,
+ * - handle de-bytestuffing
+ * - ensure telegram consitency (lenght requirement, checksum, error-bits...)
+ * 2) Check if telegram ok (frame, checksum, adressing ...)
+ * 3) pass to CDanfossCommand
  *
+ * \note as Danfoss inverters have only one query per telegram, we use this
+ * knowledge to directly address the right CDanfossCommand instance.
  *
+ * \returns -1 hard errors (need likely a reconnect to recover)
+ *           0 soft errors (could be temporary problem -- dont disconnect just continue)
+ *           1 success  (Yeah!)
  *
- * */
+ * below "soft errors" are only used for errors within the telegramm data, so
+ * the data must at least somehow look like a telegram..
+ *  Soft = bitflips, hard = unrecognizeable mostly.
+ */
 int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
 
     std::string localrcvd;
     uint16_t tmp;
 
     // Check first of we've got a complete telegram (that's two 0x7E)
+
+    // First 0x7E
     size_t pos = rcvd.find_first_of(0x7E);
     if (pos != 0 && (std::string::npos != pos)) {
         // Discard all chars in front of the 0x7e
         rcvd = rcvd.substr(pos);
     }
 
-    // Error if there is no 0x7e in the string.
+    // Error if there is no 0x7e in the string. (hard)
     if (pos == std::string::npos) {
         return -1;
     }
 
-    // Look for a/the second 0x7e
+    // Look for a/the second 0x7e (hard)
     pos = rcvd.find(0x7E, 1);
     if (!pos) return -1; // no second 0x7e -> discard telegram
 
+    // minimum length is 12 bytes (6 for frame, 6 for the message header). (hard)
     if (pos < 12) {
-        return -1; // minimum length is 12 bytes (6 for frame, 6 for the message header).
+        return -1;
     }
 
     // Extract telegramm.
     rcvd = rcvd.substr(1, pos - 1);
     LOGTRACE(logger, "Telegramm without frame:" << endl << hexdump(rcvd));
 
-    // Check Frame
+    // Check Frame (soft)
     if ((unsigned char)rcvd[0] != 0xFF || rcvd[1] != 0x03) {
         LOGDEBUG(logger, "Frame error.");
-        return -1;
+        return 0;
     }
 
     rcvd = hdlc_debytestuff(rcvd);
@@ -710,15 +722,17 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
 
     // now a second size check... After debytestuffing and removing the 0x7e
     // (which could shrink the telgramm) we still need a minimum of 10 bytes
+    // (hard)
     if (rcvd.length() <= 10) {
         LOGDEBUG(logger, "minimum size after destuffing violated");
         return -1;
     }
 
+    // Checkusm check (soft)
     if ( DANFOSS_CRC_GOOD != hdlc_calcchecksum(rcvd)) {
         LOGDEBUG(logger, "Checksum error: 0x"
                  << hex << hdlc_calcchecksum(rcvd));
-        return -1;
+        return 0;
     }
 
     // Basic checks done...
@@ -737,26 +751,31 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
      * |=======================================================|
      */
 
-    // lets check if the size matched telegramm size
+    // lets check if the size matched telegramm size (soft)
     tmp = 6 + rcvd[DANFOSS_POS_HDR_SIZE];
     if (tmp != rcvd.length()) {
         LOGDEBUG(logger, "Message block size mismatch. Received " <<
             rcvd.length() << ", telegram indicates:" << tmp);
-        return -1;
+        return 0;
     }
+
+    // note: as we now checked message integrity via CRC bitflips are very
+    // unlikely starting from here. Therefore we hard-fail on sanity checks here
 
     // now check for application errors.
     // its encoded in the type field,
 
     tmp = rcvd[DANFOSS_POS_HDR_TYPE];
     if (tmp & (1 << 5)) {
-        // Application error bit set
+        // Application error bit set.
+        // Check if there is one byte data for the error code (hard)
         if (rcvd[DANFOSS_POS_HDR_SIZE] != 1) {
             LOGDEBUG(logger,
                 "Telegramm indicated application error, but error code not 1 byte.");
             return -1;
         }
-        // One data bytes tells the error code...
+        // Check the error code. We go for soft-errors here, as the errors might
+        // be triggered by solarpowerlog's code and we want to go on with the show.
         tmp = rcvd[DANFOSS_POS_DAT_DOCTYPE];
         switch (tmp) {
             case 0x10:
@@ -776,17 +795,14 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
                          "Application error bit set: MissingCAN Response");
                 // According docs this can happen if an internal inverter
                 // module is not powered up (or if we addressed the wrong moduleid)
-                // So the first cause is kind of "soft-error" that might go away over time,
-                // so we ignore it here and pretend to be successful.
-                // TODO Check when tested on real hardware if this impacts BackOffStrategies...
-                return 1;
+                // So this should be handleable by soft-errors and backoff algos.
             break;
             default:
                 LOGDEBUG( logger,
                     "Application error bit set: unknown error code " << tmp);
             break;
         }
-        return -1;
+        return 0;
     } else if (tmp & (1 << 6)) {
         // Transmission error bit set
         if (rcvd[DANFOSS_POS_HDR_SIZE] != 1) {
@@ -815,7 +831,7 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
                     "Transmission error bit set: unknown error code " << tmp);
             break;
         }
-        return -1;
+        return 0;
     }
 
     // Check message correctness
@@ -844,22 +860,20 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
         return 0;
     }
 
-    // Check for application error
-
     // Validation of telegram done and succeeded.
     // For Danfoss-inverters, there is only one query at a time,
     // so our command must be in _notansweredcommand or there is a problem.
     assert(_notansweredcommand);
     if (!_notansweredcommand->IsHandled(rcvd)) {
         LOGDEBUG(logger, "Received response but not for this commmand. Weird.");
-        return -1;
+        return 0;
     }
 
     bool result = _notansweredcommand->handle_token(rcvd);
     if (!result) {
         LOGTRACE(logger,
-                 "failed parsing " + _notansweredcommand->GetCapaName());
-        return -1;
+                 "failed parsing for " + _notansweredcommand->GetCapaName());
+        return 0;
     }
     else {
         _notansweredcommand = NULL;

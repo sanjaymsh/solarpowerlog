@@ -640,6 +640,7 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
 int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
 
     std::string localrcvd;
+    uint16_t tmp;
 
     // Check first of we've got a complete telegram (that's two 0x7E)
     size_t pos = rcvd.find_first_of(0x7E);
@@ -657,8 +658,8 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
     pos = rcvd.find(0x7E, 1);
     if (! pos) return -1; // no second 0x7e -> discard telegram
 
-    if (pos < 6) {
-         return -1; // minimum length is 6 bytes.
+    if (pos < 12) {
+         return -1; // minimum length is 12 bytes (6 for frame, 6 for the message header).
     }
 
     // Extract telegramm.
@@ -679,11 +680,15 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
         return -1;
     }
 
-    // extract the telegramm but cut the 0x7E (othewise we would cut at 0 and pos+1)
-    // that is cut at pos 1 (2nd byte) with a length of pos-1
     localrcvd = hdlc_debytestuff(localrcvd);
-
     LOGTRACE(logger, "Telegramm destuffed:" << endl << hexdump(localrcvd));
+
+    // now a second size check... After debytestuffing and removing the 0x7e
+    // (which could shrink the telgramm) we still need a minimum of 10 bytes
+   if (localrcvd.length() <= 10 ) {
+       LOGDEBUG(logger, "minium size after destuffing violated");
+       return -1;
+   }
 
     if ( DANFOSS_CRC_GOOD != hdlc_calcchecksum(localrcvd) ) {
         LOGDEBUG(logger, "Checksum error: 0x"
@@ -699,11 +704,92 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
     localrcvd = localrcvd.substr(2,localrcvd.length()-4);
 
     LOGTRACE(logger, "Message extracted:" << endl << hexdump(localrcvd));
+    /* now we have in localrcvd (size in brackets:
+    *
+    * |=======================================================|
+    * ||                    Header                |   Data   ||
+    * ||  Src(2)  | Dest(2) | Size(1)  | Type(1)  |  0-255By ||
+    * |=======================================================|
+    *
+    */
+
+    // lets check if the size matched telegramm size
+    tmp = 6 + localrcvd[DANFOSS_POS_HDR_SIZE];
+    if ( tmp != localrcvd.length()) {
+        LOGDEBUG(logger, "Message block size mismatch. Received " << localrcvd.length() <<
+                 ", telegram indicates:" << tmp);
+        return -1;
+    }
+
+    // now check for application errors.
+    // its encoded in the type field,
+
+    tmp = localrcvd[DANFOSS_POS_HDR_TYPE];
+    if (tmp & (1 << 5)) {
+        // Application error bit set
+        if (localrcvd[DANFOSS_POS_HDR_SIZE] != 1) {
+            LOGDEBUG( logger,
+                      "Telegramm indicated application error, but error code not 1 byte.");
+            return -1;
+        }
+        // One data bytes tells the error code...
+        tmp = localrcvd[DANFOSS_POS_DAT_DOCTYPE];
+        switch (tmp) {
+            case 0x10:
+                LOGDEBUG(logger, "Application error bit set: MessageNotSupported");
+                break;
+            case 0x11:
+                LOGDEBUG(logger, "Application error bit set: RequestNotCarriedOut");
+                break;
+            case 0x12:
+                LOGDEBUG(logger, "Application error bit set: IllegalNumberOfDataBytes");
+                break;
+            case 0xA0:
+                LOGDEBUG(logger, "Application error bit set: MissingCAN Response");
+                // According docs this can happen if an internal inverter
+                // module is not powered up.
+                // So this is kind of "soft-error" that might go away over time,
+                // so we ignore it here and pretend to be successful.
+                return 1;
+                break;
+            default:
+                LOGDEBUG(logger, "Application error bit set: unknown error code " << tmp);
+        }
+        return -1;
+    } else if (tmp & (1 << 6)) {
+        // Transmission error bit set
+        if (localrcvd[DANFOSS_POS_HDR_SIZE] != 1) {
+            LOGDEBUG(logger,
+                 "Telegramm indicated application error, but error code not 1 byte.");
+            return -1;
+        }
+        // One data byte tells the error code...
+        tmp = localrcvd[DANFOSS_POS_DAT_DOCTYPE];
+        switch (tmp) {
+            case 0x01:
+                LOGDEBUG(logger, "Transmission error bit set: CRCError");
+            break;
+            case 0x02:
+                LOGDEBUG(logger, "Transmission error bit set: FramingError");
+            break;
+            case 0x03:
+                LOGDEBUG(logger, "Transmission error bit set: BufferOverflow");
+            break;
+            case 0x04:
+                LOGDEBUG(logger, "Transmission error bit set: ByteTimeout");
+            break;
+            default:
+                LOGDEBUG(
+                    logger,
+                    "Transmission error bit set: unknown error code " << tmp);
+        }
+        return -1;
+    }
 
     // Check message correctness
     // Adresses:
     //  Source
-    uint16_t tmp = localrcvd[DANFOSS_POS_HDR_SOURCE + 1]
+    tmp = localrcvd[DANFOSS_POS_HDR_SOURCE + 1]
                    | (((unsigned char)localrcvd[DANFOSS_POS_HDR_SOURCE]) << 8U);
 
     if (tmp != _precalc_slaveadr) {

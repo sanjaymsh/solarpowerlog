@@ -126,6 +126,7 @@ CInverterDanfoss::CInverterDanfoss(const string &type, const string &name,
     _invertertype = type;
     _shutdown_requested = false;
     _notansweredcommand = NULL;
+    _softtimeout= false;
 
     // Load config with sensible defaults
     float interval;
@@ -357,6 +358,7 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
                 Registry::GetMainScheduler()->ScheduleWork(cmd);
             }
 
+            _softtimeout = false;
             break;
         }
 
@@ -515,7 +517,46 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
                 err = -EINVAL;
             }
 
-            if (err < 0) {
+            if (err == -ETIMEDOUT) {
+                // Timeout occured -- can be that the inverter simply did not answer
+
+                LOGDEBUG(logger, "Receive timeout");
+                assert(_notansweredcommand);
+                _notansweredcommand->CommandNotAnswered();
+                _notansweredcommand = NULL;
+
+                if (!pendingcommands.empty()) {
+                    LOGTRACE(logger, "Querying remaining commands");
+                    cmd = new ICommand(CMD_SEND_QUERIES, this);
+                    Registry::GetMainScheduler()->ScheduleWork(cmd);
+                    break;
+                } else {
+                    // _softtimeout will be reset to false if *any* telegram
+                    // has been answered. If its true here, we've got a permanent
+                    // problem.
+                    if (_softtimeout) {
+                        LOGTRACE(logger, "Soft-timeout: Giving up");
+                        _softtimeout = false;
+                        cmd = new ICommand(CMD_DISCONNECTED, this);
+                        Registry::GetMainScheduler()->ScheduleWork(cmd);
+                        break;
+                    }
+                    // no more pending commands -- repeat the cycle.
+                    // but remember that we need at least one good command the
+                    // next one, so if it stays true, we'll disconnect.
+                    _softtimeout = true;
+                    LOGTRACE(logger, "Soft-timeout: Give a new cycle a try");
+                    // repeat cycle after delay
+                    CCapability *c = GetConcreteCapability(CAPA_INVERTER_QUERYINTERVAL);
+                    CValue<float> *v = (CValue<float> *) c->getValue();
+                    ts.tv_sec = v->Get();
+                    ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
+                    cmd = new ICommand(CMD_QUERY_POLL, this);
+                    Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
+                    break;
+                }
+
+            } else  if (err < 0) {
                 // we do not differentiate the error here, an error is an error....
                 // try to log the error message, if any.
                 try {
@@ -576,7 +617,12 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
             // the issued command should have been answered,
             // if notansweredcommand is non-null, it has not.
             // So notify the backoff algorithm(s).
-            if (_notansweredcommand) _notansweredcommand->CommandNotAnswered();
+            if (_notansweredcommand) {
+                _notansweredcommand->CommandNotAnswered();
+            } else if(_softtimeout){
+                LOGTRACE(logger, "Soft-timeout: Resetted due to received command");
+                _softtimeout = false;
+            }
             _notansweredcommand = NULL;
 
             // if there are still pending commands, issue them first before
@@ -686,7 +732,7 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
     // now a second size check... After debytestuffing and removing the 0x7e
     // (which could shrink the telgramm) we still need a minimum of 10 bytes
    if (localrcvd.length() <= 10 ) {
-       LOGDEBUG(logger, "minium size after destuffing violated");
+       LOGDEBUG(logger, "minimum size after destuffing violated");
        return -1;
    }
 
@@ -747,9 +793,10 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
             case 0xA0:
                 LOGDEBUG(logger, "Application error bit set: MissingCAN Response");
                 // According docs this can happen if an internal inverter
-                // module is not powered up.
-                // So this is kind of "soft-error" that might go away over time,
+                // module is not powered up (or if we addressed the wrong moduleid)
+                // So the first cause is kind of "soft-error" that might go away over time,
                 // so we ignore it here and pretend to be successful.
+                // TODO Check when tested on real hardware if this impacts BackOffStrategies...
                 return 1;
                 break;
             default:

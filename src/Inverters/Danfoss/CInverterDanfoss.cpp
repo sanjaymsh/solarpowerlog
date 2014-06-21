@@ -210,13 +210,13 @@ CInverterDanfoss::CInverterDanfoss(const string &type, const string &name,
 
     if (type == "TripleLynx") {
         commands.push_back(
-           new CDanfossCommand<CAPA_INVERTER_ACPOWER_TOTAL_TYPE>
-            (logger, 0x02, 0x46, 0x08 ,DanfossCommand::type_u32, this,
-                 CAPA_INVERTER_ACPOWER_TOTAL));
+            new CDanfossCommand<CAPA_INVERTER_ACPOWER_TOTAL_TYPE>
+            (logger, 0x02, 0x46, 0x08, DanfossCommand::type_u32, this,
+            CAPA_INVERTER_ACPOWER_TOTAL));
         commands.push_back(
             new CDanfossCommand<CAPA_INVERTER_KWH_2D_TYPE>
-             (logger, 0x02, 0xA7, 0x08, DanfossCommand::type_u32, this,
-              CAPA_INVERTER_KWH_2D));
+            (logger, 0x02, 0xA7, 0x08, DanfossCommand::type_u32, this,
+            CAPA_INVERTER_KWH_2D));
     }
 
 }
@@ -304,10 +304,10 @@ bool CInverterDanfoss::CheckConfig()
 
         // Pre-Calculate the addresses we neeed.
         _precalc_masteradr = (_cfg_master_network_adr << 12)
-            +  (_cfg_master_subnet_adr << 8) + _cfg_master_adr;
+            + (_cfg_master_subnet_adr << 8) + _cfg_master_adr;
 
         _precalc_slaveadr = (_cfg_inv_network_adr << 12)
-             +  (_cfg_inv_subnet_adr << 8) + _cfg_inv_adr;
+            + (_cfg_inv_subnet_adr << 8) + _cfg_inv_adr;
 
     }
 
@@ -326,7 +326,7 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
         Command->getCmd());
 
     // Probably you want to have a big switch-case here, covering all your CMD_xxx
-    switch ((Commands) Command->getCmd()) {
+    switch ((Commands)Command->getCmd()) {
         case CMD_DISCONNECTED:
         {
             // DISCONNECTED: Error detected, the link to the com partner is down.
@@ -336,7 +336,7 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
 
             // Tell everyone that all data is now invalid.
             CCapability *c = GetConcreteCapability(CAPA_INVERTER_DATASTATE);
-            CValue<bool> *v = (CValue<bool> *) c->getValue();
+            CValue<bool> *v = (CValue<bool> *)c->getValue();
             v->Set(false);
             c->Notify();
 
@@ -344,7 +344,7 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
             pendingcommands.clear();
             _notansweredcommand = NULL;
             vector<ISputnikCommand *>::iterator it;
-            for (it=this->commands.begin(); it!=commands.end(); it++) {
+            for (it = this->commands.begin(); it != commands.end(); it++) {
                 (*it)->InverterDisconnected();
             }
 
@@ -365,8 +365,8 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
             timespec ts;
             float fraction, intpart;
             fraction = modf(_cfg_reconnectdelay_s, &intpart);
-            ts.tv_sec = (long) intpart;
-            ts.tv_nsec = (long) (fraction*1E9);
+            ts.tv_sec = (long)intpart;
+            ts.tv_nsec = (long)(fraction * 1E9);
             Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
             break;
         }
@@ -382,7 +382,7 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
             // Next-State: Wait4Connection
 
             cmd = new ICommand(CMD_WAIT4CONNECTION, this);
-            cmd->addData(ICONN_TOKEN_TIMEOUT,((long)_cfg_connection_timeout_ms));
+            cmd->addData(ICONN_TOKEN_TIMEOUT, ((long)_cfg_connection_timeout_ms));
             connection->Connect(cmd);
             break;
 
@@ -405,13 +405,13 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
             try {
                 err = boost::any_cast<int>(Command->findData(ICMD_ERRNO));
             } catch (...) {
-                LOGDEBUG(logger,"CMD_WAIT4CONNECTION: unexpected exception");
+                LOGDEBUG(logger, "CMD_WAIT4CONNECTION: unexpected exception");
                 err = -1;
             }
 
             if (err < 0) {
                 try {
-                    LOGERROR(logger, "Error while connecting: (" << -err << ") " <<
+                    LOGERROR( logger,"Error while connecting: (" << -err << ") " <<
                         boost::any_cast<string>(Command->findData(ICMD_ERRNO_STR)));
                 } catch (...) {
                     LOGERROR(logger, "Unknown error while connecting.");
@@ -473,7 +473,7 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
             // Start an atomic communication block (to hint any shared comms)
             cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_REQUEST);
             cmd->addData(ICONN_TOKEN_SEND_STRING, assemblequerystring());
-            cmd->addData(ICONN_TOKEN_TIMEOUT,((long)_cfg_send_timeout_ms));
+            cmd->addData(ICONN_TOKEN_TIMEOUT, ((long)_cfg_send_timeout_ms));
             connection->Send(cmd);
         }
         break;
@@ -518,7 +518,6 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
 #warning: NOT HANDLED: Danfoss inverters *could* not answer an unsupported command, which would here lead to an disconnect and then a reconnect, \
   leading to an loop.... So probably Danfoss needs to treat timeouts not necesserialy as errors, but only if they get massive...
 
-
             LOGDEBUG(logger, "new state: CMD_EVALUATE_RECEIVE");
 
             int err;
@@ -555,7 +554,7 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
                 // try to log the error message, if any.
                 try {
                     s = boost::any_cast<std::string>(Command->findData(
-                            ICMD_ERRNO_STR));
+                        ICMD_ERRNO_STR));
                     LOGERROR(logger, "Receive Error: (" <<-err <<") "<< s);
                 } catch (...) {
                     LOGERROR(logger, "Receive Error: " << strerror(-err));
@@ -564,7 +563,7 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
 
             try {
                 s = boost::any_cast<std::string>(Command->findData(
-                        ICONN_TOKEN_RECEIVE_STRING));
+                    ICONN_TOKEN_RECEIVE_STRING));
             } catch (...) {
                 LOGERROR(logger, "Retrieving string: Unexpected Exception");
                 err = -EINVAL;
@@ -572,7 +571,7 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
 
             if (err < 0) {
                 // Schedule new connection later.
-                cmd = new ICommand(CMD_DISCONNECTED,this);
+                cmd = new ICommand(CMD_DISCONNECTED, this);
                 Registry::GetMainScheduler()->ScheduleWork(cmd);
                 break;
             }
@@ -684,20 +683,20 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
     }
 
     // Error if there is no 0x7e in the string.
-    if ( pos == std::string::npos ) {
+    if (pos == std::string::npos) {
         return -1;
     }
 
     // Look for a/the second 0x7e
     pos = rcvd.find(0x7E, 1);
-    if (! pos) return -1; // no second 0x7e -> discard telegram
+    if (!pos) return -1; // no second 0x7e -> discard telegram
 
     if (pos < 12) {
-         return -1; // minimum length is 12 bytes (6 for frame, 6 for the message header).
+        return -1; // minimum length is 12 bytes (6 for frame, 6 for the message header).
     }
 
     // Extract telegramm.
-    rcvd = rcvd.substr(1,pos-1);
+    rcvd = rcvd.substr(1, pos - 1);
     LOGTRACE(logger, "Telegramm without frame:" << endl << hexdump(rcvd));
 
     // Check Frame
@@ -711,12 +710,12 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
 
     // now a second size check... After debytestuffing and removing the 0x7e
     // (which could shrink the telgramm) we still need a minimum of 10 bytes
-   if (rcvd.length() <= 10 ) {
-       LOGDEBUG(logger, "minimum size after destuffing violated");
-       return -1;
-   }
+    if (rcvd.length() <= 10) {
+        LOGDEBUG(logger, "minimum size after destuffing violated");
+        return -1;
+    }
 
-    if ( DANFOSS_CRC_GOOD != hdlc_calcchecksum(rcvd) ) {
+    if ( DANFOSS_CRC_GOOD != hdlc_calcchecksum(rcvd)) {
         LOGDEBUG(logger, "Checksum error: 0x"
                  << hex << hdlc_calcchecksum(rcvd));
         return -1;
@@ -727,23 +726,22 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
     // remove the frame (2 more bytes -- so we start at the 3rd
     // and remove the CRC (this are the two last bytes)
     // so the new string will be 4 bytes shorter than before
-    rcvd = rcvd.substr(2,rcvd.length()-4);
+    rcvd = rcvd.substr(2, rcvd.length() - 4);
 
     LOGTRACE(logger, "Message extracted:" << endl << hexdump(rcvd));
-    /* now we have in rcvd (size in brackets:
-    *
-    * |=======================================================|
-    * ||                    Header                |   Data   ||
-    * ||  Src(2)  | Dest(2) | Size(1)  | Type(1)  |  0-255By ||
-    * |=======================================================|
-    *
-    */
+    /* now we have in rcvd (sizes in brackets):
+     *
+     * |=======================================================|
+     * ||                    Header                |   Data   ||
+     * ||  Src(2)  | Dest(2) | Size(1)  | Type(1)  |  0-255By ||
+     * |=======================================================|
+     */
 
     // lets check if the size matched telegramm size
     tmp = 6 + rcvd[DANFOSS_POS_HDR_SIZE];
-    if ( tmp != rcvd.length()) {
-        LOGDEBUG(logger, "Message block size mismatch. Received " << rcvd.length() <<
-                 ", telegram indicates:" << tmp);
+    if (tmp != rcvd.length()) {
+        LOGDEBUG(logger, "Message block size mismatch. Received " <<
+            rcvd.length() << ", telegram indicates:" << tmp);
         return -1;
     }
 
@@ -754,40 +752,46 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
     if (tmp & (1 << 5)) {
         // Application error bit set
         if (rcvd[DANFOSS_POS_HDR_SIZE] != 1) {
-            LOGDEBUG( logger,
-                      "Telegramm indicated application error, but error code not 1 byte.");
+            LOGDEBUG(logger,
+                "Telegramm indicated application error, but error code not 1 byte.");
             return -1;
         }
         // One data bytes tells the error code...
         tmp = rcvd[DANFOSS_POS_DAT_DOCTYPE];
         switch (tmp) {
             case 0x10:
-                LOGDEBUG(logger, "Application error bit set: MessageNotSupported");
-                break;
+                LOGDEBUG(logger,
+                         "Application error bit set: MessageNotSupported");
+            break;
             case 0x11:
-                LOGDEBUG(logger, "Application error bit set: RequestNotCarriedOut");
-                break;
+                LOGDEBUG(logger,
+                         "Application error bit set: RequestNotCarriedOut");
+            break;
             case 0x12:
-                LOGDEBUG(logger, "Application error bit set: IllegalNumberOfDataBytes");
-                break;
+                LOGDEBUG(logger,
+                         "Application error bit set: IllegalNumberOfDataBytes");
+            break;
             case 0xA0:
-                LOGDEBUG(logger, "Application error bit set: MissingCAN Response");
+                LOGDEBUG(logger,
+                         "Application error bit set: MissingCAN Response");
                 // According docs this can happen if an internal inverter
                 // module is not powered up (or if we addressed the wrong moduleid)
                 // So the first cause is kind of "soft-error" that might go away over time,
                 // so we ignore it here and pretend to be successful.
                 // TODO Check when tested on real hardware if this impacts BackOffStrategies...
                 return 1;
-                break;
+            break;
             default:
-                LOGDEBUG(logger, "Application error bit set: unknown error code " << tmp);
+                LOGDEBUG( logger,
+                    "Application error bit set: unknown error code " << tmp);
+            break;
         }
         return -1;
     } else if (tmp & (1 << 6)) {
         // Transmission error bit set
         if (rcvd[DANFOSS_POS_HDR_SIZE] != 1) {
-            LOGDEBUG(logger,
-                 "Telegramm indicated application error, but error code not 1 byte.");
+            LOGDEBUG( logger,
+                "Telegramm indicated application error, but error code not 1 byte.");
             return -1;
         }
         // One data byte tells the error code...
@@ -818,11 +822,11 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
     // Adresses:
     //  Source
     tmp = rcvd[DANFOSS_POS_HDR_SOURCE + 1]
-                   | (((unsigned char)rcvd[DANFOSS_POS_HDR_SOURCE]) << 8U);
+          | (((unsigned char)rcvd[DANFOSS_POS_HDR_SOURCE]) << 8U);
 
     if (tmp != _precalc_slaveadr) {
         LOGTRACE(logger, "Not from this inverter. 0x"
-                 << hex  << tmp << " != 0x"
+                 << hex << tmp << " != 0x"
                  << hex << _precalc_slaveadr
                  << " (<=expected)");
         return 0;
@@ -852,14 +856,15 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
     }
 
     bool result = _notansweredcommand->handle_token(rcvd);
-     if (!result)  {
-         LOGTRACE(logger,"failed parsing " + _notansweredcommand->GetCapaName());
-         return -1;
-     }
-     else {
-         _notansweredcommand = NULL;
-         return 1;
-     }
+    if (!result) {
+        LOGTRACE(logger,
+                 "failed parsing " + _notansweredcommand->GetCapaName());
+        return -1;
+    }
+    else {
+        _notansweredcommand = NULL;
+        return 1;
+    }
 }
 
 /** Generate a telegramm to be sent out.
@@ -874,9 +879,9 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
  */
 std::string CInverterDanfoss::assemblequerystring(void) {
 
-    if (pendingcommands.empty() ) return "";
+    if (pendingcommands.empty()) return "";
 
-    std::string t,t2;
+    std::string t, t2;
 
     ISputnikCommand *cmd = pendingcommands.front();
     pendingcommands.pop_front();
@@ -900,9 +905,10 @@ std::string CInverterDanfoss::assemblequerystring(void) {
     t += (char)(crc & 0xff);
     t += (char)(crc >> 8);
 
-    LOGTRACE(logger, "Checksum reverse check (expected 0xf0b8) 0x" << hex << hdlc_calcchecksum(t));
+    LOGTRACE( logger,
+        "Checksum reverse check (expected 0xf0b8) 0x" << hex << hdlc_calcchecksum(t));
 
-    t= (char)0x7e +  hdlc_bytestuff(t);
+    t = (char)0x7e + hdlc_bytestuff(t);
     t += (char)0x7E;
 
     LOGTRACE(logger, "Telegramm stuffed & ready:" << endl << hexdump(t));
@@ -961,7 +967,7 @@ std::string CInverterDanfoss::hdlc_debytestuff(const std::string& input)
  *
  * \note the 0x7F marking the start and end should not be fed into this
  * function as those are not to be stuffed.
-*/
+ */
 std::string CInverterDanfoss::hdlc_bytestuff(const std::string& input)
 {
     std::string output;
@@ -990,7 +996,7 @@ std::string CInverterDanfoss::hdlc_bytestuff(const std::string& input)
  *
  */
 uint16_t CInverterDanfoss::hdlc_calcchecksum(const std::string& input)
-    {
+{
     boost::crc_optimal<16, // bits
         0x1021, // polynom (CCITT Polynome)
         0xffff, // initRem

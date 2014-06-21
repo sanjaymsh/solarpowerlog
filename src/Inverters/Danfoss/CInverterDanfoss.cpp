@@ -709,36 +709,28 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
     }
 
     // Extract telegramm.
-    localrcvd = rcvd.substr(1,pos-1);
-    LOGTRACE(logger, "Telegramm without frame:" << endl << hexdump(localrcvd));
-
-    if (rcvd.length() > pos) {
-        rcvd = rcvd.substr(pos + 1);
-        LOGTRACE(logger, "Remaining rcvd string:" << endl << hexdump(rcvd));
-    }
-    else {
-        rcvd.clear();
-    }
+    rcvd = rcvd.substr(1,pos-1);
+    LOGTRACE(logger, "Telegramm without frame:" << endl << hexdump(rcvd));
 
     // Check Frame
-    if ((unsigned char)localrcvd[0] != 0xFF || localrcvd[1] != 0x03) {
+    if ((unsigned char)rcvd[0] != 0xFF || rcvd[1] != 0x03) {
         LOGDEBUG(logger, "Frame error.");
         return -1;
     }
 
-    localrcvd = hdlc_debytestuff(localrcvd);
-    LOGTRACE(logger, "Telegramm destuffed:" << endl << hexdump(localrcvd));
+    rcvd = hdlc_debytestuff(rcvd);
+    LOGTRACE(logger, "Telegramm destuffed:" << endl << hexdump(rcvd));
 
     // now a second size check... After debytestuffing and removing the 0x7e
     // (which could shrink the telgramm) we still need a minimum of 10 bytes
-   if (localrcvd.length() <= 10 ) {
+   if (rcvd.length() <= 10 ) {
        LOGDEBUG(logger, "minimum size after destuffing violated");
        return -1;
    }
 
-    if ( DANFOSS_CRC_GOOD != hdlc_calcchecksum(localrcvd) ) {
+    if ( DANFOSS_CRC_GOOD != hdlc_calcchecksum(rcvd) ) {
         LOGDEBUG(logger, "Checksum error: 0x"
-                 << hex << hdlc_calcchecksum(localrcvd));
+                 << hex << hdlc_calcchecksum(rcvd));
         return -1;
     }
 
@@ -747,10 +739,10 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
     // remove the frame (2 more bytes -- so we start at the 3rd
     // and remove the CRC (this are the two last bytes)
     // so the new string will be 4 bytes shorter than before
-    localrcvd = localrcvd.substr(2,localrcvd.length()-4);
+    rcvd = rcvd.substr(2,rcvd.length()-4);
 
-    LOGTRACE(logger, "Message extracted:" << endl << hexdump(localrcvd));
-    /* now we have in localrcvd (size in brackets:
+    LOGTRACE(logger, "Message extracted:" << endl << hexdump(rcvd));
+    /* now we have in rcvd (size in brackets:
     *
     * |=======================================================|
     * ||                    Header                |   Data   ||
@@ -760,9 +752,9 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
     */
 
     // lets check if the size matched telegramm size
-    tmp = 6 + localrcvd[DANFOSS_POS_HDR_SIZE];
-    if ( tmp != localrcvd.length()) {
-        LOGDEBUG(logger, "Message block size mismatch. Received " << localrcvd.length() <<
+    tmp = 6 + rcvd[DANFOSS_POS_HDR_SIZE];
+    if ( tmp != rcvd.length()) {
+        LOGDEBUG(logger, "Message block size mismatch. Received " << rcvd.length() <<
                  ", telegram indicates:" << tmp);
         return -1;
     }
@@ -770,16 +762,16 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
     // now check for application errors.
     // its encoded in the type field,
 
-    tmp = localrcvd[DANFOSS_POS_HDR_TYPE];
+    tmp = rcvd[DANFOSS_POS_HDR_TYPE];
     if (tmp & (1 << 5)) {
         // Application error bit set
-        if (localrcvd[DANFOSS_POS_HDR_SIZE] != 1) {
+        if (rcvd[DANFOSS_POS_HDR_SIZE] != 1) {
             LOGDEBUG( logger,
                       "Telegramm indicated application error, but error code not 1 byte.");
             return -1;
         }
         // One data bytes tells the error code...
-        tmp = localrcvd[DANFOSS_POS_DAT_DOCTYPE];
+        tmp = rcvd[DANFOSS_POS_DAT_DOCTYPE];
         switch (tmp) {
             case 0x10:
                 LOGDEBUG(logger, "Application error bit set: MessageNotSupported");
@@ -805,13 +797,13 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
         return -1;
     } else if (tmp & (1 << 6)) {
         // Transmission error bit set
-        if (localrcvd[DANFOSS_POS_HDR_SIZE] != 1) {
+        if (rcvd[DANFOSS_POS_HDR_SIZE] != 1) {
             LOGDEBUG(logger,
                  "Telegramm indicated application error, but error code not 1 byte.");
             return -1;
         }
         // One data byte tells the error code...
-        tmp = localrcvd[DANFOSS_POS_DAT_DOCTYPE];
+        tmp = rcvd[DANFOSS_POS_DAT_DOCTYPE];
         switch (tmp) {
             case 0x01:
                 LOGDEBUG(logger, "Transmission error bit set: CRCError");
@@ -836,8 +828,8 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
     // Check message correctness
     // Adresses:
     //  Source
-    tmp = localrcvd[DANFOSS_POS_HDR_SOURCE + 1]
-                   | (((unsigned char)localrcvd[DANFOSS_POS_HDR_SOURCE]) << 8U);
+    tmp = rcvd[DANFOSS_POS_HDR_SOURCE + 1]
+                   | (((unsigned char)rcvd[DANFOSS_POS_HDR_SOURCE]) << 8U);
 
     if (tmp != _precalc_slaveadr) {
         LOGTRACE(logger, "Not from this inverter. 0x"
@@ -847,8 +839,8 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
         return 0;
     }
 
-    tmp = localrcvd[DANFOSS_POS_HDR_DEST + 1]
-          | (((unsigned char)localrcvd[DANFOSS_POS_HDR_DEST]) << 8U);
+    tmp = rcvd[DANFOSS_POS_HDR_DEST + 1]
+          | (((unsigned char)rcvd[DANFOSS_POS_HDR_DEST]) << 8U);
 
     //  Dest
     if (tmp != _precalc_masteradr) {
@@ -865,12 +857,12 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
     // For Danfoss-inverters, there is only one query at a time,
     // so our command must be in _notansweredcommand or there is a problem.
     assert(_notansweredcommand);
-    if (!_notansweredcommand->IsHandled(localrcvd)) {
+    if (!_notansweredcommand->IsHandled(rcvd)) {
         LOGDEBUG(logger, "Received response but not for this commmand. Weird.");
         return -1;
     }
 
-    bool result = _notansweredcommand->handle_token(localrcvd);
+    bool result = _notansweredcommand->handle_token(rcvd);
      if (!result)  {
          LOGTRACE(logger,"failed parsing " + _notansweredcommand->GetCapaName());
          return -1;
@@ -879,29 +871,6 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
          _notansweredcommand = NULL;
          return 1;
      }
-
-#if 0
-    // old code based on not utilizing the knowledge about the command we issued.
-    // Iterate through  commmands and try to find which one handles
-    // this....
-    int ret = 1;
-    vector<ISputnikCommand*>::iterator it;
-    for (it = commands.begin(); it != commands.end(); it++) {
-        if ((*it)->IsHandled(localrcvd)) {
-            LOGTRACE(logger, "Handler found:  " << (*it)->GetCapaName());
-            bool result = (*it)->handle_token(localrcvd);
-            if (!result)  {
-                LOGTRACE(logger,"failed parsing " + (*it)->GetCapaName());
-                ret = -1;
-            }
-            else {
-                notansweredcommands.erase(*it);
-            }
-            break;
-        }
-    }
-#endif
-
 }
 
 /** Generate a telegramm to be sent out.

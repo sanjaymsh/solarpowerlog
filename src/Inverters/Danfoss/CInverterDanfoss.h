@@ -156,6 +156,9 @@ private:
      */
     ISputnikCommand* _notansweredcommand;
 
+    // Flag to check if the timeouts are somehow permament
+    bool _softtimeout;
+
     void _localdebug(void);
 
 };

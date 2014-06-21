@@ -146,11 +146,15 @@ private:
     /// stores supported commands.
     vector<ISputnikCommand*> commands;
 
-    /// stores pending commmands.
+    /// stores pending commmands: The set from this->commands which has not
+    /// been yet queried
     deque<ISputnikCommand*> pendingcommands;
 
-    /// stores not answered commands (by removing the answered ones)
-    set<ISputnikCommand*> notansweredcommands;
+    /** For the Danfoss Inverter (as it only can query one command at at time
+     * notansweredcommand contains the command which is currently being queried.
+     * NULL if empty.
+     */
+    ISputnikCommand* _notansweredcommand;
 
     void _localdebug(void);
 

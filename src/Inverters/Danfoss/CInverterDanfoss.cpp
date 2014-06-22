@@ -429,7 +429,7 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
 
         case CMD_QUERY_POLL:
         {
-            LOGDEBUG(logger, "new state: CMD_QUERY_POLL ");
+            LOGDEBUG(logger, "new state: CMD_QUERY_POLL");
 
             // new round if pendingcommands is empty.
             if (pendingcommands.empty()) {
@@ -519,8 +519,6 @@ void CInverterDanfoss::ExecuteCommand(const ICommand *Command)
 
         case CMD_EVALUATE_RECEIVE:
         {
-#warning: NOT HANDLED: Danfoss inverters *could* not answer an unsupported command, which would here lead to an disconnect and then a reconnect, \
-  leading to an loop.... So probably Danfoss needs to treat timeouts not necesserialy as errors, but only if they get massive...
 
             LOGDEBUG(logger, "new state: CMD_EVALUATE_RECEIVE");
 

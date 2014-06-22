@@ -197,7 +197,7 @@ CInverterDanfoss::CInverterDanfoss(const string &type, const string &name,
         commands.push_back(
             new CDanfossCommand<CAPA_INVERTER_KWH_TOTAL_TYPE>
             (logger, 0x01, 0x02, 0x04, DanfossCommand::type_u32, this,
-            CAPA_INVERTER_KWH_TOTAL_NAME));
+            CAPA_INVERTER_KWH_TOTAL_NAME,0.001));
         commands.push_back(
             new CDanfossCommand<CAPA_INVERTER_ACPOWER_TOTAL_TYPE>
             (logger, 0x02, 0x01, 0x0D, DanfossCommand::type_u32, this,
@@ -205,7 +205,7 @@ CInverterDanfoss::CInverterDanfoss(const string &type, const string &name,
         commands.push_back(
             new CDanfossCommand<CAPA_INVERTER_KWH_2D_TYPE>
             (logger, 0x01, 0x04, 0x04, DanfossCommand::type_u32, this,
-            CAPA_INVERTER_KWH_2D));
+            CAPA_INVERTER_KWH_2D,0.001));
     }
 
     if (type == "TripleLynx") {
@@ -215,8 +215,8 @@ CInverterDanfoss::CInverterDanfoss(const string &type, const string &name,
             CAPA_INVERTER_ACPOWER_TOTAL));
         commands.push_back(
             new CDanfossCommand<CAPA_INVERTER_KWH_2D_TYPE>
-            (logger, 0x02, 0xA7, 0x08, DanfossCommand::type_u32, this,
-            CAPA_INVERTER_KWH_2D));
+            (logger, 0x02, 0x4A, 0x08, DanfossCommand::type_u32, this,
+            CAPA_INVERTER_KWH_2D,0.001));
     }
 
 }
@@ -863,7 +863,7 @@ int CInverterDanfoss::parsereceivedstring(std::string &rcvd) {
     // so our command must be in _notansweredcommand or there is a problem.
     assert(_notansweredcommand);
     if (!_notansweredcommand->IsHandled(rcvd)) {
-        LOGDEBUG(logger, "Received response but not for this commmand. Weird.");
+        LOGDEBUG(logger, "Received response but not for this command. Weird.");
         return 0;
     }
 
@@ -898,6 +898,8 @@ std::string CInverterDanfoss::assemblequerystring(void) {
     ISputnikCommand *cmd = pendingcommands.front();
     pendingcommands.pop_front();
     _notansweredcommand = cmd;
+
+     LOGTRACE(logger, "Now handling:" << cmd->GetCapaName());
 
     t += (char)0xff;
     t += (char)0x03;

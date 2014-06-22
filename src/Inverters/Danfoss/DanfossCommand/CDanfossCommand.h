@@ -164,8 +164,10 @@ public:
         enum DanfossCommand::typespec type,
         IInverterBase *inv,
         const std::string & capname,
+        T scale = 1.0,
         ISputnikCommandBackoffStrategy *backoff = NULL)
         : ISputnikCommand(logger, "", 16, inv, capname, backoff),
+            _scale(scale),
             _paramindex(paramindex),
             _subparamindex(subparamindex),
             _moduleid(moduleid),
@@ -401,6 +403,8 @@ private:
             throw e;
         }
 
+        result *= _scale;
+
         LOGTRACE(logger, "CDanfossCommmand for " << this->capaname <<
             " conversion result: " << result);
         return result;
@@ -417,12 +421,19 @@ private:
     }
 
 private:
+    /** Scaling parameter to be applied after parsing */
+    T _scale;
 
+    /** Parameter index (defined by Danfoss' protocol) */
     uint8_t _paramindex;
+    /** Parameter subindex (defined by Danfoss' protocol) */
     uint8_t _subparamindex;
+    /** Parameter moduleid (defined by Danfoss' protocol) */
     uint8_t _moduleid;
+    /** Parameter type (defined by Danfoss' protocol) */
     uint8_t _typeinfo;
 
+    /** static cache of the command to be issued. */
     std::string _commandblock;
 
 };

@@ -43,7 +43,7 @@ class IDataFilter;
 class IDataFilterFactory
 {
 public:
-	virtual IDataFilter* Factory( const string &configurationpath );
+	virtual IDataFilter* Factory( const std::string &configurationpath );
 
 	IDataFilterFactory() {};
 	virtual ~IDataFilterFactory() {};

@@ -235,8 +235,6 @@ public:
 
 
 private:
-
-	IInverterBase *oursource;
 	fstream file;
 
 	/** Do the initialization of the module

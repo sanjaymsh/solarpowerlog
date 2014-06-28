@@ -1,7 +1,7 @@
 Description: Don't overwrite CPPFLAGS in configure.ac
 Author: Tobias Frost <tobi@coldtobi.de>
-Forwarded: not-needed
-Last-Update: 2014-03-26
+Forwarded: not-needed, applied upstream in repository
+Last-Update: 2014-06-28
 ---
 This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
 --- a/configure.ac

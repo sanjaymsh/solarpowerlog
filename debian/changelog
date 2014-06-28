@@ -1,3 +1,10 @@
+solarpowerlog (0.24-6) UNRELEASED; urgency=medium
+
+  * Edit patch 02-dont-overwrite-cppflags.patch -- applied upstream in
+    repository
+
+ -- Tobias Frost <tobi@coldtobi.de>  Sat, 28 Jun 2014 09:55:15 +0200
+
 solarpowerlog (0.24-5) unstable; urgency=medium
 
   * New patch 02-dont-ovewrite-cppflags.patch to avoid

@@ -23,16 +23,6 @@ AC_CONFIG_SRCDIR([src/solarpowerlog.cpp])
 
 # configure extlibs
 
-# commmented out, as currently dbixx is not used...
-#AC_CHECK_FILE([extlibs/dbixx/configure])
-#
-#if test "x$ac_cv_file_extlibs_dbixx_configure" != "xno" ; then
-#	AC_MSG_NOTICE([dbixx found and will be configured])
-#	AC_CONFIG_SUBDIRS([extlibs/dbixx])
-#fi
-#AM_CONDITIONAL([MAKE_DBIXX],test "x$ac_cv_file_extlibs_dbixx_configure" != "xno")
-#
-
 ### options for some features that might not always be needed
 ### (for shrinking the footprint)
 
@@ -137,7 +127,6 @@ if test "x$enable_dumbdumper" != "xno" ; then
 else
 	AC_MSG_NOTICE([Support for the Dumb Dumper disabled as requested.])
 fi
-
 
 # CSV Writer
 AC_ARG_ENABLE([csvlogger],
@@ -302,6 +291,20 @@ if test "x$enable_commandlineoptions" = "xyes"; then
 		AC_DEFINE([HAVE_CMDLINEOPTS], [1], [Use Boost for parsing command line options.])
 	fi
 fi
+
+## soci library
+AC_MSG_CHECKING(soci db library)
+AC_LANG(C++)
+SAVED_LDFLAGS=$LDFLAGS
+LDFLAGS="$LDFLAGS -lsoci_core"
+AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM([#include <soci/soci.h>], [soci::session sql( "", "" )])],
+    [SOCI_LIBS="$SOCI_LIBS -lsoci_core"]
+        AC_DEFINE(HAVE_SOCI,1,[Did we find the soci library?])
+        AC_MSG_RESULT(yes),
+    [AC_MSG_RESULT(no)])
+LDFLAGS=$SAVED_LDFLAGS
+
 
 ### Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL

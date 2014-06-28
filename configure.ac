@@ -163,9 +163,6 @@ AC_ARG_ENABLE([htmlwriter],
 if test "x$enable_htmlwriter" != "xno" ; then
     AC_DEFINE([HAVE_FILTER_HTMLWRITER], [1], [HTML Writer Support])
     enable_htmlwriter=yes
-    CTEMPLATE_LIB=-lctemplate
-    CTEMPLATE_CFLAGS="-I ../extlibs"
-    CTEMPLATE_DEPS=libctemplate.a
 else
     AC_MSG_NOTICE([Support for the HTMLWriter disabled as requested.])
 fi
@@ -215,10 +212,6 @@ else
     enable_sharedcomms=no
 fi
 
-
-AC_SUBST(CTEMPLATE_LIB)
-AC_SUBST(CTEMPLATE_CFLAGS)
-AC_SUBST(CTEMPLATE_DEPS)
 
 ### Checks for programs.
 # C Compiler

@@ -742,9 +742,18 @@ BOOST_DEFUN([Program_Options],
 # Look for Boost.Atomic.  For the documentation of PREFERRED-RT-OPT,
 # see the documentation of BOOST_FIND_LIB above.
 BOOST_DEFUN([Atomic],
-[BOOST_FIND_LIB([atomic], [$1],
+[ # Needs boost::system
+BOOST_SYSTEM([$1])
+boost_filesystem_save_LIBS=$LIBS
+boost_filesystem_save_LDFLAGS=$LDFLAGS
+m4_pattern_allow([^BOOST_SYSTEM_(LIBS|LDFLAGS)$])dnl
+LIBS="$LIBS $BOOST_SYSTEM_LIBS"
+LDFLAGS="$LDFLAGS $BOOST_SYSTEM_LDFLAGS"
+BOOST_FIND_LIB([atomic], [$1],
                 [boost/atomic.hpp],
                 [boost::atomic<bool> done (false);])
+LIBS=$boost_filesystem_save_LIBS
+LDFLAGS=$boost_filesystem_save_LDFLAGS
 ])# BOOST_ATOMIC
 
 # _BOOST_PYTHON_CONFIG(VARIABLE, FLAG)
@@ -833,7 +842,6 @@ BOOST_DEFUN([Smart_Ptr],
 BOOST_FIND_HEADER([boost/shared_ptr.hpp])
 ])
 
-
 # BOOST_STATICASSERT()
 # --------------------
 # Look for Boost.StaticAssert
@@ -873,7 +881,6 @@ BOOST_FIND_LIB([unit_test_framework], [$1],
                test_suite* init_unit_test_suite(int argc, char ** argv)
                { return NULL; }])
 ])# BOOST_TEST
-
 
 # BOOST_THREADS([PREFERRED-RT-OPT])
 # ---------------------------------
@@ -922,7 +929,6 @@ case $host_os in
                    [boost/thread.hpp], [boost::thread t; boost::mutex m;])
   ;;
 esac
-
 BOOST_THREAD_LIBS="$BOOST_THREAD_LIBS $BOOST_SYSTEM_LIBS $BOOST_ATOMIC_LIBS $boost_cv_pthread_flag"
 BOOST_THREAD_LDFLAGS="$BOOST_SYSTEM_LDFLAGS $BOOST_ATOMIC_LDFLAGS"
 BOOST_CPPFLAGS="$BOOST_CPPFLAGS $boost_cv_pthread_flag"

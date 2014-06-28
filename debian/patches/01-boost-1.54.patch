@@ -1,5 +1,6 @@
 Description: Add patch for boost-1.54
 Author: Tobias Frost <tobi@coldtobi.de>
+Forwarded: not needed, applied in upstream repository
 ---
 This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
 --- a/m4/boost.m4

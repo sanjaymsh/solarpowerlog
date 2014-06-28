@@ -25,6 +25,7 @@ DataFilters/HTMLWriter/formatter/CFormaterWebRootStrip.cpp \
 DataFilters/HTMLWriter/formatter/CFormatterSearchCSVEntry.cpp \
 DataFilters/interfaces/IDataFilter.cpp DataFilters/CDumpOutputFilter.cpp \
 DataFilters/CCSVOutputFilter.cpp DataFilters/HTMLWriter/CHTMLWriter.cpp \
+DataFilters/DBWriter/CDBWriterFilter.cpp \
 configuration/Registry.cpp configuration/ILogger.cpp \
 Connections/CAsyncCommand.cpp Connections/CConnectDummy.cpp \
 Connections/sharedconnection/CSharedConnection.cpp \
@@ -65,6 +66,7 @@ DataFilters/HTMLWriter/formatter/CFormaterWebRootStrip.h \
 DataFilters/HTMLWriter/formatter/CFormatterSearchCSVEntry.h \
 DataFilters/interfaces/IDataFilter.h DataFilters/CDumpOutputFilter.h \
 DataFilters/CCSVOutputFilter.h DataFilters/HTMLWriter/CHTMLWriter.h \
+DataFilters/DBWriter/CDBWriterFilter.h \
 configuration/Registry.h configuration/ILogger.h \
 Connections/CAsyncCommand.h Connections/CConnectDummy.h \
 Connections/sharedconnection/CSharedConnection.h \
@@ -100,7 +102,7 @@ solarpowerlog_CPPFLAGS = $(CONFIG_CFLAGS) $(LOG4CXX_CFLAGS) $(APR_CFLAGS) \
 solarpowerlog_LDADD = $(CONFIG_LIBS) $(LOG4CXX_LIBS) $(APR_LIBS) \
 	$(APRUTIL_LIBS) $(BOOST_LDFLAGS) $(BOOST_THREAD_LIBS) \
 	$(BOOST_DATE_TIME_LIBS) $(BOOST_SYSTEM_LIBS) $(BOOST_ASIO_LIBS) \
-	$(BOOST_PROGRAM_OPTIONS_LIBS) $(WIN32_LIBS) 
+	$(BOOST_PROGRAM_OPTIONS_LIBS) $(WIN32_LIBS) $(SOCI_LIBS)
 
 LIBS = $(DEPS_LIBS)  
 

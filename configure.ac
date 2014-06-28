@@ -306,31 +306,29 @@ if test "x$enable_commandlineoptions" = "xyes"; then
 	fi
 fi
 
-## soci library (only needed if dbwriter has been enabled)
+## cppdb library (only needed if dbwriter has been enabled)
 if test "x$enable_dbwriter" == "xyes" ; then
 	dbwriter_dependencies_fulfilled="missing"
-	AC_MSG_CHECKING(soci db library)
+	AC_MSG_CHECKING(cppdb database access library)
 	AC_LANG(C++)
 	SAVED_LDFLAGS=$LDFLAGS
-	LDFLAGS="$LDFLAGS -lsoci_core"
+	LDFLAGS="$LDFLAGS -lcppdb"
 	AC_LINK_IFELSE(
-	    [AC_LANG_PROGRAM([#include <soci/soci.h>], [soci::session sql( "", "" )])],
-	    [SOCI_LIBS="$SOCI_LIBS -lsoci_core"]
-	    [AC_DEFINE(HAVE_SOCI,1,[Did we find the soci library?])]
+	    [AC_LANG_PROGRAM([#include <cppdb/frontend.h>], [cppdb::session sql("")])],
+	    [CPPDB_LIBS="$CPPDB_LIBS -lcppdb"]
+	    [AC_DEFINE(HAVE_CPPDB,1,[Did we find the cppdb library?])]
 	    [AC_MSG_RESULT(yes)],
 	    [AC_MSG_RESULT(no)]
-	    [AC_MSG_NOTICE(Missing depdency for dbwriter: soci)]
-	    [dbwriter_dependencies_fulfilled="$dbwriter_dependencies_fulfilled soci"]
+	    [AC_MSG_NOTICE(Missing depdency for dbwriter: cppdb)]
+	    [dbwriter_dependencies_fulfilled="$dbwriter_dependencies_fulfilled cppdb"]
 	    )
 	LDFLAGS=$SAVED_LDFLAGS
-	
-	if test "x$SOCI_LIBS" != "x" ; then
+	if test "x$CPPDB_LIBS" != "x" ; then
 		 AC_DEFINE([HAVE_FILTER_DBWRITER], [1], [DB Writer Support])
 		 AC_SUBST(SOCI_LIBS)
 	else
 		 enable_dbwriter="no (dependency problem: $dbwriter_dependencies_fulfilled)"
 	fi
-	
 fi
 
 ### Checks for typedefs, structures, and compiler characteristics.

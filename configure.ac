@@ -156,6 +156,20 @@ else
     AC_MSG_NOTICE([Support for the HTMLWriter disabled as requested.])
 fi
 
+# Database Writer
+AC_ARG_ENABLE([dbwriter],
+    [AS_HELP_STRING([--disable-dbwriter],
+            [Do not support the database writer module to push results to a database.])
+    ]
+)
+
+if test "x$enable_dbwriter" != "xno" ; then
+    enable_dbwriter=yes
+else
+    AC_MSG_NOTICE([Support for the DBWriter disabled as requested.])
+fi
+
+
 ## Communication Methods
 
 # Boost::asio::tcpip connection
@@ -292,19 +306,32 @@ if test "x$enable_commandlineoptions" = "xyes"; then
 	fi
 fi
 
-## soci library
-AC_MSG_CHECKING(soci db library)
-AC_LANG(C++)
-SAVED_LDFLAGS=$LDFLAGS
-LDFLAGS="$LDFLAGS -lsoci_core"
-AC_LINK_IFELSE(
-    [AC_LANG_PROGRAM([#include <soci/soci.h>], [soci::session sql( "", "" )])],
-    [SOCI_LIBS="$SOCI_LIBS -lsoci_core"]
-        AC_DEFINE(HAVE_SOCI,1,[Did we find the soci library?])
-        AC_MSG_RESULT(yes),
-    [AC_MSG_RESULT(no)])
-LDFLAGS=$SAVED_LDFLAGS
-
+## soci library (only needed if dbwriter has been enabled)
+if test "x$enable_dbwriter" == "xyes" ; then
+	dbwriter_dependencies_fulfilled="missing"
+	AC_MSG_CHECKING(soci db library)
+	AC_LANG(C++)
+	SAVED_LDFLAGS=$LDFLAGS
+	LDFLAGS="$LDFLAGS -lsoci_core"
+	AC_LINK_IFELSE(
+	    [AC_LANG_PROGRAM([#include <soci/soci.h>], [soci::session sql( "", "" )])],
+	    [SOCI_LIBS="$SOCI_LIBS -lsoci_core"]
+	    [AC_DEFINE(HAVE_SOCI,1,[Did we find the soci library?])]
+	    [AC_MSG_RESULT(yes)],
+	    [AC_MSG_RESULT(no)]
+	    [AC_MSG_NOTICE(Missing depdency for dbwriter: soci)]
+	    [dbwriter_dependencies_fulfilled="$dbwriter_dependencies_fulfilled soci"]
+	    )
+	LDFLAGS=$SAVED_LDFLAGS
+	
+	if test "x$SOCI_LIBS" != "x" ; then
+		 AC_DEFINE([HAVE_FILTER_DBWRITER], [1], [DB Writer Support])
+		 AC_SUBST(SOCI_LIBS)
+	else
+		 enable_dbwriter="no (dependency problem: $dbwriter_dependencies_fulfilled)"
+	fi
+	
+fi
 
 ### Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
@@ -358,4 +385,5 @@ AC_MSG_NOTICE([FILTERS AND LOGGERS:]);
 AC_MSG_NOTICE([CSV logger support: ........................ $enable_csvlogger])
 AC_MSG_NOTICE([Dumb Dumper support: ....................... $enable_dumbdumper])
 AC_MSG_NOTICE([HTML Writer support: ....................... $enable_htmlwriter])
+AC_MSG_NOTICE([DB Writer support: ......................... $enable_dbwriter])
 

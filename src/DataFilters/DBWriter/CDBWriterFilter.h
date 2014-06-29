@@ -60,8 +60,6 @@ public:
 
 private:
 
-	IInverterBase *oursource;
-
 	/** Do the initialization of the module
 	*/
 	void DoINITCmd (const ICommand *);

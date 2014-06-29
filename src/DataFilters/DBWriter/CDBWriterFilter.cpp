@@ -32,22 +32,15 @@ Copyright (C) 2009-2012 Tobias Frost
 
 #ifdef  HAVE_FILTER_DBWRITER
 
-#include <assert.h>
-
 #include "DataFilters/DBWriter/CDBWriterFilter.h"
 
-#include "configuration/Registry.h"
 #include "configuration/CConfigHelper.h"
 #include "interfaces/CWorkScheduler.h"
 
 #include "Inverters/Capabilites.h"
 #include "patterns/CValue.h"
 
-#include "Inverters/interfaces/ICapaIterator.h"
-
-using namespace std;
 using namespace libconfig;
-using namespace boost::gregorian;
 
 CDBWriterFilter::CDBWriterFilter( const string & name,
 	const string & configurationpath ) :

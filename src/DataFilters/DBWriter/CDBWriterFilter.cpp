@@ -93,7 +93,7 @@ bool CDBWriterFilter::CheckConfig()
     // Handling
     // How often should we write to the database. Time-based, value based?
 
-    // the db engine. e.g mysql, sqlit3, postgresql or odbc
+    // the db engine. e.g mysql, sqlite3, postgresql or odbc
     // (for odbc you'll need to provide all options in db_cppdb_options yourself...)
     // if you use "custom" here, then solarpowerlog will just use db_cppdb_options as connection string.
 
@@ -140,6 +140,10 @@ bool CDBWriterFilter::CheckConfig()
     // and http://cppcms.com/sql/cppdb/connstr.html for cppdb options.
     fail |= !hlp.CheckAndGetConfig("db_cppdb_options", Setting::TypeString,
         db_cppdb_options, true);
+
+    fail |= !hlp.CheckAndGetConfig("db_table", Setting::TypeString,
+        _table);
+
 
     if (fail) return false;
 
@@ -215,7 +219,7 @@ bool CDBWriterFilter::CheckConfig()
             add_semicolon = true;
         }
         if (!db_unixsocket.empty()) {
-            LOGERROR(logger, "unixsocket is not supported for postgressql");
+            LOGERROR(logger, "db_unixsocket is not supported for postgressql");
             fail = true;
         }
         dbgstring = _connectionstring;

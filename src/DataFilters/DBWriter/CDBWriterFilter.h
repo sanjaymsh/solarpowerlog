@@ -77,6 +77,7 @@ private:
     };
 
     std::string _connectionstring;
+    std::string _table;
 };
 
 #endif

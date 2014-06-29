@@ -244,7 +244,7 @@ bool CDBWriterFilter::CheckConfig()
         }
     }
     if (db_type == "sqlite3") {
-        _connectionstring = "sqlite3";
+        _connectionstring = "sqlite3:";
         if (!db_host.empty()) {
             LOGERROR(logger, db_type << " does not support the db_host parameter.");
             fail = true;

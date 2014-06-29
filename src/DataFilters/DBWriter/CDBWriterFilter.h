@@ -75,6 +75,8 @@ private:
         CMD_INIT = BasicCommands::CMD_USER_MIN,
         CMD_CYCLIC
     };
+
+    std::string _connectionstring;
 };
 
 #endif

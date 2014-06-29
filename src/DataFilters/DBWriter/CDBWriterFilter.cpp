@@ -42,8 +42,8 @@ Copyright (C) 2009-2012 Tobias Frost
 
 using namespace libconfig;
 
-CDBWriterFilter::CDBWriterFilter( const string & name,
-	const string & configurationpath ) :
+CDBWriterFilter::CDBWriterFilter( const std::string & name,
+	const std::string & configurationpath ) :
 	IDataFilter(name, configurationpath)
 {
 	// Schedule the initialization and subscriptions later...
@@ -72,46 +72,230 @@ CDBWriterFilter::~CDBWriterFilter()
 
 bool CDBWriterFilter::CheckConfig()
 {
-    LOGERROR(logger, __PRETTY_FUNCTION__ << " not implemented");
-    return false;
+    CConfigHelper hlp(configurationpath);
+    bool fail = false;
+    std::string db_type, db_host, db_port, db_unixsocket, db_mode;
+    std::string db_user, db_passwd, db_database, db_cppdb_options;
 
-#if 0
-    // prior art...
-	string setting;
-	string str;
+    // What settings does a database writer needs?
 
-	bool fail = false;
+    // CPPDB Settings
+    // The library provides a connection string.
+    // However, to keep all options available, we query the components and assemble it ourself.
+    // (There will be an optional "parameters" string for special uses...)
 
-	CConfigHelper hlp(configurationpath);
-	fail |= !hlp.CheckConfig("logfile", Setting::TypeString);
+    // Database
+    // Soci needs the engine and a connection string. (engine dependent)
+    // We need also the database, the table to act on
+    // Also we'll need a list / table for all to be logged capabilities and its columns in the database
+    // write the timestamp where
 
-	fail |= !hlp.CheckConfig("compact_csv", Setting::TypeBoolean, true);
-	fail |= !hlp.CheckConfig("flush_file_buffer_immediatly", Setting::TypeBoolean, true);
-	fail |= !hlp.CheckConfig("format_timestamp", Setting::TypeString, true);
-	fail |= !hlp.CheckConfig("rotate", Setting::TypeBoolean, true);
+    // Handling
+    // How often should we write to the database. Time-based, value based?
 
-	if (hlp.CheckConfig("data2log", Setting::TypeString, false, false)) {
-		hlp.GetConfig("data2log", setting);
-		if (setting != "all") {
-			LOGERROR(logger, "Configuration Error: data2log must be \"all\" or of the type \"Array\".");
-			fail = true;
-		}
-	} else if (!hlp.CheckConfig("data2log", Setting::TypeArray)) {
-		fail = true;
-	}
+    // the db engine. e.g mysql, sqlit3, postgresql or odbc
+    // (for odbc you'll need to provide all options in db_cppdb_options yourself...)
+    // if you use "custom" here, then solarpowerlog will just use db_cppdb_options as connection string.
 
-	hlp.GetConfig("datasource", str);
-	IInverterBase *i = Registry::Instance().GetInverter(str);
-	if (!i) {
-		LOGERROR(logger,
-			"Setting " << setting << " in " << configurationpath
-			<< "." << name
-			<< ": Cannot find instance of Inverter with the name "
-			<< str);
-		fail = true;
-	}
-	return !fail;
-#endif
+    // The driver to be used.
+    fail |= !hlp.CheckAndGetConfig("db_type", Setting::TypeString, db_type);
+
+    // the host (optional, as not every db needs it)
+    fail |= !hlp.CheckAndGetConfig("db_host", Setting::TypeString, db_host,
+        true);
+
+    // for sqlite3 the mode the db should be opened. (create, readwrite)
+    // the 3rd option readonly makes no sense here
+    fail |= !hlp.CheckAndGetConfig("db_mode", Setting::TypeString, db_mode,
+        true);
+
+    // port (as string), optional as not every db needs it
+    fail |= !hlp.CheckAndGetConfig("db_port", Setting::TypeString, db_port,
+        true);
+
+    // (for mysql) unix-socket to be used.
+    fail |= !hlp.CheckAndGetConfig("db_unixsocket", Setting::TypeString,
+        db_unixsocket, true);
+
+    if (!db_port.empty() && !db_unixsocket.empty()) {
+        fail = true;
+        LOGERROR(logger,
+            "both db_port and db_unixsocket cannot be used at the same time.");
+    }
+
+    // username optional as not every db needs it
+    fail |= !hlp.CheckAndGetConfig("db_user", Setting::TypeString, db_user,
+        true);
+
+    // password (as string), optional as not every db needs it
+    fail |= !hlp.CheckAndGetConfig("db_password", Setting::TypeString,
+        db_passwd, true);
+
+    // database to be used (as string), optional as not every db needs it
+    fail |= !hlp.CheckAndGetConfig("db_database", Setting::TypeString,
+        db_database, true);
+
+    // option string which will be appended to the connection string.
+    // See your backend config http://cppcms.com/sql/cppdb/backendref.html
+    // and http://cppcms.com/sql/cppdb/connstr.html for cppdb options.
+    fail |= !hlp.CheckAndGetConfig("db_cppdb_options", Setting::TypeString,
+        db_cppdb_options, true);
+
+    if (fail) return false;
+
+    bool add_semicolon = false;
+    std::string dbgstring;
+    // Generate the connection string.
+    if (db_type == "mysql") {
+        _connectionstring = "mysql:";
+        if (!db_host.empty()) {
+            _connectionstring += "host=\'" + db_host + "\'";
+            add_semicolon = true;
+        }
+        if (!db_user.empty()) {
+            if (add_semicolon) _connectionstring += ";";
+            _connectionstring += "user=\'" + db_user + "\'";
+            add_semicolon = true;
+        }
+        if (!db_database.empty()) {
+            if (add_semicolon) _connectionstring += ";";
+            _connectionstring += "database=\'" + db_database + "\'";
+            add_semicolon = true;
+        }
+        if (!db_port.empty()) {
+            if (add_semicolon) _connectionstring += ";";
+            _connectionstring += "port=\'" + db_port + "\'";
+            add_semicolon = true;
+        }
+        if (!db_unixsocket.empty()) {
+            if (add_semicolon) _connectionstring += ";";
+            _connectionstring += "unix_socket=\'" + db_unixsocket + "\'";
+            add_semicolon = true;
+        }
+        dbgstring = _connectionstring;
+        if (!db_passwd.empty()) {
+            if (add_semicolon) _connectionstring += ";";
+            dbgstring = _connectionstring + "password=\'***\'";
+            _connectionstring += "password=\'" + db_passwd + "\'";
+            add_semicolon = true;
+        }
+        if (!db_cppdb_options.empty()) {
+            std::string tmp;
+            if (add_semicolon) tmp = ";";
+            tmp += db_cppdb_options;
+            _connectionstring += tmp;
+            dbgstring += tmp;
+            add_semicolon = true;
+        }
+        if (!db_mode.empty()) {
+            LOGERROR(logger,
+                db_type << " does not support the db_mode parameter.");
+            fail = true;
+        }
+    }
+    if (db_type == "postgresql") {
+        _connectionstring = "postgresql:";
+        if (!db_host.empty()) {
+            _connectionstring += "host=\'" + db_host + "\'";
+            add_semicolon = true;
+        }
+        if (!db_user.empty()) {
+            if (add_semicolon) _connectionstring += ";";
+            _connectionstring += "user=\'" + db_user + "\'";
+            add_semicolon = true;
+        }
+        if (!db_database.empty()) {
+            if (add_semicolon) _connectionstring += ";";
+            _connectionstring += "dbname=\'" + db_database + "\'";
+            add_semicolon = true;
+        }
+        if (!db_port.empty()) {
+            if (add_semicolon) _connectionstring += ";";
+            _connectionstring += "port=\'" + db_port + "\'";
+            add_semicolon = true;
+        }
+        if (!db_unixsocket.empty()) {
+            LOGERROR(logger, "unixsocket is not supported for postgressql");
+            fail = true;
+        }
+        dbgstring = _connectionstring;
+        if (!db_passwd.empty()) {
+            if (add_semicolon) _connectionstring += ";";
+            dbgstring = _connectionstring + "password=\'***\'";
+            _connectionstring += "password=\'" + db_passwd + "\'";
+            add_semicolon = true;
+        }
+        if (!db_cppdb_options.empty()) {
+            std::string tmp;
+            if (add_semicolon) tmp = ";";
+            tmp += db_cppdb_options;
+            _connectionstring += tmp;
+            dbgstring += tmp;
+            add_semicolon = true;
+        }
+        if (!db_mode.empty()) {
+            LOGERROR(logger,
+                db_type << " does not support the db_mode parameter.");
+            fail = true;
+        }
+    }
+    if (db_type == "sqlite3") {
+        _connectionstring = "sqlite3";
+        if (!db_host.empty()) {
+            LOGERROR(logger, db_type << " does not support the db_host parameter.");
+            fail = true;
+        }
+        if (!db_user.empty()) {
+            LOGERROR(logger, db_type << " does not support the db_user parameter.");
+            fail = true;
+        }
+        if (!db_database.empty()) {
+            if (add_semicolon) _connectionstring += ";";
+            _connectionstring += "database=\'" + db_database + "\'";
+            add_semicolon = true;
+        }
+        if (!db_mode.empty()) {
+            if (add_semicolon) _connectionstring += ";";
+            _connectionstring += "mode=\'" + db_mode + "\'";
+            add_semicolon = true;
+        }
+        if (!db_port.empty()) {
+            LOGERROR(logger, db_type << " does not support the db_port parameter.");
+            fail = true;
+        }
+        if (!db_unixsocket.empty()) {
+            LOGERROR(logger,
+                db_type << " does not support the db_unixsocket parameter.");
+            fail = true;
+        }
+        if (!db_passwd.empty()) {
+            LOGERROR(logger,
+                db_type << " does not support the db_password parameter.");
+            fail = true;
+        }
+        if (!db_cppdb_options.empty()) {
+            if (add_semicolon) _connectionstring += ";";
+            _connectionstring += db_cppdb_options;
+            add_semicolon = true;
+        }
+        dbgstring = _connectionstring;
+    }
+    if (db_type == "odbc" || db_type == "custom") {
+        if (db_type == "odbc") _connectionstring = "odbc:";
+        if (!db_host.empty() || !db_user.empty() || !db_database.empty()
+            || !db_mode.empty() || !db_port.empty() || !db_unixsocket.empty()
+            || !db_passwd.empty() || db_cppdb_options.empty()) {
+            LOGERROR(logger,
+                db_type << " please use db_cppdb_options to specify the connection string.");
+            fail = true;
+        }
+        _connectionstring += db_cppdb_options;
+        dbgstring = _connectionstring;
+    }
+
+    LOGTRACE(logger, "DBWriter: connectionstring for CppDB is: " << dbgstring);
+
+    return !fail;
 
 }
 

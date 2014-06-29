@@ -43,7 +43,7 @@ CConfigHelper::~CConfigHelper()
 	// TODO Auto-generated destructor stub
 }
 
-bool CConfigHelper::CheckConfig( const string & setting,
+bool CConfigHelper::CheckConfig( const char *setting,
 	libconfig::Setting::Type type, bool optional, bool printerr )
 {
 	libconfig::Config* cfg = Registry::Instance().Configuration();

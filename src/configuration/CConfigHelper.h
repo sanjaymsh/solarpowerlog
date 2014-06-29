@@ -140,9 +140,46 @@ public:
 	 * \param printerr if true, explain the error to the main logger
 	 * (default:false)
 	 */
-	bool CheckConfig( const string &setting, libconfig::Setting::Type type,
+	bool CheckConfig( const char *setting, libconfig::Setting::Type type,
 		bool optional = false, bool printerr = true );
 
+	/** Convenience function that checks if the setting fulfills the requirements
+	 * (type, optionality...) and if it does stores the value into the given
+	 * object.
+	 *
+	 * \returns false if the CheckConfig failed, true if CheckConfig succeeded.
+	 *
+	 * \note To have the default value option, just initialize your object with
+	 * the initial value before calling this member. It will not be changed if
+	 * an optional setting is not found.
+	 */
+    template<class T>
+    bool CheckAndGetConfig(const char* setting, libconfig::Setting::Type type,
+        T &store,bool optional = false, bool printerr = true ) {
+
+        if (!CheckConfig(setting, type, optional, printerr)) {
+            return false;
+        }
+
+        GetConfig(setting, store);
+        return true;
+    }
+
+#if 0
+	template<class T>
+	bool CheckAndGetConfig(const string &setting, libconfig::Setting::Type type,
+        T &store,bool optional = false, bool printerr = true ) {
+
+	    if (!CheckConfig(setting.c_str(), type, optional, printerr)) {
+	        return false;
+	    }
+
+	    GetConfig(setting, store);
+	    return true;
+	}
+#endif
+
+#if 0
     /** Specialization of the GetConfig routine for the type long.
      * This is necessary as libconfig-1.4.8 removes long support.
      * \returns false, if the default value has been used.
@@ -152,6 +189,7 @@ public:
     {
         return GetConfig(setting.c_str(), store, defvalue);
     }
+#endif
 
     /** Specialization of the GetConfig routine for the type unsigned-long.
      * This is necessary as libconfig-1.4.8 removes long support.
@@ -161,12 +199,12 @@ public:
     bool GetConfig(char const *setting, unsigned long &store,
         unsigned long defvalue)
     {
-        unsigned int tmp;
+        unsigned long long tmp;
 
         try {
             libconfig::Setting & set =
                 Registry::Instance().GetSettingsForObject(cfgpath);
-            if (!set.lookupValue(setting, tmp)) {
+            if (!set.lookupValue(setting, tmp) || tmp > ULONG_MAX ) {
                 store = defvalue;
                 return false;
             }
@@ -185,12 +223,12 @@ public:
     bool GetConfig(char const *setting, long &store,
             long defvalue)
     {
-        int tmp;
+        long long tmp;
         try {
             libconfig::Setting & set =
                 Registry::Instance().GetSettingsForObject(cfgpath);
 
-            if (!set.lookupValue(setting, tmp)) {
+            if (!set.lookupValue(setting, tmp) || tmp > LONG_MAX) {
                 store = defvalue;
                 return false;
             }
@@ -202,6 +240,7 @@ public:
         }
     }
 
+#if 0
     /** Retrieves a configuration or set the config with a default value.
      *
      * \returns false, if the default value has been used.
@@ -211,6 +250,7 @@ public:
     {
         return GetConfig(setting.c_str(), store, defvalue);
     }
+#endif
 
     /** GetConfig when using a char-array as setting -- see ##GetConfig doc
      * \returns false, if the default value has been used.
@@ -238,15 +278,20 @@ public:
      */
     bool GetConfig(char const *setting, unsigned long &store)
     {
+        unsigned long long tmp;
         try {
             libconfig::Setting & set =
                 Registry::Instance().GetSettingsForObject(cfgpath);
-            return set.lookupValue(setting, (unsigned int &)store);
+            if (!set.lookupValue(setting, tmp) || tmp > ULONG_MAX) {
+                return false;
+            }
+            store = tmp;
         } catch (...) {
             return false;
         }
     }
 
+#if 0
     /** GetConfig for mandatory settings.
       * \returns false, if the setting could not be retrieved.
      */
@@ -255,6 +300,7 @@ public:
 	{
 	    return GetConfig(setting.c_str(),store);
 	}
+#endif
 
     /** GetConfig for mandatory long settings, for libconfig 1.4.8
       * \returns false, if the setting could not be retrieved.
@@ -262,11 +308,10 @@ public:
     bool GetConfig(char const *setting, long &store)
     {
         try {
-            int tmp;
+            long long tmp;
             libconfig::Setting & set =
                 Registry::Instance().GetSettingsForObject(cfgpath);
-
-            if (!set.lookupValue(setting, tmp)) {
+            if (!set.lookupValue(setting, tmp) || tmp > LONG_MAX) {
                 return false;
             }
             store = tmp;
@@ -306,7 +351,7 @@ public:
 	 *
 	 */
     template<class T>
-    bool GetConfigArray(const string& setting, int index, T &store)
+    bool GetConfigArray(const char* setting, int index, T &store)
     {
         try {
             libconfig::Setting & set =
@@ -343,7 +388,8 @@ public:
 	 * not existant.
 	 *
 	 */
-    bool GetConfigArray(const string& setting, int index, string &store)
+
+    bool GetConfigArray(const char* setting, int index, string &store)
     {
         try {
             libconfig::Setting & set =

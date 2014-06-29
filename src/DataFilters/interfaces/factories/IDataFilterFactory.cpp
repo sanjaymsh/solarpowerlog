@@ -44,6 +44,10 @@ Copyright (C) 2009-2012 Tobias Frost
 #include "DataFilters/HTMLWriter/CHTMLWriter.h"
 #endif
 
+#ifdef HAVE_FILTER_DBWRITER
+#include "DataFilters/DBWriter/CDBWriterFilter.h"
+#endif
+
 #include "configuration/Registry.h"
 #include "configuration/CConfigHelper.h"
 
@@ -72,6 +76,12 @@ IDataFilter *IDataFilterFactory::Factory(const string & configurationpath)
 #ifdef 	HAVE_FILTER_HTMLWRITER
 	if (type == "HTMLWriter") {
 		return new CHTMLWriter(name, configurationpath);
+	}
+#endif
+
+#ifdef HAVE_FILTER_DBWRITER
+	if ( type == "DBWriter") {
+	    return new CDBWriterFilter(name, configurationpath);
 	}
 #endif
 

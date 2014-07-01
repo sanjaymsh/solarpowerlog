@@ -141,10 +141,6 @@ bool CDBWriterFilter::CheckConfig()
     fail |= !hlp.CheckAndGetConfig("db_cppdb_options", Setting::TypeString,
         db_cppdb_options, true);
 
-    fail |= !hlp.CheckAndGetConfig("db_table", Setting::TypeString,
-        _table);
-
-
     if (fail) return false;
 
     bool add_semicolon = false;

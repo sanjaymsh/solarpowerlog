@@ -33,9 +33,15 @@ Copyright (C) 2009-2012 Tobias Frost
 using namespace std;
 using namespace libconfig;
 
-CConfigHelper::CConfigHelper( const string& configurationpath )
+CConfigHelper::CConfigHelper( const string& configurationpath, int index )
 {
 	cfgpath = configurationpath;
+
+	if (index != -1 ) {
+	    char c[32];
+	    snprintf( c, 31, ".[%d]", index );
+	    cfgpath += c;
+	}
 }
 
 CConfigHelper::~CConfigHelper()

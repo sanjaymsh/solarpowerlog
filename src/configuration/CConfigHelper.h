@@ -105,10 +105,12 @@ public:
 	/** Constructor
 	 *
 	 * \param configurationpath The path to the section of the
+	 * \param index (optional) to get enter a aggregate (by adding .[<index>] to the array)
 	 * configuration file we want to evaluate.
 	 * (Usually you got this path by the factory generated your object)
 	*/
-	CConfigHelper( const string& configurationpath );
+	CConfigHelper( const string& configurationpath, int index= -1);
+
 	virtual ~CConfigHelper();
 
 	/** Basic checks on configuration keys, with the support for optional parameters
@@ -465,6 +467,12 @@ public:
             return false;
         }
 #endif
+    }
+
+    /** Return current configurationpath. */
+    const std::string & GetCfgPath(void) const
+    {
+        return cfgpath;
     }
 
 private:

@@ -39,6 +39,8 @@ Copyright (C) 2009-2014 Tobias Frost
 
 #include "CDBWriterHelper.h"
 
+#include <cppdb/frontend.h>
+
 /** This class implements a logger to write the data to a CSV File
  *
  * Please see \ref DLCSV_Description for configuration, etc.
@@ -87,6 +89,8 @@ private:
     std::vector<CDBWriterHelper*> _dbwriterhelpers;
 
     bool _datavalid;
+
+    cppdb::session *_sqlsession;
 
 };
 

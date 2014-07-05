@@ -48,6 +48,7 @@ CDBWriterFilter::CDBWriterFilter( const std::string & name,
 	IDataFilter(name, configurationpath)
 {
     _datavalid = false;
+    _sqlsession = NULL;
 
 	// Schedule the initialization and subscriptions later...
 	ICommand *cmd = new ICommand(CMD_INIT, this);
@@ -81,6 +82,8 @@ CDBWriterFilter::~CDBWriterFilter()
     for (it = _dbwriterhelpers.begin(); it != _dbwriterhelpers.end(); it++) {
         delete *it;
     }
+
+    if (_sqlsession) delete _sqlsession;
 }
 
 bool CDBWriterFilter::CheckConfig()

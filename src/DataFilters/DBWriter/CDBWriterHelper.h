@@ -122,6 +122,8 @@ private:
     // The DB-Writer's parent
     IInverterBase *_base;
 
+    IValue *_olddatastate;
+
 };
 
 #endif

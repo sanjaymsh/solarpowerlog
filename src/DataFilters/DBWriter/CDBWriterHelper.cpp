@@ -54,6 +54,8 @@ CDBWriterHelper::CDBWriterHelper(IInverterBase *base, const ILogger &parent,
     _base = base;
     _datavalid = false;
 
+    _olddatastate = NULL;
+
     if (mode == "continuous") {
         _mode = CDBWriterHelper::continuous;
     } else if (mode == "single") {
@@ -140,7 +142,24 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
     // Datastate changed.
     if (cap->getDescription() == CAPA_INVERTER_DATASTATE) {
         _datavalid = ((CValue<bool> *)cap->getValue())->Get();
-        LOGDEBUG(logger, "datastate is " << _datavalid);
+
+#if 0
+        // debug code I want to keep for the moment
+        // debugs the CValue == and != operator, at least for bool
+        if ( ! _olddatastate )
+        {
+            _olddatastate = cap->getValue()->clone();
+        }
+        else {
+            IValue &o = *cap->getValue();
+            IValue &n = *_olddatastate;
+            LOGDEBUG(logger, "OLD=" << ((CValue<bool> &)o).Get() <<
+                " NEW=" << ((CValue<bool> &)n).Get());
+            if ( o == n ) LOGDEBUG(logger, "EQUAL");
+            if ( o != n ) LOGDEBUG(logger, "NOT EQUAL");
+        }
+#endif
+
         return;
     }
 

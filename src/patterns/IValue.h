@@ -58,6 +58,9 @@ public:
     /// Serves as a virtual copy constructor.
 	virtual IValue* clone() = 0;
 
+	virtual bool operator==(IValue &v) = 0;
+    virtual bool operator!=(IValue &v) = 0;
+
 protected:
 	IValue() {}
 public:

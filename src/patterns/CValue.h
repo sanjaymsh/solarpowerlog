@@ -122,6 +122,23 @@ public:
         return ss.str();
     }
 
+    virtual bool operator==(IValue &v) {
+        if (GetInternalType() == v.GetInternalType()) {
+            CValue<T> &realv = (CValue<T>&)v;
+            return (realv.Get() == Get());
+        }
+        return false;
+    }
+
+    virtual bool operator!=(IValue &v) {
+         if (GetInternalType() == v.GetInternalType()) {
+             CValue<T> &realv = (CValue<T>&)v;
+             return (realv.Get() != Get());
+         }
+         return false;
+     }
+
+
     /** Static interface function to determine at runtime the type of the CValue
      * object.
      * Usage example:
@@ -135,17 +152,14 @@ public:
         return false;
     }
 
-    template <typename U>
-    static IValue* Factory() {
-        return new CValue<U>;
-    }
-
 private:
     T value;
     boost::posix_time::ptime timestamp;
 
 };
 
+// TODO check if factory really needed or substituted already by some other
+// pattern
 class CValueFactory
 {
 public:
@@ -154,7 +168,5 @@ public:
         return new CValue<T>;
     }
 };
-
-
 
 #endif /* CVALUEX_H_ */

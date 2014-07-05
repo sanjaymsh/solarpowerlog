@@ -137,8 +137,6 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
     assert(subject);
     CCapability *cap = (CCapability *)subject;
 
-    //LOGDEBUG(logger, "##### " << cap->getDescription());
-
     // Datastate changed.
     if (cap->getDescription() == CAPA_INVERTER_DATASTATE) {
         _datavalid = ((CValue<bool> *)cap->getValue())->Get();

@@ -69,6 +69,10 @@ public:
 
     virtual void Update(const class IObserverSubject * subject);
 
+    const std::string &GetTable(void) {
+        return _table;
+    }
+
     float _logevery;
     bool _logchangedonly;
 

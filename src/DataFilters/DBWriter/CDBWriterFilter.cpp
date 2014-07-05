@@ -437,15 +437,12 @@ bool CDBWriterFilter::CheckConfig()
 
 void CDBWriterFilter::Update( const IObserverSubject *subject )
 {
-
     // TODO check if we can completely empty this member function
     // NOTE: The Observer-Pattern-Handling is delegated to the helper claa
     // CDBWriterHelper
 
     assert(subject);
     CCapability *cap = (CCapability *)subject;
-
-   // LOGDEBUG(logger, "##### " << cap->getDescription());
 
     // Datastate changed.
     if (cap->getDescription() == CAPA_INVERTER_DATASTATE) {
@@ -469,8 +466,7 @@ void CDBWriterFilter::Update( const IObserverSubject *subject )
 void CDBWriterFilter::ExecuteCommand( const ICommand *cmd )
 {
 
-    LOGERROR(logger, __PRETTY_FUNCTION__ << " Warning not implemented");
-//     return;
+    LOGERROR(logger, __PRETTY_FUNCTION__ << " Warning not finished / implemented");
 
 	switch (cmd->getCmd()) {
 
@@ -532,9 +528,8 @@ void CDBWriterFilter::ExecuteCommand( const ICommand *cmd )
 
 void CDBWriterFilter::DoINITCmd( const ICommand * )
 {
-    // Called once on init.
-
-    // Get base
+    // Subscribe to base capabilities.
+    // probably not needed!
     assert(base);
     CCapability *cap;
     cap = base -> GetConcreteCapability(CAPA_CAPAS_UPDATED);

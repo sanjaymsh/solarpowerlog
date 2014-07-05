@@ -40,6 +40,7 @@ Copyright (C) 2009-2014 Tobias Frost
 #include "configuration/ILogger.h"
 #include "patterns/IObserverObserver.h"
 #include "Inverters/interfaces/InverterBase.h"
+#include "patterns/IValue.h"
 
 /** cache the information in the config what and where we should log to.
  *
@@ -59,6 +60,8 @@ public:
 
     CDBWriterHelper(IInverterBase *base, const ILogger &parent, const std::string &table,
         const std::string &mode, bool logchangedonly, float logevery);
+
+    virtual ~CDBWriterHelper();
 
     /// Add the tuple Capability, Column to the "should be logged information"
     /// Returns "FALSE" if the combination of Capabilty and Column is alreaedy there.
@@ -82,13 +85,26 @@ private:
     public:
     Cdbinfo(std::string Capability, std::string Column, bool wasUpdated = false,
         bool wasSeen = false) :
-        Capability(Capability), Column(Column), wasUpdated(wasUpdated),
-            wasSeen(wasSeen), previously_subscribed(false)
+        Capability(Capability), Column(Column), LastValue(NULL),
+        wasUpdated(wasUpdated), wasSeen(wasSeen), previously_subscribed(false)
     {};
 
+    ~Cdbinfo() {
+        if (LastValue) delete LastValue;
+        LastValue = NULL;
+    };
+
+    /// String of the capability
     std::string Capability;
+
+    /// Column of the table
     std::string Column;
+
+    /// Pointer to the last seen value. NULL -> never updated()
+    IValue *LastValue;
+    /// Has the value changed since last db update?
     bool wasUpdated;
+    /// Have we got any update recently?
     bool wasSeen;
     bool previously_subscribed; // just to supress a debug message.
     };

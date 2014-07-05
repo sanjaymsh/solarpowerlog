@@ -77,6 +77,9 @@ CDBWriterHelper::CDBWriterHelper(IInverterBase *base, const ILogger &parent,
     cap->Subscribe(this);
 }
 
+CDBWriterHelper::~CDBWriterHelper() {
+}
+
 /** Add the tuple Capability, Column to the "should be logged information"
  * Returns "FALSE" if the combination of Capabilty and Column is alreaedy there.
 */
@@ -137,6 +140,7 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
     // Datastate changed.
     if (cap->getDescription() == CAPA_INVERTER_DATASTATE) {
         _datavalid = ((CValue<bool> *)cap->getValue())->Get();
+        LOGDEBUG(logger, "datastate is " << _datavalid);
         return;
     }
 
@@ -176,6 +180,24 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
         return;
     }
 
+    // OK, some caps has been updated. Lets clone the value :)
+    std::vector<Cdbinfo>::iterator it;
+    std::string capaname = cap->getDescription();
+
+    for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
+        if ((*it).Capability == capaname) {
+            if ((*it).LastValue) {
+                IValue &last = *(*it).LastValue;
+                IValue &now  = *cap->getValue();
+                if ( now == last) (*it).wasUpdated = true;
+                delete (*it).LastValue;
+                (*it).LastValue = NULL;
+            }
+            (*it).LastValue = cap->getValue()->clone();
+            (*it).wasSeen = true;
+            break;
+        }
+    }
 }
 
 #endif

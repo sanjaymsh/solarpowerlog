@@ -325,7 +325,7 @@ if test "x$enable_dbwriter" == "xyes" ; then
 	LDFLAGS=$SAVED_LDFLAGS
 	if test "x$CPPDB_LIBS" != "x" ; then
 		 AC_DEFINE([HAVE_FILTER_DBWRITER], [1], [DB Writer Support])
-		 AC_SUBST(SOCI_LIBS)
+		 AC_SUBST(CPPDB_LIBS)
 	else
 		 enable_dbwriter="no (dependency problem: $dbwriter_dependencies_fulfilled)"
 	fi

@@ -33,6 +33,11 @@ Copyright (C) 2009-2012 Tobias Frost
 using namespace std;
 using namespace libconfig;
 
+
+#warning TODO: Rework CConfigHelper-h to use also templates for *Check()
+#warning TODO Cache libconfig::settings in class and initialize in constructor
+
+
 CConfigHelper::CConfigHelper( const string& configurationpath, int index )
 {
 	cfgpath = configurationpath;
@@ -43,6 +48,21 @@ CConfigHelper::CConfigHelper( const string& configurationpath, int index )
 	    cfgpath += c;
 	}
 }
+
+CConfigHelper::CConfigHelper(const string& configurationpath,
+    const string &element, int index)
+{
+    // unfortunatly, delegating a constructor is only possible with C++11 and I
+    // dont want to switch now...
+    cfgpath = configurationpath + "." + element;
+
+    if (index != -1) {
+        char c[32];
+        snprintf(c, 31, ".[%d]", index);
+        cfgpath += c;
+    }
+}
+
 
 CConfigHelper::~CConfigHelper()
 {
@@ -93,4 +113,12 @@ bool CConfigHelper::CheckConfig( const char *setting,
 			" of " << name << " " << reason);
 	}
 	return false;
+}
+
+bool CConfigHelper::isExisting(void) const {
+
+    libconfig::Config* cfg = Registry::Instance().Configuration();
+    return cfg->exists(cfgpath);
+
+
 }

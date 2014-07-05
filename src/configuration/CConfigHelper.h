@@ -111,6 +111,8 @@ public:
 	*/
 	CConfigHelper( const string& configurationpath, int index= -1);
 
+	CConfigHelper( const string& configurationpath, const string &element,int index= -1);
+
 	virtual ~CConfigHelper();
 
 	/** Basic checks on configuration keys, with the support for optional parameters
@@ -458,8 +460,10 @@ public:
             return true;
 #if 0
         } catch (libconfig::SettingNotFoundException &e) {
+            cerr << e.what();
             return false;
         } catch (libconfig::SettingTypeException &e) {
+            cerr << e.what();
             return false;
         }
 #else
@@ -474,6 +478,8 @@ public:
     {
         return cfgpath;
     }
+
+    bool isExisting(void) const;
 
 private:
 	string cfgpath;

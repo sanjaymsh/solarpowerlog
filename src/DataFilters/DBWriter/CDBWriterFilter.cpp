@@ -279,7 +279,7 @@ bool CDBWriterFilter::CheckConfig()
         }
         if (!db_database.empty()) {
             if (add_semicolon) _connectionstring += ";";
-            _connectionstring += "database=\'" + db_database + "\'";
+            _connectionstring += "db=\'" + db_database + "\'";
             add_semicolon = true;
         }
         if (!db_mode.empty()) {

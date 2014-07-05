@@ -192,7 +192,7 @@ bool CDBWriterFilter::CheckConfig()
             add_semicolon = true;
         }
         if (!db_mode.empty()) {
-            LOGERROR(logger,
+            LOGFATAL(logger,
                 db_type << " does not support the db_mode parameter.");
             fail = true;
         }
@@ -219,7 +219,7 @@ bool CDBWriterFilter::CheckConfig()
             add_semicolon = true;
         }
         if (!db_unixsocket.empty()) {
-            LOGERROR(logger, "db_unixsocket is not supported for postgressql");
+            LOGFATAL(logger, "db_unixsocket is not supported for postgressql");
             fail = true;
         }
         dbgstring = _connectionstring;
@@ -238,7 +238,7 @@ bool CDBWriterFilter::CheckConfig()
             add_semicolon = true;
         }
         if (!db_mode.empty()) {
-            LOGERROR(logger,
+            LOGFATAL(logger,
                 db_type << " does not support the db_mode parameter.");
             fail = true;
         }
@@ -246,11 +246,11 @@ bool CDBWriterFilter::CheckConfig()
     if (db_type == "sqlite3") {
         _connectionstring = "sqlite3:";
         if (!db_host.empty()) {
-            LOGERROR(logger, db_type << " does not support the db_host parameter.");
+            LOGFATAL(logger, db_type << " does not support the db_host parameter.");
             fail = true;
         }
         if (!db_user.empty()) {
-            LOGERROR(logger, db_type << " does not support the db_user parameter.");
+            LOGFATAL(logger, db_type << " does not support the db_user parameter.");
             fail = true;
         }
         if (!db_database.empty()) {
@@ -264,16 +264,16 @@ bool CDBWriterFilter::CheckConfig()
             add_semicolon = true;
         }
         if (!db_port.empty()) {
-            LOGERROR(logger, db_type << " does not support the db_port parameter.");
+            LOGFATAL(logger, db_type << " does not support the db_port parameter.");
             fail = true;
         }
         if (!db_unixsocket.empty()) {
-            LOGERROR(logger,
+            LOGFATAL(logger,
                 db_type << " does not support the db_unixsocket parameter.");
             fail = true;
         }
         if (!db_passwd.empty()) {
-            LOGERROR(logger,
+            LOGFATAL(logger,
                 db_type << " does not support the db_password parameter.");
             fail = true;
         }

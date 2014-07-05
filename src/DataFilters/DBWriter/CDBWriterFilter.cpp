@@ -299,8 +299,121 @@ bool CDBWriterFilter::CheckConfig()
 
     LOGTRACE(logger, "DBWriter: connectionstring for CppDB is: " << dbgstring);
 
-    return !fail;
+    // Checking config for the tables aggregate
+    int i=0;
+    CDBWriterHelper *dbwh = NULL;
 
+    do {
+        std::string table, mode;
+        bool logchangedonly;
+        float logevery;
+        logchangedonly = false;
+        logevery = 0;
+        dbwh = NULL;
+
+        hlp = CConfigHelper(configurationpath, "tables", i);
+
+        if (!hlp.isExisting()) {
+            if (i == 0) {
+                LOGFATAL(logger, "no tables found in configuration.");
+            }
+            break;
+        }
+
+        if (!hlp.CheckAndGetConfig("db_table", Setting::TypeString, table)) {
+            LOGFATAL(logger, "db_table missing in entry number "
+                << i << " of the tables list.");
+            fail = true;
+            i++; continue;
+        }
+
+        LOGINFO(logger, "Parsing configuration for table " << table);
+
+        if (!hlp.GetConfig("operation_mode", mode)) {
+            fail = true;
+        } else {
+            if (!(mode == "continuous" || mode == "single"
+                || mode == "cumulative")) {
+                LOGFATAL(logger,
+                    "Setting operation_mode for table " << table <<
+                    " must be either continuous, single or cumulative, not " << mode);
+                fail = true;
+            } else {
+                LOGDEBUG(logger,
+                    "Setting operation_mode for table " << table <<
+                    " is " << mode);
+            }
+        }
+
+        if (!hlp.CheckConfig("logchangedonly", Setting::TypeBoolean)) {
+            fail = true;
+        } else {
+            hlp.GetConfig("logchangedonly", logchangedonly);
+        }
+
+        if (!hlp.CheckConfig("logevery", Setting::TypeFloat)) {
+            fail = true;
+        } else {
+            hlp.GetConfig("logevery", logevery);
+        }
+
+        hlp = CConfigHelper(hlp.GetCfgPath(),"db_layout");
+        if (!hlp.isExisting()) {
+            LOGFATAL(logger, "Configuration error: Entry db_layout missing for table " << table);
+            i++; continue;
+        }
+
+        dbwh = new CDBWriterHelper(this->logger, table, mode, logchangedonly,
+            logevery);
+
+        int j=0;
+        bool k = true;
+        // Iterate over all datasets to be logged.
+        do {
+            std::string capa,column;
+            capa.clear(); column.clear();
+            CConfigHelper hlp2(hlp.GetCfgPath(),j);
+            k = hlp2.isExisting();
+
+            if (!k) break;
+
+            if (!(hlp.GetConfigArray(j, 0, capa) && hlp.GetConfigArray(j, 1, column))) {
+                LOGFATAL(logger, "Config Error in entry " << j
+                    << " of " << table << "::" << "db_layout");
+                fail = true;
+                j++; continue;
+            }
+            LOGDEBUG(logger, "j=" << j << " capa=" << capa <<
+                " column=" << column);
+
+            if (capa.empty()) {
+                LOGFATAL(logger, "Capability in entry " << j
+                    << " of " << table << "::" << "db_layout must not be empty");
+               fail = true;
+               j++; continue;
+            }
+            if (column.empty()) {
+                LOGFATAL(logger, "Column in entry " << j
+                    << " of " << table << "::" << "db_layout must not be empty");
+               fail = true;
+               j++; continue;
+            }
+
+            if (!dbwh->AddDataToLog(capa,column)) {fail = true;}
+            j++;
+        } while(k);
+
+        if (!j) {
+            LOGFATAL(logger, "no layout for table " << table);
+            fail = true;
+        }
+        _dbwriterhelpers.push_back(dbwh);
+
+        i++;
+    }
+    while(true);
+
+    return !fail;
 }
 
 void CDBWriterFilter::Update( const IObserverSubject *subject )

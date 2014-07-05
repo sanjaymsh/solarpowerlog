@@ -38,6 +38,7 @@
 #include "Inverters/Capabilites.h"
 #include "Inverters/interfaces/ICapaIterator.h"
 #include "patterns/CValue.h"
+#include <interfaces/CMutexHelper.h>
 
 
 #include <assert.h>
@@ -186,6 +187,7 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
             capname = cap->getDescription();
             for (jt = _dbinfo.begin(); jt != _dbinfo.end(); jt++) {
                 if ((*jt).Capability == capname) {
+                    CMutexAutoLock cma(&mutex);
                     if (!(*jt).previously_subscribed)
                         LOGDEBUG(logger, "Subscribing to " << cap->getDescription());
                     cap->Subscribe(this);
@@ -203,6 +205,7 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
 
     for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
         if ((*it).Capability == capaname) {
+            CMutexAutoLock cma(&mutex);
             if ((*it).LastValue) {
                 IValue &last = *(*it).LastValue;
                 IValue &now  = *cap->getValue();

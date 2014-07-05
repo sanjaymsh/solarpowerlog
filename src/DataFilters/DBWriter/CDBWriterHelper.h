@@ -128,6 +128,8 @@ private:
 
     IValue *_olddatastate;
 
+    boost::mutex mutex;
+
 };
 
 #endif

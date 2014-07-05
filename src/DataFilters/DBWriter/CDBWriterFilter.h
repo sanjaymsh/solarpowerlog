@@ -83,6 +83,8 @@ private:
 
     std::vector<CDBWriterHelper*> _dbwriterhelpers;
 
+    bool _datavalid;
+
 };
 
 #endif

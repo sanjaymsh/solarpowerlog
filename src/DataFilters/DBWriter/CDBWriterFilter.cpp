@@ -18,6 +18,7 @@ Copyright (C) 2009-2012 Tobias Frost
 
  ----------------------------------------------------------------------------
 */
+#include <Inverters/interfaces/ICapaIterator.h>
 
 /** \file CDBWriterFilter.cpp
  *
@@ -63,6 +64,12 @@ CDBWriterFilter::CDBWriterFilter( const std::string & name,
 	CapabilityMap.erase(CAPA_CAPAS_REMOVEALL);
 	delete c;
 
+	// Also we do not update capas on our own..
+    c = IInverterBase::GetConcreteCapability(CAPA_CAPAS_UPDATED);
+    CapabilityMap.erase(CAPA_CAPAS_UPDATED);
+    delete c;
+
+
     Registry::GetMainScheduler()->RegisterBroadcasts(this);
 }
 
@@ -78,8 +85,16 @@ bool CDBWriterFilter::CheckConfig()
 {
     CConfigHelper hlp(configurationpath);
     bool fail = false;
-    std::string db_type, db_host, db_port, db_unixsocket, db_mode;
-    std::string db_user, db_passwd, db_database, db_cppdb_options;
+    std::string str;
+
+    fail |= !hlp.CheckAndGetConfig("datasource", Setting::TypeString, str);
+    IInverterBase *dsource = Registry::Instance().GetInverter(str);
+    if (!dsource) {
+        LOGERROR(logger, " Cannot find datassource with the name "
+            << str );
+        fail = true;
+    }
+    base = dsource;
 
     // What settings does a database writer needs?
 
@@ -100,6 +115,10 @@ bool CDBWriterFilter::CheckConfig()
     // the db engine. e.g mysql, sqlite3, postgresql or odbc
     // (for odbc you'll need to provide all options in db_cppdb_options yourself...)
     // if you use "custom" here, then solarpowerlog will just use db_cppdb_options as connection string.
+
+    std::string db_type, db_host, db_port, db_unixsocket, db_mode;
+    std::string db_user, db_passwd, db_database, db_cppdb_options;
+
 
     // The driver to be used.
     fail |= !hlp.CheckAndGetConfig("db_type", Setting::TypeString, db_type);
@@ -363,7 +382,7 @@ bool CDBWriterFilter::CheckConfig()
             i++; continue;
         }
 
-        dbwh = new CDBWriterHelper(this->logger, table, mode, logchangedonly,
+        dbwh = new CDBWriterHelper(base, logger, table, mode, logchangedonly,
             logevery);
 
         int j=0;
@@ -418,49 +437,40 @@ bool CDBWriterFilter::CheckConfig()
 
 void CDBWriterFilter::Update( const IObserverSubject *subject )
 {
-    LOGERROR(logger, __PRETTY_FUNCTION__ << " not implemented");
-    return;
 
-#if 0
-	assert (subject);
-	CCapability *c, *cap = (CCapability *) subject;
+    // TODO check if we can completely empty this member function
+    // NOTE: The Observer-Pattern-Handling is delegated to the helper claa
+    // CDBWriterHelper
 
-	// Datastate changed.
-	if (cap->getDescription() == CAPA_INVERTER_DATASTATE) {
-		this->datavalid = ((CValue<bool> *) cap->getValue())->Get();
-		return;
-	}
+    assert(subject);
+    CCapability *cap = (CCapability *)subject;
 
-	// Unsubscribe plea -- we do not offer this Capa, our customers will
-	// ask our base directly.
-	if (cap->getDescription() == CAPA_CAPAS_REMOVEALL) {
-		auto_ptr<ICapaIterator> it(base->GetCapaNewIterator());
-		while (it->HasNext()) {
-			pair<string, CCapability*> cappair = it->GetNext();
-			cap = (cappair).second;
-			cap->UnSubscribe(this);
-		}
-		return;
-	}
+   // LOGDEBUG(logger, "##### " << cap->getDescription());
 
-	// propagate "caps updated"
-	if (cap->getDescription() == CAPA_CAPAS_UPDATED) {
-		c = IInverterBase::GetConcreteCapability(CAPA_CAPAS_UPDATED);
-		*(CValue<bool> *) c->getValue()
-			= *(CValue<bool> *) cap->getValue();
-		c->Notify();
-		capsupdated = true;
-		return;
-	}
-#endif
+    // Datastate changed.
+    if (cap->getDescription() == CAPA_INVERTER_DATASTATE) {
+        _datavalid = ((CValue<bool> *)cap->getValue())->Get();
+        return;
+    }
 
+    // Unsubscribe plea -- we do not offer this Capa, our customers will
+    // ask our base directly.
+    if (cap->getDescription() == CAPA_CAPAS_REMOVEALL) {
+        auto_ptr<ICapaIterator> it(base->GetCapaNewIterator());
+        while (it->HasNext()) {
+            pair<string, CCapability*> cappair = it->GetNext();
+            cap = (cappair).second;
+            cap->UnSubscribe(this);
+        }
+        return;
+    }
 }
 
 void CDBWriterFilter::ExecuteCommand( const ICommand *cmd )
 {
 
-    LOGERROR(logger, __PRETTY_FUNCTION__ << " not implemented");
-     return;
+    LOGERROR(logger, __PRETTY_FUNCTION__ << " Warning not implemented");
+//     return;
 
 	switch (cmd->getCmd()) {
 
@@ -486,7 +496,7 @@ void CDBWriterFilter::ExecuteCommand( const ICommand *cmd )
 				"queryinterval. Defaulting to 5 seconds");
 		}
 
-		Registry::GetMainScheduler()->ScheduleWork(ncmd, ts);
+		// Registry::GetMainScheduler()->ScheduleWork(ncmd, ts);
 
 	}
 		break;
@@ -522,7 +532,23 @@ void CDBWriterFilter::ExecuteCommand( const ICommand *cmd )
 
 void CDBWriterFilter::DoINITCmd( const ICommand * )
 {
-    LOGERROR(logger, __PRETTY_FUNCTION__ << " not implemented");
+    // Called once on init.
+
+    // Get base
+    assert(base);
+    CCapability *cap;
+    cap = base -> GetConcreteCapability(CAPA_CAPAS_UPDATED);
+    assert(cap);
+    cap->Subscribe(this);
+
+    cap = base->GetConcreteCapability(CAPA_CAPAS_REMOVEALL);
+    assert(cap);
+    cap->Subscribe(this);
+
+    cap = base->GetConcreteCapability(CAPA_INVERTER_DATASTATE);
+    assert(cap);
+    cap->Subscribe(this);
+
     return;
 }
 

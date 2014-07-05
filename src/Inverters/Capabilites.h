@@ -56,7 +56,7 @@ Copyright (C) 2009-2012 Tobias Frost
  *
  *\note The associated concrete value is unused.
  *
- * \sa The pseudo cap "force unsubsribe" is related.
+ * \sa The pseudo cap "force unsubscribe" is related.
  *
  * THIS CAPABILITY IS REQUIRED -- EVERY INVERTER HAS THIS ONE.  */
 #define CAPA_CAPAS_UPDATED  	 "CapabilityList Updated"

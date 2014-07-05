@@ -47,6 +47,8 @@ CDBWriterFilter::CDBWriterFilter( const std::string & name,
 	const std::string & configurationpath ) :
 	IDataFilter(name, configurationpath)
 {
+    _datavalid = false;
+
 	// Schedule the initialization and subscriptions later...
 	ICommand *cmd = new ICommand(CMD_INIT, this);
 	Registry::GetMainScheduler()->ScheduleWork(cmd);
@@ -463,6 +465,21 @@ void CDBWriterFilter::Update( const IObserverSubject *subject )
     }
 }
 
+void CDBWriterFilter::ScheduleCyclicWork(void)
+{
+    ICommand *ncmd = NULL;
+    struct timespec ts;
+    std::vector<CDBWriterHelper*>::iterator it;
+
+    for (it = _dbwriterhelpers.begin(); it != _dbwriterhelpers.end(); it++) {
+        ncmd = new ICommand(CMD_CYCLIC, this);
+        ncmd->addData("DB_WORK", *it);
+        ts.tv_sec = (*it)->_logevery;
+        ts.tv_nsec = ((*it)->_logevery - ts.tv_sec) * 1e9;
+        Registry::GetMainScheduler()->ScheduleWork(ncmd, ts);
+    }
+}
+
 void CDBWriterFilter::ExecuteCommand( const ICommand *cmd )
 {
 
@@ -470,53 +487,36 @@ void CDBWriterFilter::ExecuteCommand( const ICommand *cmd )
 
 	switch (cmd->getCmd()) {
 
-	case CMD_INIT:
-	{
-		DoINITCmd(cmd);
-
-		ICommand *ncmd = new ICommand(CMD_CYCLIC, this);
-		struct timespec ts;
-		// Set cyclic timer to the query interval.
-		ts.tv_sec = 5;
-		ts.tv_nsec = 0;
-
-		CCapability *c = GetConcreteCapability(
-			CAPA_INVERTER_QUERYINTERVAL);
-		if (c && CValue<float>::IsType(c->getValue())) {
-			CValue<float> *v = (CValue<float> *) c->getValue();
-			ts.tv_sec = v->Get();
-			ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
-		} else {
-			LOGINFO(logger,
-				"INFO: The associated inverter does not specify the "
-				"queryinterval. Defaulting to 5 seconds");
-		}
-
-		// Registry::GetMainScheduler()->ScheduleWork(ncmd, ts);
-
-	}
-		break;
+        case CMD_INIT: {
+            DoINITCmd(cmd);
+            ScheduleCyclicWork();
+        }
+        break;
 
 	case CMD_CYCLIC:
 	{
 		DoCYCLICmd(cmd);
 
-		// Set cyclic timer to the query interval.
-		ICommand *ncmd = new ICommand(CMD_CYCLIC, this);
-		struct timespec ts;
-		ts.tv_sec = 5;
-		ts.tv_nsec = 0;
+		CDBWriterHelper* helper = NULL;
 
-		CCapability *c = GetConcreteCapability(
-			CAPA_INVERTER_QUERYINTERVAL);
-		if (c && CValue<float>::IsType(c->getValue())) {
-			CValue<float> *v = (CValue<float> *) c->getValue();
-			ts.tv_sec = v->Get();
-			ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
-		}
+		try {
+		    helper = boost::any_cast<CDBWriterHelper*>(cmd->findData("DB_WORK"));
 
-		Registry::GetMainScheduler()->ScheduleWork(ncmd, ts);
+        } catch (...) {
+            LOGDEBUG(logger, __PRETTY_FUNCTION__ <<
+                "Unexpected exception while getting object out of cmd");
+        }
 
+        assert(helper);
+
+        LOGTRACE(logger, "now handling: " << helper->GetTable());
+
+        ICommand *ncmd = new ICommand(CMD_CYCLIC, this);
+        struct timespec ts;
+        ncmd->addData("DB_WORK", helper);
+        ts.tv_sec = helper->_logevery;
+        ts.tv_nsec = (helper->_logevery - ts.tv_sec) * 1e9;
+        Registry::GetMainScheduler()->ScheduleWork(ncmd, ts);
 	}
 		break;
 

@@ -70,6 +70,9 @@ private:
 	 */
 	void DoCYCLICmd(const ICommand *);
 
+	void ScheduleCyclicWork(void);
+
+
     enum Commands
     {
 

@@ -68,6 +68,10 @@ CDBWriterFilter::CDBWriterFilter( const std::string & name,
 
 CDBWriterFilter::~CDBWriterFilter()
 {
+    std::vector<CDBWriterHelper*>::iterator it;
+    for (it = _dbwriterhelpers.begin(); it != _dbwriterhelpers.end(); it++) {
+        delete *it;
+    }
 }
 
 bool CDBWriterFilter::CheckConfig()

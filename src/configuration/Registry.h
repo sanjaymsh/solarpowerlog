@@ -213,9 +213,8 @@ private:
 	 *
 	 * \warning libconfig might throw exceptions if the setting is not
 	 * found.
-	 * Howeverm, if using the configurationpath (supplied by the bootstrap
+	 * However, if using the configurationpath (supplied by the bootstrap
 	 * code) and having objname empty, the path has been validated. */
-
 	libconfig::Setting & GetSettingsForObject( std::string section,
 		std::string objname = "" );
 public:

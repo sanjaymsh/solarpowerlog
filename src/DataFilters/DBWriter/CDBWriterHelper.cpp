@@ -38,7 +38,8 @@
 #include "Inverters/Capabilites.h"
 #include "Inverters/interfaces/ICapaIterator.h"
 #include "patterns/CValue.h"
-#include <interfaces/CMutexHelper.h>
+#include "interfaces/CMutexHelper.h"
+#include "CDBWHSpecialTokens.h"
 
 
 #include <assert.h>
@@ -126,7 +127,34 @@ bool CDBWriterHelper::AddDataToLog(const std::string &Capability,
 
     LOGDEBUG(logger,
         "\"" << Capability << "\" will be logged to column \"" << Column << "\"");
+
     _dbinfo.push_back(Cdbinfo(Capability, Column));
+
+    Cdbinfo &last = _dbinfo[_dbinfo.size()-1];
+
+    if (Capability[0] == '%') {
+        LOGDEBUG(logger, "Special token " << Capability);
+        IDBHSpecialToken *nt = CDBHSpecialTokenFactory::Factory(Capability);
+        if (!nt) {
+            LOGFATAL(logger, "Cannot create special token object " << Capability);
+            return false;
+        }
+
+        time_t t=time(0);
+        struct tm *tm = localtime(&t);
+        nt->Update(*tm);
+        LOGDEBUG(logger, nt->GetString());
+
+        IValue *tmp = (IValue*) nt;
+        IDBHSpecialToken *tst = (IDBHSpecialToken*) tmp;
+
+        tst->Update(*tm);
+        LOGDEBUG(logger, tst->GetString());
+
+
+    }
+
+
     return true;
 }
 

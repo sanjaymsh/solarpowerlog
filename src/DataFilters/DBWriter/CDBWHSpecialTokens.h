@@ -40,6 +40,11 @@
 
 #ifdef  HAVE_FILTER_DBWRITER
 
+#include <iostream>
+
+using std::endl;
+
+
 #include <ctime>
 #include "patterns/CValue.h"
 
@@ -134,43 +139,78 @@ private:
 
 };
 
-
-template<class T>
-class IDBHSpecialToken : public CValue<T>
+#if 1
+class IDBHSpecialToken
 {
 public:
+    virtual ~IDBHSpecialToken() {};
+
     /// Update the underlaying CValue<T>
     /// \return true if value indeed chagned, false if unchanged.
-    virtual bool Update(const struct tm &tm) = 0;
+    virtual bool Update(const struct tm &) = 0;
+
+    virtual const std::string GetString() = 0;
+};
+#endif
+
+template<class T>
+class CDBHSpecialToken : public IDBHSpecialToken, public CValue<T>
+{
+public:
+    virtual ~CDBHSpecialToken() {};
+    //virtual bool Update(const struct tm &) =0;
+
+    virtual const std::string GetString() {
+        return CValue<T>::operator std::string();
+    }
+
+#if 0
+    virtual bool operator==(IValue &v) {
+        return CValue<T>::operator ==(v);
+    }
+
+    virtual bool operator!=(IValue &v) {
+        return CValue<T>::operator !=(v);
+    }
+
+    virtual operator std::string() {
+        return CValue<T>::operator std::string();
+    }
+
+    virtual IValue* clone() {
+        return CValue<T>::clone();
+    }
+#endif
 
 };
 
-class CDBHST_Timestamp : public IDBHSpecialToken<struct tm> {
+
+class CDBHST_Timestamp : public CDBHSpecialToken<struct tm> {
 public:
     virtual bool Update(const struct tm &tm);
 };
 
-class CDBHST_Year : public IDBHSpecialToken<long> {
+class CDBHST_Year : public CDBHSpecialToken<long> {
 public:
     virtual bool Update(const struct tm &tm);
 };
 
-class CDBHST_Month : public IDBHSpecialToken<long> {
+class CDBHST_Month : public CDBHSpecialToken<long> {
 public:
     virtual bool Update(const struct tm &tm);
 };
 
-class CDBHST_Day : public IDBHSpecialToken<long> {
+class CDBHST_Day : public CDBHSpecialToken<long> {
 public:
     virtual bool Update(const struct tm &tm);
 };
 
-class CDBHST_Hour : public IDBHSpecialToken<long> {
+class CDBHST_Hour : public CDBHSpecialToken<long> {
 public:
     virtual bool Update(const struct tm &tm);
 };
 
-class CDBHST_Minute : public IDBHSpecialToken<long> {
+class CDBHST_Minute : public CDBHSpecialToken<long> {
 public:
     virtual bool Update(const struct tm &tm);
 };
@@ -178,7 +218,7 @@ public:
 
 class CDBHSpecialTokenFactory {
 public:
-    virtual IValue *Factory(const std::string &id) {
+    static IDBHSpecialToken *Factory(const std::string &id) {
 
         if (id == "%TIMESTAMP") return new CDBHST_Timestamp;
         if (id == "%YEAR") return new CDBHST_Year;

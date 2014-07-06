@@ -47,10 +47,59 @@ bool operator!=(struct tm t1, struct tm t2) {
     return true;
 }
 
-bool CDBHST_Timestamp::Update(void)
-{
 
-    return false;
+bool CDBHST_Timestamp::Update(const struct tm &tm)
+{
+    bool ret;
+    ret = (Get() != tm);
+    Set(tm);
+    return ret;
+}
+
+bool CDBHST_Year::Update(const struct tm &tm) {
+    bool ret;
+    long v;
+    v = tm.tm_year;
+    ret = (Get() != v);
+    Set(v);
+    return ret;
+}
+
+
+bool CDBHST_Month::Update(const struct tm &tm) {
+    bool ret;
+    long v;
+    v = tm.tm_mon;
+    ret = (Get() != v);
+    Set(v);
+    return ret;
+}
+
+bool CDBHST_Day::Update(const struct tm &tm) {
+    bool ret;
+    long v;
+    v = tm.tm_mday;
+    ret = (Get() != v);
+    Set(v);
+    return ret;
+}
+
+bool CDBHST_Hour::Update(const struct tm &tm) {
+    bool ret;
+    long v;
+    v = tm.tm_hour;
+    ret = (Get() != v);
+    Set(v);
+    return ret;
+}
+
+bool CDBHST_Minute::Update(const struct tm &tm) {
+    bool ret;
+    long v;
+    v = tm.tm_min;
+    ret = (Get() != v);
+    Set(v);
+    return ret;
 }
 
 #endif

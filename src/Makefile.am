@@ -27,6 +27,7 @@ DataFilters/interfaces/IDataFilter.cpp DataFilters/CDumpOutputFilter.cpp \
 DataFilters/CCSVOutputFilter.cpp DataFilters/HTMLWriter/CHTMLWriter.cpp \
 DataFilters/DBWriter/CDBWriterFilter.cpp \
 DataFilters/DBWriter/CDBWriterHelper.cpp \
+DataFilters/DBWriter/CDBWHSpecialTokens.cpp \
 configuration/Registry.cpp configuration/ILogger.cpp \
 Connections/CAsyncCommand.cpp Connections/CConnectDummy.cpp \
 Connections/sharedconnection/CSharedConnection.cpp \
@@ -69,6 +70,7 @@ DataFilters/interfaces/IDataFilter.h DataFilters/CDumpOutputFilter.h \
 DataFilters/CCSVOutputFilter.h DataFilters/HTMLWriter/CHTMLWriter.h \
 DataFilters/DBWriter/CDBWriterFilter.h \
 DataFilters/DBWriter/CDBWriterHelper.h \
+DataFilters/DBWriter/CDBWHSpecialTokens.h \
 configuration/Registry.h configuration/ILogger.h \
 Connections/CAsyncCommand.h Connections/CConnectDummy.h \
 Connections/sharedconnection/CSharedConnection.h \

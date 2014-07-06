@@ -44,7 +44,8 @@
 #include <assert.h>
 
 CDBWriterHelper::CDBWriterHelper(IInverterBase *base, const ILogger &parent,
-    const std::string &table, const std::string &mode, bool logchangedonly,
+    const std::string &table, const std::string &mode,
+    const std::string &createmode, bool logchangedonly,
     float logevery)
 {
     logger.Setup(parent.getLoggername(), "CDBWriterHelper(" + table + ")");
@@ -54,6 +55,13 @@ CDBWriterHelper::CDBWriterHelper(IInverterBase *base, const ILogger &parent,
     _logchangedonly = logchangedonly;
     _base = base;
     _datavalid = false;
+    _cmode = CDBWriterHelper::cmode_no;
+
+    if (createmode == "YES") {
+        _cmode = CDBWriterHelper::cmode_yes;
+    } else if (createmode == "YES-WIPE-MY-DATA") {
+        _cmode = CDBWriterHelper::cmode_yes_and_drop;
+    }
 
     _olddatastate = NULL;
 
@@ -140,8 +148,23 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
 
     // Datastate changed.
     if (cap->getDescription() == CAPA_INVERTER_DATASTATE) {
+        bool current = _datavalid;
         _datavalid = ((CValue<bool> *)cap->getValue())->Get();
+        if (current != _datavalid && !_datavalid) {
+            // data just became invalid.
+            // reset our internal states.
+            std::vector<Cdbinfo>::iterator it;
+            CMutexAutoLock cma(&mutex);
+            for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
+                Cdbinfo &cit = (*it);
+                if (cit.Value) delete cit.Value;
+                if (cit.LastLoggedValue) delete cit.LastLoggedValue;
+                cit.Value = NULL;
+                cit.LastLoggedValue = NULL;
+                cit.wasUpdated = false;
+            }
 
+        }
 #if 0
         // debug code I want to keep for the moment
         // debugs the CValue == and != operator, at least for bool
@@ -206,18 +229,55 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
     for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
         if ((*it).Capability == capaname) {
             CMutexAutoLock cma(&mutex);
-            if ((*it).LastValue) {
-                IValue &last = *(*it).LastValue;
+            Cdbinfo &cit = *it;
+            // Check if the value changed since last logging to the DB
+            if (cit.LastLoggedValue) {
+                IValue &last = *cit.LastLoggedValue;
                 IValue &now  = *cap->getValue();
-                if ( now == last) (*it).wasUpdated = true;
-                delete (*it).LastValue;
-                (*it).LastValue = NULL;
+                if ( now != last) cit.wasUpdated = true;
+            } else {
+                cit.wasUpdated = true;
             }
-            (*it).LastValue = cap->getValue()->clone();
-            (*it).wasSeen = true;
+
+            // Check if this is the first time we've got the value.
+            if (cit.Value) delete cit.Value;
+            cit.Value = cap->getValue()->clone();
             break;
         }
     }
 }
+
+bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
+
+    // paranoid safety checks
+    if (!_table_sanizited) return false;
+
+    // Nothing to do...
+    if (!_datavalid) return true;
+
+    // check datas
+    std::vector<Cdbinfo>::iterator it;
+    bool any_updated = false;
+    bool all_available = true;
+
+    for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
+        CMutexAutoLock cma(&mutex);
+        Cdbinfo &cit = *it;
+        if (!cit.Value) all_available = false;
+        if (cit.wasUpdated) any_updated = true;
+    }
+
+
+
+    // Part 1 -- create table if necessary.
+
+
+    // Part 2 -- create sql statement for adding / replacing ... data.
+
+
+
+
+}
+
 
 #endif

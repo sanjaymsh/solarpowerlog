@@ -328,18 +328,18 @@ bool CDBWriterFilter::CheckConfig()
     CDBWriterHelper *dbwh = NULL;
 
     do {
-        std::string table, mode;
+        std::string table, mode, createmode;
         bool logchangedonly;
         float logevery;
         logchangedonly = false;
         logevery = 0;
         dbwh = NULL;
 
-        hlp = CConfigHelper(configurationpath, "tables", i);
+        hlp = CConfigHelper(configurationpath, "db_jobs", i);
 
         if (!hlp.isExisting()) {
             if (i == 0) {
-                LOGFATAL(logger, "no tables found in configuration.");
+                LOGFATAL(logger, "db_jobs missing in configuration.");
             }
             break;
         }
@@ -353,7 +353,25 @@ bool CDBWriterFilter::CheckConfig()
 
         LOGINFO(logger, "Parsing configuration for table " << table);
 
-        if (!hlp.GetConfig("operation_mode", mode)) {
+        if (!hlp.CheckAndGetConfig("db_create_table", Setting::TypeString, createmode, true)) {
+            LOGFATAL(logger, "db_create_table is of wrong type for table " << table);
+            fail = true;
+        } else if (!createmode.empty()) {
+            if (createmode == "YES") {
+                LOGWARN(logger, "db_create_table is YES -- will create this table later: " << table);
+
+            } else
+            if (createmode == "YES-WIPE-MY-DATA") {
+                LOGWARN(logger, "db_create_table is YES-WIPE-MY-DATA -- will *DESTROY* and create this table later: " << table);
+
+            }
+            else {
+                LOGWARN(logger, "db_create_table is neither YES nor YES-WIPE-MY-DATA. Ignored");
+                createmode ="";
+            }
+        }
+
+        if (!hlp.GetConfig("db_operation_mode", mode)) {
             fail = true;
         } else {
             if (!(mode == "continuous" || mode == "single"
@@ -369,16 +387,17 @@ bool CDBWriterFilter::CheckConfig()
             }
         }
 
-        if (!hlp.CheckConfig("logchangedonly", Setting::TypeBoolean)) {
+        if (!hlp.CheckConfig("db_logchangedonly", Setting::TypeBoolean)) {
             fail = true;
         } else {
-            hlp.GetConfig("logchangedonly", logchangedonly);
+            hlp.GetConfig("db_logchangedonly", logchangedonly);
         }
 
-        if (!hlp.CheckConfig("logevery", Setting::TypeFloat)) {
+#warning FIXME  logevery is optional and should be derived from the inverter if not specified.
+        if (!hlp.CheckConfig("db_logevery", Setting::TypeFloat)) {
             fail = true;
         } else {
-            hlp.GetConfig("logevery", logevery);
+            hlp.GetConfig("db_logevery", logevery);
         }
 
         hlp = CConfigHelper(hlp.GetCfgPath(),"db_layout");
@@ -387,8 +406,8 @@ bool CDBWriterFilter::CheckConfig()
             i++; continue;
         }
 
-        dbwh = new CDBWriterHelper(base, logger, table, mode, logchangedonly,
-            logevery);
+        dbwh = new CDBWriterHelper(base, logger, table, mode, createmode,
+            logchangedonly, logevery);
 
         int j=0;
         bool k = true;

@@ -37,6 +37,7 @@ Copyright (C) 2009-2014 Tobias Frost
 #ifdef  HAVE_FILTER_DBWRITER
 
 #include <string>
+#include <cppdb/frontend.h>
 #include "configuration/ILogger.h"
 #include "patterns/IObserverObserver.h"
 #include "Inverters/interfaces/InverterBase.h"
@@ -58,10 +59,14 @@ class CDBWriterHelper : public IObserverObserver
 
 public:
 
-    CDBWriterHelper(IInverterBase *base, const ILogger &parent, const std::string &table,
-        const std::string &mode, bool logchangedonly, float logevery);
+    CDBWriterHelper(IInverterBase *base, const ILogger &parent,
+        const std::string &table, const std::string &mode,
+        const std::string &createmode, bool logchangedonly, float logevery);
 
     virtual ~CDBWriterHelper();
+
+    // The SQL Magic....
+    virtual bool ExecuteQuery(cppdb::session &session);
 
     /// Add the tuple Capability, Column to the "should be logged information"
     /// Returns "FALSE" if the combination of Capabilty and Column is alreaedy there.
@@ -84,18 +89,43 @@ private:
         continuous, single, cumulative
     };
 
+    enum cmode
+    {
+        cmode_no, cmode_yes, cmode_yes_and_drop
+    };
+
+    ILogger logger;
+
+
+    std::string _table;
+    omode _mode;
+
+    bool _table_sanizited;
+    bool _datavalid;
+
+    /// The DB-Writer's parent
+    IInverterBase *_base;
+
+    IValue *_olddatastate;
+
+    cmode _cmode;
+
+    boost::mutex mutex;
+
+    /// Helper class to encapsualte the data for the db entry.
     class Cdbinfo
     {
     public:
-    Cdbinfo(std::string Capability, std::string Column, bool wasUpdated = false,
-        bool wasSeen = false) :
-        Capability(Capability), Column(Column), LastValue(NULL),
-        wasUpdated(wasUpdated), wasSeen(wasSeen), previously_subscribed(false)
+        Cdbinfo(std::string Capability, std::string Column, bool wasUpdated =
+            false) :
+                Capability(Capability), Column(Column), Value(NULL),
+                LastLoggedValue(NULL), wasUpdated(wasUpdated),
+                previously_subscribed(false)
     {};
 
     ~Cdbinfo() {
-        if (LastValue) delete LastValue;
-        LastValue = NULL;
+        if (Value) delete Value;
+        if (LastLoggedValue) delete LastLoggedValue;
     };
 
     /// String of the capability
@@ -104,31 +134,17 @@ private:
     /// Column of the table
     std::string Column;
 
-    /// Pointer to the last seen value. NULL -> never updated()
-    IValue *LastValue;
+    /// Copy of the current value.
+    IValue *Value;
+
+    /// Copy of the LAST LOGGED value.
+    IValue *LastLoggedValue;
     /// Has the value changed since last db update?
     bool wasUpdated;
-    /// Have we got any update recently?
-    bool wasSeen;
     bool previously_subscribed; // just to supress a debug message.
     };
 
-    ILogger logger;
-
     std::vector<Cdbinfo> _dbinfo;
-
-    std::string _table;
-    omode _mode;
-
-    bool _table_sanizited;
-    bool _datavalid;
-
-    // The DB-Writer's parent
-    IInverterBase *_base;
-
-    IValue *_olddatastate;
-
-    boost::mutex mutex;
 
 };
 

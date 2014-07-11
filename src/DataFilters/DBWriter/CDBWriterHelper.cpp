@@ -47,7 +47,7 @@
 CDBWriterHelper::CDBWriterHelper(IInverterBase *base, const ILogger &parent,
     const std::string &table, const std::string &mode,
     const std::string &createmode, bool logchangedonly,
-    float logevery)
+    float logevery, bool allow_sparse)
 {
     logger.Setup(parent.getLoggername(), "CDBWriterHelper(" + table + ")");
     _table = table;
@@ -56,12 +56,13 @@ CDBWriterHelper::CDBWriterHelper(IInverterBase *base, const ILogger &parent,
     _logchangedonly = logchangedonly;
     _base = base;
     _datavalid = false;
-    _cmode = CDBWriterHelper::cmode_no;
+    _createtable_mode = CDBWriterHelper::cmode_no;
+    _allow_sparse = allow_sparse;
 
     if (createmode == "YES") {
-        _cmode = CDBWriterHelper::cmode_yes;
+        _createtable_mode = CDBWriterHelper::cmode_yes;
     } else if (createmode == "YES-WIPE-MY-DATA") {
-        _cmode = CDBWriterHelper::cmode_yes_and_drop;
+        _createtable_mode = CDBWriterHelper::cmode_yes_and_drop;
     }
 
     _olddatastate = NULL;
@@ -90,6 +91,7 @@ CDBWriterHelper::CDBWriterHelper(IInverterBase *base, const ILogger &parent,
 }
 
 CDBWriterHelper::~CDBWriterHelper() {
+#warning missing destructor
 }
 
 /** Add the tuple Capability, Column to the "should be logged information"
@@ -101,8 +103,6 @@ bool CDBWriterHelper::AddDataToLog(const std::string &Capability,
 
     assert(!Capability.empty());
     assert(!Column.empty());
-
-#warning TODO check capabilities for "special" names and reject if unknown special names are used.
 
     // Check if we need to complain on the tablename...
     if (!_table_sanizited && !issane(_table)) {
@@ -136,25 +136,27 @@ bool CDBWriterHelper::AddDataToLog(const std::string &Capability,
         LOGDEBUG(logger, "Special token " << Capability);
         IDBHSpecialToken *nt = CDBHSpecialTokenFactory::Factory(Capability);
         if (!nt) {
-            LOGFATAL(logger, "Cannot create special token object " << Capability);
+            LOGFATAL(logger,
+                "Cannot create special token object " << Capability);
             return false;
         }
 
-        time_t t=time(0);
+        time_t t = time(0);
         struct tm *tm = localtime(&t);
         nt->Update(*tm);
-        LOGDEBUG(logger, nt->GetString());
+        last.Value = (IValue*)nt;
+        last.LastLoggedValue = NULL;
+        last.isSpecial = true;
 
-        IValue *tmp = (IValue*) nt;
-        IDBHSpecialToken *tst = (IDBHSpecialToken*) tmp;
-
-        tst->Update(*tm);
-        LOGDEBUG(logger, tst->GetString());
-
-
+        // Debug code to test the IDBSpecialToken -> IValue interface.
+        //time_t t = time(0);
+        //struct tm *tm = localtime(&t);
+        //nt->Update(*tm);
+        //LOGDEBUG(logger, nt->GetString());
+        //IDBHSpecialToken *tst = (IDBHSpecialToken*) last.Value;
+        //tst->Update(*tm);
+        //LOGDEBUG(logger, tst->GetString());
     }
-
-
     return true;
 }
 
@@ -185,13 +187,16 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
             CMutexAutoLock cma(&mutex);
             for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
                 Cdbinfo &cit = (*it);
-                if (cit.Value) delete cit.Value;
-                if (cit.LastLoggedValue) delete cit.LastLoggedValue;
-                cit.Value = NULL;
-                cit.LastLoggedValue = NULL;
+                if (cit.Value && !cit.isSpecial) {
+                    delete cit.Value;
+                    cit.Value = NULL;
+                }
+                if (cit.LastLoggedValue && !cit.isSpecial) {
+                    delete cit.LastLoggedValue;
+                    cit.LastLoggedValue = NULL;
+                }
                 cit.wasUpdated = false;
             }
-
         }
 #if 0
         // debug code I want to keep for the moment
@@ -277,27 +282,72 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
 
 bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
 
+
+    // Strategie
+    // only log if data is marked as valid
+    //
+    // For "continious" mode just add new columns
+    // "sparse mode" -> add NULL if no data is there (log even if all_available is false)
+
+    // If creating table, "sparse mode" cannot be used -- datatypes are needed to assemble the create statement.
+
+    // In "single mode" the statement will need to have a selector to update the right row (smth like WHERE column == zzz)
+    // This selektors are defined by a leading "$" in the Capability and the remaining part will be (after checking if it
+    // is "sane") added to the satement. The column specifies the column, you guessed right :).
+
+    // "Cumulative" mode first needs to try to update the row in question, and if that fails, try to add the row.
+
     // paranoid safety checks
     if (!_table_sanizited) return false;
 
     // Nothing to do...
     if (!_datavalid) return true;
 
-    // check datas
+    // check what we've got so far
     std::vector<Cdbinfo>::iterator it;
     bool any_updated = false;
     bool all_available = true;
+    bool special_updated = true;
+
+    time_t t = time(0);
+    struct tm *tm = localtime(&t);
 
     for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
         CMutexAutoLock cma(&mutex);
         Cdbinfo &cit = *it;
         if (!cit.Value) all_available = false;
         if (cit.wasUpdated) any_updated = true;
+        if (cit.isSpecial) {
+            IDBHSpecialToken *st = (IDBHSpecialToken*) cit.Value;
+            if (st->Update(*tm)) special_updated=true;
+            LOGDEBUG(logger, "Updated " << cit.Capability << "value " << st->GetString());
+        }
     }
 
-
-
     // Part 1 -- create table if necessary.
+    if (_createtable_mode != CDBWriterHelper::cmode_no) {
+        // Creation of the table is only possible if we have all data, as we need to know the
+        // datatyptes
+        if (!all_available) {
+            LOGDEBUG(logger, "Not all data available to create table " << _table);
+            return true;
+        }
+
+        // CREATE TABLE table ( created TIMESTAMP,
+        // month int, day int, hour int
+
+        // Iterate through all specs and assemble table.
+        for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
+            Cdbinfo &info = *it;
+            if (info.Capability[0] == '$') {
+
+            }
+
+        }
+
+
+#warning todo
+    }
 
 
     // Part 2 -- create sql statement for adding / replacing ... data.

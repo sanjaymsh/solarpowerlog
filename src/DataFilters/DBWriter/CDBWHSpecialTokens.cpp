@@ -19,10 +19,6 @@
  ----------------------------------------------------------------------------
  */
 
-#include <iostream>
-
-using std::endl;
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #include "porting.h"
@@ -68,7 +64,6 @@ bool CDBHST_Year::Update(const struct tm &tm) {
     Set(v);
     return ret;
 }
-
 
 bool CDBHST_Month::Update(const struct tm &tm) {
     bool ret;

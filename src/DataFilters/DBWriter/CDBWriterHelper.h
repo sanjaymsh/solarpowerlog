@@ -61,7 +61,8 @@ public:
 
     CDBWriterHelper(IInverterBase *base, const ILogger &parent,
         const std::string &table, const std::string &mode,
-        const std::string &createmode, bool logchangedonly, float logevery);
+        const std::string &createmode, bool logchangedonly, float logevery,
+        bool allow_sparse);
 
     virtual ~CDBWriterHelper();
 
@@ -103,12 +104,14 @@ private:
     bool _table_sanizited;
     bool _datavalid;
 
+    bool _allow_sparse;
+
     /// The DB-Writer's parent
     IInverterBase *_base;
 
     IValue *_olddatastate;
 
-    cmode _cmode;
+    cmode _createtable_mode;
 
     boost::mutex mutex;
 
@@ -120,7 +123,7 @@ private:
             false) :
                 Capability(Capability), Column(Column), Value(NULL),
                 LastLoggedValue(NULL), wasUpdated(wasUpdated),
-                previously_subscribed(false)
+                previously_subscribed(false), isSpecial(false)
     {};
 
     ~Cdbinfo() {
@@ -141,7 +144,9 @@ private:
     IValue *LastLoggedValue;
     /// Has the value changed since last db update?
     bool wasUpdated;
+
     bool previously_subscribed; // just to supress a debug message.
+    bool isSpecial;
     };
 
     std::vector<Cdbinfo> _dbinfo;

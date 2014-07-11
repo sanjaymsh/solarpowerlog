@@ -40,11 +40,6 @@
 
 #ifdef  HAVE_FILTER_DBWRITER
 
-#include <iostream>
-
-using std::endl;
-
-
 #include <ctime>
 #include "patterns/CValue.h"
 

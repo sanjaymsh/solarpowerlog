@@ -390,8 +390,16 @@ bool CDBWriterFilter::CheckConfig()
         if (!hlp.CheckConfig("db_logchangedonly", Setting::TypeBoolean)) {
             fail = true;
         } else {
-            hlp.GetConfig("db_logchangedonly", logchangedonly);
+            hlp.GetConfig("db_logchangedonly", logchangedonly, false);
         }
+
+        bool allow_sparse;
+        if (!hlp.CheckConfig("db_allowsparse", Setting::TypeBoolean)) {
+            fail = true;
+        } else {
+            hlp.GetConfig("db_allowsparse", allow_sparse, false);
+        }
+
 
 #warning FIXME  logevery is optional and should be derived from the inverter if not specified.
         if (!hlp.CheckConfig("db_logevery", Setting::TypeFloat)) {
@@ -407,7 +415,7 @@ bool CDBWriterFilter::CheckConfig()
         }
 
         dbwh = new CDBWriterHelper(base, logger, table, mode, createmode,
-            logchangedonly, logevery);
+            logchangedonly, logevery, allow_sparse);
 
         int j=0;
         bool k = true;

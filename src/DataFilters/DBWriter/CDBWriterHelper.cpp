@@ -179,7 +179,7 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
             std::vector<class Cdbinfo*>::iterator it;
             CMutexAutoLock cma(&mutex);
             for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
-                Cdbinfo &cit = **it);
+                Cdbinfo &cit = **it;
                 if (cit.Value && !cit.isSpecial) {
                     delete cit.Value;
                     cit.Value = NULL;

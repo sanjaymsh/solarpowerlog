@@ -90,7 +90,7 @@ private:
 
     bool _datavalid;
 
-    cppdb::session *_sqlsession;
+    cppdb::session _sqlsession;
 
 };
 

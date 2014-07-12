@@ -48,7 +48,6 @@ CDBWriterFilter::CDBWriterFilter( const std::string & name,
 	IDataFilter(name, configurationpath)
 {
     _datavalid = false;
-    _sqlsession = NULL;
 
 	// Schedule the initialization and subscriptions later...
 	ICommand *cmd = new ICommand(CMD_INIT, this);
@@ -82,8 +81,6 @@ CDBWriterFilter::~CDBWriterFilter()
     for (it = _dbwriterhelpers.begin(); it != _dbwriterhelpers.end(); it++) {
         delete *it;
     }
-
-    if (_sqlsession) delete _sqlsession;
 }
 
 bool CDBWriterFilter::CheckConfig()
@@ -523,35 +520,57 @@ void CDBWriterFilter::ExecuteCommand( const ICommand *cmd )
         }
         break;
 
-	case CMD_CYCLIC:
-	{
-		DoCYCLICmd(cmd);
+        case CMD_CYCLIC: {
+            DoCYCLICmd(cmd);
 
-		CDBWriterHelper* helper = NULL;
+            CDBWriterHelper* helper = NULL;
 
-		try {
-		    helper = boost::any_cast<CDBWriterHelper*>(cmd->findData("DB_WORK"));
+            try {
+                helper = boost::any_cast<CDBWriterHelper*>(
+                    cmd->findData("DB_WORK"));
 
-        } catch (...) {
-            LOGDEBUG(logger, __PRETTY_FUNCTION__ <<
-                "Unexpected exception while getting object out of cmd");
+            } catch (...) {
+                LOGDEBUG(logger,
+                    __PRETTY_FUNCTION__ << "Unexpected exception while getting "
+                        "object out of cmd");
+            }
+
+            assert(helper);
+
+            LOGTRACE(logger, "now handling: " << helper->GetTable());
+
+            if (!_sqlsession.is_open()) {
+                LOGDEBUG(logger, "Trying to open database.");
+                try {
+                    _sqlsession.open(_connectionstring);
+                } catch (std::exception const &e) {
+                    LOGWARN(logger, "Exception while opening database: "
+                        << e.what());
+                }
+            }
+
+            if (_sqlsession.is_open()) {
+                 helper->ExecuteQuery(_sqlsession);
+            }
+
+            ICommand *ncmd = new ICommand(CMD_CYCLIC, this);
+            struct timespec ts;
+            ncmd->addData("DB_WORK", helper);
+            ts.tv_sec = helper->_logevery;
+            ts.tv_nsec = (helper->_logevery - ts.tv_sec) * 1e9;
+            Registry::GetMainScheduler()->ScheduleWork(ncmd, ts);
         }
+        break;
 
-        assert(helper);
-
-        LOGTRACE(logger, "now handling: " << helper->GetTable());
-
-        ICommand *ncmd = new ICommand(CMD_CYCLIC, this);
-        struct timespec ts;
-        ncmd->addData("DB_WORK", helper);
-        ts.tv_sec = helper->_logevery;
-        ts.tv_nsec = (helper->_logevery - ts.tv_sec) * 1e9;
-        Registry::GetMainScheduler()->ScheduleWork(ncmd, ts);
-	}
-		break;
-
-	case CMD_BRC_SHUTDOWN:
+        case CMD_BRC_SHUTDOWN:
             // shutdown requested, we will terminate soon.
+            try {
+                if (_sqlsession.is_open()) _sqlsession.close();
+            } catch (std::exception const &e) {
+                LOGWARN(logger, " Exception while closing sqlsession. "
+                    << e.what());
+
+            }
         break;
     }
 }
@@ -579,122 +598,9 @@ void CDBWriterFilter::DoINITCmd( const ICommand * )
 
 void CDBWriterFilter::DoCYCLICmd( const ICommand * )
 {
-    LOGERROR(logger, __PRETTY_FUNCTION__ << " not implemented");
+ //   LOGERROR(logger, __PRETTY_FUNCTION__ << " not implemented");
     return;
 
-#if 0
-	bool compact_file, flush_after_write;
-	std::string format;
-
-	CConfigHelper cfg(configurationpath);
-	cfg.GetConfig("format_timestamp", format, std::string("%Y-%m-%d %T"));
-	cfg.GetConfig("compact_csv", compact_file, false);
-	cfg.GetConfig("flush_file_buffer_immediatly", flush_after_write, false);
-
-	std::stringstream ss;
-
-	/* Check for data validty. */
-	if (!datavalid) {
-		return;
-	}
-
-	/* check if CSV-Header needs to be re-emitted.*/
-	if (capsupdated || !headerwritten) {
-		capsupdated = false;
-		if (CMDCyclic_CheckCapas()) {
-			headerwritten = false;
-		}
-	}
-
-	/* check if file is ready */
-	if (!file.is_open()) {
-		return;
-	}
-
-	/* output CSV Header*/
-	if (!headerwritten) {
-		last_line.clear();
-		bool first = true;
-		list<string>::const_iterator it;
-		for (it = CSVCapas.begin(); it != CSVCapas.end(); it++) {
-			if (!first) {
-				ss << ",";
-			} else {
-				ss << "Timestamp,";
-			}
-			first = false;
-			ss << *(it);
-		}
-		// CSV after RFC 4180 requires CR LF
-		file << ss.str() << (char) 0x0d << (char) 0x0a;
-		CCapability *cap = GetConcreteCapability(CAPA_CSVDUMPER_LOGGEDCAPABILITES);
-		assert(cap);
-		((CValue<std::string> *)cap->getValue())->Set(ss.str());
-		cap->Notify();
-		ss.str("");
-		headerwritten = true;
-	}
-
-	/* finally, output data. */
-
-	// make timestamp
-	boost::posix_time::ptime n =
-		boost::posix_time::second_clock::local_time();
-
-	// assign facet only to a temporay stringstream.
-	// this avoids having a persistent object.
-	/// time_facet for the formating of the string
-	boost::posix_time::time_facet *facet = new boost::posix_time::time_facet(format.c_str());
-	ss.imbue(std::locale(ss.getloc(), facet));
-	ss << n;
-	file << ss.str();
-	ss.str("");
-
-	// note: do not delete the facet. This is done by the locale.
-	// See: http://rhubbarb.wordpress.com/2009/10/17/boost-datetime-locales-and-facets/
-	// (the locale will delete the object, so there is no leak. If we would
-	// delete, this crashes.)
-
-	list<string>::const_iterator it;
-	CCapability *c;
-	IValue *v;
-	for (it = CSVCapas.begin(); it != CSVCapas.end(); it++) {
-		ss << ",";
-		c = base->GetConcreteCapability(*it);
-		if (c) {
-			v = c->getValue();
-			string tmp = (string) *v;
-
-			if (string::npos != tmp.find('"')) {
-				string t2 = tmp;
-				size_t t;
-				while (string::npos != (t = t2.find('"'))) {
-					tmp = t2.substr(0, t);
-					tmp += '"';
-					t2 = t2.substr(t, string::npos);
-				}
-				tmp += t2;
-			}
-
-			if (string::npos != tmp.find(',') || string::npos
-				!= tmp.find("\x0d\x0a")) {
-				ss << '"' << tmp << '"';
-			} else {
-				ss << tmp;
-			}
-
-		} else {
-			// file << ' ';
-		}
-	}
-
-	if ( !compact_file ||  ss.str() != last_line) {
-		file << ss.str() << (char) 0x0d << (char) 0x0a;
-		last_line = ss.str();
-		if (flush_after_write)
-			file << flush;
-	}
-#endif
 }
 
 #endif

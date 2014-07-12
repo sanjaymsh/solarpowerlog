@@ -403,18 +403,39 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
         LOGDEBUG(logger,"Executing query: " << tmp);
         session << tmp << cppdb::exec;
 
-
-
-
-#warning todo
+        LOGWARN(logger, "Table created. Make sure to disable table creation in the config!");
+        LOGWARN(logger, "Otherwise, solarpowerlog might stomp on your database the next time you start it!");
+        _createtable_mode = CDBWriterHelper::cmode_no;
     }
-
 
     // Part 2 -- create sql statement for adding / replacing ... data.
 
+    // depending on the mode of operation:
+    // -> continous: will just issue INSERT statements
+
+
+    // if not everything is available and we do not doing a sparse table:
+    if (!_allow_sparse && !all_available) {
+        return false;
+    }
+
+    // on continuous mode and single mode logchangedonly is not affected by special_updated.
+    if ((_mode == CDBWriterHelper::continuous ||
+         _mode == CDBWriterHelper::single)
+        && _logchangedonly && !any_updated) {
+        return false;
+    }
+
+    // logchangedonly on cumulative mode:
+    // we'll always need to insert a new row if a special has changed.
+    if ( _mode == CDBWriterHelper::cumulative && _logchangedonly ) {
+        if (!any_updated && !special_updated) return false;
+    }
 
 
 
+
+    return true;
 }
 
 

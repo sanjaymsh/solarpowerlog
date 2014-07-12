@@ -85,6 +85,7 @@ public:
 private:
 
     bool issane(const std::string s);
+
     enum omode
     {
         continuous, single, cumulative

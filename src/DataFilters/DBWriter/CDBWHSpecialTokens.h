@@ -48,26 +48,26 @@ bool operator!=(struct tm t1, struct tm t2);
 
 // Template specialisation required for tm
 template<>
-class CValue<struct tm> : public IValue {
+class CValue<std::tm> : public IValue {
 
 public:
-    CValue()
+    CValue() : IValue(MagicNumbers::magic_number_for<std::tm>())
     {
-        IValue::type_ = MagicNumbers::magic_number_for<struct tm>();
     }
 
-    CValue(const struct tm &set) {
-         IValue::type_ = MagicNumbers::magic_number_for<struct tm>();
-         value = set;
-         timestamp = boost::posix_time::second_clock::local_time();
-     }
+    CValue(const struct tm &set) : IValue(MagicNumbers::magic_number_for<std::tm>())
+        {
+            value = set;
+            timestamp = boost::posix_time::second_clock::local_time();
+        }
 
     /// Serves as a virtual copy constructor.
-    virtual CValue<struct tm>* clone() {
-        return new CValue<struct tm>(*this);
+    virtual CValue<std::tm>* clone() {
+        return new CValue<std::tm>(*this);
     }
 
-    void Set(struct tm value, boost::posix_time::ptime timestamp = boost::posix_time::second_clock::local_time()) {
+
+    void Set(std::tm value, boost::posix_time::ptime timestamp = boost::posix_time::second_clock::local_time()) {
          this->timestamp = timestamp;
          this->value = value;
      }
@@ -76,12 +76,12 @@ public:
          return value;
      }
 
-     virtual void operator=(const struct tm& val) {
+     virtual void operator=(const std::tm& val) {
          timestamp = boost::posix_time::second_clock::local_time();
          value = val;
      }
 
-     virtual void operator=(const CValue<struct tm> &val) {
+     virtual void operator=(const CValue<std::tm> &val) {
          timestamp = val.GetTimestamp();
          value = val.Get();
      }
@@ -127,9 +127,8 @@ public:
          return false;
      }
 
-
 private:
-    struct tm value;
+    std::tm value;
     boost::posix_time::ptime timestamp;
 
 };
@@ -158,24 +157,6 @@ public:
     virtual const std::string GetString() {
         return CValue<T>::operator std::string();
     }
-
-#if 0
-    virtual bool operator==(IValue &v) {
-        return CValue<T>::operator ==(v);
-    }
-
-    virtual bool operator!=(IValue &v) {
-        return CValue<T>::operator !=(v);
-    }
-
-    virtual operator std::string() {
-        return CValue<T>::operator std::string();
-    }
-
-    virtual IValue* clone() {
-        return CValue<T>::clone();
-    }
-#endif
 
 };
 

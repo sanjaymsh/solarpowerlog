@@ -28,7 +28,7 @@
 
 #include "CDBWHSpecialTokens.h"
 
-bool operator==(struct tm t1, struct tm t2) {
+bool operator==(std::tm t1, std::tm t2) {
     if (t1.tm_sec != t2.tm_sec) return false;
     if (t1.tm_min != t2.tm_min) return false;
     if (t1.tm_hour != t2.tm_hour) return false;
@@ -37,18 +37,18 @@ bool operator==(struct tm t1, struct tm t2) {
     if (t1.tm_year != t2.tm_year) return false;
     return true;
 }
-bool operator!=(struct tm t1, struct tm t2) {
-    if (t1.tm_sec == t2.tm_sec) return false;
-    if (t1.tm_min == t2.tm_min) return false;
-    if (t1.tm_hour == t2.tm_hour) return false;
-    if (t1.tm_mday == t2.tm_mday) return false;
-    if (t1.tm_mon == t2.tm_mon) return false;
-    if (t1.tm_year == t2.tm_year) return false;
+bool operator!=(std::tm t1, std::tm t2) {
+    if ((t1.tm_sec == t2.tm_sec) &&
+       (t1.tm_min == t2.tm_min) &&
+       (t1.tm_hour == t2.tm_hour) &&
+       (t1.tm_mday == t2.tm_mday) &&
+       (t1.tm_mon == t2.tm_mon) &&
+       (t1.tm_year == t2.tm_year)) return false;
     return true;
 }
 
 
-bool CDBHST_Timestamp::Update(const struct tm &tm)
+bool CDBHST_Timestamp::Update(const std::tm &tm)
 {
     bool ret;
     ret = (Get() != tm);
@@ -56,7 +56,7 @@ bool CDBHST_Timestamp::Update(const struct tm &tm)
     return ret;
 }
 
-bool CDBHST_Year::Update(const struct tm &tm) {
+bool CDBHST_Year::Update(const std::tm &tm) {
     bool ret;
     long v;
     v = tm.tm_year;
@@ -65,7 +65,7 @@ bool CDBHST_Year::Update(const struct tm &tm) {
     return ret;
 }
 
-bool CDBHST_Month::Update(const struct tm &tm) {
+bool CDBHST_Month::Update(const std::tm &tm) {
     bool ret;
     long v;
     v = tm.tm_mon;
@@ -74,7 +74,7 @@ bool CDBHST_Month::Update(const struct tm &tm) {
     return ret;
 }
 
-bool CDBHST_Day::Update(const struct tm &tm) {
+bool CDBHST_Day::Update(const std::tm &tm) {
     bool ret;
     long v;
     v = tm.tm_mday;
@@ -83,7 +83,7 @@ bool CDBHST_Day::Update(const struct tm &tm) {
     return ret;
 }
 
-bool CDBHST_Hour::Update(const struct tm &tm) {
+bool CDBHST_Hour::Update(const std::tm &tm) {
     bool ret;
     long v;
     v = tm.tm_hour;
@@ -92,7 +92,7 @@ bool CDBHST_Hour::Update(const struct tm &tm) {
     return ret;
 }
 
-bool CDBHST_Minute::Update(const struct tm &tm) {
+bool CDBHST_Minute::Update(const std::tm &tm) {
     bool ret;
     long v;
     v = tm.tm_min;

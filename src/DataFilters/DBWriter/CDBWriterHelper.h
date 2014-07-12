@@ -149,7 +149,7 @@ private:
     bool isSpecial;
     };
 
-    std::vector<Cdbinfo> _dbinfo;
+    std::vector<class Cdbinfo*> _dbinfo;
 
 };
 

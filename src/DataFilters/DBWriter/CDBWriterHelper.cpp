@@ -116,9 +116,9 @@ bool CDBWriterHelper::AddDataToLog(const std::string &Capability,
         return false;
     }
 
-    std::vector<Cdbinfo>::iterator it;
+    std::vector<Cdbinfo*>::iterator it;
     for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
-        if ((*it).Column == Column) {
+        if ((*it)->Column == Column) {
             LOGFATAL(logger,
                 "Table " << _table << ": Column " << Column <<" already used as target:");
             return false;
@@ -128,9 +128,10 @@ bool CDBWriterHelper::AddDataToLog(const std::string &Capability,
     LOGDEBUG(logger,
         "\"" << Capability << "\" will be logged to column \"" << Column << "\"");
 
-    _dbinfo.push_back(Cdbinfo(Capability, Column));
+    class Cdbinfo* n = new Cdbinfo(Capability, Column);
+    _dbinfo.push_back(n);
 
-    Cdbinfo &last = _dbinfo[_dbinfo.size()-1];
+    Cdbinfo &last = *(_dbinfo[_dbinfo.size()-1]);
 
     if (Capability[0] == '%') {
         LOGDEBUG(logger, "Special token " << Capability);
@@ -144,18 +145,10 @@ bool CDBWriterHelper::AddDataToLog(const std::string &Capability,
         time_t t = time(0);
         struct tm *tm = localtime(&t);
         nt->Update(*tm);
-        last.Value = (IValue*)nt;
+        last.Value = dynamic_cast<IValue*>(nt);
+        assert(last.Value);
         last.LastLoggedValue = NULL;
         last.isSpecial = true;
-
-        // Debug code to test the IDBSpecialToken -> IValue interface.
-        //time_t t = time(0);
-        //struct tm *tm = localtime(&t);
-        //nt->Update(*tm);
-        //LOGDEBUG(logger, nt->GetString());
-        //IDBHSpecialToken *tst = (IDBHSpecialToken*) last.Value;
-        //tst->Update(*tm);
-        //LOGDEBUG(logger, tst->GetString());
     }
     return true;
 }
@@ -183,10 +176,10 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
         if (current != _datavalid && !_datavalid) {
             // data just became invalid.
             // reset our internal states.
-            std::vector<Cdbinfo>::iterator it;
+            std::vector<class Cdbinfo*>::iterator it;
             CMutexAutoLock cma(&mutex);
             for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
-                Cdbinfo &cit = (*it);
+                Cdbinfo &cit = **it);
                 if (cit.Value && !cit.isSpecial) {
                     delete cit.Value;
                     cit.Value = NULL;
@@ -237,17 +230,17 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
         auto_ptr<ICapaIterator> it(_base->GetCapaNewIterator());
         while (it->HasNext()) {
             std::string capname;
-            std::vector<Cdbinfo>::iterator jt;
+            std::vector<class Cdbinfo *>::iterator jt;
             pair<string, CCapability*> cappair = it->GetNext();
             cap = (cappair).second;
             capname = cap->getDescription();
             for (jt = _dbinfo.begin(); jt != _dbinfo.end(); jt++) {
-                if ((*jt).Capability == capname) {
+                if ((*jt)->Capability == capname) {
                     CMutexAutoLock cma(&mutex);
-                    if (!(*jt).previously_subscribed)
+                    if (!(*jt)->previously_subscribed)
                         LOGDEBUG(logger, "Subscribing to " << cap->getDescription());
                     cap->Subscribe(this);
-                    (*jt).previously_subscribed = true;
+                    (*jt)->previously_subscribed = true;
                     break;
                 }
             }
@@ -256,13 +249,13 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
     }
 
     // OK, some caps has been updated. Lets clone the value :)
-    std::vector<Cdbinfo>::iterator it;
+    std::vector<class Cdbinfo*>::iterator it;
     std::string capaname = cap->getDescription();
 
     for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
-        if ((*it).Capability == capaname) {
+        if ((*it)->Capability == capaname) {
             CMutexAutoLock cma(&mutex);
-            Cdbinfo &cit = *it;
+            Cdbinfo &cit = **it;
             // Check if the value changed since last logging to the DB
             if (cit.LastLoggedValue) {
                 IValue &last = *cit.LastLoggedValue;
@@ -282,7 +275,6 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
 
 bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
 
-
     // Strategie
     // only log if data is marked as valid
     //
@@ -298,13 +290,19 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
     // "Cumulative" mode first needs to try to update the row in question, and if that fails, try to add the row.
 
     // paranoid safety checks
-    if (!_table_sanizited) return false;
+    if (!_table_sanizited) {
+        LOGDEBUG(logger, _table << " not sanitzized");
+        return false;
+    }
 
     // Nothing to do...
-    if (!_datavalid) return true;
+    if (!_datavalid) {
+        LOGDEBUG(logger, _table << " data invalid");
+        return true;
+    }
 
     // check what we've got so far
-    std::vector<Cdbinfo>::iterator it;
+    std::vector<class Cdbinfo*>::iterator it;
     bool any_updated = false;
     bool all_available = true;
     bool special_updated = true;
@@ -313,23 +311,36 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
     struct tm *tm = localtime(&t);
 
     for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
+        LOGTRACE(logger, "Handling " << _table << "::" << (*it)->Capability );
         CMutexAutoLock cma(&mutex);
-        Cdbinfo &cit = *it;
-        if (!cit.Value) all_available = false;
-        if (cit.wasUpdated) any_updated = true;
+        Cdbinfo &cit = **it;
+        if (!cit.Value) {
+            LOGTRACE(logger, cit.Capability << " not available");
+            all_available = false;
+        }
+        if (!cit.isSpecial && cit.wasUpdated) {
+            LOGTRACE(logger, cit.Capability << " was updated");
+            any_updated = true;
+        }
         if (cit.isSpecial) {
-            IDBHSpecialToken *st = (IDBHSpecialToken*) cit.Value;
+            IDBHSpecialToken *st = dynamic_cast<IDBHSpecialToken*>(cit.Value);
             if (st->Update(*tm)) special_updated=true;
-            LOGDEBUG(logger, "Updated " << cit.Capability << "value " << st->GetString());
+            LOGTRACE(logger, "Updated " << cit.Capability << "value " << st->GetString());
         }
     }
 
+    LOGTRACE(logger, "Status: all_available=" << all_available
+        << " any_updated=" << any_updated
+        << " special_updated=" <<special_updated);
+
     // Part 1 -- create table if necessary.
     if (_createtable_mode != CDBWriterHelper::cmode_no) {
+        LOGTRACE(logger, " _createtable_mode != no");
         // Creation of the table is only possible if we have all data, as we need to know the
         // datatyptes
         if (!all_available) {
-            LOGDEBUG(logger, "Not all data available to create table " << _table);
+            LOGDEBUG(logger, "Not all data available to create table " << _table
+                << ". Retrying later.");
             return true;
         }
 
@@ -337,13 +348,57 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
         // month int, day int, hour int
 
         // Iterate through all specs and assemble table.
+        std::string tablestring;
         for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
-            Cdbinfo &info = *it;
+            Cdbinfo &info = **it;
             if (info.Capability[0] == '$') {
-
+                // Special Selekt-Token we going to ignore
+                LOGWARN(logger, "For creating tables $-Selektor columns will not be created. "
+                    "Please add the column for Selektor " << info.Capability[0] << " yourself.");
+                LOGWARN(logger, "Logging will fail until then!");
+                continue;
             }
+            // Try to determine datatype.
+            // Note: This list might be needed to be updated when new Capabilities are added
+            // using new datatypes!
+            assert(info.Value);
+            if (!tablestring.empty()) tablestring += ", ";
+            tablestring += "[" + info.Column + "] ";
 
+            if (CValue<float>::IsType(info.Value)
+                || CValue<double>::IsType(info.Value)) {
+                LOGTRACE(logger, info.Capability <<" is FLOAT and so column " << info.Column);
+                tablestring += "FLOAT";
+            } else if (CValue<bool>::IsType(info.Value)) {
+                LOGTRACE(logger, info.Capability <<" is BOOLEAN and so column " << info.Column);
+                 tablestring += "BOOLEAN";
+            } else if (CValue<long>::IsType(info.Value)) {
+                LOGTRACE(logger, info.Capability <<" is INTEGER and so column " << info.Column);
+                tablestring += "INTEGER";
+            } else if (CValue<std::string>::IsType(info.Value)) {
+                LOGTRACE(logger, info.Capability <<" is TEXT and so column " << info.Column);
+                tablestring += "TEXT";
+            } else if (CValue<struct tm>::IsType(info.Value)) {
+                LOGTRACE(logger, info.Capability <<" is TIMESTAMP and so column: " << info.Column);
+                tablestring += "TIMESTAMP";
+            } else {
+                LOGERROR(logger, "unknown datatype for " << info.Capability);
+                LOGERROR(logger,
+                    "Its C++ typeid is " << typeid(*(info.Value)).name());
+                LOGERROR(logger,
+                    "Will NOT create table. Logging will not work. Please report a bug.");
+                _createtable_mode = CDBWriterHelper::cmode_no;
+                return false;
+            }
         }
+
+        if (_createtable_mode == CDBWriterHelper::cmode_yes_and_drop) {
+            std::string tmp = "DROP TABLE IF EXISTS [" + _table + "];";
+            LOGDEBUG(logger, " Executing query: "<< tmp);
+            session << tmp << cppdb::exec;
+        }
+        std::string sqlstring = "CREATE TABLE IF NOT EXISTS [" + _table + "] (" + tablestring + ");";
+
 
 
 #warning todo

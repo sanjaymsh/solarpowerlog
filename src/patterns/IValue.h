@@ -1,20 +1,20 @@
 /* ----------------------------------------------------------------------------
  solarpowerlog -- photovoltaic data logging
 
-Copyright (C) 2009-2012 Tobias Frost
+ Copyright (C) 2009-2014 Tobias Frost
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU Lesser General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Lesser General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU Lesser General Public License for more details.
 
-    You should have received a copy of the GNU Lesser General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ You should have received a copy of the GNU Lesser General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
  ----------------------------------------------------------------------------
  */
@@ -49,26 +49,33 @@ public:
 protected:
     template<class T>
     friend class CValue;
-	virtual int GetInternalType( void ) const {return type_;}
+public:
+    int GetInternalType(void) const
+    {
+        return type_;
+    }
 
 public:
-	/** Interface method for easier transfer to strings. */
-	virtual operator std::string() = 0;
+    /** Interface method for easier transfer to strings. */
+    virtual operator std::string() = 0;
 
     /// Serves as a virtual copy constructor.
-	virtual IValue* clone() = 0;
+    virtual IValue* clone() = 0;
 
-	virtual bool operator==(IValue &v) = 0;
+    virtual bool operator==(IValue &v) = 0;
     virtual bool operator!=(IValue &v) = 0;
 
 protected:
-	IValue() {}
+    IValue(int type) : type_(type) { }
+
 public:
-	virtual ~IValue() {}
+    virtual ~IValue() { }
 
-protected:
-	int type_;
+private:
+    // Private to avoid accidental creation with default constructor.
+    IValue() {type_ = 0;}
 
+    int type_;
 };
 
 #endif /* IVALUE_H_ */

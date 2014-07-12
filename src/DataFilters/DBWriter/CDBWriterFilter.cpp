@@ -510,7 +510,7 @@ void CDBWriterFilter::ScheduleCyclicWork(void)
 void CDBWriterFilter::ExecuteCommand( const ICommand *cmd )
 {
 
-    LOGERROR(logger, __PRETTY_FUNCTION__ << " Warning not finished / implemented");
+//    LOGERROR(logger, __PRETTY_FUNCTION__ << " Warning not finished / implemented");
 
 	switch (cmd->getCmd()) {
 
@@ -550,7 +550,13 @@ void CDBWriterFilter::ExecuteCommand( const ICommand *cmd )
             }
 
             if (_sqlsession.is_open()) {
-                 helper->ExecuteQuery(_sqlsession);
+                try {
+                    helper->ExecuteQuery(_sqlsession);
+                } catch (const std::exception &e) {
+                    LOGWARN(logger, "Exception while handling database access:" << e.what() );
+                    LOGWARN(logger, "Closing DB connection to try error recovery.");
+                    _sqlsession.close();
+                }
             }
 
             ICommand *ncmd = new ICommand(CMD_CYCLIC, this);

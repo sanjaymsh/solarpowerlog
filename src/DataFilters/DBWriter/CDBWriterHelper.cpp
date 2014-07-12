@@ -392,12 +392,17 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
             }
         }
 
+        std::string tmp;
         if (_createtable_mode == CDBWriterHelper::cmode_yes_and_drop) {
-            std::string tmp = "DROP TABLE IF EXISTS [" + _table + "];";
+            tmp = "DROP TABLE IF EXISTS [" + _table + "];";
             LOGDEBUG(logger, " Executing query: "<< tmp);
             session << tmp << cppdb::exec;
         }
-        std::string sqlstring = "CREATE TABLE IF NOT EXISTS [" + _table + "] (" + tablestring + ");";
+
+        tmp = "CREATE TABLE IF NOT EXISTS [" + _table + "] (" + tablestring + ");";
+        LOGDEBUG(logger,"Executing query: " << tmp);
+        session << tmp << cppdb::exec;
+
 
 
 

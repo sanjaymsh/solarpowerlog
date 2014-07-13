@@ -192,22 +192,6 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
                 cit.wasUpdated = false;
             }
         }
-#if 0
-        // debug code I want to keep for the moment
-        // debugs the CValue == and != operator, at least for bool
-        if ( ! _olddatastate )
-        {
-            _olddatastate = cap->getValue()->clone();
-        }
-        else {
-            IValue &o = *cap->getValue();
-            IValue &n = *_olddatastate;
-            LOGDEBUG(logger, "OLD=" << ((CValue<bool> &)o).Get() <<
-                " NEW=" << ((CValue<bool> &)n).Get());
-            if ( o == n ) LOGDEBUG(logger, "EQUAL");
-            if ( o != n ) LOGDEBUG(logger, "NOT EQUAL");
-        }
-#endif
 
         return;
     }

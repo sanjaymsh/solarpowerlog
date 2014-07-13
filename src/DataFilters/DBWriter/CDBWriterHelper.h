@@ -152,6 +152,10 @@ private:
 
     std::vector<class Cdbinfo*> _dbinfo;
 
+    std::string _insert_cache;
+
+    bool _laststatementfailed;
+
 };
 
 #endif

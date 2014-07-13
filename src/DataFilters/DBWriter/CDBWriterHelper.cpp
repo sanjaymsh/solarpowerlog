@@ -58,6 +58,7 @@ CDBWriterHelper::CDBWriterHelper(IInverterBase *base, const ILogger &parent,
     _datavalid = false;
     _createtable_mode = CDBWriterHelper::cmode_no;
     _allow_sparse = allow_sparse;
+    _laststatementfailed = false;
 
     if (createmode == "YES") {
         _createtable_mode = CDBWriterHelper::cmode_yes;
@@ -301,9 +302,18 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
         return true;
     }
 
+    // We need to lock the mutex to ensure data consistency
+    // ( Precautionious -- solarpowerlog is currently only single task, if it
+    // comes to processing; but there are ideas to put db handling in a thread,
+    // and then it will be needed.)
+    CMutexAutoLock cma(&mutex);
+
     // check what we've got so far
     std::vector<class Cdbinfo*>::iterator it;
-    bool any_updated = false;
+
+    // if lastsatementfailed is true, we have in any case do the work
+    // (as this indicates that the last query failed.)
+    bool any_updated = _laststatementfailed;
     bool all_available = true;
     bool special_updated = true;
 
@@ -311,8 +321,7 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
     struct tm *tm = localtime(&t);
 
     for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
-        LOGTRACE(logger, "Handling " << _table << "::" << (*it)->Capability );
-        CMutexAutoLock cma(&mutex);
+        LOGTRACE(logger, "Handling " << _table << "::" << (*it)->Capability);
         Cdbinfo &cit = **it;
         if (!cit.Value) {
             LOGTRACE(logger, cit.Capability << " not available");
@@ -378,7 +387,7 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
             } else if (CValue<std::string>::IsType(info.Value)) {
                 LOGTRACE(logger, info.Capability <<" is TEXT and so column " << info.Column);
                 tablestring += "TEXT";
-            } else if (CValue<struct tm>::IsType(info.Value)) {
+            } else if (CValue<std::tm>::IsType(info.Value)) {
                 LOGTRACE(logger, info.Capability <<" is TIMESTAMP and so column: " << info.Column);
                 tablestring += "TIMESTAMP";
             } else {
@@ -391,6 +400,10 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
                 return false;
             }
         }
+
+        // we cant unlock the mutex for the sql transaction ...
+        // as the drop/create table could introduce a race
+        // with the later insert.
 
         std::string tmp;
         if (_createtable_mode == CDBWriterHelper::cmode_yes_and_drop) {
@@ -410,12 +423,11 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
 
     // Part 2 -- create sql statement for adding / replacing ... data.
 
-    // depending on the mode of operation:
-    // -> continous: will just issue INSERT statements
-
+    // Check data availbility / freshness.
 
     // if not everything is available and we do not doing a sparse table:
     if (!_allow_sparse && !all_available) {
+        LOGDEBUG(logger, "Nothing to do... Only sparse data available.");
         return false;
     }
 
@@ -423,16 +435,91 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
     if ((_mode == CDBWriterHelper::continuous ||
          _mode == CDBWriterHelper::single)
         && _logchangedonly && !any_updated) {
+        LOGDEBUG(logger, "Nothing to do... Logging only if data has changed.");
         return false;
     }
 
     // logchangedonly on cumulative mode:
     // we'll always need to insert a new row if a special has changed.
     if ( _mode == CDBWriterHelper::cumulative && _logchangedonly ) {
-        if (!any_updated && !special_updated) return false;
+        if (!any_updated && !special_updated) {
+            LOGDEBUG(logger, "Nothing to do (cumulative) ... Logging only if data has changed.");
+            return false;
+        }
     }
 
+    // If we are still here: Seems some job to be done.
 
+    // Case 1: cumulative
+    if ( _mode == CDBWriterHelper::continuous) {
+        // Create INSERT INTO ... statement, if not existing.
+        // on sparse, we cannot use the cache
+        if (!all_available) _insert_cache.clear();
+        // Step one: Create sql string.
+        if (_insert_cache.empty()) {
+            std::string cols,vals;
+            // We want ...
+            // INSERT INTO [table] (col1,col2,col3) VALUES (?,?,?)
+
+            for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
+                Cdbinfo &info = **it;
+                if (!cols.empty()) cols += ',';
+                if (!vals.empty()) vals += ',';
+                if (info.Value) {
+                    cols += '[' + info.Column + ']';
+                    vals += "?";
+                }
+            }
+
+            _insert_cache = "INSERT INTO [" + _table + "] (" + cols +
+                ") VALUES (" + vals + ");" ;
+
+            LOGTRACE(logger, "SQL Statement: " << _insert_cache);
+        }
+
+        // second step: bind values.
+        cppdb::statement stat;
+        stat = session << _insert_cache;
+
+        for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
+            Cdbinfo &info = **it;
+            if (!info.Value) continue;
+
+            // Bind the values considering their datatypes.
+            if (CValue<float>::IsType(info.Value)) {
+                stat.bind((double)((CValue<float> *)info.Value)->Get());
+            } else if (CValue<double>::IsType(info.Value)) {
+                stat.bind(((CValue<double> *)info.Value)->Get());
+            } else if (CValue<bool>::IsType(info.Value)) {
+                stat.bind(((CValue<bool> *)info.Value)->Get());
+            } else if (CValue<long>::IsType(info.Value)) {
+                stat.bind(((CValue<long> *)info.Value)->Get());
+            } else if (CValue<std::string>::IsType(info.Value)) {
+                stat.bind(((CValue<std::string> *)info.Value)->Get());
+            } else if (CValue<std::tm>::IsType(info.Value)) {
+                stat.bind(((CValue<std::tm> *)info.Value)->Get());
+            } else {
+                LOGERROR(logger, "unknown datatype for " << info.Capability);
+                LOGERROR(logger,
+                    "Its C++ typeid is " << typeid(*(info.Value)).name());
+                LOGERROR(logger, "Cannot put data to database.");
+                session.close(); // cautionious -- better close the session...
+                return false;
+            }
+        }
+
+        // OK, step 2 done --- step 3 is execute the query.
+        _laststatementfailed = true;
+        cma.unlock();
+
+        stat.exec();
+        // Still here? Then it must have worked...
+        _laststatementfailed = false;
+        LOGDEBUG(logger, "SQL: Last_insert_id=" << stat.last_insert_id());
+        LOGDEBUG(logger, "SQL: Affected rows=" << stat.affected());
+
+        return true;
+    }
 
 
     return true;

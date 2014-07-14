@@ -65,6 +65,8 @@ public:
     virtual bool operator==(IValue &v) = 0;
     virtual bool operator!=(IValue &v) = 0;
 
+    virtual IValue& operator=(const IValue &v) = 0;
+
 protected:
     IValue(int type) : type_(type) { }
 

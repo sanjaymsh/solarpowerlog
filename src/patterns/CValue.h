@@ -135,6 +135,18 @@ public:
          return false;
      }
 
+    virtual IValue& operator=(const IValue &v) {
+        if (&v == this) return *this;
+
+        if (this->IsType(&v)) {
+            CValue<T> *rv = (CValue<T>*)&v;
+            this->value = rv->value;
+            this->timestamp = rv->timestamp;
+            return *this;
+        }
+        throw std::bad_cast();
+        return *this;
+    }
 
     /** Static interface function to determine at runtime the type of the CValue
      * object.

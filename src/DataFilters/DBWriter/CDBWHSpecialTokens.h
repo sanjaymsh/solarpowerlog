@@ -66,6 +66,17 @@ public:
         return new CValue<std::tm>(*this);
     }
 
+    virtual IValue& operator=(const IValue &v) {
+        if (&v == this) return *this;
+        if (this->IsType(&v)) {
+            CValue<std::tm> *rv = (CValue<std::tm>*)&v;
+            this->value = rv->value;
+            this->timestamp = rv->timestamp;
+            return *this;
+        }
+        throw std::bad_cast();
+        return *this;
+    }
 
     void Set(std::tm value, boost::posix_time::ptime timestamp = boost::posix_time::second_clock::local_time()) {
          this->timestamp = timestamp;
@@ -120,7 +131,7 @@ public:
       * CValue<int> cv_int;
       * IValue *iv1 = &cv_int;
       * cout << CValue<int>::IsType(iv1);*/
-     static bool IsType(IValue *totest) {
+     static bool IsType(const IValue *totest) {
          if (MagicNumbers::magic_number_for<struct tm>() == totest->GetInternalType()) {
              return true;
          }

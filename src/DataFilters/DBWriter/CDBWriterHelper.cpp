@@ -64,6 +64,8 @@ CDBWriterHelper::CDBWriterHelper(IInverterBase *base, const ILogger &parent,
         _createtable_mode = CDBWriterHelper::cmode_yes;
     } else if (createmode == "YES-WIPE-MY-DATA") {
         _createtable_mode = CDBWriterHelper::cmode_yes_and_drop;
+    } else if (createmode == "print-sql-statement") {
+        _createtable_mode = CDBWriterHelper::cmode_print_statment;
     }
 
     _olddatastate = NULL;
@@ -266,7 +268,7 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
 
     // paranoid safety checks
     if (!_table_sanizited) {
-        LOGDEBUG(logger, _table << " not sanitzized");
+        LOGDEBUG(logger, _table << " not sanitized");
         return false;
     }
 
@@ -339,7 +341,7 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
         // Creation of the table is only possible if we have all data, as we need to know the
         // datatyptes
         if (!all_available) {
-            LOGDEBUG(logger, "Not all data available to create table " << _table
+            LOGDEBUG(logger, "Not all data available for CREATE TABLE " << _table
                 << ". Retrying later.");
             return true;
         }
@@ -404,8 +406,12 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
         }
 
         tmp = "CREATE TABLE IF NOT EXISTS [" + _table + "] (" + tablestring + ");";
-        LOGDEBUG(logger,"Executing query: " << tmp);
-        session << tmp << cppdb::exec;
+        if ( _createtable_mode == CDBWriterHelper::cmode_print_statment) {
+            LOGINFO(logger, "Your CREATE statement for table " << tablestring << " is:" << endl << tmp);
+        } else {
+            LOGDEBUG(logger,"Executing query: " << tmp);
+            session << tmp << cppdb::exec;
+        }
 
         LOGWARN(logger, "Table created. Make sure to disable table creation in the config!");
         LOGWARN(logger, "Otherwise, solarpowerlog might stomp on your database the next time you start it!");

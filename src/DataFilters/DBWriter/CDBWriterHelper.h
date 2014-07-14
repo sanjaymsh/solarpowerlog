@@ -93,7 +93,7 @@ private:
 
     enum cmode
     {
-        cmode_no, cmode_yes, cmode_yes_and_drop
+        cmode_no, cmode_yes, cmode_yes_and_drop, cmode_print_statment
     };
 
     ILogger logger;
@@ -143,16 +143,21 @@ private:
     /// Copy of the LAST LOGGED value.
     IValue *LastLoggedValue;
     /// Has the value changed since last db update?
-//    bool wasUpdated;
 
     bool previously_subscribed; // just to supress a debug message.
     bool isSpecial;
     };
 
+    /// Storage for the individual data sets to be stored (one per column)
     std::vector<class Cdbinfo*> _dbinfo;
 
+    /// Cache for "regular" insert sql statements -- we don't need to recalculate
+    /// them all over
+    /// (TODO check if we should also cache the cppdb::statement object)
     std::string _insert_cache;
 
+    /// If an query failed, we need to temporary disable the "anything changed?"
+    /// logic. If this is true, an error has happened, so we retry in every case.
     bool _laststatementfailed;
 
 };

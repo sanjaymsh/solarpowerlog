@@ -120,11 +120,10 @@ private:
     class Cdbinfo
     {
     public:
-        Cdbinfo(std::string Capability, std::string Column, bool wasUpdated =
-            false) :
+        Cdbinfo(std::string Capability, std::string Column) :
                 Capability(Capability), Column(Column), Value(NULL),
-                LastLoggedValue(NULL), wasUpdated(wasUpdated),
-                previously_subscribed(false), isSpecial(false)
+                LastLoggedValue(NULL),  previously_subscribed(false),
+                isSpecial(false)
     {};
 
     ~Cdbinfo() {
@@ -144,7 +143,7 @@ private:
     /// Copy of the LAST LOGGED value.
     IValue *LastLoggedValue;
     /// Has the value changed since last db update?
-    bool wasUpdated;
+//    bool wasUpdated;
 
     bool previously_subscribed; // just to supress a debug message.
     bool isSpecial;

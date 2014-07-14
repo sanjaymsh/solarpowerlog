@@ -189,10 +189,8 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
                     delete cit.LastLoggedValue;
                     cit.LastLoggedValue = NULL;
                 }
-                cit.wasUpdated = false;
             }
         }
-
         return;
     }
 
@@ -241,14 +239,6 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
         if ((*it)->Capability == capaname) {
             CMutexAutoLock cma(&mutex);
             Cdbinfo &cit = **it;
-            // Check if the value changed since last logging to the DB
-            if (cit.LastLoggedValue) {
-                IValue &last = *cit.LastLoggedValue;
-                IValue &now  = *cap->getValue();
-                if ( now != last) cit.wasUpdated = true;
-            } else {
-                cit.wasUpdated = true;
-            }
 
             // Check if this is the first time we've got the value.
             if (cit.Value) delete cit.Value;
@@ -307,18 +297,35 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
     for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
         LOGTRACE(logger, "Handling " << _table << "::" << (*it)->Capability);
         Cdbinfo &cit = **it;
+
         if (!cit.Value) {
             LOGTRACE(logger, cit.Capability << " not available");
             all_available = false;
+            continue;
         }
-        if (!cit.isSpecial && cit.wasUpdated) {
-            LOGTRACE(logger, cit.Capability << " was updated");
+
+        // previously logged?
+        // if no (lastloggedvalue==0), we have a change
+        // if lastloggedvalue and ivalue, we compare...
+        if (cit.LastLoggedValue && cit.Value) {
+            IValue &last = *cit.LastLoggedValue;
+            IValue &now  = *cit.Value;
+            if ( now != last) {
+                any_updated = true;
+                last = now;
+                LOGDEBUG(logger, "now:" << (std::string)now);
+                LOGDEBUG(logger, "last:" << (std::string)last);
+
+            }
+        } else if (cit.Value && !cit.isSpecial) {
             any_updated = true;
+            cit.LastLoggedValue = cit.Value->clone();
         }
+
         if (cit.isSpecial) {
             IDBHSpecialToken *st = dynamic_cast<IDBHSpecialToken*>(cit.Value);
             if (st->Update(*tm)) special_updated=true;
-            LOGTRACE(logger, "Updated " << cit.Capability << "value " << st->GetString());
+            LOGTRACE(logger, "Updated " << cit.Capability << " to value " << st->GetString());
         }
     }
 
@@ -490,12 +497,14 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
                 session.close(); // cautionious -- better close the session...
                 return false;
             }
+
         }
 
         // OK, step 2 done --- step 3 is execute the query.
         _laststatementfailed = true;
-        cma.unlock();
+        // as now the data consistency is guaranteed, unlock the mutex.
 
+        cma.unlock();
         stat.exec();
         // Still here? Then it must have worked...
         _laststatementfailed = false;

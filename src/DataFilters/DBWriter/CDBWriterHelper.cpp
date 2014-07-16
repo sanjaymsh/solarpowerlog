@@ -93,8 +93,14 @@ CDBWriterHelper::CDBWriterHelper(IInverterBase *base, const ILogger &parent,
     cap->Subscribe(this);
 }
 
-CDBWriterHelper::~CDBWriterHelper() {
-#warning missing destructor
+CDBWriterHelper::~CDBWriterHelper()
+{
+
+    std::vector<Cdbinfo*>::iterator it;
+    for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
+        delete *it;
+    }
+    _dbinfo.clear();
 }
 
 /** Add the tuple Capability, Column to the "should be logged information"

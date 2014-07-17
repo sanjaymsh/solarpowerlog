@@ -553,6 +553,8 @@ void CDBWriterFilter::ExecuteCommand( const ICommand *cmd )
 
             if (_sqlsession.is_open()) {
                 try {
+                    // The helper will pass exceptions by the cppdb library
+                    // to give access to the error message.
                     helper->ExecuteQuery(_sqlsession);
                 } catch (const std::exception &e) {
                     LOGWARN(logger, "Exception while handling database access:" << e.what() );

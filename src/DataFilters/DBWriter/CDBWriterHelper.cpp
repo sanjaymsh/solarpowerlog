@@ -256,7 +256,7 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
     }
 }
 
-bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
+void CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
 
     // Strategie
     // only log if data is marked as valid
@@ -275,13 +275,13 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
     // paranoid safety checks
     if (!_table_sanizited) {
         LOGDEBUG(logger, _table << " not sanitized");
-        return false;
+        return;
     }
 
     // Nothing to do...
     if (!_datavalid) {
         LOGDEBUG(logger, _table << " data invalid");
-        return true;
+        return;
     }
 
     // We need to lock the mutex to ensure data consistency
@@ -349,7 +349,7 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
         if (!all_available) {
             LOGDEBUG(logger, "Not all data available for CREATE TABLE " << _table
                 << ". Retrying later.");
-            return true;
+            return;
         }
 
         // CREATE TABLE table ( created TIMESTAMP,
@@ -396,7 +396,7 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
                 LOGERROR(logger,
                     "Will NOT create table. Logging will not work. Please report a bug.");
                 _createtable_mode = CDBWriterHelper::cmode_no;
-                return false;
+                return;
             }
         }
 
@@ -416,6 +416,7 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
             LOGINFO(logger, "Your CREATE statement for table " << tablestring << " is:" << endl << tmp);
         } else {
             LOGDEBUG(logger,"Executing query: " << tmp);
+            // NOTE: Exceptions are passed to the caller to provide error information
             session << tmp << cppdb::exec;
         }
 
@@ -431,7 +432,7 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
     // if not everything is available and we do not doing a sparse table:
     if (!_allow_sparse && !all_available) {
         LOGDEBUG(logger, "Nothing to do... Only sparse data available.");
-        return false;
+        return;
     }
 
     // on continuous mode and single mode logchangedonly is not affected by special_updated.
@@ -439,7 +440,7 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
          _mode == CDBWriterHelper::single)
         && _logchangedonly && !any_updated) {
         LOGDEBUG(logger, "Nothing to do... Logging only if data has changed.");
-        return false;
+        return;
     }
 
     // logchangedonly on cumulative mode:
@@ -447,7 +448,7 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
     if ( _mode == CDBWriterHelper::cumulative && _logchangedonly ) {
         if (!any_updated && !special_updated) {
             LOGDEBUG(logger, "Nothing to do (cumulative) ... Logging only if data has changed.");
-            return false;
+            return;
         }
     }
 
@@ -484,6 +485,7 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
         cppdb::statement stat;
         stat = session << _insert_cache;
 
+        // Binding the values...
         for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
             Cdbinfo &info = **it;
             if (!info.Value) continue;
@@ -507,27 +509,26 @@ bool CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
                     "Its C++ typeid is " << typeid(*(info.Value)).name());
                 LOGERROR(logger, "Cannot put data to database.");
                 session.close(); // cautionious -- better close the session...
-                return false;
+                return;
             }
-
         }
 
         // OK, step 2 done --- step 3 is execute the query.
         _laststatementfailed = true;
-        // as now the data consistency is guaranteed, unlock the mutex.
-
+        // as now the data consistency is guaranteed, we can unlock the mutex
         cma.unlock();
+
+        // again, exceptions are passed to the caller.
         stat.exec();
         // Still here? Then it must have worked...
         _laststatementfailed = false;
         LOGDEBUG(logger, "SQL: Last_insert_id=" << stat.last_insert_id());
         LOGDEBUG(logger, "SQL: Affected rows=" << stat.affected());
 
-        return true;
     }
 
 
-    return true;
+    return;
 }
 
 

@@ -43,7 +43,6 @@ Copyright (C) 2009-2014 Tobias Frost
 #include "Inverters/interfaces/InverterBase.h"
 #include "patterns/IValue.h"
 
-
     /// Helper class to encapsualte the data for the db entry.
     class Cdbinfo
     {
@@ -120,6 +119,7 @@ public:
     float _logevery;
     bool _logchangedonly;
 
+
 private:
 
     bool issane(const std::string s);
@@ -165,6 +165,28 @@ private:
     /// If an query failed, we need to temporary disable the "anything changed?"
     /// logic. If this is true, an error has happened, so we retry in every case.
     bool _laststatementfailed;
+
+
+    // Helper functions
+
+    /// Assemble a value-string from the dbinfos
+    ///
+    /// the generated form is:
+    /// [col1]=?, [col2]=?, ... [colx]=?
+    /// The "?" are for the values to be bound
+    /// \returns the generated value string
+    std::string _GetValStringForUpdate(void);
+
+    /// Assemble a columnvalue-string from the dbinfos
+     ///
+     /// the generated form is:
+     /// (col1,col2,col3) VALUES (?,?,?)
+     /// The "?" are for the values to be bound
+     /// \returns the generated value string
+     std::string _GetValStringForInsert(void);
+
+    /// Bind all "?" in the (previously calculated) value string
+    bool _BindValues(cppdb::statement &s);
 
 };
 

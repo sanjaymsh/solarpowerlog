@@ -41,13 +41,12 @@ Copyright (C) 2009-2014 Tobias Frost
 #include "interfaces/CMutexHelper.h"
 #include "CDBWHSpecialTokens.h"
 
-
 #include <assert.h>
 
 CDBWriterHelper::CDBWriterHelper(IInverterBase *base, const ILogger &parent,
     const std::string &table, const std::string &mode,
-    const std::string &createmode, bool logchangedonly,
-    float logevery, bool allow_sparse)
+    const std::string &createmode, bool logchangedonly, float logevery,
+    bool allow_sparse)
 {
     logger.Setup(parent.getLoggername(), "CDBWriterHelper(" + table + ")");
     _table = table;
@@ -80,7 +79,7 @@ CDBWriterHelper::CDBWriterHelper(IInverterBase *base, const ILogger &parent,
 
     assert(base);
     CCapability *cap;
-    cap = base -> GetConcreteCapability(CAPA_CAPAS_UPDATED);
+    cap = base->GetConcreteCapability(CAPA_CAPAS_UPDATED);
     assert(cap);
     cap->Subscribe(this);
 
@@ -105,7 +104,7 @@ CDBWriterHelper::~CDBWriterHelper()
 
 /** Add the tuple Capability, Column to the "should be logged information"
  * Returns "FALSE" if the combination of Capabilty and Column is alreaedy there.
-*/
+ */
 bool CDBWriterHelper::AddDataToLog(const std::string &Capability,
     const std::string &Column)
 {
@@ -140,7 +139,7 @@ bool CDBWriterHelper::AddDataToLog(const std::string &Capability,
     class Cdbinfo* n = new Cdbinfo(Capability, Column);
     _dbinfo.push_back(n);
 
-    Cdbinfo &last = *(_dbinfo[_dbinfo.size()-1]);
+    Cdbinfo &last = *(_dbinfo[_dbinfo.size() - 1]);
 
     if (Capability[0] == '%') {
         LOGDEBUG(logger, "Special token " << Capability);
@@ -158,6 +157,15 @@ bool CDBWriterHelper::AddDataToLog(const std::string &Capability,
         assert(last.Value);
         last.LastLoggedValue = NULL;
         last.isSpecial = true;
+    }
+
+    if (Capability[0] == '$') {
+        // Selektor.
+        LOGDEBUG(logger, "Selector token " << Capability);
+        if (Capability.length() <= 1) {
+            LOGERROR(logger, "Selector token must not be empty.");
+            return false;
+        }
     }
     return true;
 }
@@ -229,7 +237,8 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
                 if ((*jt)->Capability == capname) {
                     CMutexAutoLock cma(&mutex);
                     if (!(*jt)->previously_subscribed)
-                        LOGDEBUG(logger, "Subscribing to " << cap->getDescription());
+                    LOGDEBUG(logger,
+                        "Subscribing to " << cap->getDescription());
                     cap->Subscribe(this);
                     (*jt)->previously_subscribed = true;
                     break;
@@ -256,7 +265,8 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
     }
 }
 
-void CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
+void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
+{
 
     // Strategie
     // only log if data is marked as valid
@@ -306,6 +316,11 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
         LOGTRACE(logger, "Handling " << _table << "::" << (*it)->Capability);
         Cdbinfo &cit = **it;
 
+        if (cit.Capability[0] == '$') {
+            // don't consider selectors here.
+            continue;
+        }
+
         if (!cit.Value) {
             LOGTRACE(logger, cit.Capability << " not available");
             all_available = false;
@@ -317,14 +332,11 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
         // if lastloggedvalue and ivalue, we compare...
         if (cit.LastLoggedValue && cit.Value) {
             IValue &last = *cit.LastLoggedValue;
-            IValue &now  = *cit.Value;
-            if ( now != last) {
+            IValue &now = *cit.Value;
+            if (now != last) {
                 any_updated = true;
                 last = now;
-                LOGDEBUG(logger, "now:" << (std::string)now);
-                LOGDEBUG(logger, "last:" << (std::string)last);
-
-            }
+             }
         } else if (cit.Value && !cit.isSpecial) {
             any_updated = true;
             cit.LastLoggedValue = cit.Value->clone();
@@ -332,14 +344,14 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
 
         if (cit.isSpecial) {
             IDBHSpecialToken *st = dynamic_cast<IDBHSpecialToken*>(cit.Value);
-            if (st->Update(*tm)) special_updated=true;
-            LOGTRACE(logger, "Updated " << cit.Capability << " to value " << st->GetString());
+            if (st->Update(*tm)) special_updated = true;
+            LOGTRACE(logger,
+                "Updated " << cit.Capability << " to value " << st->GetString());
         }
     }
 
-    LOGTRACE(logger, "Status: all_available=" << all_available
-        << " any_updated=" << any_updated
-        << " special_updated=" <<special_updated);
+    LOGTRACE(logger,
+        "Status: all_available=" << all_available << " any_updated=" << any_updated << " special_updated=" <<special_updated);
 
     // Part 1 -- create table if necessary.
     if (_createtable_mode != CDBWriterHelper::cmode_no) {
@@ -347,8 +359,8 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
         // Creation of the table is only possible if we have all data, as we need to know the
         // datatyptes
         if (!all_available) {
-            LOGDEBUG(logger, "Not all data available for CREATE TABLE " << _table
-                << ". Retrying later.");
+            LOGDEBUG(logger,
+                "Not all data available for CREATE TABLE " << _table << ". Retrying later.");
             return;
         }
 
@@ -360,9 +372,11 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
         for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
             Cdbinfo &info = **it;
             if (info.Capability[0] == '$') {
-                // Special Selekt-Token we going to ignore
-                LOGWARN(logger, "For creating tables $-Selektor columns will not be created. "
-                    "Please add the column for Selektor " << info.Capability[0] << " yourself.");
+                // Special Select-Token we going to ignore
+                LOGWARN(logger,
+                    "For creating tables $-Selector columns will not be created. "
+                    "Please add the column for Selector " << info.Capability[0]
+                    << " yourself.");
                 LOGWARN(logger, "Logging will fail until then!");
                 continue;
             }
@@ -375,19 +389,24 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
 
             if (CValue<float>::IsType(info.Value)
                 || CValue<double>::IsType(info.Value)) {
-                LOGTRACE(logger, info.Capability <<" is FLOAT and so column " << info.Column);
+                LOGTRACE(logger,
+                    info.Capability <<" is FLOAT and so column " << info.Column);
                 tablestring += "FLOAT";
             } else if (CValue<bool>::IsType(info.Value)) {
-                LOGTRACE(logger, info.Capability <<" is BOOLEAN and so column " << info.Column);
-                 tablestring += "BOOLEAN";
+                LOGTRACE(logger,
+                    info.Capability <<" is BOOLEAN and so column " << info.Column);
+                tablestring += "BOOLEAN";
             } else if (CValue<long>::IsType(info.Value)) {
-                LOGTRACE(logger, info.Capability <<" is INTEGER and so column " << info.Column);
+                LOGTRACE(logger,
+                    info.Capability <<" is INTEGER and so column " << info.Column);
                 tablestring += "INTEGER";
             } else if (CValue<std::string>::IsType(info.Value)) {
-                LOGTRACE(logger, info.Capability <<" is TEXT and so column " << info.Column);
+                LOGTRACE(logger,
+                    info.Capability <<" is TEXT and so column " << info.Column);
                 tablestring += "TEXT";
             } else if (CValue<std::tm>::IsType(info.Value)) {
-                LOGTRACE(logger, info.Capability <<" is TIMESTAMP and so column: " << info.Column);
+                LOGTRACE(logger,
+                    info.Capability <<" is TIMESTAMP and so column: " << info.Column);
                 tablestring += "TIMESTAMP";
             } else {
                 LOGERROR(logger, "unknown datatype for " << info.Capability);
@@ -411,17 +430,21 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
             session << tmp << cppdb::exec;
         }
 
-        tmp = "CREATE TABLE IF NOT EXISTS [" + _table + "] (" + tablestring + ");";
-        if ( _createtable_mode == CDBWriterHelper::cmode_print_statment) {
-            LOGINFO(logger, "Your CREATE statement for table " << tablestring << " is:" << endl << tmp);
+        tmp = "CREATE TABLE IF NOT EXISTS [" + _table + "] (" + tablestring
+            + ");";
+        if (_createtable_mode == CDBWriterHelper::cmode_print_statment) {
+            LOGINFO(logger,
+                "Your CREATE statement for table " << tablestring << " is:" << endl << tmp);
         } else {
-            LOGDEBUG(logger,"Executing query: " << tmp);
+            LOGDEBUG(logger, "Executing query: " << tmp);
             // NOTE: Exceptions are passed to the caller to provide error information
             session << tmp << cppdb::exec;
         }
 
-        LOGWARN(logger, "Table created. Make sure to disable table creation in the config!");
-        LOGWARN(logger, "Otherwise, solarpowerlog might stomp on your database the next time you start it!");
+        LOGWARN(logger,
+            "Table created. Make sure to disable table creation in the config!");
+        LOGWARN(logger,
+            "Otherwise, solarpowerlog might stomp on your database the next time you start it!");
         _createtable_mode = CDBWriterHelper::cmode_no;
     }
 
@@ -436,18 +459,19 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
     }
 
     // on continuous mode and single mode logchangedonly is not affected by special_updated.
-    if ((_mode == CDBWriterHelper::continuous ||
-         _mode == CDBWriterHelper::single)
-        && _logchangedonly && !any_updated) {
+    if ((_mode == CDBWriterHelper::continuous
+        || _mode == CDBWriterHelper::single) && _logchangedonly
+        && !any_updated) {
         LOGDEBUG(logger, "Nothing to do... Logging only if data has changed.");
         return;
     }
 
     // logchangedonly on cumulative mode:
     // we'll always need to insert a new row if a special has changed.
-    if ( _mode == CDBWriterHelper::cumulative && _logchangedonly ) {
+    if (_mode == CDBWriterHelper::cumulative && _logchangedonly) {
         if (!any_updated && !special_updated) {
-            LOGDEBUG(logger, "Nothing to do (cumulative) ... Logging only if data has changed.");
+            LOGDEBUG(logger,
+                "Nothing to do (cumulative) ... Logging only if data has changed.");
             return;
         }
     }
@@ -455,29 +479,14 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
     // If we are still here: Seems some job to be done.
 
     // Case 1: cumulative
-    if ( _mode == CDBWriterHelper::continuous) {
+    if (_mode == CDBWriterHelper::continuous) {
         // Create INSERT INTO ... statement, if not existing.
         // on sparse, we cannot use the cache
         if (!all_available) _insert_cache.clear();
         // Step one: Create sql string.
         if (_insert_cache.empty()) {
-            std::string cols,vals;
-            // We want ...
-            // INSERT INTO [table] (col1,col2,col3) VALUES (?,?,?)
-
-            for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
-                Cdbinfo &info = **it;
-                if (!cols.empty()) cols += ',';
-                if (!vals.empty()) vals += ',';
-                if (info.Value) {
-                    cols += '[' + info.Column + ']';
-                    vals += "?";
-                }
-            }
-
-            _insert_cache = "INSERT INTO [" + _table + "] (" + cols +
-                ") VALUES (" + vals + ");" ;
-
+            _insert_cache = "INSERT INTO [" + _table + "] "
+                + _GetValStringForInsert() +';';
             LOGTRACE(logger, "SQL Statement: " << _insert_cache);
         }
 
@@ -485,32 +494,9 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
         cppdb::statement stat;
         stat = session << _insert_cache;
 
-        // Binding the values...
-        for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
-            Cdbinfo &info = **it;
-            if (!info.Value) continue;
-
-            // Bind the values considering their datatypes.
-            if (CValue<float>::IsType(info.Value)) {
-                stat.bind((double)((CValue<float> *)info.Value)->Get());
-            } else if (CValue<double>::IsType(info.Value)) {
-                stat.bind(((CValue<double> *)info.Value)->Get());
-            } else if (CValue<bool>::IsType(info.Value)) {
-                stat.bind(((CValue<bool> *)info.Value)->Get());
-            } else if (CValue<long>::IsType(info.Value)) {
-                stat.bind(((CValue<long> *)info.Value)->Get());
-            } else if (CValue<std::string>::IsType(info.Value)) {
-                stat.bind(((CValue<std::string> *)info.Value)->Get());
-            } else if (CValue<std::tm>::IsType(info.Value)) {
-                stat.bind(((CValue<std::tm> *)info.Value)->Get());
-            } else {
-                LOGERROR(logger, "unknown datatype for " << info.Capability);
-                LOGERROR(logger,
-                    "Its C++ typeid is " << typeid(*(info.Value)).name());
-                LOGERROR(logger, "Cannot put data to database.");
-                session.close(); // cautionious -- better close the session...
-                return;
-            }
+        if (!_BindValues(stat)) {
+            LOGDEBUG(logger, "bind for continuous failed.");
+            return;
         }
 
         // OK, step 2 done --- step 3 is execute the query.
@@ -524,12 +510,159 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session) {
         _laststatementfailed = false;
         LOGDEBUG(logger, "SQL: Last_insert_id=" << stat.last_insert_id());
         LOGDEBUG(logger, "SQL: Affected rows=" << stat.affected());
+        return;
+    } else if (_mode == CDBWriterHelper::single) {
+
+        // single mode
+        // updates a single row in the table, determinded by the use of one or
+        // more selectors.
+        // We will first check if the dataset already exists to be able to select
+        // either a UPDATE of INSERT statement. This needs only to be done
+        // once, as once UPDATEd we can always UPDATE.
+
+        // UPDATE [table] SET col1=?, col2=?, col3=?
+        // WHERE col_sel=$selector AND col2_sel=$selector2;
+
+        // Step 1) Assemble data ppart
+        std::string cols, selectors;
+
+        cols = _GetValStringForUpdate();
+
+        if (cols.empty()) {
+            LOGERROR(logger, "No columns found for table " << _table);
+            return;
+        }
+
+        for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
+            Cdbinfo &info = **it;
+            if (info.Capability[0] == '$') {
+                // Selector
+                if (!selectors.empty()) {
+                    selectors += " AND ";
+                }
+                selectors += '[' + info.Column + "]=";
+                selectors += info.Capability.substr(1); // len of capability ensured in cfg check.
+            }
+        }
+
+        if (selectors.empty()) {
+            LOGDEBUG(logger, "no selectors found for table " << _table);
+            return;
+        }
+
+        std::string query_common = " [" + _table + "] SET " + cols + ";";
+        std::string update_query = "UPDATE " + query_common + "WHERE "
+            + selectors + ";";
+
+        cppdb::statement stat;
+        stat = session << update_query;
+
+        if (!_BindValues(stat)) {
+            LOGDEBUG(logger, "bind failed.");
+            return;
+        }
+
+        LOGDEBUG(logger, "Prepared SQL Update query:");
+        LOGDEBUG(logger, update_query);
+        LOGDEBUG(logger, "Trying UPDATE query");
+        stat.exec();
+        LOGDEBUG(logger, "UPDATE tried");
+        if (stat.affected() == 0) {
+            LOGDEBUG(logger, "no affected rows. Trying INSERT instead.");
+            stat.clear();
+            // we try now INSERT INTO table (col1,col2,col3) VALUES (1,2,3);
+            // as above in the continious mode.
+            std::string insert_query = "INSERT INTO [" + _table + "] "
+                + _GetValStringForInsert() + ';';
+            LOGTRACE(logger, "SQL Statement: " << insert_query);
+
+            stat = session << insert_query;
+
+            if (!_BindValues(stat)) {
+                LOGERROR(logger, "Bind failed (single, insert)");
+                return;
+            }
+
+            LOGDEBUG(logger, "About to execute INSERT Query (single mode");
+            stat.exec();
+            LOGDEBUG(logger, "Insert tried. " << stat.affected() << " rows." );
+            return;
+        }
+
+    } else if (_mode == CDBWriterHelper::cumulative) {
 
     }
-
 
     return;
 }
 
+std::string CDBWriterHelper::_GetValStringForUpdate(void)
+{
+
+    std::string ret;
+    std::vector<class Cdbinfo*>::iterator it;
+    for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
+        Cdbinfo &info = **it;
+        if (info.Capability[0] == '$') {
+            continue;
+        } else {
+            if (!ret.empty()) ret += ", ";
+            if (info.Value) {
+                ret += '[' + info.Column + "] =?";
+            }
+        }
+    }
+    return ret;
+}
+
+//(col1,col2,col3) VALUES (?,?,?)
+
+std::string CDBWriterHelper::_GetValStringForInsert(void)
+{
+
+    std::vector<class Cdbinfo*>::iterator it;
+    std::string vals,cols;
+    for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
+          Cdbinfo &info = **it;
+          if (!cols.empty()) cols += ',';
+          if (!vals.empty()) vals += ',';
+          if (info.Value) {
+              cols += '[' + info.Column + ']';
+              vals += "?";
+          }
+      }
+    return '(' + cols + ") VALUES (" + vals + ')';
+}
+
+bool CDBWriterHelper::_BindValues(cppdb::statement &stat) {
+
+    std::vector<class Cdbinfo*>::iterator it;
+    for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
+        Cdbinfo &info = **it;
+        if (!info.Value) continue;
+
+        // Bind the values considering their datatypes.
+        if (CValue<float>::IsType(info.Value)) {
+            stat.bind((double)((CValue<float> *)info.Value)->Get());
+        } else if (CValue<double>::IsType(info.Value)) {
+            stat.bind(((CValue<double> *)info.Value)->Get());
+        } else if (CValue<bool>::IsType(info.Value)) {
+            stat.bind(((CValue<bool> *)info.Value)->Get());
+        } else if (CValue<long>::IsType(info.Value)) {
+            stat.bind(((CValue<long> *)info.Value)->Get());
+        } else if (CValue<std::string>::IsType(info.Value)) {
+            stat.bind(((CValue<std::string> *)info.Value)->Get());
+        } else if (CValue<std::tm>::IsType(info.Value)) {
+            stat.bind(((CValue<std::tm> *)info.Value)->Get());
+        } else {
+            LOGERROR(logger, "unknown datatype for " << info.Capability);
+            LOGERROR(logger,
+                "Its C++ typeid is " << typeid(*(info.Value)).name());
+            LOGERROR(logger, "Cannot put data to database.");
+            return false;
+        }
+    }
+    return true;
+}
 
 #endif

@@ -41,44 +41,8 @@ Copyright (C) 2009-2014 Tobias Frost
 #include "configuration/ILogger.h"
 #include "patterns/IObserverObserver.h"
 #include "Inverters/interfaces/InverterBase.h"
-#include "patterns/IValue.h"
 
-    /// Helper class to encapsualte the data for the db entry.
-    class Cdbinfo
-    {
-    public:
-        Cdbinfo(std::string Capability, std::string Column) :
-            Capability(Capability), Column(Column), Value(NULL),
-                LastLoggedValue(NULL), previously_subscribed(false),
-                isSpecial(false)
-        {
-        }
-        ;
-
-        ~Cdbinfo()
-        {
-            if (Value) delete Value;
-            if (LastLoggedValue) delete LastLoggedValue;
-        }
-        ;
-
-        /// String of the capability
-        std::string Capability;
-
-        /// Column of the table
-        std::string Column;
-
-        /// Copy of the current value.
-        IValue *Value;
-
-        /// Copy of the LAST LOGGED value.
-        IValue *LastLoggedValue;
-        /// Has the value changed since last db update?
-
-        bool previously_subscribed; // just to supress a debug message.
-        bool isSpecial;
-    };
-
+#include "CdbInfo.h"
 
 /** cache the information in the config what and where we should log to.
  *

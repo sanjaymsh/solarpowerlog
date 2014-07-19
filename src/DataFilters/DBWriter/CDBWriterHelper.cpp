@@ -313,7 +313,6 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
     struct tm *tm = localtime(&t);
 
     for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
-        LOGTRACE(logger, "Handling " << _table << "::" << (*it)->Capability);
         Cdbinfo &cit = **it;
 
         if (cit.Capability[0] == '$') {
@@ -322,7 +321,7 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
         }
 
         if (!cit.Value) {
-            LOGTRACE(logger, cit.Capability << " not available");
+            LOGTRACE(logger, "Value for " << cit.Capability << " is not available");
             all_available = false;
             continue;
         }
@@ -350,8 +349,8 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
         }
     }
 
-    LOGTRACE(logger,
-        "Status: all_available=" << all_available << " any_updated=" << any_updated << " special_updated=" <<special_updated);
+//    LOGTRACE(logger,
+//        "Status: all_available=" << all_available << " any_updated=" << any_updated << " special_updated=" <<special_updated);
 
     // Part 1 -- create table if necessary.
     if (_createtable_mode != CDBWriterHelper::cmode_no) {
@@ -509,10 +508,11 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
         stat.exec();
         // Still here? Then it must have worked...
         _laststatementfailed = false;
-        LOGDEBUG(logger, "SQL: Last_insert_id=" << stat.last_insert_id());
-        LOGDEBUG(logger, "SQL: Affected rows=" << stat.affected());
+        LOGTRACE(logger, "SQL: Last_insert_id=" << stat.last_insert_id() << " Affected rows=" << stat.affected());
         return;
     } else if (_mode == CDBWriterHelper::single) {
+
+        LOGTRACE(logger, "SINGLE MODE");
 
         // single mode
         // updates a single row in the table, determinded by the use of one or
@@ -547,7 +547,7 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
         }
 
         if (selectors.empty()) {
-            LOGDEBUG(logger, "no selectors found for table " << _table);
+            LOGERROR(logger, "no selectors found for table " << _table);
             return;
         }
 
@@ -555,20 +555,19 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
         std::string update_query = "UPDATE " + query_common + "WHERE "
             + selectors + ";";
 
-        LOGDEBUG(logger, "Preparing statement");
         LOGDEBUG(logger, "Update-query=" << update_query);
 
         cppdb::statement stat;
         stat = session << update_query;
 
-        LOGDEBUG(logger, "Binding values...");
+        LOGTRACE(logger, "Binding values...");
 
         if (!_BindValues(stat)) {
             LOGDEBUG(logger, "bind failed.");
             return;
         }
 
-        LOGDEBUG(logger, "Binding selectors...");
+        LOGTRACE(logger, "Binding selectors...");
 
         // now binding the selectors.
         for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
@@ -579,11 +578,13 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
               }
           }
 
-        LOGDEBUG(logger, "Binding done.");
+        LOGTRACE(logger, "Binding done.");
 
-        LOGDEBUG(logger, "Trying UPDATE query");
+        LOGTRACE(logger, "Trying UPDATE query");
+        _laststatementfailed = true;
         stat.exec();
-        LOGDEBUG(logger, "UPDATE tried. " << stat.affected() << " affected rows." );
+        _laststatementfailed = false;
+        LOGDEBUG(logger, "UPDATE tried. " << stat.affected());
         if (stat.affected() == 0) {
             LOGDEBUG(logger, "no affected rows. Trying INSERT instead.");
             stat.clear();
@@ -595,16 +596,19 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
 
             stat = session << insert_query;
 
-            LOGDEBUG(logger, "Binding values and selectors ...");
+            LOGTRACE(logger, "Binding values and selectors ...");
             if (!_BindValues(stat,true)) {
                 LOGERROR(logger, "Bind failed (single, insert)");
                 return;
             }
 
-            LOGDEBUG(logger, "Binding done.");
+            LOGTRACE(logger, "Binding done.");
             LOGDEBUG(logger, "About to execute INSERT Query (single mode)");
+            _laststatementfailed = true;
             stat.exec();
-            LOGDEBUG(logger, "Insert tried. " << stat.affected() << " rows affected." );
+            _laststatementfailed = false;
+            LOGDEBUG(logger, "Insert tried. " << stat.affected()
+                << " rows affected." << "Last ID=" << stat.last_insert_id() );
             return;
         }
 

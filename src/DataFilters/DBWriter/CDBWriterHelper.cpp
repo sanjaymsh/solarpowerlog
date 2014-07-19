@@ -375,8 +375,9 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
                 // Special Select-Token we going to ignore
                 LOGWARN(logger,
                     "For creating tables $-Selector columns will not be created. "
-                    "Please add the column for Selector " << info.Capability[0]
-                    << " yourself.");
+                    "Please add the column \"" << info.Column <<
+                    "\" for Selector \"" << info.Capability.substr(1)
+                    << "\" yourself.");
                 LOGWARN(logger, "Logging will fail until then!");
                 continue;
             }
@@ -434,17 +435,16 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
             + ");";
         if (_createtable_mode == CDBWriterHelper::cmode_print_statment) {
             LOGINFO(logger,
-                "Your CREATE statement for table " << tablestring << " is:" << endl << tmp);
+                "Your CREATE statement for table " << _table << " is:" << endl << tmp);
         } else {
             LOGDEBUG(logger, "Executing query: " << tmp);
             // NOTE: Exceptions are passed to the caller to provide error information
             session << tmp << cppdb::exec;
+            LOGWARN(logger,
+                "Table created. Make sure to disable table creation in the config!");
+            LOGWARN(logger,
+                "Otherwise, solarpowerlog might stomp on your database the next time you start it!");
         }
-
-        LOGWARN(logger,
-            "Table created. Make sure to disable table creation in the config!");
-        LOGWARN(logger,
-            "Otherwise, solarpowerlog might stomp on your database the next time you start it!");
         _createtable_mode = CDBWriterHelper::cmode_no;
     }
 
@@ -606,9 +606,9 @@ std::string CDBWriterHelper::_GetValStringForUpdate(void)
         if (info.Capability[0] == '$') {
             continue;
         } else {
-            if (!ret.empty()) ret += ", ";
+            if (!ret.empty()) ret += ",";
             if (info.Value) {
-                ret += '[' + info.Column + "] =?";
+                ret += '[' + info.Column + "]=?";
             }
         }
     }

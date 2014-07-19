@@ -183,10 +183,10 @@ private:
      /// (col1,col2,col3) VALUES (?,?,?)
      /// The "?" are for the values to be bound
      /// \returns the generated value string
-     std::string _GetValStringForInsert(void);
+     std::string _GetValStringForInsert(bool with_selector=false);
 
     /// Bind all "?" in the (previously calculated) value string
-    bool _BindValues(cppdb::statement &s);
+    bool _BindValues(cppdb::statement &s, bool with_selector=false);
 
 };
 

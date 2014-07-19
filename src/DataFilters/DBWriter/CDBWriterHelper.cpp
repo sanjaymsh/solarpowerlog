@@ -443,7 +443,8 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
             LOGWARN(logger,
                 "Table created. Make sure to disable table creation in the config!");
             LOGWARN(logger,
-                "Otherwise, solarpowerlog might stomp on your database the next time you start it!");
+                "Otherwise, solarpowerlog might stomp down your database"
+                " the next time you start it!");
         }
         _createtable_mode = CDBWriterHelper::cmode_no;
     }
@@ -540,8 +541,8 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
                 if (!selectors.empty()) {
                     selectors += " AND ";
                 }
-                selectors += '[' + info.Column + "]=";
-                selectors += info.Capability.substr(1); // len of capability ensured in cfg check.
+                selectors += '[' + info.Column + "]=?";
+                //selectors += info.Capability.substr(1); // len of capability ensured in cfg check.
             }
         }
 
@@ -550,42 +551,60 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
             return;
         }
 
-        std::string query_common = " [" + _table + "] SET " + cols + ";";
+        std::string query_common = "[" + _table + "] SET " + cols + " ";
         std::string update_query = "UPDATE " + query_common + "WHERE "
             + selectors + ";";
 
+        LOGDEBUG(logger, "Preparing statement");
+        LOGDEBUG(logger, "Update-query=" << update_query);
+
         cppdb::statement stat;
         stat = session << update_query;
+
+        LOGDEBUG(logger, "Binding values...");
 
         if (!_BindValues(stat)) {
             LOGDEBUG(logger, "bind failed.");
             return;
         }
 
-        LOGDEBUG(logger, "Prepared SQL Update query:");
-        LOGDEBUG(logger, update_query);
+        LOGDEBUG(logger, "Binding selectors...");
+
+        // now binding the selectors.
+        for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
+              Cdbinfo &info = **it;
+              if (info.Capability[0] == '$') {
+                  // Selector
+                  stat.bind(info.Capability.substr(1));
+              }
+          }
+
+        LOGDEBUG(logger, "Binding done.");
+
         LOGDEBUG(logger, "Trying UPDATE query");
         stat.exec();
-        LOGDEBUG(logger, "UPDATE tried");
+        LOGDEBUG(logger, "UPDATE tried. " << stat.affected() << " affected rows." );
         if (stat.affected() == 0) {
             LOGDEBUG(logger, "no affected rows. Trying INSERT instead.");
             stat.clear();
             // we try now INSERT INTO table (col1,col2,col3) VALUES (1,2,3);
             // as above in the continious mode.
             std::string insert_query = "INSERT INTO [" + _table + "] "
-                + _GetValStringForInsert() + ';';
+                + _GetValStringForInsert(true) + ';';
             LOGTRACE(logger, "SQL Statement: " << insert_query);
 
             stat = session << insert_query;
 
-            if (!_BindValues(stat)) {
+            LOGDEBUG(logger, "Binding values and selectors ...");
+            if (!_BindValues(stat,true)) {
                 LOGERROR(logger, "Bind failed (single, insert)");
                 return;
             }
 
-            LOGDEBUG(logger, "About to execute INSERT Query (single mode");
+            LOGDEBUG(logger, "Binding done.");
+            LOGDEBUG(logger, "About to execute INSERT Query (single mode)");
             stat.exec();
-            LOGDEBUG(logger, "Insert tried. " << stat.affected() << " rows." );
+            LOGDEBUG(logger, "Insert tried. " << stat.affected() << " rows affected." );
             return;
         }
 
@@ -617,28 +636,32 @@ std::string CDBWriterHelper::_GetValStringForUpdate(void)
 
 //(col1,col2,col3) VALUES (?,?,?)
 
-std::string CDBWriterHelper::_GetValStringForInsert(void)
+std::string CDBWriterHelper::_GetValStringForInsert(bool with_selector)
 {
 
     std::vector<class Cdbinfo*>::iterator it;
     std::string vals,cols;
     for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
           Cdbinfo &info = **it;
-          if (!cols.empty()) cols += ',';
-          if (!vals.empty()) vals += ',';
-          if (info.Value) {
+          if (info.Value || (with_selector && info.Capability[0] == '$')) {
+              if (!cols.empty()) cols += ',';
+              if (!vals.empty()) vals += ',';
               cols += '[' + info.Column + ']';
               vals += "?";
-          }
+          };
       }
     return '(' + cols + ") VALUES (" + vals + ')';
 }
 
-bool CDBWriterHelper::_BindValues(cppdb::statement &stat) {
+bool CDBWriterHelper::_BindValues(cppdb::statement &stat, bool with_selector) {
 
     std::vector<class Cdbinfo*>::iterator it;
     for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
         Cdbinfo &info = **it;
+        if (with_selector && info.Capability[0] =='$') {
+            stat.bind(info.Capability.substr(1));
+            continue;
+        }
         if (!info.Value) continue;
 
         // Bind the values considering their datatypes.

@@ -188,6 +188,8 @@ private:
     /// Bind all "?" in the (previously calculated) value string
     bool _BindValues(cppdb::statement &s, bool with_selector=false);
 
+    bool _BindSingleValue(cppdb::statement &stat, Cdbinfo &info);
+
 };
 
 #endif

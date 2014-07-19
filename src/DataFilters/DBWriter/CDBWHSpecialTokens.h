@@ -207,13 +207,13 @@ class CDBHSpecialTokenFactory {
 public:
     static IDBHSpecialToken *Factory(const std::string &id) {
 
-        if (id == "%TIMESTAMP") return new CDBHST_Timestamp;
-        if (id == "%YEAR") return new CDBHST_Year;
-        if (id == "%MONTH") return new CDBHST_Month;
+        if (id == "TIMESTAMP") return new CDBHST_Timestamp;
+        if (id == "YEAR") return new CDBHST_Year;
+        if (id == "MONTH") return new CDBHST_Month;
        // if (id == "%WEEK") return new CDBHST_Week;
-        if (id == "%DAY") return new CDBHST_Day;
-        if (id == "%HOUR") return new CDBHST_Hour;
-        if (id == "%MINUTE") return new CDBHST_Minute;
+        if (id == "DAY") return new CDBHST_Day;
+        if (id == "HOUR") return new CDBHST_Hour;
+        if (id == "MINUTE") return new CDBHST_Minute;
         return NULL;
     }
 };

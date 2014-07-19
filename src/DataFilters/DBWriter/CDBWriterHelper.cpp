@@ -141,9 +141,9 @@ bool CDBWriterHelper::AddDataToLog(const std::string &Capability,
 
     Cdbinfo &last = *(_dbinfo[_dbinfo.size() - 1]);
 
-    if (Capability[0] == '%') {
+    if (Capability[0] == '%' || Capability[0] == '!' ) {
         LOGDEBUG(logger, "Special token " << Capability);
-        IDBHSpecialToken *nt = CDBHSpecialTokenFactory::Factory(Capability);
+        IDBHSpecialToken *nt = CDBHSpecialTokenFactory::Factory(Capability.substr(1));
         if (!nt) {
             LOGFATAL(logger,
                 "Cannot create special token object " << Capability);
@@ -307,7 +307,7 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
     // (as this indicates that the last query failed.)
     bool any_updated = _laststatementfailed;
     bool all_available = true;
-    bool special_updated = true;
+    bool special_updated = false;
 
     time_t t = time(0);
     struct tm *tm = localtime(&t);
@@ -343,7 +343,10 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
 
         if (cit.isSpecial) {
             IDBHSpecialToken *st = dynamic_cast<IDBHSpecialToken*>(cit.Value);
-            if (st->Update(*tm)) special_updated = true;
+            if (st->Update(*tm)) {
+                // only consider updated special values if they used as a selector.
+                if (cit.Capability[0] == '!') special_updated = true;
+            }
             LOGTRACE(logger,
                 "Updated " << cit.Capability << " to value " << st->GetString());
         }
@@ -510,9 +513,10 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
         _laststatementfailed = false;
         LOGTRACE(logger, "SQL: Last_insert_id=" << stat.last_insert_id() << " Affected rows=" << stat.affected());
         return;
-    } else if (_mode == CDBWriterHelper::single) {
+    } else if (_mode == CDBWriterHelper::single || _mode == CDBWriterHelper::cumulative ) {
 
-        LOGTRACE(logger, "SINGLE MODE");
+        if (_mode == CDBWriterHelper::single) LOGTRACE(logger, "SINGLE MODE");
+        if (_mode == CDBWriterHelper::cumulative) LOGTRACE(logger, "CUMULATIVE MODE");
 
         // single mode
         // updates a single row in the table, determinded by the use of one or
@@ -521,8 +525,10 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
         // either a UPDATE of INSERT statement. This needs only to be done
         // once, as once UPDATEd we can always UPDATE.
 
-        // UPDATE [table] SET col1=?, col2=?, col3=?
-        // WHERE col_sel=$selector AND col2_sel=$selector2;
+        // cumulative mode
+        // very similar to the single mode (indeed we could merge them :))
+        // but there are addtional selectors with non-static selecting values
+        // This are "%"-special types, but the prefix is "!" to differenciate.
 
         // Step 1) Assemble data ppart
         std::string cols, selectors;
@@ -536,7 +542,9 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
 
         for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
             Cdbinfo &info = **it;
-            if (info.Capability[0] == '$') {
+            if (info.Capability[0] == '$' ||
+               (_mode == CDBWriterHelper::cumulative
+                   && info.Capability[0] == '!')) {
                 // Selector
                 if (!selectors.empty()) {
                     selectors += " AND ";
@@ -572,9 +580,12 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
         // now binding the selectors.
         for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
               Cdbinfo &info = **it;
-              if (info.Capability[0] == '$') {
+              if (info.Capability[0] == '$')  {
                   // Selector
                   stat.bind(info.Capability.substr(1));
+              } else if ( _mode == CDBWriterHelper::cumulative &&
+                   info.Capability[0] == '!') {
+                  _BindSingleValue(stat,info);
               }
           }
 
@@ -584,7 +595,7 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
         _laststatementfailed = true;
         stat.exec();
         _laststatementfailed = false;
-        LOGDEBUG(logger, "UPDATE tried. " << stat.affected());
+        LOGDEBUG(logger, "UPDATE tried. " << stat.affected() << " affected row(s)");
         if (stat.affected() == 0) {
             LOGDEBUG(logger, "no affected rows. Trying INSERT instead.");
             stat.clear();
@@ -611,9 +622,6 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
                 << " rows affected." << "Last ID=" << stat.last_insert_id() );
             return;
         }
-
-    } else if (_mode == CDBWriterHelper::cumulative) {
-
     }
 
     return;
@@ -662,34 +670,44 @@ bool CDBWriterHelper::_BindValues(cppdb::statement &stat, bool with_selector) {
     std::vector<class Cdbinfo*>::iterator it;
     for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
         Cdbinfo &info = **it;
-        if (with_selector && info.Capability[0] =='$') {
-            stat.bind(info.Capability.substr(1));
-            continue;
+        if (with_selector) {
+            if (info.Capability[0] == '$') {
+                stat.bind(info.Capability.substr(1));
+                continue;
+            }
         }
         if (!info.Value) continue;
 
-        // Bind the values considering their datatypes.
-        if (CValue<float>::IsType(info.Value)) {
-            stat.bind((double)((CValue<float> *)info.Value)->Get());
-        } else if (CValue<double>::IsType(info.Value)) {
-            stat.bind(((CValue<double> *)info.Value)->Get());
-        } else if (CValue<bool>::IsType(info.Value)) {
-            stat.bind(((CValue<bool> *)info.Value)->Get());
-        } else if (CValue<long>::IsType(info.Value)) {
-            stat.bind(((CValue<long> *)info.Value)->Get());
-        } else if (CValue<std::string>::IsType(info.Value)) {
-            stat.bind(((CValue<std::string> *)info.Value)->Get());
-        } else if (CValue<std::tm>::IsType(info.Value)) {
-            stat.bind(((CValue<std::tm> *)info.Value)->Get());
-        } else {
-            LOGERROR(logger, "unknown datatype for " << info.Capability);
-            LOGERROR(logger,
-                "Its C++ typeid is " << typeid(*(info.Value)).name());
-            LOGERROR(logger, "Cannot put data to database.");
-            return false;
-        }
+        if (!_BindSingleValue(stat, info)) return false;
+
     }
     return true;
 }
+
+bool CDBWriterHelper::_BindSingleValue(cppdb::statement &stat, Cdbinfo &info) {
+
+    // Bind the values considering their datatypes.
+       if (CValue<float>::IsType(info.Value)) {
+           stat.bind((double)((CValue<float> *)info.Value)->Get());
+       } else if (CValue<double>::IsType(info.Value)) {
+           stat.bind(((CValue<double> *)info.Value)->Get());
+       } else if (CValue<bool>::IsType(info.Value)) {
+           stat.bind(((CValue<bool> *)info.Value)->Get());
+       } else if (CValue<long>::IsType(info.Value)) {
+           stat.bind(((CValue<long> *)info.Value)->Get());
+       } else if (CValue<std::string>::IsType(info.Value)) {
+           stat.bind(((CValue<std::string> *)info.Value)->Get());
+       } else if (CValue<std::tm>::IsType(info.Value)) {
+           stat.bind(((CValue<std::tm> *)info.Value)->Get());
+       } else {
+           LOGERROR(logger, "unknown datatype for " << info.Capability);
+           LOGERROR(logger,
+               "Its C++ typeid is " << typeid(*(info.Value)).name());
+           LOGERROR(logger, "Cannot put data to database.");
+           return false;
+       }
+       return true;
+}
+
 
 #endif

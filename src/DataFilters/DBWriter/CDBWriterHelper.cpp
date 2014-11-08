@@ -43,6 +43,10 @@
 
 #include <assert.h>
 
+#define SQL_ESCAPE_CHAR_OPEN ""
+#define SQL_ESCAPE_CHAR_CLOSE ""
+
+
 CDBWriterHelper::CDBWriterHelper(IInverterBase *base, const ILogger &parent,
     const std::string &table, const std::string &mode,
     const std::string &createmode, bool logchangedonly, float logevery,
@@ -174,7 +178,7 @@ bool CDBWriterHelper::issane(const std::string s)
 {
     // needle is selected from mysqli.real-escape-string
     // I added the brackets, which might be overkill...
-    const char *needle = "\"\'`[]\0\r\n\x1a%";
+    const char *needle = "\"\'`[]\0\r\n\x1a% ";
     if (std::string::npos != s.find_first_of(needle, 0, sizeof(needle))) {
         return false;
     }
@@ -388,7 +392,7 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
             // using new datatypes!
             assert(info.Value);
             if (!tablestring.empty()) tablestring += ", ";
-            tablestring += "[" + info.Column + "] ";
+            tablestring += SQL_ESCAPE_CHAR_OPEN  + info.Column + SQL_ESCAPE_CHAR_CLOSE + " ";
 
             if (CValue<float>::IsType(info.Value)
                 || CValue<double>::IsType(info.Value)) {
@@ -428,13 +432,15 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
 
         std::string tmp;
         if (_createtable_mode == CDBWriterHelper::cmode_yes_and_drop) {
-            tmp = "DROP TABLE IF EXISTS [" + _table + "];";
-            LOGDEBUG(logger, " Executing query: "<< tmp);
+            tmp = "DROP TABLE IF EXISTS ";
+            tmp += SQL_ESCAPE_CHAR_OPEN + _table + SQL_ESCAPE_CHAR_CLOSE + ";";
+            LOGDEBUG(logger, "Executing query: "<< tmp);
             session << tmp << cppdb::exec;
         }
 
-        tmp = "CREATE TABLE IF NOT EXISTS [" + _table + "] (" + tablestring
-            + ");";
+        tmp = "CREATE TABLE IF NOT EXISTS ";
+        tmp += SQL_ESCAPE_CHAR_OPEN + _table + SQL_ESCAPE_CHAR_CLOSE
+               + " (" + tablestring + ");";
         if (_createtable_mode == CDBWriterHelper::cmode_print_statment) {
             LOGINFO(logger,
                 "Your CREATE statement for table " << _table << " is:" << endl << tmp);
@@ -488,8 +494,9 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
         if (!all_available) _insert_cache.clear();
         // Step one: Create sql string.
         if (_insert_cache.empty()) {
-            _insert_cache = "INSERT INTO [" + _table + "] "
-                + _GetValStringForInsert() +';';
+            _insert_cache = "INSERT INTO ";
+            _insert_cache += SQL_ESCAPE_CHAR_OPEN + _table
+                + SQL_ESCAPE_CHAR_CLOSE + " " + _GetValStringForInsert() +';';
             LOGTRACE(logger, "SQL Statement: " << _insert_cache);
         }
 
@@ -549,7 +556,8 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
                 if (!selectors.empty()) {
                     selectors += " AND ";
                 }
-                selectors += '[' + info.Column + "]=?";
+                selectors += SQL_ESCAPE_CHAR_OPEN + info.Column
+                    + SQL_ESCAPE_CHAR_CLOSE +"=?";
                 //selectors += info.Capability.substr(1); // len of capability ensured in cfg check.
             }
         }
@@ -559,7 +567,8 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
             return;
         }
 
-        std::string query_common = "[" + _table + "] SET " + cols + " ";
+        std::string query_common = SQL_ESCAPE_CHAR_OPEN + _table
+            + SQL_ESCAPE_CHAR_CLOSE + " SET " + cols + " ";
         std::string update_query = "UPDATE " + query_common + "WHERE "
             + selectors + ";";
 
@@ -639,7 +648,8 @@ std::string CDBWriterHelper::_GetValStringForUpdate(void)
         } else {
             if (!ret.empty()) ret += ",";
             if (info.Value) {
-                ret += '[' + info.Column + "]=?";
+                ret += SQL_ESCAPE_CHAR_OPEN + info.Column
+                    + SQL_ESCAPE_CHAR_CLOSE +"=?";
             }
         }
     }
@@ -658,7 +668,8 @@ std::string CDBWriterHelper::_GetValStringForInsert(bool with_selector)
           if (info.Value || (with_selector && info.Capability[0] == '$')) {
               if (!cols.empty()) cols += ',';
               if (!vals.empty()) vals += ',';
-              cols += '[' + info.Column + ']';
+              cols += SQL_ESCAPE_CHAR_OPEN + info.Column
+                  + SQL_ESCAPE_CHAR_CLOSE;
               vals += "?";
           };
       }

@@ -38,6 +38,7 @@ Copyright (C) 2009-2014 Tobias Frost
 
 #include <string>
 #include <cppdb/frontend.h>
+
 #include "configuration/ILogger.h"
 #include "patterns/IObserverObserver.h"
 #include "Inverters/interfaces/InverterBase.h"

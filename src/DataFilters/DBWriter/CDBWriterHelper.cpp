@@ -445,7 +445,7 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
             LOGWARN(logger,
                 "Table created. Make sure to disable table creation in the config!");
             LOGWARN(logger,
-                "Otherwise, solarpowerlog might stomp down your database"
+                "Otherwise, solarpowerlog might stomp on your database"
                 " the next time you start it!");
         }
         _createtable_mode = CDBWriterHelper::cmode_no;
@@ -481,7 +481,7 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
 
     // If we are still here: Seems some job to be done.
 
-    // Case 1: cumulative
+    // Case 1: continuous
     if (_mode == CDBWriterHelper::continuous) {
         // Create INSERT INTO ... statement, if not existing.
         // on sparse, we cannot use the cache
@@ -600,7 +600,7 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
             LOGDEBUG(logger, "no affected rows. Trying INSERT instead.");
             stat.clear();
             // we try now INSERT INTO table (col1,col2,col3) VALUES (1,2,3);
-            // as above in the continious mode.
+            // as above in the continuous mode.
             std::string insert_query = "INSERT INTO [" + _table + "] "
                 + _GetValStringForInsert(true) + ';';
             LOGTRACE(logger, "SQL Statement: " << insert_query);

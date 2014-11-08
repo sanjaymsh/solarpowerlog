@@ -210,6 +210,7 @@ public:
         if (id == "TIMESTAMP") return new CDBHST_Timestamp;
         if (id == "YEAR") return new CDBHST_Year;
         if (id == "MONTH") return new CDBHST_Month;
+        // FIXME
        // if (id == "%WEEK") return new CDBHST_Week;
         if (id == "DAY") return new CDBHST_Day;
         if (id == "HOUR") return new CDBHST_Hour;

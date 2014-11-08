@@ -356,16 +356,18 @@ bool CDBWriterFilter::CheckConfig()
         } else if (!createmode.empty()) {
             if (createmode == "YES") {
                 LOGWARN(logger, "db_create_table is YES -- will create this table later: " << table);
-
             } else
             if (createmode == "YES-WIPE-MY-DATA") {
                 LOGWARN(logger, "db_create_table is YES-WIPE-MY-DATA -- will *DESTROY* and create this table later: " << table);
             } else if (createmode == "print-sql-statement") {
                 LOGWARN(logger, "Will print creation statement for " << table);
             }
+            else if (createmode == "no") {
+                createmode = "";
+            }
             else {
-                LOGWARN(logger, "db_create_table is neither YES nor YES-WIPE-MY-DATA. Ignored");
-                createmode ="";
+                LOGWARN(logger, "db_create_table is neither YES, YES-WIPE-MY-DATA, print-sql-statement or no. Ignored");
+                createmode = "";
             }
         }
 
@@ -385,14 +387,12 @@ bool CDBWriterFilter::CheckConfig()
             }
         }
 
-#warning FIXME  logevery is optional and should be derived from the inverter if not specified.
         if (!hlp.CheckConfig("db_logchangedonly", Setting::TypeBoolean)) {
             fail = true;
         } else {
             hlp.GetConfig("db_logchangedonly", logchangedonly, false);
         }
 
-#warning FIXME  logevery is optional and should be derived from the inverter if not specified.
         bool allow_sparse;
         if (!hlp.CheckConfig("db_allowsparse", Setting::TypeBoolean)) {
             fail = true;

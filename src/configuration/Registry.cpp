@@ -33,6 +33,7 @@ Copyright (C) 2009-2012 Tobias Frost
 #endif
 
 #include <iostream>
+#include <libgen.h>
 
 #include "configuration/Registry.h"
 #include "interfaces/CWorkScheduler.h"
@@ -52,7 +53,16 @@ bool Registry::LoadConfig( std::string name )
 	if (Config)
 		delete Config;
 	Config = new libconfig::Config;
-	try {
+
+	// set include dir the directory, if name has a complete path.
+	// this allows using @include with relative paths to the main config file.
+	char *tmp = strdup(name.c_str());
+	char *tmp2 = tmp;
+	tmp = dirname(tmp);
+    if (tmp && strcmp(tmp,".")) Registry::Configuration()->setIncludeDir(tmp);
+    free(tmp2);
+
+    try {
 		Config->readFile(name.c_str());
 	} catch (libconfig::ParseException &ex) {
 		std::cerr << "Error parsing configuration file " << name

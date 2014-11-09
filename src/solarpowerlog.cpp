@@ -78,9 +78,6 @@ Copyright (C) 2009-2012 Tobias Frost
 #include <log4cxx/basicconfigurator.h>
 #include <log4cxx/propertyconfigurator.h>
 #include <log4cxx/xml/domconfigurator.h>
-// for testing
-#include <log4cxx/net/syslogappender.h>
-using namespace log4cxx::net;
 #endif
 
 #ifdef HAVE_OPENLOG

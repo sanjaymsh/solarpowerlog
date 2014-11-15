@@ -87,16 +87,17 @@ bool CDBWriterFilter::CheckConfig()
 {
     CConfigHelper hlp(configurationpath);
     bool fail = false;
-    std::string str;
 
-    fail |= !hlp.CheckAndGetConfig("datasource", Setting::TypeString, str);
-    IInverterBase *dsource = Registry::Instance().GetInverter(str);
-    if (!dsource) {
-        LOGERROR(logger, " Cannot find datassource with the name "
-            << str );
+    if (!base) {
+        std::string str;
+        fail |= !hlp.CheckAndGetConfig("datasource", Setting::TypeString, str);
+        if (fail) {
+            LOGERROR(logger, "datassource not found.");
+        } else {
+            LOGERROR(logger, "Cannot find datassource with the name " << str);
+        }
         fail = true;
     }
-    base = dsource;
 
     // What settings does a database writer needs?
 
@@ -413,8 +414,13 @@ bool CDBWriterFilter::CheckConfig()
             i++; continue;
         }
 
-        dbwh = new CDBWriterHelper(base, logger, table, mode, createmode,
-            logchangedonly, logevery, allow_sparse);
+        // note, on misconfiguration (no valid data source!) base *can* be NULL here!
+        if (base) {
+            dbwh = new CDBWriterHelper(base, logger, table, mode, createmode,
+                logchangedonly, logevery, allow_sparse);
+        } else {
+            continue;
+        }
 
         int j=0;
         bool k = true;
@@ -587,8 +593,7 @@ void CDBWriterFilter::ExecuteCommand( const ICommand *cmd )
 
 void CDBWriterFilter::DoINITCmd( const ICommand * )
 {
-    // Subscribe to base capabilities.
-    // probably not needed!
+
     assert(base);
     CCapability *cap;
     cap = base -> GetConcreteCapability(CAPA_CAPAS_UPDATED);

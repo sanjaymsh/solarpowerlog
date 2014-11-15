@@ -1,7 +1,7 @@
 /* ----------------------------------------------------------------------------
  solarpowerlog -- photovoltaic data logging
 
-Copyright (C) 2009-2012 Tobias Frost
+Copyright (C) 2009-2014 Tobias Frost
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -137,6 +137,17 @@ bool CHTMLWriter::CheckConfig()
 	bool fail = false;
 	CConfigHelper hlp(configurationpath);
 
+    if (!base) {
+        std::string str;
+        fail |= !hlp.CheckAndGetConfig("datasource", libconfig::Setting::TypeString, str);
+        if (fail) {
+            LOGERROR(logger, "datassource not found.");
+        } else {
+            LOGERROR(logger, "Cannot find datassource with the name " << str);
+        }
+        fail = true;
+    }
+
 	// Get writeevery, if not existant, remember that for later extrapolation out
 	// of the parents Capability.
 	if (hlp.CheckConfig("writeevery", libconfig::Setting::TypeFloat, true)) {
@@ -250,26 +261,18 @@ void CHTMLWriter::ExecuteCommand(const ICommand *cmd)
 		CCapability *c;
 
 		// Subscribe to this->base inverter, all the required ones...
-		if (cfghlp.GetConfig("datasource", tmp)) {
-			base = Registry::Instance().GetInverter(tmp);
-			if (base) {
-				c = base->GetConcreteCapability(CAPA_CAPAS_UPDATED);
-				assert(c); // this is required to have....
-				c->Subscribe(this);
+		assert(base);
+        c = base->GetConcreteCapability(CAPA_CAPAS_UPDATED);
+        assert(c); // this is required to have....
+        c->Subscribe(this);
 
-				c = base->GetConcreteCapability(CAPA_CAPAS_REMOVEALL);
-				assert(c);
-				c->Subscribe(this);
+        c = base->GetConcreteCapability(CAPA_CAPAS_REMOVEALL);
+        assert(c);
+        c->Subscribe(this);
 
-				c = base->GetConcreteCapability(CAPA_INVERTER_DATASTATE);
-				assert(c);
-				c->Subscribe(this);
-			} else {
-				LOGWARN(logger,
-						"Warning: Could not find data source to connect. Filter: "
-						<< configurationpath << "." << name);
-			}
-		}
+        c = base->GetConcreteCapability(CAPA_INVERTER_DATASTATE);
+        assert(c);
+        c->Subscribe(this);
 
 		ScheduleCyclicEvent(CMD_CYCLIC);
 	}
@@ -569,8 +572,8 @@ void CHTMLWriter::DoCyclicCmd(const ICommand *)
 
 void CHTMLWriter::CheckOrUnSubscribe(bool subscribe)
 {
-	if (!base)
-		return;
+
+    assert(base);
 
 	CCapability *cap = base->GetConcreteCapability(CAPA_INVERTER_DATASTATE);
 	if (cap)

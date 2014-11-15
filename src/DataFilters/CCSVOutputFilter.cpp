@@ -1,7 +1,7 @@
 /* ----------------------------------------------------------------------------
  solarpowerlog -- photovoltaic data logging
 
-Copyright (C) 2009-2012 Tobias Frost
+Copyright (C) 2009-2014 Tobias Frost
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -114,6 +114,18 @@ bool CCSVOutputFilter::CheckConfig()
 	bool fail = false;
 
 	CConfigHelper hlp(configurationpath);
+
+    if (!base) {
+        std::string str;
+        fail |= !hlp.CheckAndGetConfig("datasource", libconfig::Setting::TypeString, str);
+        if (fail) {
+            LOGERROR(logger, "datassource not found.");
+        } else {
+            LOGERROR(logger, "Cannot find datassource with the name " << str);
+        }
+        fail = true;
+    }
+
 	fail |= !hlp.CheckConfig("logfile", Setting::TypeString);
 
 	fail |= !hlp.CheckConfig("compact_csv", Setting::TypeBoolean, true);
@@ -253,30 +265,20 @@ void CCSVOutputFilter::DoINITCmd( const ICommand * )
 	string tmp;
 	CConfigHelper cfghlp(configurationpath);
 	// Config is already checked (exists, type ok)
-	cfghlp.GetConfig("datasource", tmp);
+	CCapability *cap;
 
-	base = Registry::Instance().GetInverter(tmp);
-	if (base) {
-		CCapability *cap = base->GetConcreteCapability(
-			CAPA_CAPAS_UPDATED);
-		assert(cap); // this is required to have....
-		if (!cap->CheckSubscription(this))
-			cap->Subscribe(this);
+    assert(base);
+    cap = base->GetConcreteCapability(CAPA_CAPAS_UPDATED);
+    assert(cap); // this cap is required to have.
+    if (!cap->CheckSubscription(this)) cap->Subscribe(this);
 
-		cap = base->GetConcreteCapability(CAPA_CAPAS_REMOVEALL);
-		assert(cap);
-		if (!cap->CheckSubscription(this))
-			cap->Subscribe(this);
+    cap = base->GetConcreteCapability(CAPA_CAPAS_REMOVEALL);
+    assert(cap);
+    if (!cap->CheckSubscription(this)) cap->Subscribe(this);
 
-		cap = base->GetConcreteCapability(CAPA_INVERTER_DATASTATE);
-		assert(cap);
-		if (!cap->CheckSubscription(this))
-			cap->Subscribe(this);
-	} else {
-		LOGERROR(logger, "Could not find data source to connect. Filter: "
-			<< configurationpath << "." << name );
-		abort();
-	}
+    cap = base->GetConcreteCapability(CAPA_INVERTER_DATASTATE);
+    assert(cap);
+    if (!cap->CheckSubscription(this)) cap->Subscribe(this);
 
 	// Try to open the file
 	if (file.is_open()) {
@@ -324,9 +326,8 @@ void CCSVOutputFilter::DoINITCmd( const ICommand * )
 
 	// Update the filename. If empty, the subsequent plugin knows that there
 	// was a problem.
-	CCapability *cap = this->GetConcreteCapability(
-				CAPA_CSVDUMPER_FILENAME);
-	((CValue<std::string> *) cap->getValue())->Set(tmp);
+    cap = this->GetConcreteCapability(CAPA_CSVDUMPER_FILENAME);
+    ((CValue<std::string> *) cap->getValue())->Set(tmp);
 	cap->Notify();
 
 	// a new file needs a new header

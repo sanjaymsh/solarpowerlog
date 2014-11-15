@@ -1,7 +1,7 @@
 /* ----------------------------------------------------------------------------
  solarpowerlog -- photovoltaic data logging
 
-Copyright (C) 2009-2012 Tobias Frost
+Copyright (C) 2009-2014 Tobias Frost
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -83,7 +83,18 @@ bool CDumpOutputFilter::CheckConfig()
 	bool fail = false;
 
 	CConfigHelper hlp(configurationpath);
-	fail |= !hlp.CheckConfig("datasource", Setting::TypeString);
+
+	if (!base) {
+        std::string str;
+        fail |= !hlp.CheckAndGetConfig("datasource", Setting::TypeString, str);
+        if (fail) {
+            LOGERROR(logger, "datassource not found.");
+        } else {
+            LOGERROR(logger, "Cannot find datassource with the name " << str);
+        }
+        fail = true;
+    }
+
 	fail |= !hlp.CheckConfig("clearscreen", Setting::TypeBoolean, true);
 
 	hlp.GetConfig("datasource", str, (std::string) "");
@@ -153,29 +164,21 @@ void CDumpOutputFilter::ExecuteCommand( const ICommand *cmd )
 
 		cfghlp.GetConfig("clearscreen", this->clearscreen);
 
-		if (cfghlp.GetConfig("datasource", tmp)) {
-			base = Registry::Instance().GetInverter(tmp);
-			if (base) {
-				CCapability *cap = base->GetConcreteCapability(
-					CAPA_CAPAS_UPDATED);
-				assert(cap); // this is required to have....
-				cap->Subscribe(this);
+        assert(base);
+        CCapability *cap = base->GetConcreteCapability(
+        CAPA_CAPAS_UPDATED);
+        assert(cap); // this is required to have....
+        cap->Subscribe(this);
 
-				cap = base->GetConcreteCapability(
-					CAPA_CAPAS_REMOVEALL);
-				assert(cap);
-				cap->Subscribe(this);
+        cap = base->GetConcreteCapability(
+        CAPA_CAPAS_REMOVEALL);
+        assert(cap);
+        cap->Subscribe(this);
 
-				cap = base->GetConcreteCapability(
-					CAPA_INVERTER_DATASTATE);
-				assert(cap);
-				cap->Subscribe(this);
-			} else {
-				LOGWARN(logger,
-					"Warning: Could not find data source to connect. Filter: "
-					<< configurationpath << "." << name);
-			}
-		}
+        cap = base->GetConcreteCapability(
+        CAPA_INVERTER_DATASTATE);
+        assert(cap);
+        cap->Subscribe(this);
 
 		CheckOrUnSubscribe(true);
 		// falling through
@@ -218,8 +221,7 @@ void CDumpOutputFilter::ExecuteCommand( const ICommand *cmd )
 // The parameter sets, if we subscribe or unsubscribe.
 void CDumpOutputFilter::CheckOrUnSubscribe( bool subscribe )
 {
-	if (!base)
-		return;
+	assert(base);
 
 	// mmh, i think they are unused... this filter iterates and needs not to
 	// subscribe.

@@ -81,19 +81,20 @@ CDBWriterHelper::CDBWriterHelper(IInverterBase *base, const ILogger &parent,
         _mode = CDBWriterHelper::cumulative;
     }
 
-    assert(base);
-    CCapability *cap;
-    cap = base->GetConcreteCapability(CAPA_CAPAS_UPDATED);
-    assert(cap);
-    cap->Subscribe(this);
+    if(base) {
+        CCapability *cap;
+        cap = base->GetConcreteCapability(CAPA_CAPAS_UPDATED);
+        assert(cap);
+        cap->Subscribe(this);
 
-    cap = base->GetConcreteCapability(CAPA_CAPAS_REMOVEALL);
-    assert(cap);
-    cap->Subscribe(this);
+        cap = base->GetConcreteCapability(CAPA_CAPAS_REMOVEALL);
+        assert(cap);
+        cap->Subscribe(this);
 
-    cap = base->GetConcreteCapability(CAPA_INVERTER_DATASTATE);
-    assert(cap);
-    cap->Subscribe(this);
+        cap = base->GetConcreteCapability(CAPA_INVERTER_DATASTATE);
+        assert(cap);
+        cap->Subscribe(this);
+    }
 }
 
 CDBWriterHelper::~CDBWriterHelper()

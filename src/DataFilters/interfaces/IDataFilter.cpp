@@ -1,7 +1,7 @@
 /* ----------------------------------------------------------------------------
  solarpowerlog -- photovoltaic data logging
 
-Copyright (C) 2009-2012 Tobias Frost
+Copyright (C) 2009-2014 Tobias Frost
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -30,6 +30,22 @@ Copyright (C) 2009-2012 Tobias Frost
 
 #include "DataFilters/interfaces/IDataFilter.h"
 #include "Inverters/interfaces/CNestedCapaIterator.h"
+#include "configuration/CConfigHelper.h"
+
+IDataFilter::IDataFilter(const string &name, const string & configurationpath) :
+    IInverterBase(name, configurationpath, "datafilter"), base(0)
+{
+    // try to setup base to be more error-robust.
+    // this way, Datafilter have already setup their base early on.
+    // The child can always override later, e.g after CMD_INIT.
+    CConfigHelper hlp(configurationpath);
+    std::string str;
+
+    if (hlp.CheckAndGetConfig("datasource", libconfig::Setting::TypeString, str)) {
+        this->base = Registry::Instance().GetInverter(str);
+    }
+}
+
 
 IDataFilter::~IDataFilter()
 {
@@ -51,7 +67,7 @@ CCapability *IDataFilter::GetConcreteCapability( const string & identifier )
 		return c;
 	} else {
 		// TODO cleanup debug code
-		//cout << "DEBUG: searching " << identifier << " in base class "
+		// cout << "DEBUG: searching " << identifier << " in base class "
 		//	<< base->GetName() << endl;
 		return base->GetConcreteCapability(identifier);
 	}

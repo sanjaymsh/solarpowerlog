@@ -108,7 +108,7 @@ CDBWriterHelper::~CDBWriterHelper()
 }
 
 /** Add the tuple Capability, Column to the "should be logged information"
- * Returns "FALSE" if the combination of Capabilty and Column is alreaedy there.
+ * Returns "FALSE" if the combination of Capabilty and Column is already there.
  */
 bool CDBWriterHelper::AddDataToLog(const std::string &Capability,
     const std::string &Column)
@@ -224,6 +224,14 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
             cap = (cappair).second;
             cap->UnSubscribe(this);
         }
+        CMutexAutoLock cma(&mutex);
+
+        std::vector<class Cdbinfo *>::iterator jt;
+        for (jt = _dbinfo.begin(); jt != _dbinfo.end(); jt++) {
+            (*jt)->previously_subscribed = false;
+            if ((*jt)->Value) delete ((*jt)->Value);
+            ((*jt)->Value) = NULL;
+        }
         return;
     }
 
@@ -273,10 +281,10 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
 void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
 {
 
-    // Strategie
+    // Strategy
     // only log if data is marked as valid
     //
-    // For "continious" mode just add new columns
+    // For "continuous" mode just add new columns
     // "sparse mode" -> add NULL if no data is there (log even if all_available is false)
 
     // If creating table, "sparse mode" cannot be used -- datatypes are needed to assemble the create statement.
@@ -326,7 +334,7 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
         }
 
         if (!cit.Value) {
-            LOGTRACE(logger, "Value for " << cit.Capability << " is not available");
+            LOGDEBUG(logger, "Value for " << cit.Capability << " is not available");
             all_available = false;
             continue;
         }

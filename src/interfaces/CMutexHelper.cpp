@@ -31,7 +31,6 @@ Copyright (C) 2009-2012 Tobias Frost
 
 #include "CMutexHelper.h"
 
-#include <boost/thread/mutex.hpp>
 
 CMutexAutoLock::CMutexAutoLock(boost::mutex *mutex) {
 	this->mutex = mutex;

@@ -479,24 +479,28 @@ public:
 	 * the message has either been repeated LOG_STATEWARE_REPEAT or not issued
 	 * since LOG_STATEAWARE seconds.
 	 * The
-	 * */
-	bool Log_sa(const int32_t hash, std::stringstream &ss);
+	*/
+	void Log_sa(const int32_t hash, std::stringstream &ss);
 
+	/// Get the max suppressions
     int getSaMaxSuppressRepeattions() const
     {
         return sa_max_suppress_repeattions_;
     }
 
+    /// Set the maximum repeations before reissuing the log
     void setSaMaxSuppressRepeattions(int saMaxSuppressRepeattions)
     {
         sa_max_suppress_repeattions_ = saMaxSuppressRepeattions;
     }
 
+    /// Get the maximum time to suppress indencical logs
     time_t getSaMaxSuppressTime() const
     {
         return sa_max_time_suppress_;
     }
 
+    /// Set the maximum time to supress identical logs
     void setSaMaxSuppressTime(time_t saMaxTimeSuppress)
     {
         sa_max_time_suppress_ = saMaxTimeSuppress;

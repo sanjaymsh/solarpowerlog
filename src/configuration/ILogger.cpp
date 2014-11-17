@@ -154,7 +154,7 @@ void ILogger::SetLoggerLevel(log4cxx::LevelPtr level)
     currentloggerlevel_ = level->toInt();
 }
 
-bool ILogger::Log_sa(const int32_t hash, std::stringstream &ss)
+void ILogger::Log_sa(const int32_t hash, std::stringstream &ss)
 {
 
     bool needlog = false;
@@ -189,7 +189,7 @@ bool ILogger::Log_sa(const int32_t hash, std::stringstream &ss)
         if (!needlog) {
             // supress message.
             info.supressed_cnt++;
-            return false;
+            return;
         }
 
         // print message and update info
@@ -221,7 +221,7 @@ bool ILogger::Log_sa(const int32_t hash, std::stringstream &ss)
         cma.unlock();
         (*this) << ss;
         if (reason) (*this) << ss2;
-        return true;
+        return;
     }
 
     // data not in map.
@@ -233,7 +233,7 @@ bool ILogger::Log_sa(const int32_t hash, std::stringstream &ss)
     sa_info[hash] = newinfo;
     cma.unlock();
     (*this) << ss;
-    return true;
+    return;
 }
 
 ILogger::~ILogger()

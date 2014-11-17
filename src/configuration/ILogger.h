@@ -506,8 +506,15 @@ public:
         sa_max_time_suppress_ = saMaxTimeSuppress;
     }
 
-private:
+    /// Forget the history for one stateaware log entry
+    /// (the next one will be issued anyway)
+    bool sa_forgethistory(int32_t hash);
 
+    /// Forget the history for all stateaware log entries
+    /// (that means complete reset)
+    void sa_forgethistory();
+
+private:
 	/// cache for the configuration string.
 	std::string config_;
 
@@ -536,7 +543,7 @@ private:
 #if __cplusplus < 201103L
 	std::map<uint32_t,struct log_stateaware_info> sa_info;
 #else
-	std::unordered_map<int32_t,struct log_stateaware_info> loginfo_sa;
+	std::unordered_map<int32_t,struct log_stateaware_info> sa_info;
 #endif
 };
 

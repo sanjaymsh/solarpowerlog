@@ -236,6 +236,21 @@ void ILogger::Log_sa(const int32_t hash, std::stringstream &ss)
     return;
 }
 
+/// Forget the history for one stateaware log entry
+/// (the next one will be issued anyway)
+bool ILogger::sa_forgethistory(int32_t hash) {
+    CMutexAutoLock cma(this);
+    return sa_info.erase(hash);
+}
+
+/// Forget the history for all stateaware log entries
+/// (that means complete reset)
+void ILogger::sa_forgethistory() {
+     CMutexAutoLock cma(this);
+     sa_info.clear();
+ }
+
+
 ILogger::~ILogger()
 {
     // TODO Auto-generated destructor stub

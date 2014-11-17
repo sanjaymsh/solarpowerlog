@@ -3,15 +3,12 @@ ACLOCAL_AMFLAGS = -I m4
 
 AM_CXXFLAGS = $(BOOST_CPPFLAGS)
 
+BUILT_SOURCES = configuration/ILogger_hashmacro.h
+nodist_solarpowerlog_SOURCES = configuration/ILogger_hashmacro.h
 
-#if MAKE_DBIXX 
-#        DBIXX_LIB =-ldbixx
-#	DBIXX_LIB_PATH=-L../extlibs/dbixx
-#else
-	DBIXX_LIB =
-#endif
-
-#DBIXX_LIB =-ldbixx
+# do not clean for now, to avoid ccache poisioning. its enought not to distribute it
+# in the tarball!
+# CLEANFILES = configuration/ILogger_hashmacro.h
 
 bin_PROGRAMS = solarpowerlog
 
@@ -110,20 +107,12 @@ solarpowerlog_LDADD = $(CONFIG_LIBS) $(LOG4CXX_LIBS) $(APR_LIBS) \
 	$(BOOST_DATE_TIME_LIBS) $(BOOST_SYSTEM_LIBS) $(BOOST_ASIO_LIBS) \
 	$(BOOST_PROGRAM_OPTIONS_LIBS) $(WIN32_LIBS) $(CPPDB_LIBS)
 
-LIBS = $(DEPS_LIBS)  
+LIBS = $(DEPS_LIBS)
 
-# add the search path to the linker path 
-solarpowerlog_LDFLAGS = $(pwd) $(DBIXX_LIB_PATH)
+# add the search path to the linker path
+#solarpowerlog_LDFLAGS = $(pwd)
 
-# rule to make the ctemplate library 
-#libctemplate.a: 
-#	(cd ../extlibs/ctemplate/ && $(MAKE))  
+configuration/ILogger_hashmacro.h: Makefile
+	perl ../tools/GenConstHash.pl -l 96 -r LOG_SA_HASH -t $@
 
-# rule to clean up local stuff, like the ctemplate library 
-#clean-local: libctemplateclean
-#
-#libctemplateclean:
-#	(cd ../extlibs/ctemplate/ && $(MAKE) clean)  
-#
-# do not forget to make the template library 
-#all: ${CTEMPLATE_DEPS}
+

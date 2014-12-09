@@ -348,7 +348,7 @@ int main(int argc, char* argv[])
 
 	SetupSignalHandler();
 
-    /** bootstraping the system */
+	/** bootstraping the system */
 	ILogger mainlogger;
 	LOGDEBUG(mainlogger, "Instanciating Inverter objects");
 

@@ -341,6 +341,11 @@ AC_TYPE_SIZE_T
 ### Checks for library functions.
 #AC_CHECK_FUNCS([socket])
 
+## check for backtrace_symbols_fd()
+AC_CHECK_FUNC([backtrace_symbols_fd],
+	AC_DEFINE([HAVE_BACKTRACE_SYMBOLS_FD], 1, [1 if backtraces are possible])
+	)
+
 # Cygwin has no open_memstream, at least not in the current stable version.
 AC_CHECK_FUNC(open_memstream, AC_DEFINE(HAVE_OPEN_MEMSTREAM, 1, [1 if open_memstream is available]))
 
@@ -360,7 +365,6 @@ AC_OUTPUT
 
 AC_MSG_NOTICE([]);
 AC_MSG_NOTICE([CONFIGURATION SUMMARY:]);
-
 
 ### Print summary
 AC_MSG_NOTICE([Logging support: ........................... $enable_logging])

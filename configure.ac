@@ -311,8 +311,8 @@ if test "x$enable_dbwriter" == "xyes" ; then
 	dbwriter_dependencies_fulfilled="missing"
 	AC_MSG_CHECKING(cppdb database access library)
 	AC_LANG(C++)
-	SAVED_LDFLAGS=$LDFLAGS
-	LDFLAGS="$LDFLAGS -lcppdb"
+	SAVED_LIBS=$LIBS
+	LIBS="$LIBS -lcppdb"
 	AC_LINK_IFELSE(
 	    [AC_LANG_PROGRAM([#include <cppdb/frontend.h>], [cppdb::session sql("")])],
 	    [CPPDB_LIBS="$CPPDB_LIBS -lcppdb"]
@@ -322,7 +322,7 @@ if test "x$enable_dbwriter" == "xyes" ; then
 	    [AC_MSG_NOTICE(Missing depdency for dbwriter: cppdb)]
 	    [dbwriter_dependencies_fulfilled="$dbwriter_dependencies_fulfilled cppdb"]
 	    )
-	LDFLAGS=$SAVED_LDFLAGS
+	LIBS=$SAVED_LIBS
 	if test "x$CPPDB_LIBS" != "x" ; then
 		 AC_DEFINE([HAVE_FILTER_DBWRITER], [1], [DB Writer Support])
 		 AC_SUBST(CPPDB_LIBS)

@@ -42,7 +42,7 @@ Copyright (C) 2009-2012 Tobias Frost
 #include <sys/stat.h>
 #include <stdio.h>
 #include "configuration/Registry.h"
-#ifndef HAVE_BACKTRACE_SYMBOLS_FD
+#ifdef HAVE_BACKTRACE_SYMBOLS_FD
 #include <execinfo.h>
 #endif
 #include "Inverters/BasicCommands.h"
@@ -220,7 +220,7 @@ void SignalHandler(int signal)
             Registry::Instance().DumpDebugCollection();
             LOGFATAL(Registry::GetMainLogger(),
                 progname << " Segmentation fault.");
-#ifndef HAVE_BACKTRACE_SYMBOLS_FD
+#ifdef HAVE_BACKTRACE_SYMBOLS_FD
             // try to print a backtrace.
             LOGFATAL(Registry::GetMainLogger(),"Trying a backtrace to stderr:");
             {

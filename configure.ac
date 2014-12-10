@@ -337,9 +337,30 @@ AC_HEADER_TIME
 AC_HEADER_ASSERT
 AC_TYPE_SIZE_T
 
+### Checks for functions.
+AC_CHECK_FUNCS([socket])
+AC_CHECK_FUNCS([memset])
+AC_CHECK_FUNCS([modf])
+AC_CHECK_FUNCS([strdup])
+AC_CHECK_FUNCS([strncasecmp])
+AC_CHECK_FUNCS([strrchr])
+AC_CHECK_FUNCS([strtol])
+AC_CHECK_FUNCS([strtoul])
+AC_FUNC_FORK
+AC_FUNC_MALLOC
 
-### Checks for library functions.
-#AC_CHECK_FUNCS([socket])
+### Check for types
+AC_TYPE_INT32_T
+AC_TYPE_UINT32_T
+AC_TYPE_PID_T
+
+### Check for language features
+AC_C_INLINE
+
+### Checks for headers
+AC_CHECK_HEADERS([fcntl.h])
+AC_CHECK_HEADERS([stddef.h])
+AC_CHECK_HEADERS([syslog.h])
 
 ## check for backtrace_symbols_fd()
 AC_CHECK_FUNC([backtrace_symbols_fd],

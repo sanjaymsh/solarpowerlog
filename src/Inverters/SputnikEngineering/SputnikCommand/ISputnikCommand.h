@@ -190,13 +190,14 @@ protected:
             throw e;
         }
     }
-#ifdef DEBUG_BACKOFFSTRATEGIES
-public: // only for debugging public.
-#else
+
+public:
+    const std::string& GetCommand(void) const {
+        return command;
+    }
+
 protected:
-#endif
     std::string command;
-protected:
     int max_answer_len;
     IInverterBase *inverter;
     std::string capaname;

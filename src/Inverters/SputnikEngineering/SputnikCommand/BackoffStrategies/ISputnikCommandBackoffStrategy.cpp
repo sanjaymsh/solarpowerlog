@@ -34,11 +34,8 @@
 #include "configuration/Registry.h"
 
 ISputnikCommandBackoffStrategy::ISputnikCommandBackoffStrategy(
-    ISputnikCommandBackoffStrategy *next)
-    : next(next)
-#ifdef DEBUG_BACKOFFSTRATEGIES
-    , logger(Registry::GetMainLogger())
-#endif
+    ISputnikCommandBackoffStrategy *next) :
+    next(next)
 {
 }
 

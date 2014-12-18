@@ -41,9 +41,7 @@ Copyright (C) 2009-2012 Tobias Frost
         this->strat = new CSputnikCmdBOAlways(NULL);
     }
 
-#ifdef DEBUG_BACKOFFSTRATEGIES
-    this->strat->SetLogger(logger);
-#endif
+    this->strat->SetLogger(logger.getLoggername(),command);
 }
 
 ISputnikCommand::~ISputnikCommand()

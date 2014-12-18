@@ -41,9 +41,6 @@
 #ifndef ISPUTNIKCOMMANDBACKOFFSTRATEGY_H_
 #define ISPUTNIKCOMMANDBACKOFFSTRATEGY_H_
 
-// undefine this to disable the debugging code (mostly logger usage)
-#undef DEBUG_BACKOFFSTRATEGIES
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -58,12 +55,10 @@ public:
 
     ISputnikCommandBackoffStrategy(ISputnikCommandBackoffStrategy *next = NULL);
 
-#ifdef DEBUG_BACKOFFSTRATEGIES
-    virtual void SetLogger(ILogger &newlogger) {
-        logger = newlogger;
-        if (next) next->SetLogger(newlogger);
+    virtual void SetLogger(const std::string &parent, const std::string &specialisation) {
+        _logger.Setup(parent, specialisation);
+        if (next) next->SetLogger(parent, specialisation);
     }
-#endif
 
     virtual ~ISputnikCommandBackoffStrategy();
 
@@ -88,9 +83,8 @@ public:
 
 protected:
     ISputnikCommandBackoffStrategy *next;
-#ifdef DEBUG_BACKOFFSTRATEGIES
-    ILogger &logger;
-#endif
+
+    ILogger _logger;
 };
 
 #endif /* ISPUTNIKCOMMANDBACKOFFSTRATEGY_H_ */

@@ -541,16 +541,16 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		std::vector<ISputnikCommand*>::iterator it;
 		for (it=commands.begin(); it!= commands.end(); it++) {
 		    if ((*it)->ConsiderCommand()) {
-#ifdef DEBUG_BACKOFFSTRATEGIES
-		        LOGTRACE(logger,"Considering Command " << (*it)->command );
-#endif
+
+#warning rework! DEBUG_BACKOFFSTRATEGIES
+		        LOGTRACE(logger,"Considering Command " << (*it)->GetCommand() );
+
 		        pendingcommands.push_back(*it);
 		    }
-#ifdef DEBUG_BACKOFFSTRATEGIES
+#warning rework! DEBUG_BACKOFFSTRATEGIES
 		    else {
-		        LOGTRACE(logger," Command " << (*it)->command << " not to be considered.");
+		        LOGTRACE(logger," Command " << (*it)->GetCommand() << " not to be considered.");
 		    }
-#endif
 		}
 	}
 	// fall through intended.

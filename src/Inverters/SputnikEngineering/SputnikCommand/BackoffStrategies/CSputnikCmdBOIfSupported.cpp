@@ -34,28 +34,31 @@ bool CSputnikCmdBOIfSupported::ConsiderCommand()
     if (!ret)
         return ret;
     if (triesleft || supported){
-#ifdef DEBUG_BACKOFFSTRATEGIES
         if (triesleft != triesleft_orig) {
-            LOGTRACE(logger, "BO-IfSupported: triesleft=" << triesleft << " supported=" << supported);
+
+            LOGTRACE_SA(_logger, __COUNTER__, "BO-IfSupported: triesleft="
+                << triesleft << " supported=" << supported);
         }
-#endif
+        LOGINFO_SA(_logger,LOG_SA_HASH("BOIF_consider"),"BO-IfSupported: Command supported.");
         return true;
     }
-#ifdef DEBUG_BACKOFFSTRATEGIES
-    LOGTRACE(logger,"BO-IfSupported: Not supported.");
-#endif
+
+    LOGINFO_SA(_logger,LOG_SA_HASH("BOIF_consider"),"BO-IfSupported: Not supported.");
     return false;
 }
 
 void CSputnikCmdBOIfSupported::CommandAnswered()
 {
+
     ISputnikCommandBackoffStrategy::CommandAnswered();
+    LOGDEBUG_SA(_logger, LOG_SA_HASH("BOIF_answered"), "BO-IfSupported: Command answered");
     supported = true;
 }
 
 void CSputnikCmdBOIfSupported::CommandNotAnswered()
 {
     ISputnikCommandBackoffStrategy::CommandNotAnswered();
+    LOGDEBUG_SA(_logger, LOG_SA_HASH("BOIF_answered"), "BO-IfSupported: Command not answered. Tries left: " << triesleft);
     if (triesleft) {
         triesleft--;
     }
@@ -64,6 +67,7 @@ void CSputnikCmdBOIfSupported::CommandNotAnswered()
 void CSputnikCmdBOIfSupported::Reset()
 {
     ISputnikCommandBackoffStrategy::Reset();
+    LOGDEBUG_SA(_logger, LOG_SA_HASH("BOIF_answered"), "BO-IfSupported: Reset");
     triesleft = triesleft_orig;
     supported = false;
 }

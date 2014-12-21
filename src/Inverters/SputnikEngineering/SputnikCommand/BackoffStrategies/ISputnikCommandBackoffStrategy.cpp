@@ -34,8 +34,8 @@
 #include "configuration/Registry.h"
 
 ISputnikCommandBackoffStrategy::ISputnikCommandBackoffStrategy(
-    ISputnikCommandBackoffStrategy *next) :
-    next(next)
+    const std::string &botype, ISputnikCommandBackoffStrategy *next) :
+    next(next), _botype(botype)
 {
 }
 

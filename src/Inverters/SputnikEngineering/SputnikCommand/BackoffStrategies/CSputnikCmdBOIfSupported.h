@@ -42,9 +42,9 @@ public:
     /// Constructor:
     /// retries -> how often to issue command before giving up
     CSputnikCmdBOIfSupported( int retries = 3,
-            ISputnikCommandBackoffStrategy *next = NULL ) :
-            ISputnikCommandBackoffStrategy(next), triesleft(retries),
-            triesleft_orig(retries), supported(false)
+        ISputnikCommandBackoffStrategy *next = NULL) :
+        ISputnikCommandBackoffStrategy("BOIfSupported", next),
+        triesleft(retries), triesleft_orig(retries), supported(false)
     { }
 
     virtual ~CSputnikCmdBOIfSupported() {};

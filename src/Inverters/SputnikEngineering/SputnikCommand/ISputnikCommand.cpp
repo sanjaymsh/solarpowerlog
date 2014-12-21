@@ -29,19 +29,21 @@ Copyright (C) 2009-2012 Tobias Frost
 #include "ISputnikCommand.h"
 #include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOAlways.h"
 
- ISputnikCommand::ISputnikCommand( ILogger &logger, const std::string &command,
-        int max_answer_len, IInverterBase *inv, const std::string & capaname,
-        ISputnikCommandBackoffStrategy *backoffstrategy ) :
-        command(command), max_answer_len(max_answer_len), inverter(inv), capaname(
-                capaname), logger(logger)
+ISputnikCommand::ISputnikCommand(const ILogger &parentlogger,
+    const std::string &cmd, int maxanswerlen, IInverterBase *inv,
+    const std::string &capname, ISputnikCommandBackoffStrategy *backoffstrategy) :
+        command(cmd), max_answer_len(maxanswerlen), inverter(inv),
+        capaname(capname), strat(backoffstrategy)
 {
-    if (backoffstrategy) {
-        this->strat = backoffstrategy;
-    } else {
-        this->strat = new CSputnikCmdBOAlways(NULL);
-    }
+    logger.Setup(parentlogger.getLoggername(),command);
+    LOGINFO(logger, "Command " << command << " used for \"" << capaname << "\"");
 
-    this->strat->SetLogger(logger.getLoggername(),command);
+    if (!strat) {
+        strat = new CSputnikCmdBOAlways(NULL);
+    } else {
+        // Hides also boring logging message for BOAlways.
+        strat->SetLogger(logger.getLoggername());
+    }
 }
 
 ISputnikCommand::~ISputnikCommand()

@@ -131,11 +131,12 @@ static const struct
         "with as much information as you have, and please read the display of your inverter." }
 };
 
-CSputnikCommandSYS::CSputnikCommandSYS( ILogger &logger, IInverterBase *inv,
-        ISputnikCommandBackoffStrategy *backoff ) :
-        ISputnikCommand(logger, "SYS", 10, inv, "", backoff), laststatuscode(0), secondparm_sys(
-                0)
-{ }
+CSputnikCommandSYS::CSputnikCommandSYS(ILogger &logger, IInverterBase *inv,
+    ISputnikCommandBackoffStrategy *backoff) :
+        ISputnikCommand(logger, "SYS", 10, inv,
+            CAPA_INVERTER_STATUS_NAME " and " CAPA_INVERTER_STATUS_READABLE_NAME, backoff),
+        laststatuscode(0), secondparm_sys(0)
+{}
 
 bool CSputnikCommandSYS::handle_token(const std::vector<std::string>& tokens) {
 

@@ -79,9 +79,9 @@ public:
     /// Constructs the ISputnikCommand.
     /// If given, backoffstrategy will be then owned by this object and also
     /// freed on destruction.
-    ISputnikCommand( ILogger &logger, const std::string &command, int max_answer_len,
-            IInverterBase *inv, const std::string & capaname,
-            ISputnikCommandBackoffStrategy *backoffstrategy);
+    ISputnikCommand(const ILogger &parentlogger, const std::string &cmd,
+        int maxanswerlen, IInverterBase *inv, const std::string & capname,
+        ISputnikCommandBackoffStrategy *backoffstrategy);
 
     virtual ~ISputnikCommand();
 
@@ -202,7 +202,7 @@ protected:
     IInverterBase *inverter;
     std::string capaname;
     ISputnikCommandBackoffStrategy *strat;
-    ILogger &logger;
+    ILogger logger;
 };
 
 #endif /* ISPUTNIKCOMMAND_H_ */

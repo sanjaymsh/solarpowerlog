@@ -67,9 +67,8 @@ ILogger::ILogger()
     // if not overridden by setup, always log to the root logger.
     loggerptr_ = log4cxx::Logger::getRootLogger();
     currentlevel = currentloggerlevel_ = loggerptr_->getLevel()->toInt();
-    sa_max_suppress_repeattions_ = LOG_STATEWARE_REPEAT;
+    sa_max_suppress_repetitions_ = LOG_STATEWARE_REPEAT;
     sa_max_time_suppress_ = LOG_STATEWARE_TIME;
-
 }
 
 /** Setup logger in the logger, attaching to a parent.
@@ -156,7 +155,6 @@ void ILogger::SetLoggerLevel(log4cxx::LevelPtr level)
 
 void ILogger::Log_sa(const int32_t hash, std::stringstream &ss)
 {
-
     bool needlog = false;
     uint reason = 0;
     time_t now = time(NULL);
@@ -174,12 +172,14 @@ void ILogger::Log_sa(const int32_t hash, std::stringstream &ss)
                 reason = 1;
                 break;
             }
-            if (info.supressed_cnt >= sa_max_suppress_repeattions_) {
+            if (sa_max_suppress_repetitions_
+                && (info.supressed_cnt >= sa_max_suppress_repetitions_)) {
                 needlog = true;
                 reason = 2;
                 break;
             }
-            if ((info.last_seen + sa_max_time_suppress_) <= now) {
+            if (sa_max_time_suppress_
+                && ((info.last_seen + sa_max_time_suppress_) <= now)) {
                 needlog = true;
                 reason = 3;
                 break;
@@ -199,7 +199,7 @@ void ILogger::Log_sa(const int32_t hash, std::stringstream &ss)
                 reason = 0;
             } else {
                 ss2 << "note: " << info.supressed_cnt
-                    << " messages in this context have been supressed.";
+                    << " messages in this context have been suppressed.";
             }
         }
         if (reason == 2) {

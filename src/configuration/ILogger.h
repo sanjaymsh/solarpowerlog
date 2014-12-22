@@ -474,8 +474,8 @@ public:
 
 	/** State-aware logging
 	 *
-	 * This logging function will keep track on state-aware logging mesages,
-	 * and supress those messages when the content has not been changed, or
+	 * This logging function will keep track on state-aware logging messages,
+	 * and suppress those messages when the content has not been changed, or
 	 * the message has either been repeated LOG_STATEWARE_REPEAT or not issued
 	 * since LOG_STATEAWARE seconds.
 	 * The
@@ -483,24 +483,32 @@ public:
 	void Log_sa(const int32_t hash, std::stringstream &ss);
 
 	/// Get the max suppressions
-    int getSaMaxSuppressRepeattions() const
+    int getSaMaxSuppressRepetitions() const
     {
-        return sa_max_suppress_repeattions_;
+        return sa_max_suppress_repetitions_;
     }
 
-    /// Set the maximum repeations before reissuing the log
-    void setSaMaxSuppressRepeattions(int saMaxSuppressRepeattions)
+    /** Set the maximum repetitions to suppress identical logs
+     *
+     *  @param saMaxTimeSuppress maximum time to suppress identical messages.
+     * "0" disables the repeating due to repetitions.
+     */
+    void setSaMaxSuppressRepetitions(int saMaxSuppressRepetitions)
     {
-        sa_max_suppress_repeattions_ = saMaxSuppressRepeattions;
+        sa_max_suppress_repetitions_ = saMaxSuppressRepetitions;
     }
 
-    /// Get the maximum time to suppress indencical logs
+    /// Get the maximum time to suppress identical logs
     time_t getSaMaxSuppressTime() const
     {
         return sa_max_time_suppress_;
     }
 
-    /// Set the maximum time to supress identical logs
+    /** Set the maximum time suppressing identical logs
+     *
+     *  @param saMaxTimeSuppress maximum time to suppress identical messages.
+     * "0" disables repeating due to time-constraints
+     */
     void setSaMaxSuppressTime(time_t saMaxTimeSuppress)
     {
         sa_max_time_suppress_ = saMaxTimeSuppress;
@@ -533,7 +541,7 @@ private:
 	int currentloggerlevel_;
 
 	/// stateaware: repeat every this times when duplicates have found
-	int sa_max_suppress_repeattions_;
+	int sa_max_suppress_repetitions_;
 
     /// stateaware: repeat even when a duplicate after this time
     time_t sa_max_time_suppress_;

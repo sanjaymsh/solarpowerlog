@@ -112,7 +112,6 @@ using namespace std;
 using namespace log4cxx;
 #endif
 
-
 /** this array of string specifies which sections int the config file must be present.
  * The program will abort if any of these is missing.
  */
@@ -196,6 +195,7 @@ int main(int argc, char* argv[])
 	bool error_detected = false;
 	bool dumpconfig = false;
 	string configfile = "solarpowerlog.conf";
+	long autoterminate = 0;
 
 	progname = argv[0];
     dhc.Register(new CDebugObject<char*>("progname", progname));
@@ -211,36 +211,26 @@ int main(int argc, char* argv[])
 	using namespace boost::program_options;
 
 	options_description desc("Program Options");
-	desc.add_options()("help", "this message");
-	desc.add_options()("conf,c", value<string>(&configfile),
-			"specify configuration file");
-	desc.add_options()("version,v", "display solarpowerlog version");
-	desc.add_options()("background,b", value<bool>(&background)->zero_tokens(),
-			"run in background.");
-	desc.add_options()("dumpcfg", value<bool>(&dumpconfig)->zero_tokens(),
-			"Dump configuration structure, then exit");
-	desc.add_options()(
-			"chdir",
-			value<string>(&rundir),
-			"working directory for daemon (only used when running as a daemon). Defaults to /");
-	desc.add_options()(
-			"stdout",
-			value<string>(&daemon_stdout),
-			"redirect stdout to this file (only used when running as a daemon). Defaults to /dev/null");
-	desc.add_options()(
-			"stderr",
-			value<string>(&daemon_stderr),
-			"redirect stderr to this file (only used when running as a daemon). Defaults to /dev/null");
-
-	{
-		std::string pidfile_info = "create a pidfile after the daemon has been started. "
-				"(only used when running as a daemon.) Default: no pid file";
-
-	desc.add_options()(
-			"pidfile",
-			value<string>(&pidfile),
-			pidfile_info.c_str());
-	}
+	desc.add_options()
+	    ("help", "this message")
+	    ("conf,c", value<string>(&configfile), "specify configuration file")
+	    ("version,v", "display solarpowerlog version")
+	    ("background,b", value<bool>(&background)->zero_tokens(),
+	        "run in background.")
+	    ("dumpcfg", value<bool>(&dumpconfig)->zero_tokens(),
+	        "Dump configuration structure, then exit")
+	    ("chdir", value<string>(&rundir), "working directory for daemon "
+	        " (only used when running as a daemon). Defaults to /")
+	    ("stdout",value<string>(&daemon_stdout), "redirect stdout to this file "
+	        "(only used when running as a daemon). Defaults to /dev/null")
+	    ("stderr", value<string>(&daemon_stderr), "redirect stderr to this "
+	        "file (only used when running as a daemon). Defaults to /dev/null")
+	    ("pidfile", value<string>(&pidfile),
+			"create a pidfile after the daemon has been started. "
+			"(only used when running as a daemon.) Default: no pid file")
+	    ("autoterminate", value<long>(&autoterminate),
+	        "terminate after performing this amount of work. "
+	        "This feature is intended for debugging, e.g valgrind runs.");
 
 	variables_map vm;
 	try {
@@ -428,8 +418,8 @@ int main(int argc, char* argv[])
 
 	{
 		IDataFilterFactory factory;
-		/** create the data filters via its factories. */
 
+		/* create the data filters via its factories. */
 		string section = "logger.loggers";
 		libconfig::Setting & rt = Registry::Configuration()->lookup(section);
 
@@ -504,7 +494,17 @@ int main(int argc, char* argv[])
 		}
 
 		Registry::GetMainScheduler()->DoWork(true);
-	}
+
+        if (autoterminate) {
+            LOGERROR(Registry::GetMainLogger(),
+                " !!!!! AUTOTERMINATE ENABLED. !!!!! left=" << autoterminate);
+
+            if (0 == --autoterminate) {
+                LOGDEBUG(Registry::GetMainLogger(), "Raising SIGTERM");
+                raise(SIGTERM);
+            }
+        }
+    }
 
 	// Ensure that the "terminator thread" (if spawn) is finished before
 	// handling the remaining events (or the broadcast shutdown event

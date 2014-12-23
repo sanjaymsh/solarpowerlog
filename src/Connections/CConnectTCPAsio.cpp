@@ -85,7 +85,7 @@ struct asyncASIOCompletionHandler
 	}
 
 private:
-	// note, we need pointer as boost seems to make a copy of our handler...
+	// note, we need a pointer as boost seems to make a copy of our handler...
 	size_t *bytes;
 	boost::system::error_code *ec;
 };
@@ -114,7 +114,6 @@ CConnectTCPAsio::CConnectTCPAsio( const string &configurationname ) :
 CConnectTCPAsio::~CConnectTCPAsio()
 {
     // Try a clean shutdown
-
     mutex.lock();
     cmds.clear();
     ioservice->stop();
@@ -168,12 +167,6 @@ void CConnectTCPAsio::Accept(ICommand *callback)
 bool CConnectTCPAsio::IsConnected( void )
 {
 	return _connected;
-
-	// old code -- needs https://svn.boost.org/trac/boost/ticket/7392 fixed.
-	mutex.lock();
-	bool ret = sockt->is_open();
-	mutex.unlock();
-	return ret;
 }
 
 bool CConnectTCPAsio::CheckConfig( void )
@@ -291,27 +284,28 @@ bool CConnectTCPAsio::PushWork( CAsyncCommand *cmd )
 
 void CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 {
-    //LOGTRACE(logger, __PRETTY_FUNCTION__ << " handling " << cmd << "with ICmd " << cmd->callback );
 	string strhost, port;
     volatile int result_timer = 0;
-    boost::system::error_code handlerec;
-    struct asyncASIOCompletionHandler connect_handler(NULL, &handlerec);
+    boost::system::error_code handler_ec;
+    struct asyncASIOCompletionHandler connect_handler(NULL, &handler_ec);
 
-	// if connected, ignore the commmand, pretend success.
+	// if already connected, ignore the command, pretend success.
 	if (IsConnected()) {
-	    LOGDEBUG(logger, __PRETTY_FUNCTION__ << " Already connected");
+	    LOGDEBUG_SA(logger, __COUNTER__, __PRETTY_FUNCTION__ << " Already connected");
 		cmd->callback->addData(ICMD_ERRNO, 0);
 		cmd->HandleCompletion();
-		return ;
+        return;
 	}
 
 	// fail, if we are configured for inbound connections.
     if (configured_as_server) {
-        LOGTRACE(logger,"Configured as server!");
-        cmd->callback->addData(ICMD_ERRNO,-EPERM);
-        cmd->callback->addData(ICMD_ERRNO_STR, std::string("TCP/IP Comms configured as server. Cannot use connect method!"));
+        LOGDEBUG_SA(logger, __COUNTER__,
+            "BUG: Configured as server! Unexpeced connect.");
+        cmd->callback->addData(ICMD_ERRNO, -EPERM);
+        cmd->callback->addData(ICMD_ERRNO_STR,
+            std::string("TCP/IP Comms configured as server. Cannot use connect method!"));
         cmd->HandleCompletion();
-        return ;
+        return;
     }
 
 	CConfigHelper cfghelper(ConfigurationPath);
@@ -322,7 +316,7 @@ void CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
             cmd->callback->findData(ICONN_TOKEN_TIMEOUT));
     } catch (std::invalid_argument &e) {
         cfghelper.GetConfig("tcptimeout", timeout, TCP_ASIO_DEFAULT_TIMEOUT);
-        LOGDEBUG(logger, "Depreciated fallback to tcptimeout");
+        LOGDEBUG_SA(logger, __COUNTER__, "Depreciated fall back to tcptimeout");
     } catch (boost::bad_any_cast &e) {
         LOGDEBUG(logger, "BUG: Handling Connect: Bad cast for "
                  << ICONN_TOKEN_TIMEOUT);
@@ -348,15 +342,16 @@ void CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 
     while (iter != end) {
         ip::tcp::endpoint endpoint = *iter++;
-        LOGDEBUG(logger, "Connecting to " << endpoint);
-        handlerec.clear();
+        LOGDEBUG_SA(logger, __COUNTER__, "Connecting to " << endpoint);
+        handler_ec.clear();
         sockt->async_connect(endpoint, connect_handler);
         size_t num = ioservice->run_one(ec);
         if (num == 0) {
-            LOGDEBUG(logger, __PRETTY_FUNCTION__ << "WTF: no service run!!!");
+            LOGDEBUG(logger, __PRETTY_FUNCTION__ << " WTF: no service run!!!");
         }
         if (result_timer) {
-            LOGDEBUG(logger, "Connection timeout");
+            LOGINFO_SA(logger, LOG_SA_HASH("Connection-error-reason"),
+                "Connection timeout");
             cmd->callback->addData(ICMD_ERRNO, -ETIMEDOUT);
             cmd->callback->addData(ICMD_ERRNO_STR,
                                    std::string("Connection timeout"));
@@ -366,7 +361,8 @@ void CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
             return;
         }
         if (ioservice->stopped()) {
-            LOGDEBUG(logger, "Connection canceled");
+            LOGINFO_SA(logger, LOG_SA_HASH("Connection-error-reason"),
+                "Connection aborted");
             cmd->callback->addData(ICMD_ERRNO, -ECANCELED);
             cmd->callback->addData(ICMD_ERRNO_STR,
                                    std::string("Connection aborted"));
@@ -376,7 +372,7 @@ void CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
         }
 
         // not timer, so it must be the connect that returned.
-        if (handlerec.value() == 0) {
+        if (handler_ec.value() == 0) {
             break;
         }
     }
@@ -384,15 +380,19 @@ void CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
     timer.cancel(ec);
     ioservice->poll(ec);
 
-    if (handlerec) {
+    if (handler_ec) {
         cmd->callback->addData(ICMD_ERRNO, -ECONNREFUSED);
-        if (!handlerec.message().empty())
-        cmd->callback->addData(ICMD_ERRNO_STR, ec.message());
+        if (!handler_ec.message().empty()) {
+            LOGDEBUG_SA(logger, __COUNTER__, "Connection error: "
+                << handler_ec.message());
+
+            cmd->callback->addData(ICMD_ERRNO_STR, handler_ec.message());
+        }
         cmd->HandleCompletion();
         return;
     }
 
-    LOGDEBUG(logger, "Connected to " << strhost);
+    LOGINFO(logger, "Connected to " << strhost);
     _connected = true;
     cmd->callback->addData(ICMD_ERRNO, 0);
     cmd->HandleCompletion();
@@ -401,9 +401,7 @@ void CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 
 void CConnectTCPAsio::HandleDisconnect( CAsyncCommand *cmd )
 {
-//    LOGTRACE(logger, __PRETTY_FUNCTION__ << " handling " << cmd << "with ICmd " << cmd->callback );
-
-	boost::system::error_code ec, ec2;
+	boost::system::error_code ec;
 	std::string message;
 	int error = 0;
 
@@ -418,27 +416,32 @@ void CConnectTCPAsio::HandleDisconnect( CAsyncCommand *cmd )
 	// (http://www.boost.org/doc/libs/1_36_0/doc/html/boost_asio/reference/basic_stream_socket/close/overload2.html)
 	sockt->shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
 
-	sockt->close(ec2);
-
 	if (ec) {
 		error = -EIO;
 		message = ec.message();
+		LOGDEBUG_SA(logger,LOG_SA_HASH("diconnect_err"),
+		    "Disconnect error while shutdown: " << ec.message());
 	}
 
-	if (ec2) {
+	ec.clear();
+    sockt->close(ec);
+
+	if (ec) {
 		error = -EIO;
 		if (!message.empty())
 			message = message + " ";
-		message = message + ec2.message();
+		message = message + ec.message();
+        LOGDEBUG_SA(logger,LOG_SA_HASH("diconnect_err2"),
+            "Disconnect error while close: " << ec.message());
 	}
 
 	_connected = false;
 	cmd->callback->addData(ICMD_ERRNO, error);
 	if (!message.empty()) {
-		cmd->callback->addData(ICMD_ERRNO_STR, ec.message());
+		cmd->callback->addData(ICMD_ERRNO_STR, message);
 	}
 	cmd->HandleCompletion();
-	return ;
+    return;
 }
 
 /** Handle Receive -- asynchronous read from the asio socket with timeout.
@@ -455,7 +458,6 @@ void CConnectTCPAsio::HandleDisconnect( CAsyncCommand *cmd )
 */
 void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 {
-//    LOGTRACE(logger, __PRETTY_FUNCTION__ << " handling " << cmd << "with ICmd " << cmd->callback );
 	boost::system::error_code ec;
 	boost::system::error_code read_handlerec;
 	volatile int result_timer = 0;
@@ -467,6 +469,7 @@ void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
     // when running out of work.
 	// on deletion of this object the ioserver might get stopped, if not
 	// externally AbortAll has been called.
+
 	// timeout setup
 	try {
 		timeout = boost::any_cast<long>(
@@ -474,10 +477,11 @@ void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 	} catch (std::invalid_argument &e) {
 		CConfigHelper cfghelper(ConfigurationPath);
 		cfghelper.GetConfig("tcptimeout", timeout, TCP_ASIO_DEFAULT_TIMEOUT);
-        LOGDEBUG(logger, "Depreciated fallback to tcptimeout");
+        LOGDEBUG_SA(logger, __COUNTER__, "Depreciated fallback to tcptimeout");
 	} catch (boost::bad_any_cast &e) {
-		LOGDEBUG(logger,
-				"Unexpected exception in HandleReceive: Bad cast " << e.what());
+		LOGDEBUG_SA(logger, __COUNTER__,
+				"BUG: Unexpected exception in HandleReceive: Bad cast "
+		        << e.what());
 		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
 	}
 
@@ -518,16 +522,17 @@ void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 	// ioservice error or timeout
     if (num == 0 || result_timer) {
         if (result_timer) {
-            LOGTRACE(logger, "Read timeout");
+            LOGDEBUG(logger, "Read timeout");
             cmd->callback->addData(ICMD_ERRNO_STR, std::string("Read timeout"));
             cmd->callback->addData(ICMD_ERRNO, -ETIMEDOUT);
         } else if (ioservice->stopped()){
-            LOGTRACE(logger, "ioservice stopped (1)");
+            LOGDEBUG(logger, "ioservice stopped (1)");
             cmd->callback->addData(ICMD_ERRNO_STR, std::string("Aborted 1"));
             cmd->callback->addData(ICMD_ERRNO, -ECANCELED);
        } else {
-            LOGTRACE(logger, "IO Service error: " << ec.message());
-            cmd->callback->addData(ICMD_ERRNO_STR, std::string("IO-service error " + ec.message()));
+            LOGDEBUG(logger, "IO Service error: " << ec.message());
+            cmd->callback->addData(ICMD_ERRNO_STR,
+                std::string("IO-service error " + ec.message()));
             cmd->callback->addData(ICMD_ERRNO, -EIO);
         }
         cmd->HandleCompletion();
@@ -540,23 +545,22 @@ void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 	timer.cancel();
 	ioservice->poll(ec);
 
-	if (read_handlerec || ioservice->stopped()) {
-		if (read_handlerec != boost::asio::error::eof) {
-			LOGDEBUG(logger,"Async read failed with ec=" << read_handlerec
-					<< " msg="<< read_handlerec.message());
-			cmd->callback->addData(ICMD_ERRNO, -EIO);
-			cmd->callback->addData(ICMD_ERRNO_STR, read_handlerec.message());
-		} else if (ioservice->stopped()){
+    if (read_handlerec || ioservice->stopped()) {
+        if (read_handlerec != boost::asio::error::eof) {
+            LOGDEBUG(logger, "Async read failed with ec="
+                << read_handlerec << " msg="<< read_handlerec.message());
+            cmd->callback->addData(ICMD_ERRNO, -EIO);
+            cmd->callback->addData(ICMD_ERRNO_STR, read_handlerec.message());
+        } else if (ioservice->stopped()) {
             cmd->callback->addData(ICMD_ERRNO_STR, std::string("Aborted 2"));
             cmd->callback->addData(ICMD_ERRNO, -ECANCELED);
-            LOGTRACE(logger, "ioservice stopped (2)");
+            LOGDEBUG(logger, "ioservice stopped (2)");
         } else {
-			cmd->callback->addData(ICMD_ERRNO, -ENOTCONN);
-			LOGTRACE(logger, "Received eof on socket read");
-		}
-		cmd->HandleCompletion();
-//       ioservice->poll(ec);
-        return ;
+            cmd->callback->addData(ICMD_ERRNO, -ENOTCONN);
+            LOGDEBUG(logger, "Received eof on socket read");
+        }
+        cmd->HandleCompletion();
+        return;
 	}
 
 	if (1 != read_bytes) {
@@ -564,7 +568,6 @@ void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 				<< read_bytes << " but expected only 1 byte");
 		cmd->callback->addData(ICMD_ERRNO, -EIO);
 		cmd->HandleCompletion();
-//        ioservice->poll(ec);
 		return ;
 	}
 
@@ -574,21 +577,25 @@ void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 	std::string receivestr;
 
 	LOGTRACE(logger, "There are " << avail << " bytes ready to read");
-	char recved[avail + 2];
-	recved[0] = buf[0];
+	char recved[256];
+	receivestr.append(buf,1);
 	while (avail > 0) {
-		tmp = sockt->read_some(asio::buffer(&recved[numrecvd], avail), ec);
+	    size_t readmax = avail > 256 ? avail : 256;
+
+		tmp = sockt->read_some(asio::buffer(recved, readmax), ec);
         if (ioservice->stopped()) {
             cmd->callback->addData(ICMD_ERRNO_STR, std::string("Aborted 3"));
             cmd->callback->addData(ICMD_ERRNO, -ECANCELED);
             LOGTRACE(logger, "ioservice stopped. (3)");
             cmd->HandleCompletion();
-//            ioservice->poll(ec);
             return;
         }
-		avail -= tmp;
+		avail = sockt->available();
 		numrecvd += tmp;
-		// check if error occured.
+
+		if (tmp) receivestr.append(recved, tmp);
+
+		// check if an error occurred.
 		if (ec) {
 			int error;
 
@@ -601,72 +608,53 @@ void CConnectTCPAsio::HandleReceive( CAsyncCommand *cmd )
 				break;
 			}
 
-			// give everything we got before the error.
-			receivestr.assign(recved, numrecvd);
 			cmd->callback->addData(ICONN_TOKEN_RECEIVE_STRING, receivestr);
+	        LOGDEBUG(logger, "Error while read remaining bytes: " << ec.message());
 			cmd->callback->addData(ICMD_ERRNO_STR, ec.message());
 			cmd->callback->addData(ICMD_ERRNO, error);
 			cmd->HandleCompletion();
-//	        ioservice->poll(ec);
-			return ;
+			return;
 		}
 	}
 
-	receivestr.assign(recved, numrecvd);
 	cmd->callback->addData(ICONN_TOKEN_RECEIVE_STRING, receivestr);
 	cmd->callback->addData(ICMD_ERRNO, 0);
 	cmd->HandleCompletion();
-    //ioservice->poll(ec);
 	return ;
 }
 
 /** handles async sending */
 void CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
-
-//    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": now handling: " << cmd->callback);
     std::string s;
 	boost::system::error_code ec;
-	boost::system::error_code write_handlerec;
+	boost::system::error_code write_handler_ec;
 	volatile int result_timer = 0;
 	size_t wrote_bytes = 0;
 	unsigned long timeout;
-	struct asyncASIOCompletionHandler write_handler(&wrote_bytes, &write_handlerec);
+	struct asyncASIOCompletionHandler write_handler(&wrote_bytes, &write_handler_ec);
 	try {
 		s = boost::any_cast<std::string>(cmd->callback->findData(ICONN_TOKEN_SEND_STRING));
 	}
-#ifdef DEBUG_TCPASIO
 	catch (std::invalid_argument &e) {
-		LOGDEBUG(logger, "BUG: required " << ICONN_TOKEN_SEND_STRING << " argument not set");
-
+		LOGDEBUG_SA(logger, __COUNTER__, "BUG: HandleSend: "
+		    << ICONN_TOKEN_SEND_STRING << " argument missing");
 	}
 	catch (boost::bad_any_cast &e)
 	{
-		LOGDEBUG(logger, "Unexpected exception in HandleSend: Bad cast " << e.what());
+		LOGDEBUG(logger, "BUG: HandleSend: Bad cast " << e.what());
 	}
-#else
-	catch (...);
-#endif
 
-	try {
-		timeout = boost::any_cast<long>(cmd->callback->findData(
-				ICONN_TOKEN_TIMEOUT));
-	}
-#ifdef DEBUG_TCPASIO
-		catch (std::invalid_argument &e) {
-		CConfigHelper cfghelper(ConfigurationPath);
-		cfghelper.GetConfig("tcptimeout", timeout, 3000UL);
-        LOGDEBUG(logger, "Depreciated fallback to tcptimeout");
-	} catch (boost::bad_any_cast &e) {
-		LOGDEBUG(logger, "Unexpected exception in HandleSend: Bad cast " << e.what());
-		timeout = TCP_ASIO_DEFAULT_TIMEOUT;
-	}
-#else
-		catch (...) {
-		CConfigHelper cfghelper(ConfigurationPath);
-		cfghelper.GetConfig("tcptimeout", timeout, 3000UL);
-	}
-#endif
-//	    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 1");
+    try {
+        timeout = boost::any_cast<long>(cmd->callback->findData(ICONN_TOKEN_TIMEOUT));
+    } catch (std::invalid_argument &e) {
+        CConfigHelper cfghelper(ConfigurationPath);
+        cfghelper.GetConfig("tcptimeout", timeout, 3000UL);
+        LOGDEBUG_SA(logger, __COUNTER__, "BUG: Depreciated fallback to tcptimeout");
+    } catch (boost::bad_any_cast &e) {
+        LOGDEBUG_SA(logger, __COUNTER__,
+            "BUG: Unexpected exception in HandleSend: Bad cast " << e.what());
+        timeout = TCP_ASIO_DEFAULT_TIMEOUT;
+    }
 
 	deadline_timer timer(*(this->ioservice));
 	boost::posix_time::time_duration td = boost::posix_time::millisec(timeout);
@@ -681,53 +669,36 @@ void CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 	// run one of the scheduled services
 	size_t num = ioservice->run_one(ec);
 
-//    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2");
-
 	// ioservice error or timeout
 	if (num == 0 || result_timer) {
-//	    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2a");
-
 		timer.cancel(ec);
 		sockt->cancel(ec);
-//		   LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2b");
-
-		LOGTRACE(logger,"Async write timeout");
+		LOGDEBUG(logger, "Async write timeout");
 		cmd->callback->addData(ICMD_ERRNO, -ETIMEDOUT);
-////		   LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2c");
-
 		cmd->HandleCompletion();
 		ioservice->poll();
-//   LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2d");
-
-		return ;
+        return;
 	}
 
-//	LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2e");
-	// cancel the timer, and catch the completion handler
 	timer.cancel();
-//    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 2f");
 	ioservice->poll();
-//    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 3");
 
-	LOGTRACE(logger,"Sent " << wrote_bytes << " Bytes");
-	if (write_handlerec) {
-		if (write_handlerec != boost::asio::error::eof) {
-			LOGDEBUG(logger,"Async write failed with ec=" << write_handlerec
-					<< " msg="<< write_handlerec.message());
+	LOGTRACE(logger,"Sent " << wrote_bytes << " Bytes of " << s.length());
+	if (write_handler_ec) {
+		if (write_handler_ec != boost::asio::error::eof) {
+			LOGDEBUG(logger,"Async write failed with ec=" << write_handler_ec
+					<< " msg="<< write_handler_ec.message());
 			cmd->callback->addData(ICMD_ERRNO, -EIO);
-			cmd->callback->addData(ICMD_ERRNO_STR, write_handlerec.message());
+			cmd->callback->addData(ICMD_ERRNO_STR, write_handler_ec.message());
 		} else {
 			cmd->callback->addData(ICMD_ERRNO, -ENOTCONN);
-			LOGTRACE(logger, "Received eof on socket write");
+			LOGDEBUG(logger, "Received eof during socket write");
 		}
 		cmd->HandleCompletion();
 		return ;
 	}
 
-//    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 4 " << (void*) &s);
-
 	if (s.length() != wrote_bytes) {
-//	    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 5 ");
 		LOGDEBUG(logger,"Sent "
 				<< wrote_bytes << " but expected "<< s.length() );
 		cmd->callback->addData(ICMD_ERRNO, -EIO);
@@ -735,7 +706,6 @@ void CConnectTCPAsio::HandleSend( CAsyncCommand *cmd ) {
 		return ;
 	}
 
-//    LOGTRACE(logger, __PRETTY_FUNCTION__ << ": still alive 6 " << (void*) &s);
 	cmd->callback->addData(ICMD_ERRNO, 0);
 	cmd->HandleCompletion();
 	return ;

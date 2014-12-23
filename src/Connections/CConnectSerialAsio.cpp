@@ -119,8 +119,8 @@ CConnectSerialAsio::~CConnectSerialAsio()
     }
     mutex.unlock();
 
-    if (port) delete port;
-    if (ioservice) delete ioservice;
+    delete port;
+    delete ioservice;
 }
 
 void CConnectSerialAsio::Accept(ICommand *callback) {

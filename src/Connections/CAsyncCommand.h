@@ -1,7 +1,7 @@
 /* ----------------------------------------------------------------------------
  solarpowerlog -- photovoltaic data logging
 
-Copyright (C) 2009-2012 Tobias Frost
+Copyright (C) 2009-2014 Tobias Frost
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -36,45 +36,47 @@ Copyright (C) 2009-2012 Tobias Frost
 class CAsyncCommand
 {
 public:
-	enum Commando
-	{
-		DISCONNECT, /// Tear down a connection
-		CONNECT, /// Connect
-		SEND, /// Send data
-		RECEIVE, /// Try to receive data
-		ACCEPT   /// "Server-Mode" for inbound connections.
-	};
+    enum Commando
+    {
+        DISCONNECT, /// Tear down a connection
+        CONNECT, /// Connect
+        SEND, /// Send data
+        RECEIVE, /// Try to receive data
+        ACCEPT   /// "Server-Mode" for inbound connections.
+    };
 
-	/** Constructor which create the object
-	 *
-	 * \param c Commando to be used
-	 * \param callback ICommand used as callback. Must not be NULL.
-	 *
-	 * \note since solarpowerlog 0.25, the synchronous interface is no longer
-	 * supported: So ICommand must no longer be NULL (will be asserted!)
-	 */
+    /** Constructor which create the object
+     *
+     * \param c Commando to be used
+     * \param callback ICommand used as callback. Must not be NULL.
+     *
+     * \note since solarpowerlog 0.25, the synchronous interface is no longer
+     * supported: So ICommand must no longer be NULL (will be asserted!)
+     */
     CAsyncCommand(enum Commando cmd, ICommand *pcallback) :
         c(cmd), callback(pcallback)
     {
         assert(pcallback);
     }
 
-	/** Destructor */
-	~CAsyncCommand() {}
+    /** Destructor */
+    ~CAsyncCommand()
+    { }
 
-	/** Handle this jobs completion by notifying the sender
-	 */
-    inline void HandleCompletion(void) {
+    /** Handle this jobs completion by notifying the sender
+     */
+    inline void HandleCompletion(void)
+    {
         Registry::GetMainScheduler()->ScheduleWork(callback);
     }
 
     /** Stores the command what to do */
-	enum Commando c;
+    enum Commando c;
 
-	/** callback for completion handling
-	 * In this ICommand, the comand data is stored, results and data...
-	 */
-	ICommand *callback;
+    /** callback for completion handling
+     * In this ICommand, the comand data is stored, results and data...
+     */
+    ICommand *callback;
 
 };
 #endif /* CASYNCCOMMAND_H_ */

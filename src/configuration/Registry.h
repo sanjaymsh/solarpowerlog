@@ -231,7 +231,7 @@ public:
 	 * \note: This function is only for the bootstrap process!*/
 	void AddInverter( const IInverterBase *inverter );
 
-	/** Get the main scheduler to scheule work...
+	/** Get the main scheduler to schedule work...
 	 *
 	 * \returns pointer to the scheduler */
 	static CWorkScheduler *GetMainScheduler( void )
@@ -264,6 +264,10 @@ public:
         std::cerr << "--- cut here -----------------------------------------------"<< std::endl;
 
 	}
+
+	/** Destroy all inverter and datafilter objects.
+	 * Called before termination. */
+	void Shutdown(void);
 
 private:
 	/// keeps the object for the main scheduler

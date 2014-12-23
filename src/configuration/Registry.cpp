@@ -37,6 +37,7 @@ Copyright (C) 2009-2012 Tobias Frost
 
 #include "configuration/Registry.h"
 #include "interfaces/CWorkScheduler.h"
+
 #include "Inverters/interfaces/InverterBase.h"
 
 using namespace std;
@@ -143,4 +144,23 @@ Registry::~Registry()
 	Config = NULL;
 	if (mainscheduler)
 		delete mainscheduler;
+}
+
+void Registry::Shutdown(void) {
+    // Clear datafilters and inverters.
+    std::list<IInverterBase*>::iterator it;
+    for (it = inverters.begin(); it != inverters.end(); it++) {
+        delete *(it);
+    }
+    inverters.clear();
+
+    // shutdown mainscheduler.
+    delete mainscheduler;
+    mainscheduler = NULL;
+
+    // delete config.
+    delete Config;
+    Config = NULL;
+
+
 }

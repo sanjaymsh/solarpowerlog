@@ -107,6 +107,7 @@ CConnectSerialAsio::CConnectSerialAsio(const string &configurationname) :
 
 CConnectSerialAsio::~CConnectSerialAsio()
 {
+    SetThreadTermRequest();
     // Try to shutdown cleanly...
     // (most likely abortall() has been previously called anyway)
     boost::system::error_code ec;
@@ -119,8 +120,17 @@ CConnectSerialAsio::~CConnectSerialAsio()
     }
     mutex.unlock();
 
+    // need to post to semaphore to interrupt worker thread to terminate.
+    sem_post(&cmdsemaphore);
+
+    LOGDEBUG(logger, "Waiting for thread to join");
+    workerthread.join();
+    LOGDEBUG(logger, "Joined.");
+
     delete port;
     delete ioservice;
+
+    sem_destroy(&cmdsemaphore);
 }
 
 void CConnectSerialAsio::Accept(ICommand *callback) {

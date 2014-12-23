@@ -113,6 +113,8 @@ CConnectTCPAsio::CConnectTCPAsio( const string &configurationname ) :
 
 CConnectTCPAsio::~CConnectTCPAsio()
 {
+    // Request thread to exit.
+    SetThreadTermRequest();
     // Try a clean shutdown
     mutex.lock();
     cmds.clear();
@@ -124,8 +126,17 @@ CConnectTCPAsio::~CConnectTCPAsio()
     }
     mutex.unlock();
 
+    // need to post to semaphore to interrupt worker thread to terminate.
+    sem_post(&cmdsemaphore);
+
+    LOGDEBUG(logger, "Waiting for thread to join");
+    workerthread.join();
+    LOGDEBUG(logger, "Joined.");
+
     if (sockt) delete sockt;
     if (ioservice) delete ioservice;
+
+    sem_destroy(&cmdsemaphore);
 }
 
 void CConnectTCPAsio::Connect( ICommand *callback )
@@ -232,8 +243,8 @@ void CConnectTCPAsio::_main( void )
         // reset it and spawn a new boost::asio::io_service::work if the ioservice has been stopped.
         // must be done with mutex held due to a possible race with abortall.
         if (ioservice->stopped()) {
-            work.reset(new boost::asio::io_service::work(*ioservice));
             LOGDEBUG(logger, "ioservice stopped");
+            work.reset(new boost::asio::io_service::work(*ioservice));
             ioservice->reset();
         }
 
@@ -269,6 +280,7 @@ void CConnectTCPAsio::_main( void )
         delete donow;
 
 	}
+    LOGDEBUG(logger, "Thread terminating");
 	IConnect::_main();
 }
 

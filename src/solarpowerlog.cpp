@@ -517,6 +517,7 @@ int main(int argc, char* argv[])
 
 	LOGINFO(Registry::GetMainLogger(), "Terminating.");
 
+	Registry::Instance().Shutdown();
 	cleanup();
 	return 0;
 }

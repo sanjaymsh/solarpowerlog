@@ -34,7 +34,7 @@ bool CSputnikCmdBOTimed::ConsiderCommand() {
 
     if (last == boost::posix_time::not_a_date_time) {
         LOGDEBUG_SA(_logger, LOG_SA_HASH("BO-Timed_Consider"),
-            "BO-Timed: Considerung -- first call");
+            "BO-Timed: Considering -- first call");
         return true;
     }
 

@@ -148,7 +148,7 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	AddCapability(c);
 
 	LOGDEBUG(logger,"Inverter configuration:");
-	LOGDEBUG(logger,"class CInverterSputnikSSeries ");
+	LOGDEBUG(logger,"class CInverterSputnikSSeries");
 	LOGDEBUG(logger,"Query Interval: "<< interval);
 	LOGDEBUG(logger,"Ownadr: " << _cfg_ownadr << " Commadr: " << _cfg_commadr);
 	cfghlp.GetConfig("comms", s, (string) "unset");
@@ -535,7 +535,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 
 	case CMD_QUERY_POLL:
 	{
-		LOGDEBUG(logger, "new state: CMD_QUERY_POLL ");
+		LOGDEBUG(logger, "new state: CMD_QUERY_POLL");
 
 		// Collect all queries to be issued.
 		std::vector<ISputnikCommand*>::iterator it;
@@ -557,7 +557,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 
 	case CMD_SEND_QUERIES:
 	{
-		LOGDEBUG(logger, "new state: CMD_SEND_QUERIES ");
+		LOGDEBUG(logger, "new state: CMD_SEND_QUERIES");
 		commstring = assemblequerystring();
 		LOGDEBUG(logger, "Sending: " << commstring << " Len: "<< commstring.size());
 

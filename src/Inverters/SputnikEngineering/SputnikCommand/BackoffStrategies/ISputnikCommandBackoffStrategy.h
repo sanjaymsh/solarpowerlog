@@ -79,7 +79,7 @@ public:
         _logger.Setup(parent, _botype);
         if (next) next->SetLogger(parent);
 
-        LOGINFO(_logger,"backup strategy " << _botype);
+        LOGINFO(_logger,"back off strategy " << _botype);
     }
 
     virtual ~ISputnikCommandBackoffStrategy();

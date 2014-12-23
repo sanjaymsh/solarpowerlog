@@ -36,7 +36,7 @@ ISputnikCommand::ISputnikCommand(const ILogger &parentlogger,
         capaname(capname), strat(backoffstrategy)
 {
     logger.Setup(parentlogger.getLoggername(),command);
-    LOGINFO(logger, "Command " << command << " used for \"" << capaname << "\"");
+    LOGINFO(logger, "Command \"" << command << "\" used for \"" << capaname << "\"");
 
     if (!strat) {
         strat = new CSputnikCmdBOAlways(NULL);

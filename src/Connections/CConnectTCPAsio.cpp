@@ -129,7 +129,6 @@ CConnectTCPAsio::~CConnectTCPAsio()
     if (ioservice) delete ioservice;
 }
 
-// ASYNCED!!
 void CConnectTCPAsio::Connect( ICommand *callback )
 {
 	assert(callback);
@@ -137,18 +136,8 @@ void CConnectTCPAsio::Connect( ICommand *callback )
 	PushWork(co);
 }
 
-/* Disconnect
- *
- * The disconnection is done by the async task.
- *
- * (If to be done synchronous, it is also dispatched to the worker thread and
- * directly waited for completion.)
- * */
 void CConnectTCPAsio::Disconnect( ICommand *callback )
 {
-	// note: internally we still use the sync interface in the destructor!
-	// to ensure that the port is closed when we tear down everything.
-
     assert(callback);
 	CAsyncCommand *co = new CAsyncCommand(CAsyncCommand::DISCONNECT, callback);
 	PushWork(co);
@@ -161,15 +150,8 @@ void  CConnectTCPAsio::Send( ICommand *callback)
 	PushWork(commando);
 }
 
-/* Receive bytes from the stream -- asynced.
- *
- * As with all other methods, will be done by the worker thread
-*/
 void CConnectTCPAsio::Receive( ICommand *callback )
 {
-	// RECEIVE async Command:
-	// auxdata: pointer to std::string, where to place received data
-
 	assert(callback);
 	CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::RECEIVE, callback);
 	PushWork(commando);
@@ -177,7 +159,7 @@ void CConnectTCPAsio::Receive( ICommand *callback )
 
 void CConnectTCPAsio::Accept(ICommand *callback)
 {
-    assert(callback); // does not support sync operation!
+    assert(callback);
     CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::ACCEPT,
             callback);
     PushWork(commando);

@@ -139,32 +139,15 @@ void CConnectSerialAsio::Connect(ICommand *callback)
  *
  * The disconnection is done by the async task.
  *
- * (If to be done synchronous, it is also dispatched to the worker thread and
- * directly waited for completion.)
- * */
+ * \note starting with 0.25 the interface is async only!
+ */
 void CConnectSerialAsio::Disconnect(ICommand *callback)
 {
-    // note: internally we still use the sync interface in the destructor!
-    // to ensure that the port is closed when we tear down everything.
-    sem_t semaphore;
+    assert(callback);
 
     CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::DISCONNECT,
         callback);
-    // if callback is NULL, fallback to synchronous operation.
-    // (we will do the job asynchronous, but wait for completion here)
-    if (!callback) {
-        sem_init(&semaphore, 0, 0);
-        commando->SetSemaphore(&semaphore);
-    }
-
     PushWork(commando);
-
-    if (!callback) {
-        // wait for async job completion
-        sem_wait(&semaphore);
-        LOGTRACE(logger, "destroying CAsyncCommando " << commando);
-        delete commando;
-    }
 }
 
 void CConnectSerialAsio::Send(ICommand *callback)

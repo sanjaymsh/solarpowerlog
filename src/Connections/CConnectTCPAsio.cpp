@@ -769,7 +769,7 @@ void CConnectTCPAsio::HandleAccept(CAsyncCommand *cmd)
     }
 
     boost::system::error_code ec;
-    LOGDEBUG(logger,"Waiting for inbound connection on " << ipadr << ":" << port);
+    LOGINFO(logger,"Waiting for inbound connection on " << ipadr << ":" << port);
 
     try {
         ip::tcp::acceptor acceptor(*ioservice, *endpoint);
@@ -777,7 +777,7 @@ void CConnectTCPAsio::HandleAccept(CAsyncCommand *cmd)
         acceptor.accept(*sockt, ec);
     } catch (boost::system::system_error &e) {
         std::string errmsg = e.what();
-        LOGDEBUG(logger, "Boost: exception received while accepting: " << errmsg);
+        LOGINFO(logger, "Boost: exception received while accepting: " << errmsg);
         cmd->callback->addData(ICMD_ERRNO,(long)-EIO);
         cmd->callback->addData(ICMD_ERRNO_STR, errmsg);
         cmd->HandleCompletion();
@@ -791,12 +791,12 @@ void CConnectTCPAsio::HandleAccept(CAsyncCommand *cmd)
             cmd->callback->addData(ICMD_ERRNO_STR, ec.message());
         }
         cmd->HandleCompletion();
-        LOGDEBUG( logger, "Connection failed. Error " << eval << "("
+        LOGINFO( logger, "Connection failed. Error " << eval << "("
             << ec.message() << ")");
         return;
     }
 
-    LOGTRACE(logger, "Connected.");
+    LOGINFO(logger, "Connected.");
     _connected = true;
     cmd->callback->addData(ICMD_ERRNO, 0);
     cmd->HandleCompletion();

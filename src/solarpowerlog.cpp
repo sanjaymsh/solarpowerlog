@@ -340,7 +340,8 @@ int main(int argc, char* argv[])
 
 	/** bootstraping the system */
 	ILogger mainlogger;
-	LOGDEBUG(mainlogger, "Instanciating Inverter objects");
+
+	LOGINFO(mainlogger, "Instanciating Inverter objects");
 
 	/** create the inverters via its factories. */
 	{
@@ -356,8 +357,8 @@ int main(int argc, char* argv[])
 				name = (const char *) rt[i]["name"];
 				manufactor = (const char *) rt[i]["manufactor"];
 				model = (const char *) rt[i]["model"];
-				LOGDEBUG(mainlogger,
-						name << " " << manufactor );
+				LOGINFO(mainlogger,
+						"Setting up inverter " << name << " (" << manufactor << ")");
 			} catch (libconfig::SettingNotFoundException &e) {
 				LOGFATAL(mainlogger,
 						"Configuration Error: Required Setting was not found in \""
@@ -414,7 +415,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	LOGDEBUG(mainlogger, "Instantiating DataFilter objects");
+	LOGINFO(mainlogger, "Instantiating data filter objects");
 
 	{
 		IDataFilterFactory factory;
@@ -433,7 +434,7 @@ int main(int argc, char* argv[])
 				previousfilter = (const char *) rt[i]["datasource"];
 				type = (const char *) rt[i]["type"];
 
-				LOGDEBUG(mainlogger,
+				LOGINFO(mainlogger,
 						"Datafilter " << name << " ("
 						<< type << ") connects to "
 						<< previousfilter <<

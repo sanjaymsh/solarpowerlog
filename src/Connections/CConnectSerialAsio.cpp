@@ -324,12 +324,8 @@ void CConnectSerialAsio::_main(void)
             // safety check: really some work?
             mutex.lock();
             if (!cmds.empty()) {
-                bool delete_cmd;
                 CAsyncCommand *donow = cmds.front();
                 cmds.pop_front();
-                // cache info if to delete the object later,
-                // as later it might be already gone.
-                delete_cmd = donow->IsAsynchronous();
                 // reset the ioservice for the next commmand.
                 // (must be done during holding the mutex to avoid a race
                 // with the AbortAll() call.
@@ -340,37 +336,19 @@ void CConnectSerialAsio::_main(void)
                 {
                     case CAsyncCommand::CONNECT:
                         HandleConnect(donow);
-                        // check if we have to delete the object
-                        // or -- in case of sync operation --
-                        // the caller will do that for us.
-                        // the "sign" is, that donow->callback is non NULL
-                        // (as the object can be already gone, if
-                        // the sync command had already deleted it)
-                        if (delete_cmd) {
-                             delete donow;
-                        }
                     break;
 
                     case CAsyncCommand::DISCONNECT:
                         HandleDisconnect(donow);
-                        if (delete_cmd) {
-                            delete donow;
-                        }
                     break;
 
                     case CAsyncCommand::RECEIVE:
                         HandleReceive(donow);
-                        if (delete_cmd) {
-                            delete donow;
-                        }
                     break;
 
                     case CAsyncCommand::SEND:
                         {
                         HandleSend(donow);
-                        if (delete_cmd) {
-                            delete donow;
-                        }
                     }
                     break;
 
@@ -379,7 +357,7 @@ void CConnectSerialAsio::_main(void)
                         assert(false);
                     break;
                 }
-
+		delete donow;
             } else {
                 mutex.unlock();
             }

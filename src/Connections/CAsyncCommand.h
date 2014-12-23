@@ -31,6 +31,7 @@ Copyright (C) 2009-2012 Tobias Frost
 
 #include <semaphore.h>
 #include "patterns/ICommand.h"
+#include "configuration/Registry.h"
 
 class CAsyncCommand
 {
@@ -47,56 +48,33 @@ public:
 	/** Constructor which create the object
 	 *
 	 * \param c Commando to be used
-	 * \param callback ICommand used as callback. Might be NULL. In this case the semaphore mechanism is used.
-	 * \param sem Semaphore. If callback is NULL, for the completion handling this semaphore is used.
-	 * The caller just waits for the semaphore (sem_wait) and the program will wait for the completion of the
-	 * async command.
+	 * \param callback ICommand used as callback. Must not be NULL.
 	 *
+	 * \note since solarpowerlog 0.25, the synchronous interface is no longer
+	 * supported: So ICommand must no longer be NULL (will be asserted!)
 	 */
-	CAsyncCommand( enum Commando c, ICommand *callback, sem_t *sem = NULL );
+    CAsyncCommand(enum Commando cmd, ICommand *pcallback) :
+        c(cmd), callback(pcallback)
+    {
+        assert(pcallback);
+    }
 
 	/** Destructor */
-	~CAsyncCommand();
-
-	/** Setter for "late setting" the to-be used semaphore.
-	*/
-	inline void SetSemaphore( sem_t *sem )
-	{
-		this->sem = sem;
-	}
-
+	~CAsyncCommand() {}
 
 	/** Handle this jobs completion by notifying the sender
-	 *
 	 */
-	void HandleCompletion( void );
+    inline void HandleCompletion(void) {
+        Registry::GetMainScheduler()->ScheduleWork(callback);
+    }
 
-	/** Is the asyncCommnd really async, or was it only pretended?
-	 *
-	 * As syncronous operations are also dispatched asynchronous,
-	 * but we need a ICommand-object for this, we need the information
-	 * if it is sync or not to decide when to delete the object.
-	 * */
-	inline bool IsAsynchronous()
-	{
-		return !private_icommand;
-	}
-
-	enum Commando c; ///< what to do
+    /** Stores the command what to do */
+	enum Commando c;
 
 	/** callback for completion handling
 	 * In this ICommand, the comand data is stored, results and data...
-	 * This ICommand is privately created, if private_icommand is true,
-	 * and will not be executed if so, but can be still be used for
-	 * storage  */
+	 */
 	ICommand *callback;
-
-private:
-	sem_t *sem; ///< if not-null, use this semaphore to notify completion.
-	/// \note: it is context specific to check if it worked out or not.
-	/// The semaphore is intended to be used for the "synchronous fallback"
-
-	bool private_icommand;
 
 };
 #endif /* CASYNCCOMMAND_H_ */

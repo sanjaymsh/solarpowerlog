@@ -319,49 +319,50 @@ void CConnectSerialAsio::_main(void)
 
         // wait for work or signals.
         syscallret = sem_wait(&cmdsemaphore);
-        if (syscallret == 0) {
-            // semaphore had work for us. process it.
-            // safety check: really some work?
-            mutex.lock();
-            if (!cmds.empty()) {
-                CAsyncCommand *donow = cmds.front();
-                cmds.pop_front();
-                // reset the ioservice for the next commmand.
-                // (must be done during holding the mutex to avoid a race
-                // with the AbortAll() call.
-                ioservice->reset();
-                mutex.unlock();
-
-                switch (donow->c)
-                {
-                    case CAsyncCommand::CONNECT:
-                        HandleConnect(donow);
-                    break;
-
-                    case CAsyncCommand::DISCONNECT:
-                        HandleDisconnect(donow);
-                    break;
-
-                    case CAsyncCommand::RECEIVE:
-                        HandleReceive(donow);
-                    break;
-
-                    case CAsyncCommand::SEND:
-                        {
-                        HandleSend(donow);
-                    }
-                    break;
-
-                    default:
-                        LOGDEBUG(logger, "Unknown command received.");
-                        assert(false);
-                    break;
-                }
-		delete donow;
-            } else {
-                mutex.unlock();
-            }
+        if (syscallret == -1) {
+            continue;
         }
+
+        // semaphore had work for us. process it.
+        // safety check: really some work?
+        mutex.lock();
+        if (cmds.empty()) {
+            mutex.unlock();
+            continue;
+        }
+
+        CAsyncCommand *donow = cmds.front();
+        cmds.pop_front();
+        // reset the ioservice for the next commmand.
+        // (must be done during holding the mutex to avoid a race
+        // with the AbortAll() call.
+        ioservice->reset();
+        mutex.unlock();
+
+        switch (donow->c)
+        {
+            case CAsyncCommand::CONNECT:
+                HandleConnect(donow);
+            break;
+
+            case CAsyncCommand::DISCONNECT:
+                HandleDisconnect(donow);
+            break;
+
+            case CAsyncCommand::RECEIVE:
+                HandleReceive(donow);
+            break;
+
+            case CAsyncCommand::SEND:
+                HandleSend(donow);
+            break;
+
+            default:
+                LOGDEBUG_SA(logger, __COUNTER__, "Unknown command "
+                    << donow->c <<" received.");
+            break;
+        }
+        delete donow;
     }
     IConnect::_main();
 }

@@ -217,65 +217,64 @@ void CConnectTCPAsio::_main( void )
 
     std::auto_ptr<boost::asio::io_service::work> work(new boost::asio::io_service::work(*ioservice));
 
-	while (!IsTermRequested()) {
-		int syscallret;
+    while (!IsTermRequested()) {
+        int syscallret;
 
-		LOGTRACE(logger, "Waiting for work");
-		syscallret = sem_wait(&cmdsemaphore);
-		if (syscallret == 0) {
-			// semaphore had work for us. process it.
-			// safety check: really some work?
-			mutex.lock();
-			if (!cmds.empty()) {
-				CAsyncCommand *donow = cmds.front();
-				cmds.pop_front();
-				// reset the ioservice for the next commmand.
-				// (must be done during holding the mutex to avoid a race
-				// with the AbortAll() call.
+        syscallret = sem_wait(&cmdsemaphore);
+        if (syscallret == -1) {
+            continue;
+        }
 
-				// if the ioservice has been stopped (e.g abortall call)
-				// reset it and spawn a new boost::asio::io_service::work if the ioservice has been stopped.
-				if(ioservice->stopped()) {
-				    work.reset(new boost::asio::io_service::work(*ioservice));
-				    LOGDEBUG(logger,"ioservice stopped");
-				    ioservice->reset();
-				}
+        mutex.lock();
+        // Safety check if there's really work.
+        if (cmds.empty()) {
+            mutex.unlock();
+            continue;
+        }
 
-				mutex.unlock();
+        CAsyncCommand *donow = cmds.front();
+        cmds.pop_front();
 
-				switch (donow->c) {
-				case CAsyncCommand::CONNECT:
-					HandleConnect(donow);
-				break;
+        // if the ioservice has been stopped (e.g abortall call)
+        // reset it and spawn a new boost::asio::io_service::work if the ioservice has been stopped.
+        // must be done with mutex held due to a possible race with abortall.
+        if (ioservice->stopped()) {
+            work.reset(new boost::asio::io_service::work(*ioservice));
+            LOGDEBUG(logger, "ioservice stopped");
+            ioservice->reset();
+        }
 
-				case CAsyncCommand::DISCONNECT:
-					HandleDisconnect(donow);
-					break;
+        mutex.unlock();
 
-				case CAsyncCommand::RECEIVE:
-					HandleReceive(donow);
-					break;
+        switch (donow->c) {
+            case CAsyncCommand::CONNECT:
+                HandleConnect(donow);
+            break;
 
-				case CAsyncCommand::SEND:
-					HandleSend(donow);
-				break;
+            case CAsyncCommand::DISCONNECT:
+                HandleDisconnect(donow);
+            break;
 
-                case CAsyncCommand::ACCEPT:
-                    HandleAccept(donow);
-                break;
+            case CAsyncCommand::RECEIVE:
+                HandleReceive(donow);
+            break;
 
-				default:
-					LOGFATAL(logger, "Unknown command received.");
-					abort();
-					break;
-			}
+            case CAsyncCommand::SEND:
+                HandleSend(donow);
+            break;
 
-		delete donow;
-		} else {
-			mutex.unlock();
-		}
+            case CAsyncCommand::ACCEPT:
+                HandleAccept(donow);
+            break;
 
-		}
+            default:
+                LOGDEBUG_SA(logger, __COUNTER__,
+                    "BUG: Unknown command " << donow->c << " received.");
+            break;
+        }
+
+        delete donow;
+
 	}
 	IConnect::_main();
 }

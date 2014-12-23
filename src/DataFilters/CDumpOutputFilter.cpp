@@ -66,6 +66,8 @@ CDumpOutputFilter::CDumpOutputFilter( const string &name,
 
 CDumpOutputFilter::~CDumpOutputFilter()
 {
+#if 0
+// base may be already destructed!
 	if (base) {
 		auto_ptr<ICapaIterator> it(base->GetCapaNewIterator());
 		pair<string, CCapability*> pair;
@@ -74,6 +76,7 @@ CDumpOutputFilter::~CDumpOutputFilter()
 			pair.second->UnSubscribe(this);
 		}
 	}
+#endif
 }
 
 bool CDumpOutputFilter::CheckConfig()

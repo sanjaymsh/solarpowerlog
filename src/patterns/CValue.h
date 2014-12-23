@@ -78,6 +78,7 @@ class CValue : public IValue
 public:
 
     CValue() : IValue(MagicNumbers::magic_number_for<T>()) {
+        value = T();
     }
 
     CValue(const T &set) : IValue(MagicNumbers::magic_number_for<T>()) {

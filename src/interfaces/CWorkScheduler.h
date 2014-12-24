@@ -47,13 +47,12 @@ class ICommand;
 class ICommandTarget;
 class CTimedWork;
 
-
 /** This class implements the work scheduler:
  *
  * Objects derived from CommandTarget can schedule work to be done:
  *
  * call again later:
- * (when they are not able to complete it immediatly)
+ * (when they are not able to complete it immediately)
  *
  * call again at ....
  * (when they expect to do some work in some specific time

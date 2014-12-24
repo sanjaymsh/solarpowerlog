@@ -83,6 +83,12 @@ CTimedWork::~CTimedWork()
     if (!terminate)
         RequestTermination();
     thread.join();
+
+    std::multimap<boost::posix_time::ptime, ICommand*, time_compare>::iterator it;
+    for(it = TimedCommands.begin(); it != TimedCommands.end(); it++) {
+        delete (*it).second;
+    }
+    TimedCommands.clear();
 }
 
 // Called on execution of the thread.

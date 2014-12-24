@@ -278,7 +278,7 @@ protected:
 	virtual bool IsThreadRunning(void);
 
 protected:
-	virtual bool SetThreadTermRequest(void) {
+	virtual void SetThreadTermRequest(void) {
 	    mutex.lock();
 	    _thread_term_request = true;
 	    mutex.unlock();

@@ -541,15 +541,15 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		std::vector<ISputnikCommand*>::iterator it;
 		for (it=commands.begin(); it!= commands.end(); it++) {
 		    if ((*it)->ConsiderCommand()) {
-
-#warning rework! DEBUG_BACKOFFSTRATEGIES
-		        LOGTRACE(logger,"Considering Command " << (*it)->GetCommand() );
-
+		        long hash = (long)(*it); ///use the pointer as hash
+		        LOGDEBUG_SA(logger, hash, "Considering Command "
+		            << (*it)->GetCommand() );
 		        pendingcommands.push_back(*it);
 		    }
-#warning rework! DEBUG_BACKOFFSTRATEGIES
 		    else {
-		        LOGTRACE(logger," Command " << (*it)->GetCommand() << " not to be considered.");
+                long hash = (long)(*it); ///use the pointer as hash
+		        LOGDEBUG_SA(logger,hash," Command " << (*it)->GetCommand() <<
+		            " not to be considered.");
 		    }
 		}
 	}
@@ -559,7 +559,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 	{
 		LOGDEBUG(logger, "new state: CMD_SEND_QUERIES");
 		commstring = assemblequerystring();
-		LOGDEBUG(logger, "Sending: " << commstring << " Len: "<< commstring.size());
+		LOGTRACE(logger, "Sending: " << commstring << " Len: "<< commstring.size());
 
 		cmd = new ICommand(CMD_WAIT_SENT, this);
 		// Start an atomic communication block (to hint any shared comms)

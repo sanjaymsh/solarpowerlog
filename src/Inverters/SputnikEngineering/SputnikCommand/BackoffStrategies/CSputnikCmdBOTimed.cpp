@@ -40,7 +40,7 @@ bool CSputnikCmdBOTimed::ConsiderCommand() {
 
     if (last + interval >= boost::posix_time::second_clock::local_time()) {
         LOGDEBUG_SA(_logger, LOG_SA_HASH("BO-Timed_Consider"),
-            "BO-Timed: Considering -- due ");
+            "BO-Timed: Considering -- due");
         return true;
     }
 

@@ -131,7 +131,7 @@ private:
 	sem_t semaphore;
 
 	/// stores for the mainscheduler the list of broadcast subscribers
-	std::set<ICommandTarget*> *broadcast_subscribers;
+	std::set<ICommandTarget*> broadcast_subscribers;
 
 protected:
 	/// Mutex to protect against concurrent accesses.

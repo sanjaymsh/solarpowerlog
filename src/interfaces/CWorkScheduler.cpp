@@ -50,11 +50,8 @@ using namespace std;
 CWorkScheduler::CWorkScheduler()
     : dhc("CWorkScheduler")
 {
-
-    broadcast_subscribers = NULL;
-
-    works_received=0;
-    works_completed=0;
+    works_received = 0;
+    works_completed = 0;
     works_timed_scheduled = 0;
 
     dhc.Register(new CDebugObject<void*>("instance",this));
@@ -72,8 +69,10 @@ CWorkScheduler::CWorkScheduler()
 
 CWorkScheduler::~CWorkScheduler()
 {
-	delete timedwork;
-	if (broadcast_subscribers) delete broadcast_subscribers;
+    delete timedwork;
+    broadcast_subscribers.clear();
+
+    sem_destroy(&semaphore);
 }
 
 bool CWorkScheduler::DoWork(bool block) {
@@ -89,35 +88,31 @@ bool CWorkScheduler::DoWork(bool block) {
     if (cmd->getCmd() > BasicCommands::CMD_BROADCAST_MAX) {
         cmd->execute();
     } else {
-        if (broadcast_subscribers) {
-            LOGDEBUG(Registry::GetMainLogger(),
-                "Handling broadcast-event cmd=" << cmd->getCmd() << " subscribers=" << broadcast_subscribers->size());
+        if (!broadcast_subscribers.empty()) {
+            LOGDEBUG_SA(Registry::GetMainLogger(), LOG_SA_HASH("CWSSubscriber"),
+                "Handling broadcast-event cmd=" << cmd->getCmd() <<
+                " subscribers=" << broadcast_subscribers.size());
             std::set<ICommandTarget*>::iterator it;
-            for (it = broadcast_subscribers->begin();
-                it != broadcast_subscribers->end(); it++) {
+            for (it = broadcast_subscribers.begin();
+                it != broadcast_subscribers.end(); it++) {
                 (*it)->ExecuteCommand(cmd);
             }
         } else {
-            LOGDEBUG(Registry::GetMainLogger(),
-                "Handling broadcast-event cmd=" << cmd->getCmd() << " NO subscribers");
+            LOGDEBUG_SA(Registry::GetMainLogger(), LOG_SA_HASH("CWSSubscriber"),
+                "Handling broadcast-event cmd=" << cmd->getCmd() <<
+                " NO subscribers");
         }
     }
     delete cmd;
     return true;
 }
 
-void CWorkScheduler::RegisterBroadcasts(ICommandTarget* target,
-    bool subscribe) {
-
-    if (!broadcast_subscribers) {
-        broadcast_subscribers = new std::set<ICommandTarget*>;
-    }
-
+void CWorkScheduler::RegisterBroadcasts(ICommandTarget* target, bool subscribe)
+{
     if (subscribe) {
-        broadcast_subscribers->insert(target);
-    }
-    else {
-        broadcast_subscribers->erase(target);
+        broadcast_subscribers.insert(target);
+    } else {
+        broadcast_subscribers.erase(target);
     }
 }
 

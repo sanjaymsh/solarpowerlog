@@ -1,7 +1,7 @@
 /* ----------------------------------------------------------------------------
  solarpowerlog -- photovoltaic data logging
 
- Copyright (C) 2009-2012 Tobias Frost
+ Copyright (C) 2009-2014 Tobias Frost
 
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU Lesser General Public License as published by
@@ -35,10 +35,10 @@
 /**
  * \file ISputnikCommand.h
  *
- *  Abstracts the defintion and handling of a single commmand for the Sputnik Inverter.
+ *  Abstracts the definition and handling of a single command for the Sputnik Inverter.
  *
  *  The past implementation had a function for every command the inverter
- *  understands, consisting some thousand lines of basically idenetical code.
+ *  understands, consisting some thousand lines of basically identical code.
  *  To add one command the file had to be edited on several page.
  *
  *  To fight this and increase maintainability along reducing code complexity this
@@ -47,13 +47,13 @@
  *  CSputnikCommand) no special knowledge about the commands it will issue.
  *
  *  The objects encapsulates all information needed to handle the command
- *   - information about the "command token" (token itself, lenght, max answer
+ *   - information about the "command token" (token itself, length, max answer
  *     length)
- *   - information about the data we receive (type, capabilty name)
+ *   - information about the data we receive (type, capability name)
  *   - handles the registration of this data with the inverter.
  *
  *  This interface is the base class for the commands. There are two basic
- *  variantes of derived classes:
+ *  variants of derived classes:
  *  - Most of the commands use simple datatype (integer, float, boolean ...)
  *  - Some commands needs special implementation (for example the Software-
  *    Version needs to assemble the information from two inverter queries)
@@ -76,39 +76,68 @@ class ISputnikCommand
 {
 
 public:
-    /// Constructs the ISputnikCommand.
-    /// If given, backoffstrategy will be then owned by this object and also
-    /// freed on destruction.
+    /** Constructs the ISputnikCommand.
+     *
+     * @param parentlogger to connect to
+     * @param cmd to be issued to get this data
+     * @param maxanswerlen estimated maximum answer length
+     * @param inv inverter belonwing to this command
+     * @param capname Capabilityname associated with this command
+     * @param backoffstrategy backoffs for this command. If núll "BOAlways" will
+     *   be assumed. Object ownership is transferred to this class.
+     */
     ISputnikCommand(const ILogger &parentlogger, const std::string &cmd,
         int maxanswerlen, IInverterBase *inv, const std::string & capname,
         ISputnikCommandBackoffStrategy *backoffstrategy);
 
     virtual ~ISputnikCommand();
 
-    /** Returnes the maximium expected length (usually set at compile time) */
-    virtual int GetMaxAnswerLen(void) {
+    /** Returnes the maximium expected length (usually set at compile time)
+     *
+     * \returns max answer length for this command
+     * */
+    inline virtual int GetMaxAnswerLen(void) const {
         return max_answer_len;
     }
 
-    /** Setter for the Max Answer Len, if needed*/
-    virtual void SetMaxAnswerLen(int max) {
+    /** Setter for the Max Answer Len, if needed
+     *
+     * @param max new maximum length
+     */
+    inline virtual void SetMaxAnswerLen(int max) {
         max_answer_len = max;
     }
 
     /** Should we consider this command to be issued?
-     * Note: If this function is overriden in your class, call
+     *
+     * This function also handles the calls to the backoff strategies.
+     *
+     * \note If this function is overriden in your class, call
      * strat->ConsiderCommand -- if it returns false, you also return false.
-     * \returns true if so, else do not issue command at this time. */
+     *
+     * \returns true if so, else do not issue command at this time.
+     */
     virtual bool ConsiderCommand();
 
     /** Returns a const reference to the token string to be used for the communication
      * when requesting the data from the inverter.
      * (note: can be overriden for complex datas, for example if more than one command is
-     * required to get thw whole set. */
-    virtual const std::string& GetCommand(void);
+     * required to get thw whole set.
+     *
+     * \returns reference to string containinf the command.
+     */
+    virtual const std::string& GetCommand(void) const {
+        return command;
+    }
 
-    /** Helper: Return the length of the command to be issued. */
-    virtual unsigned int GetCommandLen(void);
+    /** Helper: Return the length of the command to be issued.
+     *
+     * @return length of the command to be issued.
+     */
+    virtual unsigned int GetCommandLen(void) const
+    {
+        return command.length();
+    }
 
     /** Check if the token is handled by this instance.
      * \returns true if it is, else false
@@ -116,27 +145,53 @@ public:
      * For complex data, which is assembled from more than one command, this
      * needs be overridden.
     */
-    virtual bool IsHandled(const std::string &token);
+    virtual bool IsHandled(const std::string &token) const
+    {
+        return (token == command);
+    }
 
-    /// handles the parsing, and handles the capability then.
-    /// must be implemented in the derived class.
-    /// NOTE: You must call strat->CommandAnswered() in your derived class before
-    /// you return true.
+    /** handles the parsing and then the capability.
+     * must be implemented in the derived class.
+     *
+     * \note You must call strat->CommandAnswered() in your derived class before
+     * you return true.
+     *
+     * @param vector containing tokenized components. [0] is the command echoed
+     * by the Inverter and [1] is the value
+     *
+     * @return true when sucessuflly handled, false if e.g parse error occoured.
+     */
     virtual bool handle_token(const std::vector<std::string> &) = 0;
 
-    /// command was sent, but no answer received
-    /// (will only be called when there was no other error, like communication
-    /// etc)
+    /** command was sent, but no answer received
+     *  (will only be called when there was no other error, like communication
+     * etc)
+     */
+
+    /** Notify the class that the command has not been answered by the inverter
+     *
+     * If a command has been issued but not answered, e.g ignored by the inveter
+     * due to being not supported, this function must be called.
+     *
+     * This is for the backoff strategy handling.
+     *
+     * \sa ISputnikCommandBackoffStrategy::CommandAnswered
+     * \sa ISputnikCommandBackoffStrategy::CommandNotAnswered
+     */
     virtual void CommandNotAnswered() {
         this->strat->CommandNotAnswered();
     }
 
+    /** Inform the class that the inverter has been disconnected
+     *
+     * Used to reset the backoff strategies to have a fresh start on reconnects.
+     *
+     */
     virtual void InverterDisconnected() {
         this->strat->Reset();
     }
 
 protected:
-
     /** Makes the complete capability handling:
      *
      * Please see the overridden version (with capaname as parameter)
@@ -176,7 +231,7 @@ protected:
         }
 
         // Check for the type and throw an exception if not equal.
-        // (as capabilites are created by this class, this should be not hapen)
+        // (as capabilities are created by this class, this should be not happen)
          if ( CValue<T>::IsType(cap->getValue())) {
             CValue<T> *v = (CValue<T> *)cap->getValue();
             if (value != v->Get()) {
@@ -189,11 +244,6 @@ protected:
             LOGERROR(inverter->logger,"Bad cast for command " + command);
             throw e;
         }
-    }
-
-public:
-    const std::string& GetCommand(void) const {
-        return command;
     }
 
 protected:

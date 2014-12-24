@@ -1,23 +1,23 @@
 /* ----------------------------------------------------------------------------
  solarpowerlog -- photovoltaic data logging
 
-Copyright (C) 2009-2012 Tobias Frost
+ Copyright (C) 2009-2014 Tobias Frost
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
  ----------------------------------------------------------------------------
-*/
+ */
 
 /** \file CWorkScheduler.cpp
  *
@@ -47,24 +47,25 @@ Copyright (C) 2009-2012 Tobias Frost
 
 using namespace std;
 
-CWorkScheduler::CWorkScheduler()
-    : dhc("CWorkScheduler")
+CWorkScheduler::CWorkScheduler() :
+    dhc("CWorkScheduler")
 {
     works_received = 0;
     works_completed = 0;
     works_timed_scheduled = 0;
 
-    dhc.Register(new CDebugObject<void*>("instance",this));
-    dhc.Register(new CDebugObject<int>("works_received",works_received));
-    dhc.Register(new CDebugObject<int>("works_completed",works_completed));
-    dhc.Register(new CDebugObject<int>("works_timed_scheduled",works_timed_scheduled));
+    dhc.Register(new CDebugObject<void*>("instance", this));
+    dhc.Register(new CDebugObject<int>("works_received", works_received));
+    dhc.Register(new CDebugObject<int>("works_completed", works_completed));
+    dhc.Register(
+        new CDebugObject<int>("works_timed_scheduled", works_timed_scheduled));
 
     sem_init(&semaphore, 0, 0);
 
-	// generate thread for the timed work facility.
-	timedwork = new CTimedWork(this);
+    // generate thread for the timed work facility.
+    timedwork = new CTimedWork(this);
 
-	timedwork->run();
+    timedwork->run();
 }
 
 CWorkScheduler::~CWorkScheduler()
@@ -75,7 +76,8 @@ CWorkScheduler::~CWorkScheduler()
     sem_destroy(&semaphore);
 }
 
-bool CWorkScheduler::DoWork(bool block) {
+bool CWorkScheduler::DoWork(bool block)
+{
     if (!block) {
         CMutexAutoLock cma(&mut);
         if (CommandsDue.empty()) {
@@ -116,26 +118,28 @@ void CWorkScheduler::RegisterBroadcasts(ICommandTarget* target, bool subscribe)
     }
 }
 
-ICommand *CWorkScheduler::getnextcmd( void )
+ICommand *CWorkScheduler::getnextcmd(void)
 {
-	// Obtain Mutex to make sure...
+    // Obtain Mutex to make sure...
     CMutexAutoLock cma(&mut);
-	ICommand *cmd = CommandsDue.front();
-	CommandsDue.pop_front();
-	works_completed++;
-	return cmd;
+    ICommand *cmd = CommandsDue.front();
+    CommandsDue.pop_front();
+    works_completed++;
+    return cmd;
 }
 
-bool CWorkScheduler::ScheduleWork(ICommand *Command, bool tryonly) {
+bool CWorkScheduler::ScheduleWork(ICommand *Command, bool tryonly)
+{
     // assert if a broadcast event has a ITarget set. (This indicates a bug)
     //LOGERROR(Registry::GetMainLogger(),"cmd=" <<Command->getCmd() << " trgt="<< Command->getTrgt());
 
-    assert( !(( Command->getCmd() <= BasicCommands::CMD_BROADCAST_MAX
-        && Command->getTrgt())));
+    assert(
+        !((Command->getCmd() <= BasicCommands::CMD_BROADCAST_MAX
+            && Command->getTrgt())));
 
-    if( Command->getCmd() >= BasicCommands::CMD_BROADCAST_MAX &&
-        !Command->getTrgt()) {
-       // Fire-and-Forget commmand. Just delete it.
+    if (Command->getCmd() >= BasicCommands::CMD_BROADCAST_MAX
+        && !Command->getTrgt()) {
+        // Fire-and-Forget commmand. Just delete it.
         delete Command;
         return true;
     }
@@ -147,7 +151,8 @@ bool CWorkScheduler::ScheduleWork(ICommand *Command, bool tryonly) {
     }
 
     if (Command->getCmd() <= BasicCommands::CMD_BROADCAST_MAX) {
-        LOGDEBUG(Registry::GetMainLogger(),"Broadcast event accepted cmd=" << Command->getCmd() );
+        LOGDEBUG(Registry::GetMainLogger(),
+            "Broadcast event accepted cmd=" << Command->getCmd());
     }
 
     CommandsDue.push_back(Command);
@@ -157,14 +162,16 @@ bool CWorkScheduler::ScheduleWork(ICommand *Command, bool tryonly) {
     return true;
 }
 
-void CWorkScheduler::ScheduleWork(ICommand *Command, struct timespec ts) {
+void CWorkScheduler::ScheduleWork(ICommand *Command, struct timespec ts)
+{
     // assert if a broadcast event has a ITarget set. (This indicates a bug)
-    assert( !(( Command->getCmd() <= BasicCommands::CMD_BROADCAST_MAX
-        && Command->getTrgt())));
+    assert(
+        !((Command->getCmd() <= BasicCommands::CMD_BROADCAST_MAX
+            && Command->getTrgt())));
 
-    if( Command->getCmd() >= BasicCommands::CMD_BROADCAST_MAX &&
-        !Command->getTrgt()) {
-       // Fire-and-Forget commmand. Just delete it.
+    if (Command->getCmd() >= BasicCommands::CMD_BROADCAST_MAX
+        && !Command->getTrgt()) {
+        // Fire-and-Forget command. Just delete it.
         delete Command;
         return;
     }
@@ -172,4 +179,3 @@ void CWorkScheduler::ScheduleWork(ICommand *Command, struct timespec ts) {
     works_timed_scheduled++;
     timedwork->ScheduleWork(Command, ts);
 }
-

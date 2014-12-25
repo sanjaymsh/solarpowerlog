@@ -46,7 +46,6 @@
 #define SQL_ESCAPE_CHAR_OPEN ""
 #define SQL_ESCAPE_CHAR_CLOSE ""
 
-
 CDBWriterHelper::CDBWriterHelper(IInverterBase *base, const ILogger &parent,
     const std::string &table, const std::string &mode,
     const std::string &createmode, bool logchangedonly, float logevery,
@@ -81,7 +80,7 @@ CDBWriterHelper::CDBWriterHelper(IInverterBase *base, const ILogger &parent,
         _mode = CDBWriterHelper::cumulative;
     }
 
-    if(base) {
+    if (base) {
         CCapability *cap;
         cap = base->GetConcreteCapability(CAPA_CAPAS_UPDATED);
         assert(cap);
@@ -196,17 +195,19 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
         bool current = _datavalid;
         _datavalid = ((CValue<bool> *)cap->getValue())->Get();
         if (current != _datavalid && !_datavalid) {
-            // data just became invalid.
+             // data just became invalid.
             // reset our internal states.
             std::vector<class Cdbinfo*>::iterator it;
             CMutexAutoLock cma(&mutex);
             for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
                 Cdbinfo &cit = **it;
                 if (cit.Value && !cit.isSpecial) {
+                    LOGTRACE(logger, "Update() deleting cit.Value for " << cit.Capability);
                     delete cit.Value;
                     cit.Value = NULL;
                 }
                 if (cit.LastLoggedValue && !cit.isSpecial) {
+                    LOGTRACE(logger, "Update() deleting LastLoggedValue for " << cit.Capability);
                     delete cit.LastLoggedValue;
                     cit.LastLoggedValue = NULL;
                 }
@@ -215,13 +216,26 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
         return;
     }
 
+    if (_datavalid) {
+        LOGTRACE(logger,
+            /*LOG_SA_HASH("update()-datastate"),*/
+            "Update() Datastate valid");
+    }
+    else  {
+        LOGTRACE(logger,
+            /*LOG_SA_HASH("update()-datastate"),*/
+            "Update() Datastate INvalid");
+    }
+
     // Unsubscribe plea -- we do not offer this Capa, our customers will
     // ask our base directly.
     if (cap->getDescription() == CAPA_CAPAS_REMOVEALL) {
+        LOGDEBUG(logger, "Update() CAPA_CAPAS_REMOVEALL received");
         auto_ptr<ICapaIterator> it(_base->GetCapaNewIterator());
         while (it->HasNext()) {
             pair<string, CCapability*> cappair = it->GetNext();
             cap = (cappair).second;
+            LOGTRACE(logger, "Update() unsubscribing " << cap->getDescription());
             cap->UnSubscribe(this);
         }
         CMutexAutoLock cma(&mutex);
@@ -239,6 +253,7 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
     // Iterate through all capabilities and if we have customers, subscribe to it
 
     if (cap->getDescription() == CAPA_CAPAS_UPDATED) {
+        LOGDEBUG(logger, "Update() CAPA_CAPAS_UPDATED received");
         auto_ptr<ICapaIterator> it(_base->GetCapaNewIterator());
         while (it->HasNext()) {
             std::string capname;
@@ -250,8 +265,8 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
                 if ((*jt)->Capability == capname) {
                     CMutexAutoLock cma(&mutex);
                     if (!(*jt)->previously_subscribed)
-                    LOGDEBUG(logger,
-                        "Subscribing to " << cap->getDescription());
+                    LOGTRACE(logger,
+                        "Update() Subscribing to " << cap->getDescription());
                     cap->Subscribe(this);
                     (*jt)->previously_subscribed = true;
                     break;
@@ -265,12 +280,15 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
     std::vector<class Cdbinfo*>::iterator it;
     std::string capaname = cap->getDescription();
 
+    LOGTRACE(logger, capaname << " updated.");
     for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
         if ((*it)->Capability == capaname) {
+            LOGTRACE(logger, "Update() found in Cdbinfo list");
             CMutexAutoLock cma(&mutex);
             Cdbinfo &cit = **it;
 
             // Check if this is the first time we've got the value.
+            LOGTRACE(logger, "Update() updating deleting cit.Value for " << cit.Capability);
             if (cit.Value) delete cit.Value;
             cit.Value = cap->getValue()->clone();
             break;
@@ -280,7 +298,6 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
 
 void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
 {
-
     // Strategy
     // only log if data is marked as valid
     //
@@ -348,7 +365,7 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
             if (now != last) {
                 any_updated = true;
                 last = now;
-             }
+            }
         } else if (cit.Value && !cit.isSpecial) {
             any_updated = true;
             cit.LastLoggedValue = cit.Value->clone();

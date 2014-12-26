@@ -172,7 +172,7 @@
 #include "ILogger_hashmacro.h"
 #else
 #error eclipse hack! should not compile
-#define LOG_SA_HASH(string) (__LINE__);
+#define LOG_SA_HASH(string) (__LINE__)
 #endif
 
 // the state-aware logging macros are only available for levels below ERROR.

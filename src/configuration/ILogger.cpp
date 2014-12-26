@@ -160,7 +160,7 @@ void ILogger::Log_sa(const int32_t hash, std::stringstream &ss)
     time_t now = time(NULL);
     uint32_t strhash = runtime_hash(ss.str().c_str());
 
-    CMutexAutoLock cma(this);
+    CMutexAutoLock cma(*this);
     std::map<uint32_t, struct log_stateaware_info>::iterator it;
     it = sa_info.find(hash);
     if (it != sa_info.end()) {
@@ -239,14 +239,14 @@ void ILogger::Log_sa(const int32_t hash, std::stringstream &ss)
 /// Forget the history for one stateaware log entry
 /// (the next one will be issued anyway)
 bool ILogger::sa_forgethistory(int32_t hash) {
-    CMutexAutoLock cma(this);
+    CMutexAutoLock cma(*this);
     return sa_info.erase(hash);
 }
 
 /// Forget the history for all stateaware log entries
 /// (that means complete reset)
 void ILogger::sa_forgethistory() {
-     CMutexAutoLock cma(this);
+     CMutexAutoLock cma(*this);
      sa_info.clear();
  }
 

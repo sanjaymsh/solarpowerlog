@@ -79,7 +79,7 @@ CWorkScheduler::~CWorkScheduler()
 bool CWorkScheduler::DoWork(bool block)
 {
     if (!block) {
-        CMutexAutoLock cma(&mut);
+        CMutexAutoLock cma(mut);
         if (CommandsDue.empty()) {
             return false;
         }
@@ -121,7 +121,7 @@ void CWorkScheduler::RegisterBroadcasts(ICommandTarget* target, bool subscribe)
 ICommand *CWorkScheduler::getnextcmd(void)
 {
     // Obtain Mutex to make sure...
-    CMutexAutoLock cma(&mut);
+    CMutexAutoLock cma(mut);
     ICommand *cmd = CommandsDue.front();
     CommandsDue.pop_front();
     works_completed++;

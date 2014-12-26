@@ -114,7 +114,7 @@ void CTimedWork::ScheduleWork( ICommand *Command, struct timespec ts )
 #ifdef CTIMEDWORK_DEBUG
         ctimedwork_wants_mutex=1;
 #endif
-        CMutexAutoLock m(&this->mut);
+        CMutexAutoLock m(mut);
 #ifdef CTIMEDWORK_DEBUG
         ctimedwork_wants_mutex=1;ctimedwork_has_mutex=1;
         this->work_received++;

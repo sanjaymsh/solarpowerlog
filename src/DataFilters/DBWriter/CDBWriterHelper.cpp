@@ -198,7 +198,7 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
              // data just became invalid.
             // reset our internal states.
             std::vector<class Cdbinfo*>::iterator it;
-            CMutexAutoLock cma(&mutex);
+            CMutexAutoLock cma(mutex);
             for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
                 Cdbinfo &cit = **it;
                 if (cit.Value && !cit.isSpecial) {
@@ -238,7 +238,7 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
             LOGTRACE(logger, "Update() unsubscribing " << cap->getDescription());
             cap->UnSubscribe(this);
         }
-        CMutexAutoLock cma(&mutex);
+        CMutexAutoLock cma(mutex);
 
         std::vector<class Cdbinfo *>::iterator jt;
         for (jt = _dbinfo.begin(); jt != _dbinfo.end(); jt++) {
@@ -263,7 +263,7 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
             capname = cap->getDescription();
             for (jt = _dbinfo.begin(); jt != _dbinfo.end(); jt++) {
                 if ((*jt)->Capability == capname) {
-                    CMutexAutoLock cma(&mutex);
+                    CMutexAutoLock cma(mutex);
                     if (!(*jt)->previously_subscribed)
                     LOGTRACE(logger,
                         "Update() Subscribing to " << cap->getDescription());
@@ -284,7 +284,7 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
     for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
         if ((*it)->Capability == capaname) {
             LOGTRACE(logger, "Update() found in Cdbinfo list");
-            CMutexAutoLock cma(&mutex);
+            CMutexAutoLock cma(mutex);
             Cdbinfo &cit = **it;
 
             // Check if this is the first time we've got the value.
@@ -328,7 +328,7 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
     // ( Precautionious -- solarpowerlog is currently only single task, if it
     // comes to processing; but there are ideas to put db handling in a thread,
     // and then it will be needed.)
-    CMutexAutoLock cma(&mutex);
+    CMutexAutoLock cma(mutex);
 
     // check what we've got so far
     std::vector<class Cdbinfo*>::iterator it;

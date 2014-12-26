@@ -3,12 +3,11 @@ ACLOCAL_AMFLAGS = -I m4
 
 AM_CXXFLAGS = $(BOOST_CPPFLAGS)
 
-BUILT_SOURCES = configuration/ILogger_hashmacro.h
-nodist_solarpowerlog_SOURCES = configuration/ILogger_hashmacro.h
+EXTRA_DIST = scripts/GenConstHash.pl
 
-# do not clean for now, to avoid ccache poisioning. its enought not to distribute it
-# in the tarball!
-# CLEANFILES = configuration/ILogger_hashmacro.h
+# can be regenerated at build time, but must be distributed
+# in case someonw builds from read only sources.
+CLEANFILES = configuration/ILogger_hashmacro.h
 
 bin_PROGRAMS = solarpowerlog
 
@@ -97,7 +96,8 @@ Inverters/interfaces/ICapaIterator.h Inverters/interfaces/InverterBase.h \
 patterns/ICommandTarget.h patterns/IValue.h patterns/ICommand.h \
 patterns/IObserverObserver.h patterns/IObserverSubject.h \
 configuration/CConfigHelper.h ctemplate/ctemplate.h porting.h \
-Inverters/Capabilites.h patterns/CValue.h interfaces/CDebugHelper.h
+Inverters/Capabilites.h patterns/CValue.h interfaces/CDebugHelper.h \
+configuration/ILogger_hashmacro.h
 
 solarpowerlog_CPPFLAGS = $(CONFIG_CFLAGS) $(LOG4CXX_CFLAGS) $(APR_CFLAGS) \
 	$(APRUTIL_CFLAGS) $(CTEMPLATE_CFLAGS)
@@ -112,7 +112,9 @@ LIBS = $(DEPS_LIBS)
 # add the search path to the linker path
 #solarpowerlog_LDFLAGS = $(pwd)
 
-configuration/ILogger_hashmacro.h: Makefile
-	perl ../tools/GenConstHash.pl -l 96 -r LOG_SA_HASH -t $@
+dist-hook:
+	chmod u+w $(distdir)/configuration/ILogger_hashmacro.h
+	perl $(distdir)/scripts/GenConstHash.pl -l 96 -r LOG_SA_HASH -t $(distdir)/configuration/ILogger_hashmacro.h
 
-
+$(srcdir)/configuration/ILogger_hashmacro.h: $(srcdir)/scripts/GenConstHash.pl
+	perl $(srcdir)/scripts/GenConstHash.pl -l 96 -r LOG_SA_HASH -t $@

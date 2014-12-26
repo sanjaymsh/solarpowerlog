@@ -175,7 +175,16 @@
 #define LOG_SA_HASH(string) (__LINE__)
 #endif
 
-// the state-aware logging macros are only available for levels below ERROR.
+// the state-aware logging macros are only available for levels below (incl.) ERROR.
+#define LOGERROR_SA(logger, hash, message)   {\
+        if ((logger).IsEnabled(ILogger::LL_ERROR)) { \
+            std::stringstream ss;\
+            ss << message;\
+            logger.Log_sa(hash,ss); \
+        }\
+    } while(0)
+
+
 #define LOGWARN_SA(logger, hash, message)   {\
         if ((logger).IsEnabled(ILogger::LL_WARN)) { \
             std::stringstream ss;\

@@ -266,6 +266,7 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
     // Iterate through all capabilities and if we have customers, subscribe to it
 
     if (cap->getDescription() == CAPA_CAPAS_UPDATED) {
+        std::string base_capas = "Update(): base offers: ";
         LOGDEBUG(logger, "Update() CAPA_CAPAS_UPDATED received");
         auto_ptr<ICapaIterator> it(_base->GetCapaNewIterator());
         while (it->HasNext()) {
@@ -274,24 +275,26 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
             pair<string, CCapability*> cappair = it->GetNext();
             cap = (cappair).second;
             capname = cap->getDescription();
-            LOGTRACE(logger, "checking base's " << capname);
+            base_capas += capname;
+            base_capas += " ";
             for (jt = _dbinfo.begin(); jt != _dbinfo.end(); jt++) {
                 if ((*jt)->Capability == capname) {
                     CMutexAutoLock cma(mutex);
                     if (!(*jt)->previously_subscribed) {
-                        LOGTRACE(logger,
-                            "Update() Subscribing to " << cap->getDescription());
+                        LOGTRACE_SA(logger, LOG_SA_HASH("update-subs-state") + (long)(*jt),
+                           "Update() Subscribing to " << cap->getDescription());
                         cap->Subscribe(this);
                         (*jt)->previously_subscribed = true;
                     } else
                     {
-                        LOGTRACE(logger,
+                        LOGTRACE_SA(logger, LOG_SA_HASH("update-subs-state") + (long)(*jt),
                             "Update() Already subscribed to " << cap->getDescription());
                     }
                     break;
                 }
             }
         }
+        LOGDEBUG_SA(logger, __COUNTER__, base_capas);
         return;
     }
 

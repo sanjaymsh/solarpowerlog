@@ -32,6 +32,10 @@
 #include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/ISputnikCommandBackoffStrategy.h"
 #include "configuration/ILogger.h"
 
+// TODO Refactor interface to IInverterCommand and abstract as far a possible
+// to have a general inverter command abstraction class, not specific to sputnik
+// (maybe after Danfoss branch has been merged)
+
 /**
  * \file ISputnikCommand.h
  *
@@ -96,7 +100,7 @@ public:
      *
      * \returns max answer length for this command
      * */
-    inline virtual int GetMaxAnswerLen(void) const {
+    virtual int GetMaxAnswerLen(void) {
         return max_answer_len;
     }
 
@@ -104,7 +108,7 @@ public:
      *
      * @param max new maximum length
      */
-    inline virtual void SetMaxAnswerLen(int max) {
+    virtual void SetMaxAnswerLen(int max) {
         max_answer_len = max;
     }
 
@@ -124,9 +128,9 @@ public:
      * (note: can be overriden for complex datas, for example if more than one command is
      * required to get thw whole set.
      *
-     * \returns reference to string containinf the command.
+     * \returns reference to string containing the command.
      */
-    virtual const std::string& GetCommand(void) const {
+    virtual const std::string& GetCommand(void) {
         return command;
     }
 
@@ -134,7 +138,7 @@ public:
      *
      * @return length of the command to be issued.
      */
-    virtual unsigned int GetCommandLen(void) const
+    virtual unsigned int GetCommandLen(void)
     {
         return command.length();
     }
@@ -145,7 +149,7 @@ public:
      * For complex data, which is assembled from more than one command, this
      * needs be overridden.
     */
-    virtual bool IsHandled(const std::string &token) const
+    virtual bool IsHandled(const std::string &token)
     {
         return (token == command);
     }

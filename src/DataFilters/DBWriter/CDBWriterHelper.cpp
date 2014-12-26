@@ -188,6 +188,18 @@ bool CDBWriterHelper::issane(const std::string s)
 
 void CDBWriterHelper::Update(const class IObserverSubject * subject)
 {
+    {
+    std::vector<class Cdbinfo *>::iterator jt;
+    LOGTRACE_SA(logger, LOG_SA_HASH("debug-code"),
+        " in dbinfo:");
+    for (jt = _dbinfo.begin(); jt != _dbinfo.end(); jt++) {
+            CMutexAutoLock cma(mutex);
+            Cdbinfo &dut = **jt;
+            LOGTRACE_SA(logger, LOG_SA_HASH("debug-code") + (long)(*jt),
+                "cap=" << dut.Capability << " col=" << dut.Column);
+        }
+    }
+
     assert(subject);
     CCapability *cap = (CCapability *)subject;
 
@@ -262,14 +274,20 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
             pair<string, CCapability*> cappair = it->GetNext();
             cap = (cappair).second;
             capname = cap->getDescription();
+            LOGTRACE(logger, "checking base's " << capname);
             for (jt = _dbinfo.begin(); jt != _dbinfo.end(); jt++) {
                 if ((*jt)->Capability == capname) {
                     CMutexAutoLock cma(mutex);
-                    if (!(*jt)->previously_subscribed)
-                    LOGTRACE(logger,
-                        "Update() Subscribing to " << cap->getDescription());
-                    cap->Subscribe(this);
-                    (*jt)->previously_subscribed = true;
+                    if (!(*jt)->previously_subscribed) {
+                        LOGTRACE(logger,
+                            "Update() Subscribing to " << cap->getDescription());
+                        cap->Subscribe(this);
+                        (*jt)->previously_subscribed = true;
+                    } else
+                    {
+                        LOGTRACE(logger,
+                            "Update() Already subscribed to " << cap->getDescription());
+                    }
                     break;
                 }
             }

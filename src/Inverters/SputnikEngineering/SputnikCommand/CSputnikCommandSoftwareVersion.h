@@ -40,6 +40,7 @@
  *
  * To get that information, two commands are required. (SWV and BDN)
  *
+ * \sa ISputnikCommand
  */
 class CSputnikCommandSoftwareVersion : public ISputnikCommand
 {
@@ -61,12 +62,12 @@ public:
     virtual bool handle_token(const std::vector<std::string> & tokens);
 
 private:
+    /// to track if we've got the build version already
     bool got_buildversion;
+    /// to track if we've got the software version already
     bool got_swversion;
+    /// var to save our result.
     long sw,build;
-
-    int backoff;
-
 };
 
 #endif

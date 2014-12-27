@@ -45,8 +45,8 @@ static const std::string BDNSWV("BDN;SWV");
 CSputnikCommandSoftwareVersion::CSputnikCommandSoftwareVersion(ILogger &logger,
         IInverterBase *inv, const std::string & capname,
         ISputnikCommandBackoffStrategy *backoff ) :
-        ISputnikCommand(logger, "SWVERSION", 0, inv, capname, backoff), got_buildversion(false), got_swversion(
-                false)
+        ISputnikCommand(logger, BDNSWV, 0, inv, capname, backoff),
+        got_buildversion(false), got_swversion(false), sw(0), build(0)
 {
 }
 

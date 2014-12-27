@@ -143,7 +143,7 @@ bool CDBWriterHelper::AddDataToLog(const std::string &Capability,
     class Cdbinfo* n = new Cdbinfo(Capability, Column);
     _dbinfo.push_back(n);
 
-    Cdbinfo &last = *(_dbinfo[_dbinfo.size() - 1]);
+    Cdbinfo &last = *n;
 
     if (Capability[0] == '%' || Capability[0] == '!') {
         LOGDEBUG(logger, "Special token " << Capability);

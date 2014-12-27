@@ -388,14 +388,14 @@ bool CDBWriterFilter::CheckConfig()
             }
         }
 
-        if (!hlp.CheckConfig("db_logchangedonly", Setting::TypeBoolean)) {
+        if (!hlp.CheckConfig("db_logchangedonly", Setting::TypeBoolean, true)) {
             fail = true;
         } else {
             hlp.GetConfig("db_logchangedonly", logchangedonly, false);
         }
 
         bool allow_sparse;
-        if (!hlp.CheckConfig("db_allowsparse", Setting::TypeBoolean)) {
+        if (!hlp.CheckConfig("db_allowsparse", Setting::TypeBoolean, true)) {
             fail = true;
         } else {
             hlp.GetConfig("db_allowsparse", allow_sparse, false);

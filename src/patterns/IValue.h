@@ -34,11 +34,12 @@
 
 #include <string>
 
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 /** IValue is the interface to arbitrary value storage.
  *
  * It is supposed to be derived, and the derived class is responsible for
  * type-correct storage.
- *
  *
  * \ingroup factories
  */
@@ -49,13 +50,13 @@ public:
 protected:
     template<class T>
     friend class CValue;
+
 public:
     int GetInternalType(void) const
     {
-        return type_;
+        return _type;
     }
 
-public:
     /** Interface method for easier transfer to strings. */
     virtual operator std::string() = 0;
 
@@ -67,17 +68,74 @@ public:
 
     virtual IValue& operator=(const IValue &v) = 0;
 
+    /** Determine if the data is valid
+     *
+     * \note the data will be set to valid automatically on
+     * every call to Set or using the = operator.
+     *
+     * @return true if valid, false if invalid
+     */
+    virtual bool IsValid(void) const
+    {
+        return _valid;
+    }
+
+    /** Invalidate datastate
+     *
+     * record data as invalid.
+     */
+    virtual void Invalidate(void)
+    {
+        _valid = false;
+    }
+
+    /*** Get the timestamp associated with the last set
+     *
+     * @return timestamps. If never set, boost::posix_time::not_a_date_time
+     */
+    virtual boost::posix_time::ptime GetTimestamp(void) const {
+        return _timestamp;
+    }
+
+    /*** Set the timestamp to be associated with the data (usually the last set)*
+     *
+     * @param newtime boost::posix_time::ptime representing the timestamp
+     */
+    virtual void SetTimestamp(const boost::posix_time::ptime &newtime)
+    {
+        _timestamp = newtime;
+    }
+
 protected:
-    IValue(int type) : type_(type) { }
+    /// Constructor
+    IValue(int type) :
+        _type(type), _valid(false),
+        _timestamp(boost::posix_time::not_a_date_time)
+    { }
+
+    /** protected setter to explicitly set validity. */
+    virtual void SetValid(bool v = true) {
+        _valid = v;
+    }
 
 public:
     virtual ~IValue() { }
 
 private:
-    // Private to avoid accidental creation with default constructor.
-    IValue() {type_ = 0;}
+    /// Private to avoid accidental creation with default constructor.
+    IValue() :
+        _type(0), _valid(false), _timestamp(boost::posix_time::not_a_date_time)
+    { }
 
-    int type_;
+    /// Internal typeid
+    int _type;
+
+    /// Data validty mark. (Set automatically with every set. use Invalidate() to
+    /// void data
+    bool _valid;
+
+    /// Timestamp of last update.
+    boost::posix_time::ptime _timestamp;
 };
 
 #endif /* IVALUE_H_ */

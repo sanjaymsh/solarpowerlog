@@ -76,14 +76,14 @@ template<typename T>
 class CValue : public IValue
 {
 public:
-
     CValue() : IValue(MagicNumbers::magic_number_for<T>()) {
         value = T();
     }
 
     CValue(const T &set) : IValue(MagicNumbers::magic_number_for<T>()) {
         value = set;
-        timestamp = boost::posix_time::second_clock::local_time();
+        SetTimestamp(boost::posix_time::second_clock::local_time());
+        SetValid();
     }
 
     /// Serves as a virtual copy constructor.
@@ -92,8 +92,9 @@ public:
     }
 
     void Set(T value, boost::posix_time::ptime timestamp = boost::posix_time::second_clock::local_time()) {
-        this->timestamp = timestamp;
         this->value = value;
+        SetTimestamp(timestamp);
+        SetValid();
     }
 
     T Get(void) const {
@@ -101,17 +102,15 @@ public:
     }
 
     virtual void operator=(const T& val) {
-        timestamp = boost::posix_time::second_clock::local_time();
         value = val;
+        SetTimestamp(boost::posix_time::second_clock::local_time());
+        SetValid();
     }
 
     virtual void operator=(const CValue<T> &val) {
-        timestamp = val.GetTimestamp();
         value = val.Get();
-    }
-
-    virtual boost::posix_time::ptime GetTimestamp(void) const {
-        return timestamp;
+        SetTimestamp(val.GetTimestamp());
+        SetValid(val.IsValid());
     }
 
     virtual operator std::string() {
@@ -125,6 +124,8 @@ public:
             CValue<T> &realv = (CValue<T>&)v;
             return (realv.Get() == Get());
         }
+
+        throw std::bad_cast();
         return false;
     }
 
@@ -133,6 +134,7 @@ public:
              CValue<T> &realv = (CValue<T>&)v;
              return (realv.Get() != Get());
          }
+         throw std::bad_cast();
          return false;
      }
 
@@ -142,7 +144,8 @@ public:
         if (this->IsType(&v)) {
             CValue<T> *rv = (CValue<T>*)&v;
             this->value = rv->value;
-            this->timestamp = rv->timestamp;
+            SetTimestamp(rv->GetTimestamp());
+            SetValid(rv->IsValid());
             return *this;
         }
         throw std::bad_cast();
@@ -165,8 +168,6 @@ public:
 
 private:
     T value;
-    boost::posix_time::ptime timestamp;
-
 };
 
 // TODO check if factory really needed or substituted already by some other

@@ -192,6 +192,9 @@ public:
      *
      */
     virtual void InverterDisconnected() {
+
+        CCapability *cap = inverter->GetConcreteCapability(this->capaname);
+        if (cap) cap->getValue()->Invalidate();
         this->strat->Reset();
     }
 
@@ -238,7 +241,7 @@ protected:
         // (as capabilities are created by this class, this should be not happen)
          if ( CValue<T>::IsType(cap->getValue())) {
             CValue<T> *v = (CValue<T> *)cap->getValue();
-            if (value != v->Get()) {
+            if (!v->IsValid() || value != v->Get()) {
                 v->Set(value);
                 cap->Notify();
             }

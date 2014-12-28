@@ -181,3 +181,15 @@ bool CSputnikCommandSYS::handle_token(const std::vector<std::string>& tokens) {
     this->strat->CommandAnswered();
     return true;
 }
+
+void  CSputnikCommandSYS::InverterDisconnected() {
+    CCapability *cap;
+
+    cap = inverter->GetConcreteCapability(CAPA_INVERTER_STATUS_NAME);
+    if (cap) cap->getValue()->Invalidate();
+    cap = inverter->GetConcreteCapability(CAPA_INVERTER_STATUS_READABLE_NAME);
+    if (cap) cap->getValue()->Invalidate();
+
+    ISputnikCommand::InverterDisconnected();
+}
+

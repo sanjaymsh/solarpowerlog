@@ -160,6 +160,12 @@ void ILogger::Log_sa(const int32_t hash, std::stringstream &ss)
     time_t now = time(NULL);
     uint32_t strhash = runtime_hash(ss.str().c_str());
 
+    // LL_ALL disables this feature.
+    if (this->IsEnabled(ILogger::LL_ALL)) {
+        (*this) << ss;
+        return;
+    }
+
     CMutexAutoLock cma(*this);
     std::map<uint32_t, struct log_stateaware_info>::iterator it;
     it = sa_info.find(hash);

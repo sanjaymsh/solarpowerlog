@@ -61,6 +61,8 @@ public:
 
     virtual bool handle_token(const std::vector<std::string> & tokens);
 
+    virtual void InverterDisconnected();
+
 private:
     /// to track if we've got the build version already
     bool got_buildversion;

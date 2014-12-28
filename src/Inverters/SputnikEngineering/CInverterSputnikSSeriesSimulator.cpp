@@ -67,7 +67,7 @@ struct CInverterSputnikSSeriesSimulator::simulator_commands simcommands[] = {
         { "SYS", 1.0, new CValue<int>(20004), 1, new CValue<int>(0), false },
         { "TYP", 1.0, new CValue<int>(65534), 0, NULL, false },
         { "BDN", 1.0, new CValue<int>(24), 0, NULL, false },
-        { "SWV", 1.0, new CValue<int>(0), 0, NULL, false },
+        { "SWV", 1.0, new CValue<int>(1), 0, NULL, false },
         { "KYR", 1.0, new CValue<float>(42), 0, NULL, false },
         { "KMT", 1.0, new CValue<float>(42), 0, NULL, false },
         { "KDY", 0.1, new CValue<float>(42), 0, NULL, false },

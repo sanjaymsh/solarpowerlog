@@ -141,6 +141,10 @@ private:
     /// accept again when ctrl server allows us again to connect.
     /// \sa _disconnect
     bool _isconnected;
+
+    /// inject the next time an checksum error (will force an reconnect from the
+    /// client)
+    bool _inject_chksum_err;
 };
 
 #endif

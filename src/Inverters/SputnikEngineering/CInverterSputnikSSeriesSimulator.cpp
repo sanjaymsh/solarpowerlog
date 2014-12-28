@@ -214,6 +214,7 @@ CInverterSputnikSSeriesSimulator::CInverterSputnikSSeriesSimulator(
     _isconnected = false;
     // will be initialized later.
     ctrlserver = NULL;
+    _inject_chksum_err = false;
 
     // Add the capabilites that this inverter has
     // Note: The "must-have" ones CAPA_CAPAS_REMOVEALL and CAPA_CAPAS_UPDATED are already instanciated by the base class constructor.
@@ -898,6 +899,13 @@ std::string CInverterSputnikSSeriesSimulator::parsereceivedstring(
         telsize);
     ret = buf + ret + "|";
     unsigned int checksum = CalcChecksum(ret.c_str(), ret.length());
+
+    if (_inject_chksum_err) {
+        LOGINFO(logger, "Injecting checksum error");
+        checksum = 0xdead;
+        _inject_chksum_err = false;
+    }
+
     snprintf(buf, sizeof(buf), "%04X}", checksum);
     ret += buf;
     return ret;
@@ -945,6 +953,11 @@ std::string CInverterSputnikSSeriesSimulator::parsereceivedstring_ctrlserver(
         return ("BYE!\n");
     } else if (s == "version") {
         return PACKAGE_STRING + std::string("\n");
+    }
+
+    if (s == "inject_chksum") {
+        _inject_chksum_err = true;
+        return ("DONE\n");
     }
 
     size_t first = s.find_first_of(':');

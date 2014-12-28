@@ -58,6 +58,8 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include <boost/random.hpp>
+
 struct CInverterSputnikSSeriesSimulator::simulator_commands simcommands[] = {
         { "ADR", 1, new CValue<int>(1), 0, NULL, false },
         { "PAC", 0.5, new CValue<float>(42), 0, NULL, false },
@@ -175,6 +177,47 @@ static bool converttovalue(IValue *ivalue, const std::string &value,
     return true;
 }
 
+/** modify the value a little bit
+ * \param ivalue will be updated.
+ */
+static void modifyvalue(IValue *ivalue)
+{
+    static boost::random::mt19937 rng;
+    // allow changes from -20 to +20%, in 0.1% steps
+    boost::random::uniform_int_distribution<> change(-200,200);
+    float tmp = (float) change(rng) * 0.001;
+
+    // only modify with a certain hardcoded probability.
+    int shouldwe = change(rng) + 200;
+
+    if (shouldwe < 350) return;
+
+    cout << endl << "modifying with tmp=" << tmp << endl;
+
+    if (CValue<float>::IsType(ivalue)) {
+        CValue<float> &v = *((CValue<float>*)ivalue);
+        float tmp2 = v.Get();
+        tmp2 = tmp2 + tmp*tmp2;
+        v.Set(tmp2);
+    } else if (CValue<long>::IsType(ivalue)) {
+        CValue<long> &v = *((CValue<long>*)ivalue);
+        float tmp2 = v.Get();
+        tmp2 = tmp2 + tmp*tmp2 + 0.5;
+        v.Set(tmp2);
+    } else if (CValue<int>::IsType(ivalue)) {
+        CValue<int> &v = *((CValue<int>*)ivalue);
+        float tmp2 = v.Get();
+        tmp2 = tmp2 + tmp*tmp2 + 0.5;
+        v.Set(tmp2);
+    } else if (CValue<bool>::IsType(ivalue)) {
+        ((CValue<bool>*)ivalue)->Set(tmp >= 0.0 ? true : false);
+    } else {
+        LOGERROR(Registry::GetMainLogger(),
+            "converttovalue -- not implemented  CValue<type>");
+    }
+}
+
+
 /// helper to convert the values to suitable strings
 /// Implemented for float, long and int
 static std::string convert2sputnikhex(IValue *value, float scale)
@@ -215,6 +258,7 @@ CInverterSputnikSSeriesSimulator::CInverterSputnikSSeriesSimulator(
     // will be initialized later.
     ctrlserver = NULL;
     _inject_chksum_err = false;
+    _modify_values = false;
 
     // Add the capabilites that this inverter has
     // Note: The "must-have" ones CAPA_CAPAS_REMOVEALL and CAPA_CAPAS_UPDATED are already instanciated by the base class constructor.
@@ -868,6 +912,11 @@ std::string CInverterSputnikSSeriesSimulator::parsereceivedstring(
                     // LOGTRACE(logger, tokens[i] << " found");
                     tmps = convert2sputnikhex(scommands[j].value,
                         scommands[j].scale1);
+
+                    if (_modify_values) {
+                        modifyvalue(scommands[j].value);
+                    }
+
                     if (!tmps.empty()) {
                         if (!ret.empty()) {
                             ret += ";";
@@ -953,10 +1002,14 @@ std::string CInverterSputnikSSeriesSimulator::parsereceivedstring_ctrlserver(
         return ("BYE!\n");
     } else if (s == "version") {
         return PACKAGE_STRING + std::string("\n");
-    }
-
-    if (s == "inject_chksum") {
+    } else if (s == "inject_chksum") {
         _inject_chksum_err = true;
+        return ("DONE\n");
+    } else if (s == "modify_on") {
+        _modify_values = true;
+        return ("DONE\n");
+    } else if (s == "modify_off") {
+        _modify_values = false;
         return ("DONE\n");
     }
 
@@ -992,6 +1045,7 @@ std::string CInverterSputnikSSeriesSimulator::parsereceivedstring_ctrlserver(
             LOGERROR(logger, "ctrl-server parse: Parse error.");
             s += "ERR: Parse error on " + *it + ". ";
             continue;
+
         }
         int i = 0;
         for (i = 0; scommands[i].token; i++) {

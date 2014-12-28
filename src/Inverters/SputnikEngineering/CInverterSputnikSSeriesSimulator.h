@@ -145,6 +145,10 @@ private:
     /// inject the next time an checksum error (will force an reconnect from the
     /// client)
     bool _inject_chksum_err;
+
+    /// modify values automatically to simulate changes
+    bool _modify_values;
+
 };
 
 #endif

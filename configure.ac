@@ -1,13 +1,13 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(solarpowerlog, 0.21, tobi@coldtobi.de)
-AC_PREREQ(2.59)
+AC_INIT([solarpowerlog],[0.21a],[tobi@coldtobi.de])
+AC_PREREQ([2.68])
 
 # use own directory for the autotools stuff
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
 
-AC_PROG_LIBTOOL
+LT_INIT
 
 CPPFLAGS="-Wall -Wextra"
 
@@ -17,12 +17,19 @@ AC_CONFIG_HEADERS(src/config.h)
 # TODO
 #AC_COPYRIGHT (copyright-notice )
 
-AM_INIT_AUTOMAKE(solarpowerlog, 0.21)
+AM_INIT_AUTOMAKE(solarpowerlog, 0.21a)
 
 AC_CONFIG_SRCDIR([src/solarpowerlog.cpp])
 
 # configure extlibs 
-AC_CONFIG_SUBDIRS([extlibs/dbixx])
+AC_CHECK_FILE([extlibs/dbixx/configure])
+
+if test "x$ac_cv_file_extlibs_dbixx_configure" != "xno" ; then
+	AC_MSG_NOTICE([dbixx found and will be configured])
+	AC_CONFIG_SUBDIRS([extlibs/dbixx])
+fi 
+AM_CONDITIONAL([MAKE_DBIXX],test "x$ac_cv_file_extlibs_dbixx_configure" != "xno")
+
 
 ### options for some features that might not always be needed 
 ### (for shrinking the footprint)
@@ -259,7 +266,7 @@ else
 fi
 
 ## Check for Boost 
-BOOST_REQUIRE([1.38])
+BOOST_REQUIRE([1.48])
 
 # Add the option to statically link to the boost libraries 
 BOOST_STATIC()

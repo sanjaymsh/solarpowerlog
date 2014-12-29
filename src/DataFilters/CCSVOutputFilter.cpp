@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
  solarpowerlog
- Copyright (C) 2009  Tobias Frost
+ Copyright (C) 2009-2011  Tobias Frost
 
  This file is part of solarpowerlog.
 

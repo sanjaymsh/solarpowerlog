@@ -118,3 +118,5 @@ dist-hook:
 
 $(srcdir)/configuration/ILogger_hashmacro.h: $(srcdir)/scripts/GenConstHash.pl
 	perl $(srcdir)/scripts/GenConstHash.pl -l 96 -r LOG_SA_HASH -t $@
+
+all: $(srcdir)/configuration/ILogger_hashmacro.h

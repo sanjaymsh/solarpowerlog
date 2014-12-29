@@ -123,7 +123,11 @@ CConnectSerialAsio::~CConnectSerialAsio()
     if (ioservice) delete ioservice;
 }
 
-// TODO Extract to common base class (duplicate code here!!)
+void CConnectSerialAsio::Accept(ICommand *callback) {
+    // Accept is the same as Connect for this class
+    Connect(callback);
+}
+
 void CConnectSerialAsio::Connect(ICommand *callback)
 {
     CAsyncCommand *commando = new CAsyncCommand(CAsyncCommand::CONNECT,
@@ -716,8 +720,8 @@ bool CConnectSerialAsio::AbortAll()
 
 bool CConnectSerialAsio::CanAccept()
 {
-#warning FIXME Enable Accept for Serial Comms -- Mapp Accept to Connect and we're fine...
-    return false;
+    // for the serial, accept is the same as connect
+    return true;
 }
 
 /** handles async sending */

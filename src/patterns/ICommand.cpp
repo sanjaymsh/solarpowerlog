@@ -80,8 +80,10 @@ const boost::any ICommand::findData(const std::string &key) const
 
 void ICommand::mergeData(const ICommand &other)
 {
-#warning check if deletion is really required? STL behaviour of map cover this?
 	// first delete all duplicate data, but only if the containers have data.
+    // (this is needed as std::map insert won't change the content if a key is
+    // alredy there)
+    // FIXME: missed optimization: iterate only over the shorter one of both containers.
     if (dat.size() && other.dat.size()) {
         std::map<std::string, boost::any>::const_iterator it;
         for(it = dat.begin(); it != dat.end(); it++)

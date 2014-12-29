@@ -72,12 +72,10 @@ private:
 	{
 	    // broadcast event.
 		CMD_BRC_SHUTDOWN = BasicCommands::CMD_BRC_SHUTDOWN,
-
 	    CMD_INIT = BasicCommands::CMD_USER_MIN,
 		CMD_WAIT4CONNECTION,
 		CMD_IDENTFY_WAIT,
 		CMD_POLL,
-		CMD_WAIT_RECEIVE,
 		CMD_DISCONNECTED,
 		CMD_DISCONNECTED_WAIT,
 		CMD_EVALUATE_RECEIVE,
@@ -99,7 +97,7 @@ private:
 	string assemblequerystring();
 
 	/// parse the answer of the inverter.
-	int parsereceivedstring();
+	int parsereceivedstring(std::string &rcvd);
 
 	/// helper for parsereceivedstring()
 	bool parsetoken(string token);
@@ -120,20 +118,9 @@ private:
     /// stores not answered commands (by removing the ansewered ones)
     set<ISputnikCommand*> notansweredcommands;
 
-    /// stores particially received responses (due to an interrupted read)
-    std::string part_received;
-
     /// set to true if the shutdown request has been received via broadcast
     /// event.
     bool _shutdown_requested;
-
-    /// timestamp of expected next receive
-    /// on shared connections we'll receive telgramms for other inverts,
-    /// and on slow (serial) connections receiving might
-    /// be split on several chunks.
-    /// So we need to put a cap on retries to avoid exceeding the time allowes
-    /// for a complete response.
-    boost::posix_time::ptime _deadline_receive;
 
     /// Configuration Cache: Timeout for telegramm, unit is ms
     float _cfg_response_timeout_ms;

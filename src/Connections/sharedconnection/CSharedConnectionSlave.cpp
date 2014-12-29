@@ -237,8 +237,15 @@ bool CSharedConnectionSlave::IsConnected(void)
 
 bool CSharedConnectionSlave::AbortAll()
 {
-#warning code for non-atomic operations.
-    return false;
+    // We abort only our pending "receives"
+    CMutexAutoLock cma(&mutex);
+    for (std::list<ICommand *>::iterator it = pending_reads.begin();
+         it != pending_reads.end(); it++) {
+        (*it)->addData(ICMD_ERRNO, -ECANCELED);
+        Registry::GetMainScheduler()->ScheduleWork(*it);
+    }
+    pending_reads.clear();
+    return true;
 }
 
 void CSharedConnectionSlave::ExecuteCommand(const ICommand* cmd)

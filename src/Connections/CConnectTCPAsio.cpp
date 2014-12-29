@@ -81,11 +81,25 @@ struct asyncASIOCompletionHandler
 		*ec = e;
 	}
 
+	void operator() (const boost::system::error_code& e)
+	{
+	    *ec = e;
+	}
+
 private:
 	// note, we need pointer as boost seems to make a copy of our handler...
 	size_t *bytes;
 	boost::system::error_code *ec;
 };
+
+/** Helping function for timeout and receive, will be called by boost::asio.
+ *  this handler just will set the int store with the value value.
+*/
+static void boosthelper_set_result( int* store, int value )
+{
+    if (store)
+        *store = value;
+}
 
 CConnectTCPAsio::CConnectTCPAsio( const string &configurationname ) :
 	IConnect(configurationname)
@@ -324,7 +338,10 @@ void CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 {
     //LOGTRACE(logger, __PRETTY_FUNCTION__ << " handling " << cmd << "with ICmd " << cmd->callback );
 	string strhost, port;
-	unsigned long timeout = -1;
+    volatile int result_timer = 0;
+    boost::system::error_code handlerec;
+    struct asyncASIOCompletionHandler connect_handler(NULL, &handlerec);
+
 
 	// if connected, ignore the commmand, pretend success.
 	if (IsConnected()) {
@@ -345,12 +362,7 @@ void CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 
 	CConfigHelper cfghelper(ConfigurationPath);
 
-#warning timeouts should be only configured in the calling objects! \
-	Otherwise it is hard to differenicate between commands! \
-	So depreciate tcptimeout and configure this in the inverter class!
-#warning rework: Should be only needed from the configuration, as the \
-	calling object needs not be aware of these issues (should be transparent)
-
+	unsigned long timeout = -1;
     try {
         timeout = boost::any_cast<long>(
             cmd->callback->findData(ICONN_TOKEN_TIMEOUT));
@@ -374,22 +386,50 @@ void CConnectTCPAsio::HandleConnect( CAsyncCommand *cmd )
 	ip::tcp::resolver::iterator iter = resolver.resolve(query, ec);
 	ip::tcp::resolver::iterator end; // ... which is a "End marker" itself.
 
-#warning TODO timeouts not yet considered -- change to async_connect
+    boost::asio::deadline_timer timer(*ioservice);
+    boost::posix_time::time_duration td = boost::posix_time::millisec(timeout);
+    timer.expires_from_now(td);
+    timer.async_wait(
+            boost::bind(&boosthelper_set_result, (int*) &result_timer, 1));
+
+	// TODO timeouts not yet considered -- change to async_connect
+	//
 	while (iter != end) {
 		ip::tcp::endpoint endpoint = *iter++;
 		LOGDEBUG(logger, "Connecting to " << endpoint );
-		sockt->connect(endpoint, ec);
-		if (!ec)
-			break;
+		sockt->async_connect(endpoint, connect_handler);
+		size_t num = ioservice->run_one(ec);
+		if ( num == 0) {
+		    LOGDEBUG(logger, __PRETTY_FUNCTION__ << "WTF: no service run!!!");
+		}
+		if (result_timer) {
+	        cmd->callback->addData(ICMD_ERRNO, -ETIMEDOUT);
+	        cmd->HandleCompletion();
+	        sockt->cancel(ec);
+	        ioservice->poll();
+	        return ;
+		}
+		if (ioservice->stopped()) {
+            cmd->callback->addData(ICMD_ERRNO, -ECANCELED);
+            cmd->HandleCompletion();
+            ioservice->poll();
+            return;
+		}
+        // not timer, so it must be the connect that returned.
+		if (!handlerec) {
+		    timer.cancel();
+		    ioservice->poll(ec);
+		    break;
+		}
 	}
 
 	// preset name, but only needed if we gonna log on these levels.
 	if (logger.IsEnabled(ILogger::LL_ERROR) || logger.IsEnabled(ILogger::LL_DEBUG))
 		cfghelper.GetConfig("name", strhost);
 
-	if (ec) {
+	if (handlerec) {
 		cmd->callback->addData(ICMD_ERRNO, -ECONNREFUSED);
-		if (!ec.message().empty())
+		if (!handlerec.message().empty())
 			cmd->callback->addData(ICMD_ERRNO_STR, ec.message());
 		cmd->HandleCompletion();
 		return ;
@@ -443,15 +483,6 @@ void CConnectTCPAsio::HandleDisconnect( CAsyncCommand *cmd )
 	}
 	cmd->HandleCompletion();
 	return ;
-}
-
-/*** Helping function for timeout and receive, will be called by boost::asio.
- *  this handler just will set the int store with the value value.
-*/
-static void boosthelper_set_result( int* store, int value )
-{
-	if (store)
-		*store = value;
 }
 
 /** Handle Receive -- asynchronous read from the asio socket with timeout.

@@ -110,26 +110,44 @@ using namespace std;
 class CConfigHelper
 {
 public:
-	/***/
+	/** Constructor
+	 *
+	 * \param configurationpath The path to the section of the
+	 * configuration file we want to evaluate.
+	 * (Usually you got this path by the factory generated your object)
+	*/
 	CConfigHelper( const string& configurationpath );
 	virtual ~CConfigHelper();
 
-// FIXME Document me
-	/** Basic checks on configuration, with the support for optioanl parameters
+	/** Basic checks on configuration keys, with the support for optional parameters
 	 *
-	 * The function checks if the configurationkey (parameter setting)
-	 * Mandatory options (optional=false, default) are checked for existance first,
+	 * This function checks for the parameter associated with the
+	 * configuration-key (setting) for the existence (if not an optional parameter)
+	 * and for type-correctness.
+	 *
+	 * For mandatory options (specified by parameter optional=false) the key
+	 * must exists and be of the right datatype.
+	 *
+	 * Optional parameters needs not to be present, but when they are the
+	 * datatype must be suitable.
+	 *
+	 * If printerr is given as true, a found configuration error
+	 * (type, and existence of mandatory options)
+	 * will be logged using the mainlogger.
+	 *
+	 * The function checks if the configuration-key (parameter setting)
+	 * Mandatory options (optional=false, default) are checked for existence first,
 	 * optional options are only checked if the type if ok.
 	 * If printerr is given with true (default), the type of error is logged-.
 	 *
 	 * \returns true if the tests passed, else false
 	 *
-	 * \param setting key of the configuration
+	 * \param setting configuration-key
 	 * \param type expected type
-	 * \param optional is it mandatory or optionally,
-	 * \param printerr explain the error to the main logger
-	 *
-	 * */
+	 * \param optional is it mandatory(false) or optional(true,default),
+	 * \param printerr if true, explain the error to the main logger
+	 * (default:false)
+	 */
 	bool CheckConfig( const string &setting, libconfig::Setting::Type type,
 		bool optional = false, bool printerr = true );
 
@@ -137,7 +155,8 @@ public:
 
 	/** Retrieves a configuration or set the config with a default value.
 	 *
-	 * \returns false, if the default value has been used. */
+	 * \returns false, if the default value has been used.
+	 */
 	bool GetConfig( string const &setting, T &store, T defvalue )
 	{
 		libconfig::Setting & set
@@ -150,6 +169,51 @@ public:
 		return true;
 	}
 
+	/** Specialization of the GetConfig routine for the type unsigned-long.
+	 * This is necessary as libconfig-1.4.8 removes long support.
+	 *
+	 * \returns false, if the default value has been used.
+	 */
+	bool GetConfig(string const &setting, unsigned long &store,
+        unsigned long defvalue)
+	{
+	    unsigned int tmp;
+
+        libconfig::Setting & set
+            = Registry::Instance().GetSettingsForObject(cfgpath);
+
+        if (!set.lookupValue(setting, tmp)) {
+            store = defvalue;
+            return false;
+        }
+
+        store = tmp;
+        return true;
+	}
+
+    /** Specialization of the GetConfig routine for the type long.
+     * This is necessary as libconfig-1.4.8 removes long support.
+     * \returns false, if the default value has been used.
+     */
+	bool GetConfig(string const &setting, long &store,
+            long defvalue)
+    {
+        int tmp;
+
+        libconfig::Setting & set
+            = Registry::Instance().GetSettingsForObject(cfgpath);
+
+        if (!set.lookupValue(setting, tmp)) {
+            store = defvalue;
+            return false;
+        }
+        store = tmp;
+        return true;
+    }
+
+    /** GetConfig when using a char-array as setting -- see ##GetConfig doc
+      * \returns false, if the default value has been used.
+     */
 	template<class T>
 	bool GetConfig( char const *setting, T &store, const T defvalue )
 	{
@@ -157,6 +221,9 @@ public:
 		return GetConfig(s, store, defvalue);
 	}
 
+    /** GetConfig for mandatory settings.
+      * \returns false, if the setting could not be retrieved.
+     */
 	template<class T>
 	bool GetConfig( const string &setting, T &store )
 	{
@@ -169,12 +236,48 @@ public:
 		return true;
 	}
 
+    /** GetConfig for mandatory settings, flavour "char*"
+      * \returns false, if the setting could not be retrieved.
+     */
 	template<class T>
 	bool GetConfig( char const *setting, T &store )
 	{
 		string s = setting;
 		return GetConfig(s, store);
 	}
+
+    /** GetConfig for mandatory unsigned long settings, for libconfig 1.4.8
+      * \returns false, if the setting could not be retrieved.
+     */
+    bool GetConfig( const string &setting, unsigned long &store )
+    {
+        unsigned int tmp;
+        libconfig::Setting & set
+            = Registry::Instance().GetSettingsForObject(cfgpath);
+
+        if (!set.lookupValue(setting, tmp)) {
+            return false;
+        }
+        store = tmp;
+        return true;
+    }
+
+    /** GetConfig for mandatory long settings, for libconfig 1.4.8
+      * \returns false, if the setting could not be retrieved.
+     */
+    bool GetConfig( const string &setting, long &store )
+    {
+        int tmp;
+        libconfig::Setting & set
+            = Registry::Instance().GetSettingsForObject(cfgpath);
+
+        if (!set.lookupValue(setting, tmp)) {
+            return false;
+        }
+        store = tmp;
+        return true;
+    }
+
 
 	/** Get the configuration for an array entry, identified by a index.
 	 *
@@ -198,13 +301,14 @@ public:
 
 		try {
 			store = set[setting][index];
-			return true;
-		} catch (libconfig::SettingNotFoundException e) {
+
+		} catch (libconfig::SettingNotFoundException &e) {
 			return false;
-		} catch (libconfig::SettingTypeException e) {
+		} catch (libconfig::SettingTypeException &e) {
 			// TODO: Assert here?
 			return false;
 		}
+		return true;
 	}
 
 
@@ -231,24 +335,28 @@ public:
 
 		try {
 			store = (const char *) set[setting][index];
-			return true;
-		} catch (libconfig::SettingNotFoundException e) {
+		} catch (libconfig::SettingNotFoundException &e) {
 			return false;
-		} catch (libconfig::SettingTypeException e) {
+		} catch (libconfig::SettingTypeException &e) {
 			// TODO: Assert here?
 			return false;
 		}
+        return true;
 	}
 
-	// this ugly helper is for the CHTHML Writer -- we are having there
-	// a list which embeddes a array. The entries are anonymous, that is without
-	// a destinctive name.
-	// I currently wonder how a bettter access function should look like ;-O)
-	// TODO make this more elegant and reusable...
-	//
-	// so, well, this function looks up an entry in the embedded array,
-	// with param i giving the row, index the column.
-template<class T>
+	/** this ugly helper is for the CHTHML Writer -- we are having a list which
+	 *  embeddes a array. The entries are anonymous, that is without
+	 * a destinctive name.
+	 * I currently wonder how a better access function should look like ;-O)
+	 * TODO make this more elegant and reusable...
+	 *
+	 * so, well, this function looks up an entry in the embedded array,
+	 * with param i giving the row, index the column.
+	 *
+	 * \returns true on success (setting found, type ok),
+	 *     false else (setting not found, type error)
+	 */
+	template<class T>
 	bool GetConfigArray( const int i, int index, T &store )
 	{
 		libconfig::Setting & set
@@ -257,29 +365,44 @@ template<class T>
 		try {
 			store = (const char *) set[i][index];
 			return true;
-		} catch (libconfig::SettingNotFoundException e) {
+		} catch (libconfig::SettingNotFoundException &e) {
 			return false;
-		} catch (libconfig::SettingTypeException e) {
+		} catch (libconfig::SettingTypeException &e) {
 			// TODO: Assert here?
 			return false;
 		}
 	}
 
-bool GetConfigArray( const int i, int index, string &store )
-{
-	libconfig::Setting & set
-		= Registry::Instance().GetSettingsForObject(cfgpath);
 
-	try {
-		store = (const char *) set[i][index];
-		return true;
-	} catch (libconfig::SettingNotFoundException e) {
-		return false;
-	} catch (libconfig::SettingTypeException e) {
-		// TODO: Assert here?
-		return false;
-	}
-}
+    /** this ugly helper is for the CHTHML Writer, for types that are strings.#
+     *
+     * we are having a list which embeddes a array. The entries are anonymous, that is without
+     * a destinctive name.
+     * I currently wonder how a better access function should look like ;-O)
+     * TODO make this more elegant and reusable...
+     *
+     * so, well, this function looks up an entry in the embedded array,
+     * with param i giving the row, index the column.
+     *
+     * \returns true on success (setting found, type ok),
+     *     false else (setting not found, type error)
+     */
+
+    bool GetConfigArray( const int i, int index, string &store )
+    {
+        libconfig::Setting & set
+            = Registry::Instance().GetSettingsForObject(cfgpath);
+
+        try {
+            store = (const char *) set[i][index];
+        } catch (libconfig::SettingNotFoundException &e) {
+            return false;
+        } catch (libconfig::SettingTypeException &e) {
+            // TODO: Assert here?
+            return false;
+        }
+        return true;
+    }
 
 
 private:

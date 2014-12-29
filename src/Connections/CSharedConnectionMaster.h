@@ -73,18 +73,15 @@ public:
 
 protected:
 
-	virtual bool Connect(ICommand *callback);
+	virtual void Connect(ICommand *callback);
 
-	virtual bool Disconnect(ICommand *callback);
+	virtual void Disconnect(ICommand *callback);
 
 	virtual void SetupLogger(const string& parentlogger, const string & = "");
 
-	virtual bool Send(const char *tosend, unsigned int len, ICommand *callback =
-			NULL);
+	virtual void Send(ICommand *cmd);
 
-	virtual bool Send(const string& tosend, ICommand *callback = NULL);
-
-	virtual bool Receive(ICommand *callback);
+	virtual void Receive(ICommand *callback);
 
 	virtual bool CheckConfig(void);
 

@@ -278,18 +278,18 @@ void CSharedConnectionMaster::ExecuteCommand(const ICommand *Command)
 
 }
 
-bool CSharedConnectionMaster::Connect(ICommand *callback)
+void CSharedConnectionMaster::Connect(ICommand *callback)
 {
 	assert(connection);
-	return connection->Connect(callback);
-
+	assert(callback);
+	connection->Connect(callback);
 }
 
-bool CSharedConnectionMaster::Disconnect(ICommand *callback)
+void CSharedConnectionMaster::Disconnect(ICommand *callback)
 {
 	assert(connection);
-	return connection->Disconnect(callback);
-
+	assert(callback);
+	connection->Disconnect(callback);
 }
 
 void CSharedConnectionMaster::SetupLogger(const string& parentlogger,
@@ -301,22 +301,18 @@ void CSharedConnectionMaster::SetupLogger(const string& parentlogger,
 		connection->SetupLogger(parentlogger, "");
 }
 
-bool CSharedConnectionMaster::Send(const char *tosend, unsigned int len,
-		ICommand *callback)
-{
-	assert (connection);
-	return connection->Send(tosend, len, callback);
+void CSharedConnectionMaster::Send(ICommand *callback) {
+	assert(callback);
+	assert(connection);
+	connection->Send(callback);
 }
 
-bool CSharedConnectionMaster::Send(const string& tosend, ICommand *callback)
+void CSharedConnectionMaster::Receive(ICommand *callback)
 {
-	assert (connection);
-	return connection->Send(tosend, callback);
+	assert(callback);
 
-}
+#warning need we to hold a mutex here?
 
-bool CSharedConnectionMaster::Receive(ICommand *callback)
-{
 	// Save command for later interpretation.
 	readcommands.push_back(callback);
 
@@ -364,7 +360,7 @@ bool CSharedConnectionMaster::Receive(ICommand *callback)
 		callback->addData(ICONNECT_TOKEN_PRV_ORIGINALCOMMAND, callback);
 		cmd->setTrgt(this);
 		cmd->setCmd(CMD_READ);
-		return connection->Receive(cmd);
+		connection->Receive(cmd);
 	}
 
 	// a receive already pending. Schedule work to monitor its timeout.
@@ -375,8 +371,6 @@ bool CSharedConnectionMaster::Receive(ICommand *callback)
 	ts.tv_sec = duration.total_seconds();
 	ts.tv_nsec = duration.total_nanoseconds() % 1000000000;
 	Registry::GetMainScheduler()->ScheduleWork(cmd, ts);
-
-	return true;
 }
 
 bool CSharedConnectionMaster::CheckConfig(void)

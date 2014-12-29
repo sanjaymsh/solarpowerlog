@@ -80,6 +80,7 @@ bool CConfigHelper::CheckConfig( const string & setting,
 			if (set.getType() == type) {
 				return true;
 			}
+			break;
 		}
 	}
 

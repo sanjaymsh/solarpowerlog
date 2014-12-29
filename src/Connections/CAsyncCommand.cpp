@@ -44,7 +44,7 @@ CAsyncCommand::CAsyncCommand(enum Commando c, ICommand *callback, sem_t *sem)
 {
 	this->c = c;
 	if (!callback) {
-		this->callback = new ICommand(NULL, NULL);
+		this->callback = new ICommand(0, NULL);
 		private_icommand = true;
 	} else {
 		this->callback = callback;

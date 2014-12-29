@@ -46,6 +46,8 @@
 
 #include <boost/thread/mutex.hpp>
 
+#include "interfaces/CDebugHelper.h"
+
 class ICommand;
 class ICommandTarget;
 class CTimedWork;
@@ -121,6 +123,12 @@ private:
 
 protected:
 	boost::mutex mut;
+
+private:
+	CDebugHelperCollection dhc;
+	int works_received;
+	int works_completed;
+	int works_timed_scheduled;
 
 };
 

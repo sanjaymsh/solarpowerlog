@@ -30,9 +30,9 @@
  *      Author: tobi
  */
 
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
+#include "porting.h"
 #endif
 
 #ifdef  HAVE_FILTER_CSVDUMP
@@ -43,6 +43,9 @@
 #include <iomanip>
 #include <cstdio>
 #include <memory>
+
+#include <time.h>
+#include <stdio.h>
 
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/date_time/local_time/local_time.hpp>
@@ -88,14 +91,14 @@ CCSVOutputFilter::CCSVOutputFilter( const string & name,
 	// However, to help following plugins, we will publish some data here:
 	// (this enables other plugins to use our files as data source)
 	c = new CCapability(CAPA_CSVDUMPER_FILENAME, CAPA_CSVDUMPER_FILENAME_TYPE, this);
-	AddCapability(CAPA_CSVDUMPER_FILENAME,c);
+	AddCapability(c);
 
 	// A comma-seperated list of parameters which are currently logged.
 	// note: This list might grow over time, so when parsing the CSV File,
 	// be prepared that there might be not all given from the beginning of the
 	// file
 	c = new CCapability(CAPA_CSVDUMPER_LOGGEDCAPABILITES, CAPA_CSVDUMPER_LOGGEDCAPABILITES_TYPE, this);
-	AddCapability(CAPA_CSVDUMPER_LOGGEDCAPABILITES,c);
+	AddCapability(c);
 }
 
 CCSVOutputFilter::~CCSVOutputFilter()
@@ -235,7 +238,6 @@ void CCSVOutputFilter::ExecuteCommand( const ICommand *cmd )
 	case CMD_ROTATE:
 		DoINITCmd(cmd);
 		break;
-
 	}
 }
 
@@ -352,12 +354,9 @@ void CCSVOutputFilter::DoCYCLICmd( const ICommand * )
 	std::string format;
 
 	CConfigHelper cfg(configurationpath);
-#warning document me: Config option
-	cfg.GetConfig("Format_Timestamp", format, std::string("%Y-%m-%d %T"));
-	#warning document me: config Uption // FIXME
-	cfg.GetConfig("Compact_CSV", compact_file, false);
-#warning document me: config Uption // FIXME
-cfg.GetConfig("flush_file_buffer_immediatly", flush_after_write, true);
+	cfg.GetConfig("format_timestamp", format, std::string("%Y-%m-%d %T"));
+	cfg.GetConfig("compact_csv", compact_file, false);
+	cfg.GetConfig("flush_file_buffer_immediatly", flush_after_write, false);
 
 	std::stringstream ss;
 
@@ -467,7 +466,6 @@ cfg.GetConfig("flush_file_buffer_immediatly", flush_after_write, true);
 
 bool CCSVOutputFilter::CMDCyclic_CheckCapas( void )
 {
-	// get the array
 	CConfigHelper cfghlp(configurationpath);
 	bool store_all = false;
 	bool ret = false;
@@ -503,7 +501,6 @@ bool CCSVOutputFilter::CMDCyclic_CheckCapas( void )
 		ret = true;
 	}
 	return ret;
-
 }
 
 bool CCSVOutputFilter::search_list( const string id ) const

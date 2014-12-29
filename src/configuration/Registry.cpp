@@ -59,14 +59,14 @@ bool Registry::LoadConfig( std::string name )
 	Config = new libconfig::Config;
 	try {
 		Config->readFile(name.c_str());
-	} catch (libconfig::ParseException ex) {
+	} catch (libconfig::ParseException &ex) {
 		std::cerr << "Error parsing configuration file " << name
 			<< " at Line " << ex.getLine() << ". ("
 			<< ex.getError() << ")" << std::endl;
 		delete Config;
 		Config = 0;
 		return false;
-	} catch (libconfig::FileIOException ex) {
+	} catch (libconfig::FileIOException &ex) {
 		std::cerr << "Error parsing configuration file " << name
 			<< ". IO Exception " << std::endl;
 		delete Config;

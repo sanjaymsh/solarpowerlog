@@ -106,7 +106,9 @@ void CTimedWork::ScheduleWork( ICommand *Command, struct timespec ts )
     boost::posix_time::ptime first;
     boost::posix_time::ptime n =
             boost::posix_time::microsec_clock::local_time();
+#ifdef CTIMEDWORK_DEBUG
     LOGDEBUG(Registry::GetMainLogger(),"NOW:\t" << n);
+#endif
 
     boost::posix_time::seconds s(ts.tv_sec);
     boost::posix_time::millisec ms(ts.tv_nsec / (1000 * 1000));
@@ -122,11 +124,15 @@ void CTimedWork::ScheduleWork( ICommand *Command, struct timespec ts )
 #endif
 
         if (0 == TimedCommands.size()) {
+#ifdef CTIMEDWORK_DEBUG
             LOGDEBUG(Registry::GetMainLogger(),"Q empty");
+#endif
             need_interrupt = true;
         } else {
             first = (TimedCommands.begin())->first;
+#ifdef CTIMEDWORK_DEBUG
             LOGDEBUG(Registry::GetMainLogger(),"first\t" << first << "\tnew " << n << " \t\tdelta " << n-first );
+#endif
             if (first > n) {
                 need_interrupt = true;
             }
@@ -136,8 +142,11 @@ void CTimedWork::ScheduleWork( ICommand *Command, struct timespec ts )
                 pair<boost::posix_time::ptime, ICommand*>(n, Command));
 
         first = (TimedCommands.begin())->first;
+
+#ifdef CTIMEDWORK_DEBUG
         if (need_interrupt)
             LOGDEBUG(Registry::GetMainLogger(),"new 1st\t" << first );
+#endif
 
 #ifdef CTIMEDWORK_DEBUG
         ctimedwork_wants_mutex=0;
@@ -152,10 +161,14 @@ void CTimedWork::ScheduleWork( ICommand *Command, struct timespec ts )
     (volatile int)thread_interrupts_balance++;
     thread_interrupts_count++;
 #endif
+
     if (need_interrupt) {
-        LOGDEBUG(Registry::GetMainLogger(),"interrupted");
+#ifdef CTIMEDWORK_DEBUG
+    	LOGDEBUG(Registry::GetMainLogger(),"interrupted");
+#endif
         thread.interrupt();
     }
+
 #ifdef CTIMEDWORK_DEBUG
     (volatile int)thread_interrupts_balance--;
 #endif

@@ -22,10 +22,11 @@ solarpowerlog \- queries data from a photovoltaic inverter
 .RI [ options ]
 .br
 .SH "DESCRIPTION"
-The program's purpose is to track and log data from photo\-voltaic inverters, collect power data and store them. Also a purpose is to provide an interface to extract these data, allowing applications like website statistics of the system.
+The program trackd and logd data from photovoltaic inverters,
+collect power data and store them.
 
 .SH "OPTIONS"
-These programs follow the usual GNU command line syntax, with long
+The program follow the usual GNU command line syntax, with long
 options starting with two dashes (`\-').
 A summary of options is included below.
 
@@ -40,10 +41,28 @@ Show version of program.
 Runs the program in the background, detaching it from the console.
 .TP
 .B \-c, \-\-conf filename
-The configuration to be used. Default is solarpowerlog.conf, looked for in the current directory.
+The configuration to be used. Default is solarpowerlog.conf, looked for in the
+current directory.
 .TP
+.B \-\-dumpcfg
+Dump configuration structure, then exit
+.TP
+.B \-\-chdir\fR arg
+working directory for daemon (only used when running as
+a daemon). Defaults to /
+.TP
+.B \-\-stdout\fR arg
+redirect stdout to this file (only used when running as
+a daemon). Defaults to /dev/null
+.TP
+.B \-\-stderr\fR arg
+redirect stderr to this file (only used when running as
+a daemon). Defaults to /dev/null
+.TP
+.B \-\-pidfile\fR arg
+create a pidfile after the daemon has been started.
+(only used when running as a daemon). Default: no pid
+file
 
 .SH "SEE ALSO"
 http://sourceforge.net/apps/mediawiki/solarpowerlog/index.php
-.SH "AUTHOR"
-solarpowerlog was written by Tobias Frost

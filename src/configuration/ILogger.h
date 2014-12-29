@@ -224,6 +224,9 @@ public:
 		return loggername_;
 	}
 
+	/// Modify the logger level (at runtime)
+	void SetLoggerLevel(log4cxx::LevelPtr level);
+
 	/** Check if a logging statement would go through and
 	 * if so setup logging level.
 	 *

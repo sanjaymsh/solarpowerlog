@@ -1,0 +1,24 @@
+# Defaults for solarpowerlog initscript
+
+#
+# This is a POSIX shell fragment
+#
+
+# Enable the automatic start?
+# default is "no start", as you first need to configure solarpowerlog anyway.
+# ENABLED=1
+
+# Where to cd to before executing solarpowerlog
+RUNDIR=/etc/solarpowerlog
+
+# Run it as this user. defaults to "nobody"
+# Note: When you change this, you'll need to chown the logdir to the new user.
+#USER=nobody
+
+# Run it as this group. defaults to "nogroup"
+#GROUP=nogroup
+
+# Options to pass to solarpowerlog. For example, where is the config file:
+# The options to setup logging and launch the daemon are automatically added
+DAEMON_ARGS="-c /etc/solarpowerlog/solarpowerlog.conf"
+

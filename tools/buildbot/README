@@ -1,0 +1,8 @@
+This files are used to help automate things for buildbot builds.
+
+Buildbot will use those files when testing the debian package generation
+(autobuilding the debian branch)
+
+They are kept here soley for convenience reasons.
+
+See the individual files for comments/descriptions

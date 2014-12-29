@@ -19,7 +19,7 @@ set -e
 # store current dir
 SLP_ROOTDIR=$(pwd)
 
-CURRENT_BRANCH=$(git symbolic-ref -q HEAD | cut -d/ -f 3)
+CURRENT_BRANCH=$(git symbolic-ref -q HEAD | cut -d/ -f 3-)
 [[ "x$CURRENT_BRANCH" == "x" ]] && (echo "Cannot determin git branch to preserve branch." ; exit 1)
 
 echo "######## Stage 1: generate release tar (make dist, make distcheck.)"
@@ -56,10 +56,12 @@ tar xzf solarpowerlog_$VERSION.orig.tar.gz
 
 # integrate debian dir
 cd $SLP_ROOTDIR
+GIT_DESCRIBE=$(git describe)
 git checkout debian
 cp -r debian ../stagedir_debbuild/solarpowerlog-$VERSION
 # returb ti previous branch
 git checkout $CURRENT_BRANCH
+
 
 echo "########  2c) check if we need to tweak the debian changelog"
 cd ../stagedir_debbuild/solarpowerlog-$VERSION
@@ -70,9 +72,9 @@ echo "DEB_VERSION = $DEB_VERSION"
 if [[ "$DEB_VERSION" != "$VERSION" ]]
 then
    dch --newversion $VERSION-1 "New upstream version $VERSION (automated build with make-slp-disp)"
-   dch -a "upstream git reference: `git describe`"
+   dch -a "upstream git reference: $GIT_DESCRIBE"
 else
-   dch -a "upstream git reference: `git describe`"
+   dch -a "upstream git reference: $GIT_DESCRIBE"
 fi
 
 echo "######## Stage #3 Check packaging using pdebuilder (ensuring correct dependencies)"

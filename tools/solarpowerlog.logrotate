@@ -1,0 +1,9 @@
+/var/log/solarpowerlog/* {
+	rotate 12
+	weekly
+	compress
+	missingok
+	postrotate
+		start-stop-daemon --stop --exec /usr/bin/solarpowerlog --pidfile=/var/run/solarpowerlog/solarpowerlog.pid -s USR1
+	endscript
+     }

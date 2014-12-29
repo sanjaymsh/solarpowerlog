@@ -41,6 +41,8 @@
 #include "Inverters/DummyInverter/CInverterFactoryDummy.h"
 #include "Inverters/DummyInverter/CInverterDummy.h"
 
+static const std::string supported_models = "Dummy-Inverter: accepts any model";
+
 CInverterFactoryDummy::CInverterFactoryDummy()
 {
 }
@@ -49,7 +51,7 @@ CInverterFactoryDummy::~CInverterFactoryDummy()
 {
 }
 
-IInverterBase *CInverterFactoryDummy::Factory(const string & type,
+IInverterBase *CInverterFactoryDummy::Factory(const string &,
 		const string & name, const string & configurationpath)
 {
 	// As this is a dummy, we are not picky and return a object on any model...
@@ -58,7 +60,7 @@ IInverterBase *CInverterFactoryDummy::Factory(const string & type,
 
 const string & CInverterFactoryDummy::GetSupportedModels() const
 {
-	return "Dummy-Inverter: accepts any model";
+	return supported_models;
 }
 
 #endif /* HAVE_INV_DUMMY */

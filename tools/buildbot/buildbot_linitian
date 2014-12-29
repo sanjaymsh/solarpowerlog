@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# dpkg-buildpackage the debian package
+
+# Prerequesite:
+# builbot_make_orig_source run 
+
+# Result:
+# hopfully a debian package...
+
+set -e
+
+VERSION=$(grep "PACKAGE_VERSION=" configure | cut -d"=" -f 2- | tr --delete "\'")
+
+( cd stagedir_debbuild && lintian -IE --pedantic solarpowerlog_$VERSION*.changes )
+
+

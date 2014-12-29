@@ -2,7 +2,7 @@ ctemplate   GPL         http://libctemplate.sourceforge.net
 Author: Author: Stephen C. Losen, University of Virginia
 License: GPL
 Used for templating the HTML output
-Modifications by Tobias Frost:  
+Modifications by Tobias Frost:
     Added C++ Wrapper to the header file.
-    Emits smaller pages due filtering double-blanks 
-
+    Emits smaller pages due filtering double-blanks
+    Fixing compiler warnings.

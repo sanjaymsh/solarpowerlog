@@ -7,10 +7,10 @@ ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS=$(DBIXX_SUBDIRS) src
 
-EXTRA_DIST = tools/sputnik_simulator example_confs bootstrap.sh tools/solarpowerlog.init tools/solarpowerlog.default tools/solarpowerlog.logrotate
+EXTRA_DIST = example_confs bootstrap.sh tools/solarpowerlog.init tools/solarpowerlog.default tools/solarpowerlog.logrotate src/ctemplate/README
 
 # install some extras into the dist files...
-dist_doc_DATA = AUTHORS NEWS README
+dist_doc_DATA = AUTHORS NEWS README GPL GPL-3 LGPL-3 PLAN COPYRIGHT
 
 dist_man_MANS = solarpowerlog.1
 

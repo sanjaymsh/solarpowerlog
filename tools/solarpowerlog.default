@@ -1,5 +1,6 @@
 # Defaults for solarpowerlog initscript
-
+# License: GPL3 or later
+# Author: Tobias Frost
 #
 # This is a POSIX shell fragment
 #

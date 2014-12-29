@@ -10,6 +10,7 @@
 ### END INIT INFO
 
 # Author: Tobias Frost <tobi@coldtobi.de>
+# License GPL3 or later
 
 # Do NOT "set -e"
 

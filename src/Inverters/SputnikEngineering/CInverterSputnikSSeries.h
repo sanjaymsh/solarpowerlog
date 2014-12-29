@@ -1,33 +1,31 @@
 /* ----------------------------------------------------------------------------
- solarpowerlog
- Copyright (C) 2009  Tobias Frost
+ solarpowerlog -- photovoltaic data logging
 
- This file is part of solarpowerlog.
+Copyright (C) 2009-2012 Tobias Frost
 
- Solarpowerlog is free software; However, it is dual-licenced
- as described in the file "COPYING".
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
- For this file (CInverterSputnikSSeries.h), the license terms are:
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
- You can redistribute it and/or  modify it under the terms of the GNU Lesser
- General Public License (LGPL) as published by the Free Software Foundation;
- either version 3 of the License, or (at your option) any later version.
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
- This program is distributed in the hope that it will be useful, but
- WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Library General Public
- License along with this proramm; if not, see
- <http://www.gnu.org/licenses/>.
  ----------------------------------------------------------------------------
  */
 
 /** \file CInverterSputnikSSeries.h
  *
  *  Created on: May 21, 2009
- *      Author: tobi
+ *      Author: Tobias Frost
+ *
+ *      Contributors:
+ *      E.A.Neonakis <eaneonakis@freemail.gr>
  */
 
 #ifndef CINVERTERSPUTNIKSSERIES_H_
@@ -42,7 +40,9 @@
 #include "Inverters/interfaces/InverterBase.h"
 #include "Inverters/BasicCommands.h"
 
-#include <queue>
+#include "Inverters/SputnikEngineering/SputnikCommand/ISputnikCommand.h"
+
+#include <set>
 
 /** \fixme Implements the Inverter Interface for the Sputnik S Series
  *
@@ -62,7 +62,7 @@ public:
 	virtual void ExecuteCommand(const ICommand *Command);
 
 protected:
-	/** calculate the checksum for the telegramm stored in str */
+	/** calculate the checksum for the telegram stored in str */
 	static unsigned int CalcChecksum(const char* str, int len);
 
 private:
@@ -70,14 +70,16 @@ private:
 	/// Commands for the Workscheduler
 	enum Commands
 	{
-		CMD_INIT = 1000,
+	    // broadcast event.
+		CMD_BRC_SHUTDOWN = BasicCommands::CMD_BRC_SHUTDOWN,
+
+	    CMD_INIT = BasicCommands::CMD_USER_MIN,
 		CMD_WAIT4CONNECTION,
 		CMD_IDENTFY_WAIT,
 		CMD_POLL,
 		CMD_WAIT_RECEIVE,
 		CMD_DISCONNECTED,
 		CMD_DISCONNECTED_WAIT,
-		CMD_QUERY_IDENTIFY,
 		CMD_EVALUATE_RECEIVE,
 		CMD_WAIT_SENT,
 		CMD_SEND_QUERIES,
@@ -91,33 +93,16 @@ private:
 		INTERFACE = 1000
 	};
 
-	/// known queries
-	enum query
-	{
-		TYP,	SWV,	BUILDVER,	EC00,	EC01,	EC02,
-		EC03,	EC04,	EC05,	EC06,	EC07,	EC08,	PAC,
-		KHR,	DYR,	DMT,	DDY,	KYR,	KMT,	KDY,
-		KT0,	PIN,	TNF,	PRL,	UDC,	UL1,	UL2,
-		UL3,	IDC,	IL1,	IL2,	IL3,	TKK,	TK2,
-		TK3,	TMI,	THR,	SYS
-	};
-
-	/// Add a inverter-query into the queue for later quering...
-	void pushinverterquery(enum query q);
-
 	/// Build up the communication string
 	///
 	/// \returns the string created, or "" if nothing to do.
 	string assemblequerystring();
 
 	/// parse the answer of the inverter.
-	int parsereceivedstring(const string& s);
+	int parsereceivedstring();
 
 	/// helper for parsereceivedstring()
 	bool parsetoken(string token);
-
-	/// FIFO for commands to be transmitted.
-	queue<enum query> cmdqueue;
 
 	/// Adress to use as "our" adress for communication
 	/// This can be set by the conffile and the parameter ownadr
@@ -126,57 +111,47 @@ private:
 	void tokenizer(const char *delimiters, const string& s,
 			vector<string> &tokens);
 
-	// token handlers
-	// they all will take its tokens and do whatever required, usually
-	// updating Capabilities.
-	bool token_TYP(const vector<string> &tokens);
-	bool token_SWVER(const vector<string> &tokens);
-	bool token_BUILDVER(const vector<string> &tokens);
-	bool token_ECxx(const vector<string> &tokens);
-	bool token_PAC(const vector<string> &tokens);
-	bool token_KHR(const vector<string> &tokens);
-	bool token_DYR(const vector<string> &tokens);
-	bool token_DMT(const vector<string> &tokens);
-	bool token_DDY(const vector<string> &tokens);
-	bool token_KYR(const vector<string> &tokens);
-	bool token_KMT(const vector<string> &tokens);
-	bool token_KDY(const vector<string> &tokens);
-	bool token_KT0(const vector<string> &tokens);
-	bool token_PIN(const vector<string> &tokens);
-	bool token_TNF(const vector<string> &tokens);
-	bool token_PRL(const vector<string> &tokens);
-	bool token_UDC(const vector<string> &tokens);
-	bool token_UL1(const vector<string> &tokens);
-	bool token_UL2(const vector<string> &tokens);
-	bool token_UL3(const vector<string> &tokens);
-	bool token_IDC(const vector<string> &tokens);
-	bool token_IL1(const vector<string> &tokens);
-	bool token_IL2(const vector<string> &tokens);
-	bool token_IL3(const vector<string> &tokens);
-	bool token_TKK(const vector<string> &tokens);
-	bool token_TK2(const vector<string> &tokens);
-	bool token_TK3(const vector<string> &tokens);
-	bool token_TMI(const vector<string> &tokens);
-	bool token_THR(const vector<string> &tokens);
-	bool token_SYS(const vector<string> &tokens);
+    /// stores supported commands.
+    vector<ISputnikCommand*> commands;
 
-	// a helper, as this is shared by two token parsers.
-	void create_versioncapa(void);
+    /// stores pending commmands.
+    vector<ISputnikCommand*> pendingcommands;
 
-	///  some internal infos we cache....
-	int swversion;
-	int swbuild;
+    /// stores not answered commands (by removing the ansewered ones)
+    set<ISputnikCommand*> notansweredcommands;
 
-	/// cache for inverters comm adr.
-	unsigned int commadr;
-	/// cache for own adr
-	unsigned int ownadr;
+    /// stores particially received responses (due to an interrupted read)
+    std::string part_received;
 
-	/// helper to detect status code changes.
-	unsigned int laststatuscode;
+    /// set to true if the shutdown request has been received via broadcast
+    /// event.
+    bool _shutdown_requested;
 
-	/// helper for Execute Command to store error detection / recovery (errorcounter)
-	unsigned int errcnt_;
+    /// timestamp of expected next receive
+    /// on shared connections we'll receive telgramms for other inverts,
+    /// and on slow (serial) connections receiving might
+    /// be split on several chunks.
+    /// So we need to put a cap on retries to avoid exceeding the time allowes
+    /// for a complete response.
+    boost::posix_time::ptime _deadline_receive;
+
+    /// Configuration Cache: Timeout for telegramm, unit is ms
+    float _cfg_response_timeout_ms;
+
+    /// Configuration Cache: Timeout to establish a connection, unit ms
+    float _cfg_connection_timeout_ms;
+
+    /// Configuration Cache: Timeout to send a telegramm, unit ms
+    float _cfg_send_timeout_ms;
+
+    /// Configuration Cache: Reconnect delay, unit s
+    float _cfg_reconnectdelay_s;
+
+    /// cache for inverters comm adr.
+    unsigned int _cfg_commadr;
+    /// cache for own adr
+    unsigned int _cfg_ownadr;
+
 };
 
 #endif

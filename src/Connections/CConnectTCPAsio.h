@@ -1,28 +1,24 @@
 /* ----------------------------------------------------------------------------
- solarpowerlog
- Copyright (C) 2009  Tobias Frost
+ solarpowerlog -- photovoltaic data logging
 
- This file is part of solarpowerlog.
+Copyright (C) 2009-2012 Tobias Frost
 
- Solarpowerlog is free software; However, it is dual-licenced
- as described in the file "COPYING".
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
- For this file (ConnectionTCP.h), the license terms are:
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
- You can redistribute it and/or  modify it under the terms of the GNU Lesser
- General Public License (LGPL) as published by the Free Software Foundation;
- either version 3 of the License, or (at your option) any later version.
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
- This program is distributed in the hope that it will be useful, but
- WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Library General Public
- License along with this proramm; if not, see
- <http://www.gnu.org/licenses/>.
  ----------------------------------------------------------------------------
  */
+
 
 /** \file ConnectionTCPAsio.h
  *
@@ -71,75 +67,87 @@ protected:
 public:
 	virtual ~CConnectTCPAsio();
 
-	virtual void Connect( ICommand *callback );
+    virtual void Connect(ICommand *callback);
 
-	virtual void Disconnect( ICommand *callback );
+    virtual void Disconnect(ICommand *callback);
 
-	virtual void SetupLogger( const string& parentlogger, const string & = "" )
-	{
-		IConnect::SetupLogger(parentlogger, "Comms_TCP_ASIO");
-	}
+    virtual void SetupLogger(const string& parentlogger, const string & = "")
+    {
+        IConnect::SetupLogger(parentlogger, "Comms_TCP_ASIO");
+    }
 
-	virtual void Send( ICommand *callback);
+    virtual void Send(ICommand *callback);
 
-	virtual void Receive( ICommand *callback );
+    virtual void Receive(ICommand *callback);
 
-	virtual bool CheckConfig( void );
+    virtual bool CheckConfig(void);
 
-	virtual bool IsConnected( void );
+    virtual bool IsConnected(void);
+
+	virtual void Accept(ICommand *cmd);
+
+	virtual bool CanAccept()
+    {
+        return this->configured_as_server;
+    }
+
+	/// Aborts all IOs.
+	/// Note: The current executed I/O will also be cancelled, but error
+	/// reporting might report a wrong error. (e.g timeout instead of cancelled)
+    virtual bool AbortAll(void);
 
 private:
-	boost::asio::io_service *ioservice;
-	boost::asio::ip::tcp::socket *sockt;
-	boost::asio::streambuf *data;
+    boost::asio::io_service *ioservice;
+    boost::asio::ip::tcp::socket *sockt;
 
-	time_t timer;
+    virtual void _main(void);
 
-	// async patch
-	virtual void _main( void );
+    /** push some new work to the worker thread.
+     *  \note: If the work can be handled synchronously more efficent, the
+     *  work might be executed right away.
+     *
+     * \param cmd to be executed. Will take ownership of object and destroy
+     * it after use. (in other words: will be deleted. But only the struct,
+     * not containing objects!)
+     *
+     * \returns false if work could not be pushed or true if it worked out.
+     */
+    bool PushWork(CAsyncCommand *cmd);
 
-	/** push some new work to the worker thread.
-	 *  \note: If the work can be handled synchronously more efficent, the
-	 *  work might be executed right away.
-	 *
-	 * \param cmd to be executed. Will take ownership of object and destroy
-	 * it after use. (in other words: will be deleted. But only the struct,
-	 * not containing objects!)
-	 *
-	 * \returns false if work could not be pushed or true if it worked out.
-	 */
-	bool PushWork( CAsyncCommand *cmd );
+    /** Handle "Connect-Command"
+     *
+     * Connects to the configured target.
+     *
+     * \returns true, if job can be removed from queue, false, if it needs to
+     * be handled again
+     *
+     *
+     * */
+    void HandleConnect(CAsyncCommand *cmd);
 
-	/// cancel all current work.
-	//void CancelWork( void );
+    /** Handle the disconnect command.
+     *
+     * \returns true, if job can be removed from queue, false, if it needs to
+     * be handled again
+     */
 
-	/** Handle "Connect-Command"
-	 *
-	 * Connects to the configured target.
-	 *
-	 * \returns true, if job can be removed from queue, false, if it needs to
-	 * be handled again
-	 *
-	 *
-	 * */
-	bool HandleConnect( CAsyncCommand *cmd );
+    void HandleDisconnect(CAsyncCommand *cmd);
 
-	/** Handle the disconnect command.
-	 *
-	 * \returns true, if job can be removed from queue, false, if it needs to
-	 * be handled again
-	 */
+    void HandleReceive(CAsyncCommand *cmd);
 
-	bool HandleDisConnect( CAsyncCommand *cmd );
+    void HandleSend(CAsyncCommand *cmd);
 
-	bool HandleReceive( CAsyncCommand *cmd );
+    void HandleAccept(CAsyncCommand *cmd);
 
-	bool HandleSend( CAsyncCommand *cmd );
+    list<CAsyncCommand*> cmds;
+    sem_t cmdsemaphore;
 
-	list<CAsyncCommand*> cmds;
-	sem_t cmdsemaphore;
+    bool configured_as_server;
 
+    // Work-around for https://svn.boost.org/trac/boost/ticket/7392
+    bool _connected;
 };
+
 
 #endif /* HAVE_COMMS_ASIOTCPIO */
 #endif /* CONNECTIONTCP_H_ */

@@ -1,26 +1,21 @@
 /* ----------------------------------------------------------------------------
- solarpowerlog
- Copyright (C) 2009-2011  Tobias Frost
+ solarpowerlog -- photovoltaic data logging
 
- This file is part of solarpowerlog.
+Copyright (C) 2009-2012 Tobias Frost
 
- Solarpowerlog is free software; However, it is dual-licenced
- as described in the file "COPYING".
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
- For this file (IConnect.h), the license terms are:
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
- You can redistribute it and/or  modify it under the terms of the GNU Lesser
- General Public License (LGPL) as published by the Free Software Foundation;
- either version 3 of the License, or (at your option) any later version.
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
- This program is distributed in the hope that it will be useful, but
- WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Library General Public
- License along with this proramm; if not, see
- <http://www.gnu.org/licenses/>.
  ----------------------------------------------------------------------------
  */
 
@@ -60,16 +55,30 @@ using namespace std;
 /// This allows fine-grade timeouts for any operation
 /// Note: If not specified, the implementation will
 /// either use a default value
-/// or retrieve a configuration value
+/// or retrieve a configuration value.
+/// unit is ms.
 #define ICONN_TOKEN_TIMEOUT "ICON_TIMEOUT"
 
-/** Timeout specifier -- this (optional) parameter sets the timeout between two
- *  bytes. It is only honoured by connection methods that "act" serial like.
- *  One prominent example would be comms over serial line.
- *  (note: normally this is not needed to be specified -- it can be set by
- *  the configuration file or calculated at runtime out of the baudrate. )
- *  Unit of the value by the token are ms.   */
-#define ICONN_TOKEN_INTERBYTETIMEOUT "ICON_INTERBYTE_TIMEOUT"
+/** SharedComms Request Atomic-Block
+ *
+ * An Atomic Comms block is a series of commands for communication that must
+ * not be interrupted by other communications.
+ *
+ * This is used for SharedComms.
+ *
+ * Use the defines below to request and cease request atomic comms.
+ * (You need to request in any of the comms steps, and the last one in the
+ * atomic block needs to cease the request.)
+ *
+ * datatype needs to be bool.
+ * */
+#define ICONN_ATOMIC_COMMS "ICON_ATOMIC_COMMS"
+
+/** request the comms to be atomic */
+#define ICONN_ATOMIC_COMMS_REQUEST ((bool)true)
+
+/** after this request the comms atomic block is ended. */
+#define ICONN_ATOMIC_COMMS_CEASE ((bool)false)
 
 /** Interface for all communication classes
  *
@@ -119,16 +128,17 @@ public:
 
 	virtual ~IConnect();
 
-	/** Connects to the target, establish communikation link.
-	 *
-	 * The target and the settings are retrieved out of the configuration.
-	 *
-	 * Connect async and use the ICommand to tell the result in ICMD_ERRNO
-	 *
-	 * \note If Async operations would be overkill, because the result is
-	 * immediatly known, one can also implement the async ops as synchronous
-	 * as long as it uses the ICommand as notification for the result.
-	 */
+	/** Connects to the target, establish communication link.
+     *
+     * The target and the settings are retrieved out of the configuration.
+     *
+     * Connect asynchronous and use the ICommand to tell the result in ICMD_ERRNO
+     *
+     * \note If asynchronous operations would be overkill, because the result is
+     * immediately known, one can also implement the asynchronous operations
+     * as synchronous ones as long as it uses the ICommand as notification
+     * for the result.
+     */
 	virtual void Connect(ICommand *callback) = 0;
 
 	/** Tear down the connection.
@@ -179,21 +189,54 @@ public:
 	 *
 	 *	ENOTCONN  Connection went down, e.g. eof received.
 	 */
-
 	virtual void Receive(ICommand *cmd) = 0;
+
+	/** NoOperation
+	 * Will just do nothing :)
+	 *
+	 * Can be used in a derived class for housekeeping,
+	 * for example the CSharedConnection use this to provide an easy way to
+	 * stop the atomic_block constraint.
+	 * \sa CSharedConnectinSlave::Noop()*/
+	virtual void Noop(ICommand *cmd);
 
 	/// Check the configuration for validity. Return false on config errors.
 	/// (program will abort then!)
 	virtual bool CheckConfig(void) = 0;
 
+	/// Check at runtime if the communication class supports the "Accept"
+	/// method.
+	/// \returns true if Accept() works, false if not.
+
+	virtual bool CanAccept(void) = 0;
+
 	/// Check if we believe the connection is still active
 	/// Note: if the concrete implementation cannot tell,
-	/// it should always return true, as the default implementaion does.
+	/// it should always return true, as the default implementation does.
 	/// (the inverter class has to do some kind of timeout-handling anyway)
 	virtual bool IsConnected(void)
 	{
 		return true;
 	}
+
+	/// Accept an inbound connection to be used for the communication.
+	/// (if supported by the underlying transport mechanism.)
+	/// \param cmd callback object to be used after completion.
+	/// \note cmd must be provided (non-NULL)
+	/// \sa CanAccept()
+	/// \warning If you use Accept() and Connect() on the same object,
+	/// the behavior is undefined.
+	virtual void Accept(ICommand */*cmd*/) {
+	    return;
+	}
+
+	/// Abort all pending commands
+	/// (Try to) abort everything pending, like waiting for all I/O and clear
+	/// all other (queued) commands.
+	/// Answer all unfinished command with an error, preferable ECANCELED.
+	/// returns true if succeeded, false if not supported by the connection
+	/// object
+	virtual bool AbortAll() = 0;
 
 protected:
 	/// Storage for the Configuration Path to extract settings.

@@ -17,8 +17,15 @@ set -e
 
 VERSION=$(grep "PACKAGE_VERSION=" configure | cut -d"=" -f 2- | tr --delete "\'")
 
-sudo /usr/sbin/pbuilder update
+# check if we can skip pbuilder update -- we do it only once after an apt-get update
+# for this we compare the time against the last modification of /var/lib/apt/lists
+LAST_UPDATE=$(stat -c %Y /var/cache/pbuilder/base.tgz)
+LISTS_TIMESTAMP=$(stat -c %Y /var/lib/apt/lists)
+if [[ $LAST_UPDATE -lt $LISTS_TIMESTAMP ]]
+then
+	sudo /usr/sbin/pbuilder update
+fi
 
-( cd stagedir_debbuild/solarpowerlog-$VERSION && dpkg-buildpackage -uc -us )
+( cd stagedir_debbuild/solarpowerlog-$VERSION && pdebuild --debbuildopts "-j2" )
 
 

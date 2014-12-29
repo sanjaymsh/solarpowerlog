@@ -1,28 +1,24 @@
 /* ----------------------------------------------------------------------------
- solarpowerlog
- Copyright (C) 2009  Tobias Frost
+ solarpowerlog -- photovoltaic data logging
 
- This file is part of solarpowerlog.
+Copyright (C) 2009-2012 Tobias Frost
 
- Solarpowerlog is free software; However, it is dual-licenced
- as described in the file "COPYING".
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
- For this file (ICommand.cpp), the license terms are:
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
- You can redistribute it and/or modify it under the terms of the GNU
- General Public License as published by the Free Software Foundation; either
- version 3 of the License, or (at your option) any later version.
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
- This program is distributed in the hope that it will be useful, but
- WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Library General Public
- License along with this proramm; if not, see
- <http://www.gnu.org/licenses/>.
  ----------------------------------------------------------------------------
- */
+*/
+
 
 /** \file ICommand.cpp
  *
@@ -60,8 +56,9 @@ ICommand::~ICommand()
 /** Delegate the command to the one that should do the work */
 void ICommand::execute()
 {
-	assert(trgt);
-	trgt->ExecuteCommand(this);
+    // Allow also "fire-and-forget" commmands which will be done but never a
+    // callback issued.
+	if (trgt) trgt->ExecuteCommand(this);
 }
 
 /** Getter for the private cmd field (field is for Commandees use) */
@@ -83,13 +80,15 @@ const boost::any ICommand::findData(const std::string &key) const
 
 void ICommand::mergeData(const ICommand &other)
 {
-	// first delete all duplicate data
-	std::map<std::string, boost::any>::const_iterator it;
-	for(it = other.dat.begin(); it != other.dat.end(); it++)
-	{
-		if(dat.count(it->first)) dat.erase(it->first);
-	}
-
+#warning check if deletion is really required? STL behaviour of map cover this?
+	// first delete all duplicate data, but only if the containers have data.
+    if (dat.size() && other.dat.size()) {
+        std::map<std::string, boost::any>::const_iterator it;
+        for(it = dat.begin(); it != dat.end(); it++)
+        {
+            if(other.dat.count(it->first)) dat.erase(it->first);
+        }
+    }
 	// and then merge the others data into the map
 	dat.insert(other.dat.begin(), other.dat.end());
 }

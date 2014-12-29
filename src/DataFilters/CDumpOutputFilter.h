@@ -1,26 +1,21 @@
 /* ----------------------------------------------------------------------------
- solarpowerlog
- Copyright (C) 2009  Tobias Frost
+ solarpowerlog -- photovoltaic data logging
 
- This file is part of solarpowerlog.
+Copyright (C) 2009-2012 Tobias Frost
 
- Solarpowerlog is free software; However, it is dual-licenced
- as described in the file "COPYING".
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
- For this file (CDumpOutputFilter.h), the license terms are:
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
- You can redistribute it and/or  modify it under the terms of the GNU Lesser
- General Public License (LGPL) as published by the Free Software Foundation;
- either version 3 of the License, or (at your option) any later version.
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
- This program is distributed in the hope that it will be useful, but
- WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Library General Public
- License along with this proramm; if not, see
- <http://www.gnu.org/licenses/>.
  ----------------------------------------------------------------------------
  */
 
@@ -131,39 +126,41 @@
  */
 #include "DataFilters/interfaces/IDataFilter.h"
 #include "Inverters/interfaces/CNestedCapaIterator.h"
+#include "Inverters/BasicCommands.h"
 
-class CDumpOutputFilter: public IDataFilter
+class CDumpOutputFilter : public IDataFilter
 {
 protected:
-	friend class IDataFilterFactory;
-	CDumpOutputFilter(const string &name, const string & configurationpath);
+    friend class IDataFilterFactory;
+    CDumpOutputFilter(const string &name, const string & configurationpath);
 
 public:
-	virtual ~CDumpOutputFilter();
+    virtual ~CDumpOutputFilter();
 
-	virtual bool CheckConfig();
+    virtual bool CheckConfig();
 
-	virtual void Update(const IObserverSubject *subject);
+    virtual void Update(const IObserverSubject *subject);
 
-	/** This DataFilter uses the CWorkScheduler, so it needs to implement
-	 * this function. \sa ICommandTarget::ExecuteCommand */
-	virtual void ExecuteCommand(const ICommand *cmd);
+    /** This DataFilter uses the CWorkScheduler, so it needs to implement
+     * this function. \sa ICommandTarget::ExecuteCommand */
+    virtual void ExecuteCommand(const ICommand *cmd);
 
 private:
-	void CheckOrUnSubscribe(bool subscribe = true);
+    void CheckOrUnSubscribe(bool subscribe = true);
 
-	void DoCyclicWork(void);
+    void DoCyclicWork(void);
 
-	string DumpValue(IValue *value);
+    enum Commands
+    {
+        CMD_INIT = BasicCommands::CMD_USER_MIN,
+        CMD_CYCLIC,
+        CMD_UNSUBSCRIBE,
+        CMD_ADDED_CAPAS
+    };
 
-	enum Commands
-	{
-		CMD_INIT, CMD_CYCLIC, CMD_UNSUBSCRIBE, CMD_ADDED_CAPAS
-	};
+    bool AddedCaps;
 
-	bool AddedCaps;
-
-	bool clearscreen;
+    bool clearscreen;
 };
 
 #endif

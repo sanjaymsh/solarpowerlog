@@ -1,28 +1,23 @@
 /* ----------------------------------------------------------------------------
- solarpowerlog
- Copyright (C) 2009  Tobias Frost
+ solarpowerlog -- photovoltaic data logging
 
- This file is part of solarpowerlog.
+Copyright (C) 2009-2012 Tobias Frost
 
- Solarpowerlog is free software; However, it is dual-licenced
- as described in the file "COPYING".
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
- For this file (CDumpOutputFilter.cpp), the license terms are:
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
- You can redistribute it and/or modify it under the terms of the GNU
- General Public License as published by the Free Software Foundation; either
- version 3 of the License, or (at your option) any later version.
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
- This program is distributed in the hope that it will be useful, but
- WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Library General Public
- License along with this proramm; if not, see
- <http://www.gnu.org/licenses/>.
  ----------------------------------------------------------------------------
- */
+*/
 
 /** \file CDumpOutputFilter.cpp
  *
@@ -119,8 +114,8 @@ void CDumpOutputFilter::Update( const IObserverSubject *subject )
 		// but -- to be nice -- update the value first
 		ourcap = IInverterBase::GetConcreteCapability(CAPA_CAPAS_REMOVEALL);
 		assert (ourcap);
-		assert (ourcap->getValue()->GetType() == CAPA_CAPAS_REMOVEALL_TYPE);
-		assert (parentcap->getValue()->GetType() == CAPA_CAPAS_REMOVEALL_TYPE);
+		assert (CValue<CAPA_CAPAS_REMOVEALL_TYPE>::IsType(ourcap->getValue()));
+		assert (CValue<CAPA_CAPAS_REMOVEALL_TYPE>::IsType(parentcap->getValue()));
 
 		CValue<bool> *a, *b;
 		a = (CValue<bool> *) (ourcap->getValue());
@@ -192,7 +187,7 @@ void CDumpOutputFilter::ExecuteCommand( const ICommand *cmd )
 
 		CCapability *c = GetConcreteCapability(
 			CAPA_INVERTER_QUERYINTERVAL);
-		if (c && c->getValue()->GetType() == IValue::float_type) {
+		if (c && CValue<float>::IsType(c->getValue())) {
 			CValue<float> *v = (CValue<float> *) c->getValue();
 			ts.tv_sec = v->Get();
 			ts.tv_nsec = ((v->Get() - ts.tv_sec) * 1e9);
@@ -289,41 +284,12 @@ void CDumpOutputFilter::DoCyclicWork( void )
 		cout << (cappair).first << ' ' << flush;
 		for (int i = (cappair).first.length() + 1; i < 60; i++)
 			cout << '.';
-		cout << " " << DumpValue(cappair.second->getValue())
+		cout << " " << (std::string) *(cappair.second->getValue())
 			<< " (Capa of: "
 			<< cappair.second->getSource()->GetName() << ")"
 			<< endl;
 	}
 	cout << endl;
-}
-
-string CDumpOutputFilter::DumpValue( IValue *value )
-{
-	enum IValue::factory_types type = value->GetType();
-	string ret;
-	char buf[128];
-
-	switch (type) {
-	case IValue::bool_type:
-		ret = ((CValue<bool> *) value)->Get() ? "true/on/active"
-			: "false/off/inactive";
-		break;
-
-	case IValue::float_type:
-		sprintf(buf, "%.2f", ((CValue<float>*) value)->Get());
-		ret = buf;
-		break;
-
-	case IValue::int_type:
-		sprintf(buf, "%d", ((CValue<int>*) value)->Get());
-		ret = buf;
-		break;
-
-	case IValue::string_type:
-		ret = ((CValue<string>*) value) -> Get();
-		break;
-	}
-	return ret;
 }
 
 #endif

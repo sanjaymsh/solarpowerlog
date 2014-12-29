@@ -1,26 +1,21 @@
 /* ----------------------------------------------------------------------------
- solarpowerlog
- Copyright (C) 2009  Tobias Frost
+ solarpowerlog -- photovoltaic data logging
 
- This file is part of solarpowerlog.
+Copyright (C) 2010-2012 Tobias Frost
 
- Solarpowerlog is free software; However, it is dual-licenced
- as described in the file "COPYING".
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
- For this file (ConnectionTCP.h), the license terms are:
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
- You can redistribute it and/or  modify it under the terms of the GNU Lesser
- General Public License (LGPL) as published by the Free Software Foundation;
- either version 3 of the License, or (at your option) any later version.
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
- This program is distributed in the hope that it will be useful, but
- WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Library General Public
- License along with this proramm; if not, see
- <http://www.gnu.org/licenses/>.
  ----------------------------------------------------------------------------
  */
 
@@ -57,8 +52,8 @@
 #include "Connections/CAsyncCommand.h"
 
 /// Default timeout for all operations, if not configured
-#define TCP_ASIO_DEFAULT_TIMEOUT (3000UL)
-#define TCP_ASIO_DEFAULT_INTERBYTETIMEOUT (50UL)
+#define SERIAL_ASIO_DEFAULT_TIMEOUT (3000UL)
+#define SERIAL_ASIO_DEFAULT_INTERBYTETIMEOUT (50UL)
 
 using namespace std;
 
@@ -84,7 +79,7 @@ public:
 
 	virtual void SetupLogger(const string& parentlogger, const string & = "")
 	{
-		IConnect::SetupLogger(parentlogger, "Comms_TCP_ASIO");
+		IConnect::SetupLogger(parentlogger, "Comms_Serial_ASIO");
 	}
 
 	virtual void Send(ICommand *callback);
@@ -95,20 +90,20 @@ public:
 
 	virtual bool IsConnected(void);
 
+    virtual bool AbortAll();
+
+    virtual bool CanAccept();
+
 private:
 	boost::asio::io_service *ioservice;
 	boost::asio::serial_port *port;
-	boost::asio::streambuf *data;
 
-	char characterlen;
-	boost::asio::serial_port_base::parity parity;
-	boost::asio::serial_port_base::stop_bits stopbits;
-	boost::asio::serial_port_base::flow_control flowctrl;
-	unsigned int baudrate;
+	char _cfg_characterlen;
+	boost::asio::serial_port_base::parity _cfg_parity;
+	boost::asio::serial_port_base::stop_bits _cfg_stopbits;
+	boost::asio::serial_port_base::flow_control _cfg_flowctrl;
+	unsigned int _cfg_baudrate;
 
-	time_t timer;
-
-	// async patch
 	virtual void _main(void);
 
 	/** push some new work to the worker thread.
@@ -135,7 +130,7 @@ private:
 	 *
 	 *
 	 * */
-	bool HandleConnect(CAsyncCommand *cmd);
+	void HandleConnect(CAsyncCommand *cmd);
 
 	/** Handle the disconnect command.
 	 *
@@ -143,11 +138,11 @@ private:
 	 * be handled again
 	 */
 
-	bool HandleDisConnect(CAsyncCommand *cmd);
+	void HandleDisconnect(CAsyncCommand *cmd);
 
-	bool HandleReceive(CAsyncCommand *cmd);
+	void HandleReceive(CAsyncCommand *cmd);
 
-	bool HandleSend(CAsyncCommand *cmd);
+	void HandleSend(CAsyncCommand *cmd);
 
 	list<CAsyncCommand*> cmds;
 	sem_t cmdsemaphore;

@@ -1,37 +1,32 @@
 /* ----------------------------------------------------------------------------
- solarpowerlog
- Copyright (C) 2009  Tobias Frost
+ solarpowerlog -- photovoltaic data logging
 
- This file is part of solarpowerlog.
+Copyright (C) 2009-2012 Tobias Frost
 
- Solarpowerlog is free software; However, it is dual-licenced
- as described in the file "COPYING".
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
- For this file (IValue.h), the license terms are:
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
- You can redistribute it and/or  modify it under the terms of the GNU Lesser
- General Public License (LGPL) as published by the Free Software Foundation;
- either version 3 of the License, or (at your option) any later version.
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
- This program is distributed in the hope that it will be useful, but
- WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Library General Public
- License along with this proramm; if not, see
- <http://www.gnu.org/licenses/>.
  ----------------------------------------------------------------------------
  */
 
 /** \file IValue.h
  *
  *  \date May 13, 2009
- *   \Author: Tobias Frost (coldtobi)
+ *  \Author: Tobias Frost (coldtobi)
  */
 
-#ifndef ICAPABILITY_H_
-#define ICAPABILITY_H_
+#ifndef IVALUE_H_
+#define IVALUE_H_
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -44,8 +39,6 @@
  * It is supposed to be derived, and the derived class is responsible for
  * type-correct storage.
  *
- * In this interface, also the factory is embedded to create the concrete
- * values.
  *
  * \ingroup factories
  */
@@ -53,37 +46,26 @@ class IValue
 {
 public:
 
-	/** This enumeration specifies the type of the storage.
-	 * It can be used as parameter for the factory. */
-	enum factory_types
-	{
-		bool_type, ///< boolean storage
-		int_type, ///< integer (signed)
-		float_type, ///< float storage
-		string_type
-	///< string type
-	};
-
-	/** Factory method to generate desired concrete Value */
-	static IValue* Factory( const factory_types typedescriptor );
-
-	/** Interface method to check the type of the value */
-	virtual factory_types GetType( void ) const;
-
-	// virtual std::string string GetValueAsString();
+protected:
+    template<class T>
+    friend class CValue;
+	virtual int GetInternalType( void ) const {return type_;}
 
 public:
-	/** Inteface method for easier transfer to strings. */
+	/** Interface method for easier transfer to strings. */
 	virtual operator std::string() = 0;
 
-protected:
-	IValue();
-public:
-	virtual ~IValue();
+    /// Serves as a virtual copy constructor.
+	virtual IValue* clone() = 0;
 
 protected:
-	factory_types type;
+	IValue() {}
+public:
+	virtual ~IValue() {}
+
+protected:
+	int type_;
 
 };
 
-#endif /* ICAPABILITY_H_ */
+#endif /* IVALUE_H_ */

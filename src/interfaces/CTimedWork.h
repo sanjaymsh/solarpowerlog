@@ -1,26 +1,21 @@
 /* ----------------------------------------------------------------------------
- solarpowerlog
- Copyright (C) 2009  Tobias Frost
+ solarpowerlog -- photovoltaic data logging
 
- This file is part of solarpowerlog.
+Copyright (C) 2009-2012 Tobias Frost
 
- Solarpowerlog is free software; However, it is dual-licenced
- as described in the file "COPYING".
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
- For this file (CTimedWork.h), the license terms are:
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
- You can redistribute it and/or  modify it under the terms of the GNU Lesser
- General Public License (LGPL) as published by the Free Software Foundation;
- either version 3 of the License, or (at your option) any later version.
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
- This program is distributed in the hope that it will be useful, but
- WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Library General Public
- License along with this proramm; if not, see
- <http://www.gnu.org/licenses/>.
  ----------------------------------------------------------------------------
  */
 
@@ -47,13 +42,21 @@
 
 /** This class bundles a timed activity.
  *
- * Currently, activities are tasks, which when ending, will enque an immediatte action.
+ * The Timedwork are fed into a worker thread, which just waits for the time
+ * to come and signal the event back to the CWorkScheduler object.
+ *
+ * On new requests, the worker thread will only be interrupted if the new event
+ * expires earlier than the current one.
+ *
+ * \note: There was an bug in boost::thread in boost release 1.46 which
+ * caused solarpowerlog to freeze after a while. This is why the code is
+ * still littered with debug statements, enabled with the define
+ * CTIMEDWORK_DEBUG (via CTimedWork.cpp or via C[XX]FLAGS)
  */
 class CTimedWork
 {
 public:
-    /** Constructor: Takes the scheduler to inform, the command to execute and the time when.
-     */
+    /** Constructor: Takes the scheduler to inform, the command to execute and the time when */
     explicit CTimedWork( CWorkScheduler *sch );
 
     virtual ~CTimedWork();
@@ -61,6 +64,7 @@ public:
     /// Thread entry point.
     void run();
 
+    /// Issue work in the future. (when ts elapsed)
     void ScheduleWork( ICommand *Command, struct timespec ts );
 
     /// Ask thread to terminate.
@@ -77,7 +81,6 @@ private:
 
     void _main( void );
 
-#if 1
     struct time_compare
     {
         bool operator()( const boost::posix_time::ptime t1,
@@ -89,9 +92,8 @@ private:
         }
         ;
     };
+    std::multimap<boost::posix_time::ptime, ICommand*, time_compare> TimedCommands;
 
-    multimap<boost::posix_time::ptime, ICommand*, time_compare> TimedCommands;
-#endif
     /** holds the commmand */
     ICommand *cmd;
     /** holds the timespec */

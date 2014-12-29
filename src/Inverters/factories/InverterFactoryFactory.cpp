@@ -1,28 +1,23 @@
 /* ----------------------------------------------------------------------------
- solarpowerlog
- Copyright (C) 2009  Tobias Frost
+ solarpowerlog -- photovoltaic data logging
 
- This file is part of solarpowerlog.
+Copyright (C) 2009-2012 Tobias Frost
 
- Solarpowerlog is free software; However, it is dual-licenced
- as described in the file "COPYING".
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
- For this file (InverterFactoryFactory.cpp), the license terms are:
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
- You can redistribute it and/or modify it under the terms of the GNU
- General Public License as published by the Free Software Foundation; either
- version 3 of the License, or (at your option) any later version.
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
- This program is distributed in the hope that it will be useful, but
- WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Library General Public
- License along with this proramm; if not, see
- <http://www.gnu.org/licenses/>.
  ----------------------------------------------------------------------------
- */
+*/
 
 /** \file InverterFactoryFactory.cpp
  *
@@ -37,9 +32,10 @@
 #include "InverterFactoryFactory.h"
 #include "IInverterFactory.h"
 
-#if defined HAVE_INV_SPUTNIK
+#if defined HAVE_INV_SPUTNIK || defined HAVE_INV_SPUTNIKSIMULATOR
 #include "Inverters/SputnikEngineering/CInverterFactorySputnik.h"
 #endif
+
 
 #if defined HAVE_INV_DUMMY
 #include "Inverters/DummyInverter/CInverterFactoryDummy.h"
@@ -53,11 +49,12 @@ InverterFactoryFactory::InverterFactoryFactory() {
 IInverterFactory *InverterFactoryFactory::createInverterFactory(const string& manufactor)
 {
 
-#if defined HAVE_INV_SPUTNIK
-	if (manufactor == "SPUTNIK_ENGINEERING") {
+#if defined HAVE_INV_SPUTNIK || defined HAVE_INV_SPUTNIKSIMULATOR
+ 	if (manufactor == "SPUTNIK_ENGINEERING") {
 		return new CInverterFactorySputnik;
 	}
 #endif
+
 #if defined HAVE_INV_DUMMY
 	if ( manufactor == "DUMMY_INVERTER") {
 		return new CInverterFactoryDummy;

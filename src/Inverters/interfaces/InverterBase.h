@@ -1,26 +1,21 @@
 /* ----------------------------------------------------------------------------
- solarpowerlog
- Copyright (C) 2009  Tobias Frost
+ solarpowerlog -- photovoltaic data logging
 
- This file is part of solarpowerlog.
+Copyright (C) 2009-2012 Tobias Frost
 
- Solarpowerlog is free software; However, it is dual-licenced
- as described in the file "COPYING".
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
- For this file (IValue.h), the license terms are:
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
 
- You can redistribute it and/or  modify it under the terms of the GNU Lesser
- General Public License (LGPL) as published by the Free Software Foundation;
- either version 3 of the License, or (at your option) any later version.
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
- This program is distributed in the hope that it will be useful, but
- WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Library General Public
- License along with this proramm; if not, see
- <http://www.gnu.org/licenses/>.
  ----------------------------------------------------------------------------
  */
 
@@ -214,7 +209,7 @@ class ICapaIterator;
 
 using namespace std;
 
-/// connectiontimeout: Wait this long for the connection attempt to time out
+/// connection_timeout: Wait this long for the connection attempt to time out
 /// note: currently FIXME (not implemented in ASIO TCP)
 /// note: This tweak is optional. The Connection method needs not to honor
 /// this parameter (especially if the success/failure is immediately known)
@@ -284,6 +279,7 @@ public:
 
 protected:
 	/// Add a Capability for the inverter.
+	friend class ISputnikCommand;
 	virtual void AddCapability(CCapability* capa);
 
 	/** returns a iterator of the Capabilties. The iterator is inizialized at the begin of the map.*/
@@ -316,6 +312,8 @@ protected:
 
 	map<string, CCapability*> CapabilityMap;
 
+	// Allow sub-objects of the inverter accessing the logger.
+public:
 	/// The Logger Class for Debugging, Error reporting etc...
 	ILogger logger;
 };

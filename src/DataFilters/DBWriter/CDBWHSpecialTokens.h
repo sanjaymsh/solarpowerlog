@@ -81,6 +81,7 @@ public:
     void Set(std::tm value, boost::posix_time::ptime timestamp = boost::posix_time::second_clock::local_time()) {
          this->timestamp = timestamp;
          this->value = value;
+         SetValid();
      }
 
     struct tm Get(void) const {

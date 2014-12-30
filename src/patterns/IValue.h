@@ -110,7 +110,7 @@ protected:
     /// Constructor
     IValue(int type) :
         _type(type), _valid(false),
-        _timestamp(boost::posix_time::not_a_date_time)
+        _timestamp(boost::posix_time::min_date_time)
     { }
 
     /** protected setter to explicitly set validity. */
@@ -124,7 +124,7 @@ public:
 private:
     /// Private to avoid accidental creation with default constructor.
     IValue() :
-        _type(0), _valid(false), _timestamp(boost::posix_time::not_a_date_time)
+        _type(0), _valid(false), _timestamp(boost::posix_time::min_date_time)
     { }
 
     /// Internal typeid

@@ -290,6 +290,7 @@ public:
                 return false;
             }
             store = tmp;
+            return true;
         } catch (...) {
             return false;
         }

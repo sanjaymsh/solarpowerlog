@@ -76,7 +76,17 @@ public:
         return _table;
     }
 
-#warning getter for this
+
+    float getLogevery() const
+    {
+        return _logevery;
+    }
+
+    void setLogevery(float logevery)
+    {
+        _logevery = logevery;
+    }
+
     float _logevery;
 
 

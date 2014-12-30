@@ -37,6 +37,8 @@ Copyright (C) 2009-2014 Tobias Frost
 #ifdef  HAVE_FILTER_DBWRITER
 
 #include <string>
+#include <map>
+
 #include <cppdb/frontend.h>
 
 #include "configuration/ILogger.h"
@@ -120,7 +122,7 @@ private:
     boost::mutex mutex;
 
     /// Storage for the individual data sets to be stored (one per column)
-    std::vector<class Cdbinfo*> _dbinfo;
+    std::multimap<std::string, class Cdbinfo*> _dbinfo;
 
     /// Cache for "regular" insert sql statements -- we don't need to recalculate
     /// them all over
@@ -155,6 +157,8 @@ private:
 
     bool _BindSingleValue(cppdb::statement &stat, Cdbinfo &info);
 
+    /// when the last logging took place (to determine changes in the dataset)
+    boost::posix_time::ptime _lastlogged;
 };
 
 #endif

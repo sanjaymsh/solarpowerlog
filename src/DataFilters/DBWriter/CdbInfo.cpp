@@ -39,13 +39,11 @@
 Cdbinfo::~Cdbinfo()
 {
     if (Value) delete Value;
-    if (LastLoggedValue) delete LastLoggedValue;
 };
 
 Cdbinfo::Cdbinfo(std::string Capability, std::string Column) :
     Capability(Capability), Column(Column), Value(NULL),
-        LastLoggedValue(NULL), previously_subscribed(false),
-        isSpecial(false)
+        previously_subscribed(false), isSpecial(false)
 {};
 
 

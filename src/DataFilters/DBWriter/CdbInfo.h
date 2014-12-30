@@ -64,9 +64,6 @@ protected:
     /// Copy of the current value.
     IValue *Value;
 
-    /// Copy of the LAST LOGGED value.
-    IValue *LastLoggedValue;
-
     /// this field is just to suppress a debug-message during observer pattern
     /// handling
     bool previously_subscribed;

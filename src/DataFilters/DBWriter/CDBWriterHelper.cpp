@@ -243,7 +243,10 @@ void CDBWriterHelper::Update(const class IObserverSubject * subject)
         while (it->HasNext()) {
             pair<string, CCapability*> cappair = it->GetNext();
             cap = (cappair).second;
-            LOGTRACE(logger, "Update() unsubscribing " << cap->getDescription());
+            if (cap->getDescription() == CAPA_CAPAS_REMOVEALL) continue;
+            if (cap->getDescription() == CAPA_CAPAS_UPDATED) continue;
+            LOGTRACE(logger,
+                "Update() unsubscribing " << cap->getDescription());
             cap->UnSubscribe(this);
         }
         CMutexAutoLock cma(mutex);

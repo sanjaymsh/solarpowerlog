@@ -434,28 +434,30 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
         for (it = _dbinfo.begin(); it != _dbinfo.end(); it++) {
             Cdbinfo &info = *it->second;
 
+            if (!tablestring.empty()) {
+                 tablestring += ", ";
+             }
+
+            tablestring += SQL_ESCAPE_CHAR_OPEN + info.Column
+                + SQL_ESCAPE_CHAR_CLOSE + " ";
+
             if (info.Capability[0] == '$') {
                 // Special Select-Token we going to ignore
                 LOGWARN_SA(logger, LOG_SA_HASH("create-info1") + (long)(&info),
-                    "When creating tables,"
-                    " $-Selector columns will not be created. "
-                    "Please add the column \"" << info.Column <<
-                    "\" for Selector \"" << info.Capability.substr(1) <<
-                    "\" yourself.");
+                    "When creating tables, $-Selector columns will be created "
+                    " with the datatype \"TEXT\". "
+                    "If necessry, please correct it yourseld: Column \"" <<
+                    info.Column << "\" using Selector \"" <<
+                    info.Capability.substr(1) << "\".");
                 LOGWARN_SA(logger, LOG_SA_HASH("create-info2") + (long)(&info),
-                    "Logging will fail until then!");
+                    "Logging might fail until then!");
+                tablestring += "TEXT";
                 continue;
             }
             // Try to determine datatype.
             // Note: This list might be needed to be updated when new Capabilities are added
             // using new datatypes!
             assert(info.Value);
-            if (!tablestring.empty())  {
-                tablestring += ", ";
-            }
-
-            tablestring += SQL_ESCAPE_CHAR_OPEN + info.Column
-                + SQL_ESCAPE_CHAR_CLOSE + " ";
 
             if (CValue<float>::IsType(info.Value)
                 || CValue<double>::IsType(info.Value)) {

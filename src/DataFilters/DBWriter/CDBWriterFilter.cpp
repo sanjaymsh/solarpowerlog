@@ -509,8 +509,9 @@ void CDBWriterFilter::ScheduleCyclicWork(void)
     for (it = _dbwriterhelpers.begin(); it != _dbwriterhelpers.end(); it++) {
         ncmd = new ICommand(CMD_CYCLIC, this);
         ncmd->addData("DB_WORK", *it);
-        ts.tv_sec = (*it)->_logevery;
-        ts.tv_nsec = ((*it)->_logevery - ts.tv_sec) * 1e9;
+        float logevery = (*it)->getLogevery();
+        ts.tv_sec = logevery;
+        ts.tv_nsec = (logevery - ts.tv_sec) * 1e9;
         Registry::GetMainScheduler()->ScheduleWork(ncmd, ts);
     }
 }
@@ -572,8 +573,9 @@ void CDBWriterFilter::ExecuteCommand( const ICommand *cmd )
             ICommand *ncmd = new ICommand(CMD_CYCLIC, this);
             struct timespec ts;
             ncmd->addData("DB_WORK", helper);
-            ts.tv_sec = helper->_logevery;
-            ts.tv_nsec = (helper->_logevery - ts.tv_sec) * 1e9;
+            float logevery = helper->getLogevery();
+            ts.tv_sec = logevery;
+            ts.tv_nsec = (logevery - ts.tv_sec) * 1e9;
             Registry::GetMainScheduler()->ScheduleWork(ncmd, ts);
         }
         break;

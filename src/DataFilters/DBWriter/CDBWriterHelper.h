@@ -76,19 +76,17 @@ public:
         return _table;
     }
 
-
+    /** Getter for logevery */
     float getLogevery() const
     {
         return _logevery;
     }
 
+    /** Setter for logevery */
     void setLogevery(float logevery)
     {
         _logevery = logevery;
     }
-
-    float _logevery;
-
 
 private:
     /** Assemble a value-string from the dbinfos
@@ -199,6 +197,9 @@ private:
 
     /** Caching the config if we should only log on changed data. */
     bool _logchangedonly;
+
+    /** Configuration cache: How often to log. */
+    float _logevery;
 };
 
 #endif

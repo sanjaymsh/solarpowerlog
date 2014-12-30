@@ -20,7 +20,7 @@ Copyright (C) 2009-2014 Tobias Frost
  */
 
 /*
- * CDBWriterHelper.hpp
+ * \file CDBWriterHelper.hpp
  *
  *  Created on: 05.07.2014
  *      Author: tobi
@@ -47,22 +47,15 @@ Copyright (C) 2009-2014 Tobias Frost
 
 #include "CdbInfo.h"
 
-/** cache the information in the config what and where we should log to.
+/** Handling class for one db job (one table)
  *
- * Brainstorming;
- * - input capabilites / column names
- * - table names
- * - operational mode
- * - observer pattern support (note which capabilities are already subscribed,
- *   )
- *
- *
- * */
+ *  This class maintains one table, retrieving data from the inverters,
+ *  validty checking and SQL statement issuing when conditions are met.
+ */
 class CDBWriterHelper : public IObserverObserver
 {
 
 public:
-
     CDBWriterHelper(IInverterBase *base, const ILogger &parent,
         const std::string &table, const std::string &mode,
         const std::string &createmode, bool logchangedonly, float logevery,
@@ -83,82 +76,120 @@ public:
         return _table;
     }
 
+#warning getter for this
     float _logevery;
-    bool _logchangedonly;
 
 
 private:
+    /** Assemble a value-string from the dbinfos
+     * the generated form is:
+     * [col1]=?, [col2]=?, ... [colx]=?
+     * The "?" are for the values to be bound
+     * \returns the generated value string
+     */
+    std::string _GetValStringForUpdate(void);
 
+    /** Assemble a column-value-string from the dbinfos
+     *
+     * the generated form is:
+     * (col1,col2,col3) VALUES (?,?,?)
+     * The "?" are for the values to be bound
+     *
+     * \returns the generated value string
+     */
+    std::string _GetValStringForInsert(bool with_selector = false);
+
+    /** Bind all "?" in the (previously calculated) value string
+     *
+     * \param s statement for the cppdb interaction
+     * \param with_selector should the selectors skipped (false) or also bound.
+     *
+     * \returns true on sucess, false on error.
+     */
+    bool _BindValues(cppdb::statement &s, bool with_selector = false);
+
+    /** Bind a single value to the CppDB statement
+     *
+     *
+     * \param stat statement for the cppdb interaction
+     * \param with_selector should the selectors skipped (false) or also bound.
+     *
+     * \returns true on sucess, false on error.
+     */
+    bool _BindSingleValue(cppdb::statement &stat, Cdbinfo &info);
+
+    /** Check if a string is save to avoid SQL injections. *
+     *
+     * \returns false if a "forbidden" character is encountered.
+     */
     bool issane(const std::string s);
 
+    // Definitions.
+
+    /*** enum for the basic operational modes. */
     enum omode
     {
-        continuous, single, cumulative
+        continuous, /**< "continuous" mode */
+        single, /**< "single" mode */
+        cumulative /**< "cumulative" mode */
     };
 
+    /** enum for the "create the table" mode */
     enum cmode
     {
-        cmode_no, cmode_yes, cmode_yes_and_drop, cmode_print_statment
+        cmode_no, /**< do not create table */
+        cmode_yes, /**< try create table */
+        cmode_yes_and_drop, /**< destroy and recreate table */
+        cmode_print_statment /**< do not create table, just print the statement to create the table */
     };
 
-    ILogger logger;
+    // Class state data / internal objects.
 
-
-    std::string _table;
-    omode _mode;
-
-    bool _table_sanizited;
-    bool _datavalid;
-
-    bool _allow_sparse;
-
-    /// The DB-Writer's parent
+    /** The DB-Writer's parent inverter (or datafilter) */
     IInverterBase *_base;
 
-    IValue *_olddatastate;
+    /** The logger instance */
+    ILogger logger;
 
-    cmode _createtable_mode;
-
+    /** mutex to protect concurrent access to this class data */
     boost::mutex mutex;
+
+    /** Caching the information if the table name is sane */
+    bool _table_sanizited;
+
+    IValue *_olddatastate;
+    /** Caching the information if the inverter's data is marked valid */
+    bool _datavalid;
+
+    /** Caching the config for create table and also state variable:
+     * will be set to cmode_no once create table succeed. */
+    cmode _createtable_mode;
 
     /// Storage for the individual data sets to be stored (one per column)
     std::multimap<std::string, class Cdbinfo*> _dbinfo;
 
-    /// Cache for "regular" insert sql statements -- we don't need to recalculate
-    /// them all over
-    /// (TODO check if we should also cache the cppdb::statement object)
-    std::string _insert_cache;
-
-    /// If an query failed, we need to temporary disable the "anything changed?"
-    /// logic. If this is true, an error has happened, so we retry in every case.
-    bool _laststatementfailed;
-
-
-    // Helper functions
-
-    /// Assemble a value-string from the dbinfos
-    ///
-    /// the generated form is:
-    /// [col1]=?, [col2]=?, ... [colx]=?
-    /// The "?" are for the values to be bound
-    /// \returns the generated value string
-    std::string _GetValStringForUpdate(void);
-
-    /// Assemble a columnvalue-string from the dbinfos
-     ///
-     /// the generated form is:
-     /// (col1,col2,col3) VALUES (?,?,?)
-     /// The "?" are for the values to be bound
-     /// \returns the generated value string
-     std::string _GetValStringForInsert(bool with_selector=false);
-
-    /// Bind all "?" in the (previously calculated) value string
-    bool _BindValues(cppdb::statement &s, bool with_selector=false);
-
-    bool _BindSingleValue(cppdb::statement &stat, Cdbinfo &info);
-
     /// when the last logging took place (to determine changes in the dataset)
     boost::posix_time::ptime _lastlogged;
+
+    /** Cache for "regular" insert sql statements -- we don't need to recalculate
+     * them all over
+     * (TODO check if we should also cache the cppdb::statement object)
+     */
+    std::string _insert_cache;
+
+    // Configuration cache etc.
+
+    /** The table to act on */
+    std::string _table;
+
+    /** Caching the operational mode */
+    omode _mode;
+
+    /** Caching the config if we are allow sparse logging */
+    bool _allow_sparse;
+
+    /** Caching the config if we should only log on changed data. */
+    bool _logchangedonly;
 };
 
 #endif

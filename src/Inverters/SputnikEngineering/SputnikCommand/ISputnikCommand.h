@@ -194,7 +194,10 @@ public:
     virtual void InverterDisconnected() {
 
         CCapability *cap = inverter->GetConcreteCapability(this->capaname);
-        if (cap) cap->getValue()->Invalidate();
+        if (cap) {
+            cap->getValue()->Invalidate();
+            cap->Notify();
+        }
         this->strat->Reset();
     }
 

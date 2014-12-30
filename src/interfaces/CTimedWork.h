@@ -72,8 +72,9 @@ public:
 
 private:
     CTimedWork()
+    : sch(NULL)
 #ifdef CTIMEDWORK_DEBUG
-    : dhc("CTimedWork")
+        ,dhc("CTimedWork")
 #endif
     { }
 

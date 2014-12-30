@@ -86,6 +86,8 @@ public:
         SetValid();
     }
 
+    virtual ~CValue() {};
+
     /// Serves as a virtual copy constructor.
     virtual CValue<T>* clone() {
         return new CValue<T>(*this);

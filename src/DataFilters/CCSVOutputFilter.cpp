@@ -62,7 +62,7 @@ using namespace boost::gregorian;
 
 CCSVOutputFilter::CCSVOutputFilter( const string & name,
 	const string & configurationpath ) :
-	IDataFilter(name, configurationpath)
+	IDataFilter(name, configurationpath), datavalid(false), capsupdated(false)
 {
 	headerwritten = false;
 

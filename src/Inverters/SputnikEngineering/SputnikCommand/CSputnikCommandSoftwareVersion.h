@@ -49,6 +49,8 @@ public:
         const std::string & capname, ISputnikCommandBackoffStrategy *backoff =
             NULL);
 
+    virtual ~CSputnikCommandSoftwareVersion() {}
+
     virtual bool ConsiderCommand();
 
     virtual int GetMaxAnswerLen(void);

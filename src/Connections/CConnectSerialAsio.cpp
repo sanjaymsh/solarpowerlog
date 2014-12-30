@@ -98,7 +98,7 @@ static void boosthelper_set_result(int* store, int value)
 }
 
 CConnectSerialAsio::CConnectSerialAsio(const string &configurationname) :
-    IConnect(configurationname)
+    IConnect(configurationname),_cfg_characterlen('8'), _cfg_baudrate(9600)
 {
     ioservice = new io_service;
     port = new boost::asio::serial_port(*ioservice);

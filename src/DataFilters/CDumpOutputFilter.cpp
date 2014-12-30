@@ -51,7 +51,8 @@ using namespace libconfig;
 
 CDumpOutputFilter::CDumpOutputFilter( const string &name,
 	const string & configurationpath ) :
-	IDataFilter(name, configurationpath), AddedCaps(0)
+	IDataFilter(name, configurationpath), AddedCaps(0),
+	clearscreen(false)
 {
 	// Schedule the initialization and subscriptions later...
 	ICommand *cmd = new ICommand(CMD_INIT, this);

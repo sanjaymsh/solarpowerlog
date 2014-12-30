@@ -157,7 +157,6 @@ private:
     /** Caching the information if the table name is sane */
     bool _table_sanizited;
 
-    IValue *_olddatastate;
     /** Caching the information if the inverter's data is marked valid */
     bool _datavalid;
 

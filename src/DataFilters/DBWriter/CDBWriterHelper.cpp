@@ -70,8 +70,6 @@ CDBWriterHelper::CDBWriterHelper(IInverterBase *base, const ILogger &parent,
         _createtable_mode = CDBWriterHelper::cmode_print_statment;
     }
 
-    _olddatastate = NULL;
-
     if (mode == "continuous") {
         _mode = CDBWriterHelper::continuous;
     } else if (mode == "single") {

@@ -45,7 +45,7 @@
 /** Implements a (simple) simulator for the Sputnik S Series
  *
  * The Sputnik S-Series are an inverter family by Sputnik Engineering
- * Please see the manufactor's homepage for details.
+ * Please see the manufacturer's homepage for details.
  */
 class CInverterSputnikSSeriesSimulator : public IInverterBase
 {

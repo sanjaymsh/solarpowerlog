@@ -1,23 +1,23 @@
 /* ----------------------------------------------------------------------------
  solarpowerlog -- photovoltaic data logging
 
-Copyright (C) 2009-2012 Tobias Frost
+ Copyright (C) 2009-2015 Tobias Frost
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
  ----------------------------------------------------------------------------
-*/
+ */
 
 // HOW TO HANLDE MULTI-PHASE UNITS
 // not implemented, but some ideas:
@@ -100,11 +100,19 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	string s;
 	IValue *v;
 	CCapability *c;
+
+#warning remove this depreciated cruft (and spell correctly manufacturer)
 	s = CAPA_INVERTER_MANUFACTOR_NAME;
 	v = CValueFactory::Factory<CAPA_INVERTER_MANUFACTOR_TYPE>();
 	((CValue<string>*) v)->Set("Sputnik Engineering");
 	c = new CCapability(s, v, this);
 	AddCapability(c);
+
+    s = CAPA_INVERTER_MANUFACTURER_NAME;
+    v = CValueFactory::Factory<CAPA_INVERTER_MANUFACTURER_TYPE>();
+    ((CValue<string>*) v)->Set("Sputnik Engineering");
+    c = new CCapability(s, v, this);
+    AddCapability(c);
 
 	// Add the request to initialize as soon as the system is up.
 	ICommand *cmd = new ICommand(CMD_INIT, this);

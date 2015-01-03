@@ -1,7 +1,7 @@
 /* ----------------------------------------------------------------------------
  solarpowerlog -- photovoltaic data logging
 
-Copyright (C) 2009-2012 Tobias Frost
+Copyright (C) 2009-2015 Tobias Frost
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -350,15 +350,31 @@ int main(int argc, char* argv[])
 
 		for (int i = 0; i < rt.getLength(); i++) {
 			std::string name;
-			std::string manufactor;
+			std::string manufacturer;
 			std::string model;
+
+			// alias for manufacturer is manufactor -- old
+            try {
+                manufacturer = (const char *)rt[i]["manufacturer"];
+            } catch (libconfig::SettingNotFoundException &e1) {
+                try {
+                    manufacturer = (const char *)rt[i]["manufactor"];
+                    LOGWARN(mainlogger, "NOTE: \"manufactor\" is depreciated. "
+                        "Please update to \"manufacturer\".");
+                } catch (libconfig::SettingNotFoundException &e2) {
+                    LOGFATAL(mainlogger,
+                        "Configuration Error: Required Setting was not found: \""
+                        << e1.getPath() << '\"');
+                    cleanup();
+                    exit(1);
+                }
+            }
 
 			try {
 				name = (const char *) rt[i]["name"];
-				manufactor = (const char *) rt[i]["manufactor"];
 				model = (const char *) rt[i]["model"];
 				LOGINFO(mainlogger,
-						"Setting up inverter " << name << " (" << manufactor << ")");
+						"Setting up inverter " << name << " (" << manufacturer << ")");
 			} catch (libconfig::SettingNotFoundException &e) {
 				LOGFATAL(mainlogger,
 						"Configuration Error: Required Setting was not found in \""
@@ -375,11 +391,11 @@ int main(int argc, char* argv[])
 			}
 
 			IInverterFactory *factory =
-					InverterFactoryFactory::createInverterFactory(manufactor);
+					InverterFactoryFactory::createInverterFactory(manufacturer);
 			if (!factory) {
 				LOGFATAL(mainlogger,
-						"Unknown inverter manufactor \""
-						<< manufactor << '\"');
+						"Unknown inverter manufacturer \""
+						<< manufacturer << '\"');
 				cleanup();
 				exit(1);
 			}
@@ -390,8 +406,8 @@ int main(int argc, char* argv[])
 			if (!inverter) {
 				LOGFATAL(mainlogger,
 						"Cannot create inverter model "
-						<< model << " for manufactor \""
-						<< manufactor << '\"');
+						<< model << " for manufacturer \""
+						<< manufacturer << '\"');
 
 				LOGFATAL(mainlogger,
 						"Supported models are: "
@@ -403,7 +419,7 @@ int main(int argc, char* argv[])
 			if (!inverter->CheckConfig()) {
 				LOGFATAL(mainlogger,
 						"Inverter " << name << " ( "
-						<< manufactor << ", " << model
+						<< manufacturer << ", " << model
 						<< ") reported configuration error");
 				cleanup();
 				exit(1);

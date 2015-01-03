@@ -1,7 +1,7 @@
 /* ----------------------------------------------------------------------------
  solarpowerlog -- photovoltaic data logging
 
- Copyright (C) 2009-2012 Tobias Frost
+ Copyright (C) 2012-2015 Tobias Frost
 
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -267,9 +267,17 @@ CInverterSputnikSSeriesSimulator::CInverterSputnikSSeriesSimulator(
     string s;
     IValue *v;
     CCapability *c;
+
+#warning remove this depreciated cruft (and spell correctly manufacturer)
     s = CAPA_INVERTER_MANUFACTOR_NAME;
     v = CValueFactory::Factory<CAPA_INVERTER_MANUFACTOR_TYPE>();
     ((CValue<string>*)v)->Set("Solarpowerlog");
+    c = new CCapability(s, v, this);
+    AddCapability(c);
+
+    s = CAPA_INVERTER_MANUFACTURER_NAME;
+    v = CValueFactory::Factory<CAPA_INVERTER_MANUFACTURER_TYPE>();
+    ((CValue<string>*) v)->Set("Sputnik Engineering");
     c = new CCapability(s, v, this);
     AddCapability(c);
 

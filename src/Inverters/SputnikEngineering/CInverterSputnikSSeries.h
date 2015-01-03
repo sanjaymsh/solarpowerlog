@@ -47,7 +47,7 @@ Copyright (C) 2009-2012 Tobias Frost
 /** \fixme Implements the Inverter Interface for the Sputnik S Series
  *
  * The Sputnik S-Series are an inverter family by Sputnik Engineering
- * Please see the manufactor's homepage for details.
+ * Please see the manufacturer's homepage for details.
  */
 class CInverterSputnikSSeries: public IInverterBase
 {

@@ -73,39 +73,40 @@
 std::string i_need_a_stdstring;
 
 #define DESCRIPTION_SPUTNIK_INTRO \
-"The following settings are for inverters made from Sputnik Engineering." \
-"To specify an inverter from this company, you need to set the parameters \n" \
-"manufacturer=\"SPUTNIK_ENGINEERING\"\n" \
-"model=\"S-Series\"\n" \
-"Note: at the moment, the software requires S-Series here, but the protocol " \
-"might be compatible with inverters from other families."
+"The description of the following settings are valid when solparppowerlog configures for the S-Series inverters from Sputnik Engineering, " \
+"so when \n" \
+"manufacturer=\"SPUTNIK_ENGINEERING\";\n" \
+"model=\"S-Series\";\n" \
+"\n Hint: Many Sputnik Engineering inverters speak the same protocol, " \
+" so it make sense to just give it a try and see if it works."
+
 
 #define DESCRIPTION_QUERYINTERVAL \
 "This setting defines how often the inverter should be queried for new data, " \
 "how long it should wait before issuing the next round of commands.\n" \
-"The unit is seconds, \n" \
-"Example: queryinterval=3.5; will specify 3.5 seconds\n." \
+"The unit is seconds. \n"
 
 #define DESCRIPITON_COMMADR \
 "Communication address of the inverter (as set in the communication menu of the inverter)"
 
 #define DESCRIPITON_OWNADR \
-"Adress to use as \"our\" adress for communication. You should not need to change this value"
+"Address to use as originating address for the communication. " \
+"You should not change this value: The default value is designated for loggers."
 
 #define DESCRIPITON_RESPONSE_TIMEOUT \
 "Time the inverter has to answer the query before the request times out.\n" \
 "The unit is seconds."
 
 #define DESCRIPITON_CONNECTION_TIMEOUT \
-"Time until a connection has to be established before timing out." \
+"Time until a connection has to be established before timing out.\n" \
 "The unit is seconds."
 
 #define DESCRIPITON_SEND_TIMEOUT \
-"Time until a send request has to be finished before timing out." \
+"Time until a send request has to be finished before timing out.\n" \
 "The unit is seconds."
 
 #define DESCRIPITON_RECONNECT_DELAY \
-"Time waited, until a reconnection is attempted. Unit is seconds."
+"Time waited, until a reconnection is attempted.\n The unit is seconds."
 
 #define DESCRIPTION_DISABLE_3PHASE_COMMANDS \
 "Should queries dedicated for 3-phase-inverters be disabled. " \
@@ -134,8 +135,8 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	IInverterBase::IInverterBase(name, configurationpath, "inverter")
 {
 
-    _cfg_ownadr = 0; //< not needed, just to make compiler happy. (initialized by cnfig check)
-    _cfg_commadr = 0; //< not needed, just to make compiler happy. (initialized by cnfig check)
+    _cfg_ownadr = 0xfb; //< not needed, just to make compiler happy. (initialized by cnfig check)
+    _cfg_commadr = 0x01; //< not needed, just to make compiler happy. (initialized by cnfig check)
 
     _shutdown_requested = false;
 	// Add the capabilites that this inverter has
@@ -1000,14 +1001,14 @@ CConfigCentral* CInverterSputnikSSeries::getConfigCentralObject(void)
     // before creating this object.
     cfg
     (NULL, IBASE_DESCRIPTION_INTRO)
-    ("name", IBASE_DESCRIPTION_NAME)
-    ("manufacturer", IBASE_DESCRIPTION_MANUFACTURER)
-    ("model", IBASE_DESCRIPTION_MODEL)
+    ("name", IBASE_DESCRIPTION_NAME, "\"Inverter_1\"")
+    ("manufacturer", IBASE_DESCRIPTION_MANUFACTURER, "\"SPUTNIK_ENGINEERING\"")
+    ("model", IBASE_DESCRIPTION_MODEL, "\"S-Series\"")
     ("comms", IBASE_DESCRIPTION_COMMS, dummy)
     ;
 
     cfg
-    ("NULL", DESCRIPTION_SPUTNIK_INTRO)
+    (NULL, DESCRIPTION_SPUTNIK_INTRO)
     ("queryinterval", DESCRIPTION_QUERYINTERVAL, _cfg_queryinterval_s, 5.0f,
         0.0f, FLT_MAX)
     ("commadr", DESCRIPITON_COMMADR, _cfg_commadr, 0x01u, 0u , 255u)

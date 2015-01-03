@@ -44,6 +44,9 @@
 #include "ILogger.h"
 #include "CConfigHelper.h"
 
+#define WRAP_AT (79)
+
+
 /** Interface class for config entries.
  *
  */
@@ -59,25 +62,43 @@ public:
      *    logged using LOGERROR(logger,...)
      */
     virtual bool CheckAndUpdateConfig(ILogger &logger, CConfigHelper &helper) const = 0;
+
+    /** Get the configuration options pretty-printed to automatically generate
+     * config snippets.
+     */
+    virtual std::string GetConfigSnippet() const = 0;
+
+    /** Get the configuration options pretty-printed to suitable for help2man
+     */
+    // virtual std::string& GetHelp() const = 0;
+
 };
 
+/** Class for a description, without parameter.
+ *
+ * note: to get a
+ */
 class CConfigCentralEntryText : public IConfigCentralEntry {
 public:
-    CConfigCentralEntryText(const char *parameter, const char *description) {
+    CConfigCentralEntryText(const char *parameter, const char *description, const char *example) {
         if (parameter) _parameter = parameter;
-        if (description) _description = description;
+        if (example) _example = example;
+        assert(description);
+        _description = description;
     }
 
-    virtual bool CheckAndUpdateConfig(ILogger &logger, CConfigHelper &helper) const {
+    virtual bool CheckAndUpdateConfig(ILogger &, CConfigHelper &) const {
         return true;
     }
+
+    virtual std::string GetConfigSnippet() const;
 
     virtual ~CConfigCentralEntryText() { }
 
 private:
+    std::string _example;
     std::string _parameter;
     std::string _description;
-
 };
 
 
@@ -123,6 +144,37 @@ public:
         else {
             return helper.CheckAndGetConfig(_setting, _store, &logger);
         }
+    }
+
+    std::string GetConfigSnippet() const
+    {
+        extern std::string _WrapForConfigSnippet(
+            const std::string &description);
+        extern std::string _WrapForConfigSnippet(
+            const std::string &description);
+
+        std::string ret;
+        // Wrap the desription
+        ret = _WrapForConfigSnippet(this->_description);
+
+        std::stringstream ss;
+        // print the optional / mandatory statement
+        if (this->_optional) ss << "This setting is optional with a default value of " << this->_defvalue;
+        else ss << "This setting is mandatory.\n";
+        ret += _WrapForConfigSnippet(ss.str());
+
+        // make a nice example
+        if (this->_optional) ret += "# ";
+        ret += this->_setting + " = ";
+        if (this->_optional) {
+            std::stringstream ss;
+            ss << this->_defvalue;
+            ret += ss.str();
+        } else {
+            ret += "<value>";
+        }
+        ret += ";\n";
+        return ret;
     }
 
 protected:
@@ -195,6 +247,37 @@ public:
         return true;
     }
 
+    virtual std::string GetConfigSnippet() const
+    {
+        extern std::string _WrapForConfigSnippet(
+            const std::string &description);
+
+        std::string ret;
+        // Wrap the desription
+        ret = _WrapForConfigSnippet(this->_description);
+
+        std::stringstream ss;
+        // print the range
+        ss << "# Valid values are from " << this->_min << " to " << this->_max << ".\n";
+        // print the optional / mandatory statement
+        if (this->_optional) ss << "This setting is optional with a default value of " << this->_defvalue;
+        else ss << "This setting is mandatory.\n";
+        ret += _WrapForConfigSnippet(ss.str());
+
+        // make a nice example
+        if (this->_optional) ret += "# ";
+        ret += this->_setting + " = ";
+        if (this->_optional) {
+            std::stringstream ss;
+            ss << this->_defvalue;
+            ret += ss.str();
+        } else {
+            ret += "<value>";
+        }
+        ret += ";\n";
+        return ret;
+    }
+
 private:
     T _min;
     T _max;
@@ -231,10 +314,11 @@ public:
      * \param parameter parameter linked to this entry. Might be NULL.
      * \param description description, text...
      */
-    CConfigCentral& operator()(const char* parameter, const char *description)
+    CConfigCentral& operator()(const char* parameter, const char *description,
+        const char *example = NULL)
     {
         boost::shared_ptr<IConfigCentralEntry> p((IConfigCentralEntry*)
-            new CConfigCentralEntryText(parameter, description));
+            new CConfigCentralEntryText(parameter, description, example));
             l.push_back(p);
             return *this;
         }
@@ -327,7 +411,11 @@ public:
      *
      * @return true on success, false on config errors.
      */
-    bool CheckConfig(ILogger &logger, const std::string &configpath);
+    bool CheckConfig(ILogger &logCConfigCentralEntryger, const std::string &configpath);
+
+    /** Get a configuration snippet */
+    std::string GetConfigSnippet();
+
 
 private:
     std::list<boost::shared_ptr< IConfigCentralEntry> > l;

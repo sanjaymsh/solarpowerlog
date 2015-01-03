@@ -482,6 +482,106 @@ public:
 
     bool isExisting(void) const;
 
+    /*** Check (type, existence) and assign value. This variant is for optional
+     * parameters
+     *
+     * @param setting to look for
+     * @param store where to store the result
+     * @param defval what is the default value
+     * @param logger where to log the error (if NULL, do not print the error)
+     * @return true on success, false on "type error"
+     */
+    template<class T>
+    bool CheckAndGetConfig(const char* setting, T &store, const T &defval,
+        ILogger *logger = NULL)
+    {
+        libconfig::Config* cfg = Registry::Instance().Configuration();
+        string tmp = cfgpath + "." + setting;
+
+        try {
+            store = cfg->lookup(cfgpath + "." + setting);
+        } catch (libconfig::SettingNotFoundException &e) {
+            if (logger) LOGINFO(*logger, setting <<
+                " not found. Using default value " << defval);
+            store = defval;
+        } catch (libconfig::SettingTypeException &e) {
+            if (logger) LOGERROR(*logger, setting <<" is of wrong type");
+            return false;
+        }
+        return true;
+    }
+
+    /** Convenience wrapper for CheckAndGetConfig() to take a std::string as
+     * setting parameter
+     *
+     *
+     * @param setting to look for
+     *
+     * @param store where to store the result
+     * @param defval what is the default value
+     * @param logger where to log the error (if NULL, do not print the error)
+     * @return true on success, false on "type error"
+     */
+    template<class T>
+    bool CheckAndGetConfig(const std::string &setting, T &store, const T &defval,
+        ILogger *logger = NULL)
+    {
+        return CheckAndGetConfig(setting.c_str(), store, defval, logger);
+    }
+
+    /*** Check (type, existence) and assign value. This variant is for mandatory
+     * parameters.
+     *
+     * This function looks up a value and store it in the destination variable,
+     * if the type of the setting is convertible.
+     *
+     * If libconfig cannot convert to the desired datatype, it will fail,
+     * If the setting is not there, the default value will be used.
+     *
+     *
+     * @param setting to look for
+     * @param store where to store the result
+     * @param logger where to log the error (if NULL, do not print the error)
+     * @return true on success, false on "type error" or "not found"
+     */
+    template<class T>
+    bool CheckAndGetConfig(const char* setting, T &store,
+        ILogger *logger = NULL)
+    {
+        libconfig::Config* cfg = Registry::Instance().Configuration();
+        string tmp = cfgpath + "." + setting;
+
+        try {
+            store = cfg->lookup(tmp);
+        } catch (libconfig::SettingNotFoundException &e) {
+            if (logger) LOGERROR(*logger,
+                "Required setting " << setting << " was not found.");
+            return false;
+        } catch (libconfig::SettingTypeException &e) {
+            if (logger) LOGERROR(*logger,
+                "Setting " << setting << " is of wrong type.");
+            return false;
+        }
+        return true;
+    }
+
+    /** Convenience wrapper for CheckAndGetConfig() to take a std::string as
+     * setting parameter
+     *
+     * @param setting to look for
+     * @param store where to store the result
+     * @param logger where to log the error (if NULL, do not print the error)
+     * @return true on success, false on "type error" or "not found"
+     *
+     */
+    template<class T>
+    bool CheckAndGetConfig(const std::string &setting, T &store,
+        ILogger *logger = NULL)
+    {
+        return CheckAndGetConfig(setting.c_str(), store, logger);
+    }
+
+
 private:
 	string cfgpath;
 };

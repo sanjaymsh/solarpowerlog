@@ -34,14 +34,20 @@
 
 #ifdef HAVE_COMMS_ASIOTCPIO
 #define COMMS_ASIOTCP_ID "TCP/IP"
+#else
+#define COMMS_ASIOTCP_ID
 #endif
 
 #ifdef HAVE_COMMS_ASIOSERIAL
 #define COMMS_ASIOSERIAL_ID "RS2xx"
+#else
+#define COMMS_ASIOSERIAL_ID
 #endif
 
 #ifdef HAVE_COMMS_SHAREDCONNECTION
 #define COMMS_SHARED_ID "SharedConnection"
+#else
+#define COMMS_SHARED_ID
 #endif
 
 

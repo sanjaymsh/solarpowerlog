@@ -50,13 +50,13 @@ IInverterFactory *InverterFactoryFactory::createInverterFactory(const string& ma
 {
 
 #if defined HAVE_INV_SPUTNIK || defined HAVE_INV_SPUTNIKSIMULATOR
-    if (manufacturer == "SPUTNIK_ENGINEERING") {
+    if (manufacturer == INV_MANU_SPUTNIK) {
         return new CInverterFactorySputnik;
     }
 #endif
 
 #if defined HAVE_INV_DUMMY
-    if ( manufacturer == "DUMMY_INVERTER") {
+    if ( manufacturer == INV_MANU_DUMMY) {
         return new CInverterFactoryDummy;
     }
 #endif

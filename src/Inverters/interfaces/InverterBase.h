@@ -200,6 +200,7 @@
 
 #include "Connections/interfaces/IConnect.h"
 #include "Connections/factories/IConnectFactory.h"
+#include "Inverters/factories/InverterFactoryFactory.h"
 #include "interfaces/CCapability.h"
 #include "patterns/ICommandTarget.h"
 #include "configuration/ILogger.h"
@@ -218,27 +219,32 @@ using namespace std;
 
 
 #define IBASE_DESCRIPTION_INTRO \
-"The following parameters are required to bootstrap " \
-"solarpowerlog, as they define the type of inverters and the interaction within " \
-"the program: name, manufacturer and model are all required parameters."
+"Inverter definition\n" \
+"These basic parameters are necessary so that solarpowerlog has knowldege " \
+"about which inverter to be configured:\n" \
+"\"name\", \"manufacturer\" and \"model\""
 
 #define IBASE_DESCRIPTION_NAME \
-"This configuration names the inverter. The name is used within solarpowerlog " \
-"to reference the inverter from other program parts (like filters). " \
-"Must be unique."
+"This configuration names the inverter. The name are used internally to identify " \
+"the inverter and thus needs to be unique."
 
 #define IBASE_DESCRIPTION_MANUFACTURER \
-"Specifies the manufacturer of the inverter."
+"Specifies the manufacturer of the inverter.\n" \
+"Possible values are:\n" \
+INV_MANU_SPUTNIK " " \
+INV_MANU_DUMMY
 
 #define IBASE_DESCRIPTION_MODEL \
 "Specifies the model of the inverter."
 
 #define IBASE_DESCRIPTION_COMMS \
-"Specifies the communication method to be used. " \
-"Available communication methods are: " \
-COMMS_ASIOTCP_ID " "\
-COMMS_ASIOSERIAL_ID " "\
-COMMS_SHARED_ID
+"Specifies the communication method to be used.\n" \
+"Possible values are:\n" \
+COMMS_ASIOTCP_ID " " \
+COMMS_ASIOSERIAL_ID " " \
+COMMS_SHARED_ID " " \
+"\nNote: Every communication method has its own configuration parameter, " \
+"please consult its documentation and sample configuration files."
 
 /** Inverter Interface .... */
 // TODO: This class renamed, as it also fits for the "Filters" (Data source, data computing/enhancing, ...)

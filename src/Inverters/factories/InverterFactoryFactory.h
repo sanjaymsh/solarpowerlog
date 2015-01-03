@@ -34,6 +34,18 @@
 
 #include <string>
 
+#if defined HAVE_INV_SPUTNIK || defined HAVE_INV_SPUTNIKSIMULATOR
+#define INV_MANU_SPUTNIK "SPUTNIK_ENGINEERING"
+#else
+#define INV_MANU_SPUTNIK
+#endif
+
+#ifdef HAVE_INV_DUMMY
+#define INV_MANU_DUMMY "DUMMY_INVERTER"
+#else
+#define INV_MANU_DUMMY
+#endif
+
 class IInverterFactory;
 
 using namespace std;

@@ -61,6 +61,26 @@ public:
     virtual bool CheckAndUpdateConfig(ILogger &logger, CConfigHelper &helper) const = 0;
 };
 
+class CConfigCentralEntryText : public IConfigCentralEntry {
+public:
+    CConfigCentralEntryText(const char *parameter, const char *description) {
+        if (parameter) _parameter = parameter;
+        if (description) _description = description;
+    }
+
+    virtual bool CheckAndUpdateConfig(ILogger &logger, CConfigHelper &helper) const {
+        return true;
+    }
+
+    virtual ~CConfigCentralEntryText() { }
+
+private:
+    std::string _parameter;
+    std::string _description;
+
+};
+
+
 /*** Single setting/configuration entry.
  *
  */
@@ -201,6 +221,24 @@ public:
     virtual ~CConfigCentral() {
 
     }
+
+
+    /** Add an textual entry (which can be used when dumping the help
+     * to have an header, prequel text or like or parameters which are
+     * (reported) aliases to others (like the typo "manufactor" instead of
+     * "manufacturer")
+     *
+     * \param parameter parameter linked to this entry. Might be NULL.
+     * \param description description, text...
+     */
+    CConfigCentral& operator()(const char* parameter, const char *description)
+    {
+        boost::shared_ptr<IConfigCentralEntry> p((IConfigCentralEntry*)
+            new CConfigCentralEntryText(parameter, description));
+            l.push_back(p);
+            return *this;
+        }
+
 
     /** Add an setting describing entry (mandatory version)
      *

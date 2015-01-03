@@ -61,6 +61,8 @@ public:
 	/** implements the ICommandTarget interface */
 	virtual void ExecuteCommand(const ICommand *Command);
 
+    virtual CConfigCentral* getConfigCentralObject(void);
+
 protected:
 	/** calculate the checksum for the telegram stored in str */
 	static unsigned int CalcChecksum(const char* str, int len);
@@ -121,6 +123,9 @@ private:
     /// set to true if the shutdown request has been received via broadcast
     /// event.
     bool _shutdown_requested;
+
+    /// Configuration cache: queryinterval
+    float _cfg_queryinterval_s;
 
     /// Configuration Cache: Timeout for telegramm, unit is ms
     float _cfg_response_timeout_s;

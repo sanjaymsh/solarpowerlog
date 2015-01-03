@@ -45,10 +45,11 @@
 
 #ifdef HAVE_INV_SPUTNIK
 
+#include "CInverterSputnikSSeries.h"
+
 #include "configuration/Registry.h"
 #include "configuration/CConfigHelper.h"
-
-#include "CInverterSputnikSSeries.h"
+#include <configuration/CConfigCentral.h>
 
 #include "patterns/ICommand.h"
 
@@ -68,6 +69,48 @@
 #include "Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOIfSupported.h"
 
 #include <errno.h>
+
+std::string i_need_a_stdstring;
+
+#define DESCRIPTION_SPUTNIK_INTRO \
+"The following settings are for inverters made from Sputnik Engineering." \
+"To specify an inverter from this company, you need to set the parameters \n" \
+"manufacturer=\"SPUTNIK_ENGINEERING\"\n" \
+"model=\"S-Series\"\n" \
+"Note: at the moment, the software requires S-Series here, but the protocol " \
+"might be compatible with inverters from other families."
+
+#define DESCRIPTION_QUERYINTERVAL \
+"This setting defines how often the inverter should be queried for new data, " \
+"how long it should wait before issuing the next round of commands.\n" \
+"The unit is seconds, \n" \
+"Example: queryinterval=3.5; will specify 3.5 seconds\n." \
+
+#define DESCRIPITON_COMMADR \
+"Communication address of the inverter (as set in the communication menu of the inverter)"
+
+#define DESCRIPITON_OWNADR \
+"Adress to use as \"our\" adress for communication. You should not need to change this value"
+
+#define DESCRIPITON_RESPONSE_TIMEOUT \
+"Time the inverter has to answer the query before the request times out.\n" \
+"The unit is seconds."
+
+#define DESCRIPITON_CONNECTION_TIMEOUT \
+"Time until a connection has to be established before timing out." \
+"The unit is seconds."
+
+#define DESCRIPITON_SEND_TIMEOUT \
+"Time until a send request has to be finished before timing out." \
+"The unit is seconds."
+
+#define DESCRIPITON_RECONNECT_DELAY \
+"Time waited, until a reconnection is attempted. Unit is seconds."
+
+#define DESCRIPTION_DISABLE_3PHASE_COMMANDS \
+"Should queries dedicated for 3-phase-inverters be disabled. " \
+"\"true\" disables them, \"false\" enables them. "
+
 
 #undef DEBUG_TOKENIZER
 // Debug: Print all received tokens
@@ -970,6 +1013,40 @@ void CInverterSputnikSSeries::tokenizer(const char *delimiters,
 	if (lastPos != s.length()) {
 		tokens.push_back(s.substr(lastPos, s.length() - lastPos));
 	}
+}
+
+CConfigCentral* CInverterSputnikSSeries::getConfigCentralObject(void)
+{
+    CConfigCentral &cfg = *IInverterBase::getConfigCentralObject();
+
+    // those are for config-dumping only -- they are already interpretatd
+    // before creating this object.
+    cfg
+    (NULL, IBASE_DESCRIPTION_INTRO)
+    ("name", IBASE_DESCRIPTION_NAME)
+    ("manufacturer", IBASE_DESCRIPTION_MANUFACTURER)
+    ("model", IBASE_DESCRIPTION_MODEL);
+
+#warning  "comms" missing
+    cfg
+    ("NULL", DESCRIPTION_SPUTNIK_INTRO)
+    ("queryinterval", DESCRIPTION_QUERYINTERVAL, _cfg_queryinterval_s, 5.0f,
+        0.0f, FLT_MAX)
+    ("commadr", DESCRIPITON_COMMADR, _cfg_commadr, 0x01u, 0u , 255u)
+    ("ownadr", DESCRIPITON_OWNADR, _cfg_ownadr, 0xfbu, 0u , 255u)
+    ("response_timeout", DESCRIPITON_RESPONSE_TIMEOUT, _cfg_response_timeout_s,
+        3.0f, 0.0f, FLT_MAX)
+    ("connection_timeout", DESCRIPITON_CONNECTION_TIMEOUT,
+        _cfg_connection_timeout_s, 3.0f, 0.0f, FLT_MAX)
+    ("send_timeout", DESCRIPITON_SEND_TIMEOUT, _cfg_send_timeout_s, 3.0f,
+        0.0f, FLT_MAX)
+    ("reconnect_delay", DESCRIPITON_RECONNECT_DELAY, _cfg_reconnectdelay_s,
+        15.0f, 0.0f, FLT_MAX)
+    ("disable_3phase_commands", DESCRIPTION_DISABLE_3PHASE_COMMANDS,
+        _cfg_disable_3phase, false)
+    ;
+
+    return &cfg;
 }
 
 #endif

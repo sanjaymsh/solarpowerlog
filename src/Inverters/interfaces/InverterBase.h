@@ -217,6 +217,23 @@ using namespace std;
 #define CONFIG_TWEAK_CONNECTION_TIMEOUT "option_connectiontimeout"
 #define CONFIG_TWEAK_CONNECTION_TIMEOUT_DEFAULT (15000)
 
+
+#define IBASE_DESCRIPTION_INTRO \
+"The following parameters are required to bootstrap " \
+"solarpowerlog, as they define the type of inverters and the interaction within " \
+"the program: name, manufacturer and model are all required parameters."
+
+#define IBASE_DESCRIPTION_NAME \
+"This configuration names the inverter. The name is used within solarpowerlog " \
+"to reference the inverter from other program parts (like filters). " \
+"Must be unique."
+
+#define IBASE_DESCRIPTION_MANUFACTURER \
+"Specifies the manufacturer of the inverter."
+
+#define IBASE_DESCRIPTION_MODEL \
+"Specifies the model of the inverter."
+
 /** Inverter Interface .... */
 // TODO: This class renamed, as it also fits for the "Filters" (Data source, data computing/enhancing, ...)
 // Inverters will be only a special interface, derived from this base class

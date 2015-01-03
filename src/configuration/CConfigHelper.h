@@ -501,11 +501,12 @@ public:
         try {
             store = cfg->lookup(cfgpath + "." + setting);
         } catch (libconfig::SettingNotFoundException &e) {
-            if (logger) LOGINFO(*logger, setting <<
-                " not found. Using default value " << defval);
+            if (logger) LOGINFO(*logger, "Setting " << setting <<
+                " was not found. Using default value:" << defval);
             store = defval;
         } catch (libconfig::SettingTypeException &e) {
-            if (logger) LOGERROR(*logger, setting <<" is of wrong type");
+            if (logger) LOGERROR(*logger, "Setting " << setting <<
+                " is of wrong type");
             return false;
         }
         return true;
@@ -513,7 +514,6 @@ public:
 
     /** Convenience wrapper for CheckAndGetConfig() to take a std::string as
      * setting parameter
-     *
      *
      * @param setting to look for
      *
@@ -537,7 +537,6 @@ public:
      *
      * If libconfig cannot convert to the desired datatype, it will fail,
      * If the setting is not there, the default value will be used.
-     *
      *
      * @param setting to look for
      * @param store where to store the result

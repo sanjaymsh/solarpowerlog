@@ -123,16 +123,21 @@ private:
     bool _shutdown_requested;
 
     /// Configuration Cache: Timeout for telegramm, unit is ms
-    float _cfg_response_timeout_ms;
+    float _cfg_response_timeout_s;
 
     /// Configuration Cache: Timeout to establish a connection, unit ms
-    float _cfg_connection_timeout_ms;
+    float _cfg_connection_timeout_s;
 
     /// Configuration Cache: Timeout to send a telegramm, unit ms
-    float _cfg_send_timeout_ms;
+    float _cfg_send_timeout_s;
 
     /// Configuration Cache: Reconnect delay, unit s
     float _cfg_reconnectdelay_s;
+
+    /** Configuration cache: Should we disable support for
+     * 3-phase-specific commands?
+     */
+    bool _cfg_disable_3phase;
 
     /// cache for inverters comm adr.
     unsigned int _cfg_commadr;

@@ -101,7 +101,7 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	IValue *v;
 	CCapability *c;
 
-#warning remove this depreciated cruft (and spell correctly manufacturer)
+#warning remove this depreciated cruft (and spell manufacturer correctly)
 	s = CAPA_INVERTER_MANUFACTOR_NAME;
 	v = CValueFactory::Factory<CAPA_INVERTER_MANUFACTOR_TYPE>();
 	((CValue<string>*) v)->Set("Sputnik Engineering");
@@ -122,26 +122,18 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	float interval;
 	cfghlp.GetConfig("queryinterval", interval, 5.0f);
 
-	bool disable_3phase;
-	cfghlp.GetConfig("disable_3phase_commands",disable_3phase,(bool) false);
+	cfghlp.GetConfig("disable_3phase_commands",_cfg_disable_3phase,(bool) false);
 
 	// Query settings needed and default all optional settings.
 	cfghlp.GetConfig("ownadr", _cfg_ownadr, 0xFBu);
 	cfghlp.GetConfig("commadr", _cfg_commadr, 0x01u);
-	cfghlp.GetConfig("response_timeout",_cfg_response_timeout_ms,3.0F);
-	// cfg-file ha unit "seconds", but we need "milliseconds" later.
-	_cfg_response_timeout_ms *= 1000.0;
+	cfghlp.GetConfig("response_timeout", _cfg_response_timeout_s, 3.0F);
 
-    cfghlp.GetConfig("connection_timeout",_cfg_connection_timeout_ms,3.0F);
-    // cfg-file ha unit "seconds", but we need "milliseconds" later.
-    _cfg_connection_timeout_ms *= 1000.0;
+	cfghlp.GetConfig("connection_timeout",_cfg_connection_timeout_s,3.0F);
 
-    cfghlp.GetConfig("send_timeout",_cfg_send_timeout_ms,3.0F);
-    // cfg-file ha unit "seconds", but we need "milliseconds" later.
-    _cfg_send_timeout_ms *= 1000.0;
+	cfghlp.GetConfig("send_timeout",_cfg_send_timeout_s,3.0F);
 
-    cfghlp.GetConfig("reconnect_delay",_cfg_reconnectdelay_s,15.0F);
-     // cfg-file ha unit "seconds", but we need "milliseconds" later.
+	cfghlp.GetConfig("reconnect_delay",_cfg_reconnectdelay_s,15.0F);
 
 	s = CAPA_INVERTER_QUERYINTERVAL;
 	v = CValueFactory::Factory<CAPA_INVERTER_QUERYINTERVAL_TYPE>();
@@ -250,7 +242,7 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
         new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGE_TYPE>(logger, "UL1", 10, 0.1,
             this, CAPA_INVERTER_GRID_AC_VOLTAGE_NAME));
 
-    if (disable_3phase) {
+    if (_cfg_disable_3phase) {
         // First, implement the "this command is not supported" scheme.
         commands.push_back(
             new CSputnikCommand<CAPA_INVERTER_GRID_AC_VOLTAGE_PHASE2_TYPE>(logger, "UL2",
@@ -271,7 +263,7 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
         new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_TYPE>(logger, "IL1", 10, 0.01,
             this, CAPA_INVERTER_GRID_AC_CURRENT_NAME));
 
-    if (disable_3phase) {
+    if (_cfg_disable_3phase) {
         commands.push_back(
             new CSputnikCommand<CAPA_INVERTER_GRID_AC_CURRENT_PHASE2_TYPE>(logger, "IL2", 10, 0.01,
                 this, CAPA_INVERTER_GRID_AC_CURRENT_PHASE2_NAME, new CSputnikCmdBOIfSupported));
@@ -285,7 +277,7 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
         new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_TYPE>(logger, "TKK", 10, 1.0,
             this, CAPA_INVERTER_TEMPERATURE_NAME));
 
-    if (disable_3phase) {
+    if (_cfg_disable_3phase) {
         commands.push_back(
             new CSputnikCommand<CAPA_INVERTER_TEMPERATURE_PHASE2_TYPE>(logger, "TK2", 10, 1.0, this,
                 CAPA_INVERTER_TEMPERATURE_PHASE2_NAME, new CSputnikCmdBOIfSupported));
@@ -497,7 +489,8 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		// Next-State: Wait4Connection
 
 		cmd = new ICommand(CMD_WAIT4CONNECTION, this);
-		cmd->addData(ICONN_TOKEN_TIMEOUT,((long)_cfg_connection_timeout_ms));
+        cmd->addData(ICONN_TOKEN_TIMEOUT,
+            ((long)(_cfg_connection_timeout_s * 1000.0)));
 		connection->Connect(cmd);
 		break;
 
@@ -573,7 +566,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 		// Start an atomic communication block (to hint any shared comms)
 		cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_REQUEST);
 		cmd->addData(ICONN_TOKEN_SEND_STRING, commstring);
-		cmd->addData(ICONN_TOKEN_TIMEOUT,((long)_cfg_send_timeout_ms));
+        cmd->addData(ICONN_TOKEN_TIMEOUT,((long)(_cfg_send_timeout_s*1000.0)));
 		connection->Send(cmd);
 	}
 		break;
@@ -606,7 +599,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
         }
 
         cmd = new ICommand(CMD_EVALUATE_RECEIVE, this);
-        cmd->addData(ICONN_TOKEN_TIMEOUT, (long)_cfg_response_timeout_ms);
+        cmd->addData(ICONN_TOKEN_TIMEOUT, (long)(_cfg_response_timeout_s*1000.0));
         // finish this atomic block (shared comms hinting)
         cmd->addData(ICONN_ATOMIC_COMMS, ICONN_ATOMIC_COMMS_CEASE);
         connection->Receive(cmd);

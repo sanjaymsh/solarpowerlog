@@ -414,36 +414,25 @@ CInverterSputnikSSeries::~CInverterSputnikSSeries()
 
 bool CInverterSputnikSSeries::CheckConfig()
 {
-	string setting;
-	string str;
+    // new configcode...
+    std::auto_ptr<CConfigCentral> cfg(getConfigCentralObject());
+    bool cfgok = cfg->CheckConfig(logger, configurationpath);
 
-	bool fail = false;
+    assert(connection);
+    if (!connection->CheckConfig()) cfgok=false;
 
-	CConfigHelper hlp(configurationpath);
-	fail |= (true != hlp.CheckConfig("comms", libconfig::Setting::TypeString));
-	// Note: Queryinterval is optional. But CConfigHelper handle also opt.
-	// parameters and checks for type.
-	fail |= (true != hlp.CheckConfig("queryinterval",
-	    libconfig::Setting::TypeFloat, true));
-	fail |= (true != hlp.CheckConfig("commadr", libconfig::Setting::TypeInt));
+    LOGTRACE(logger, "Big Config Check for the new CConfigCentral");
+    LOGTRACE(logger, "result so far: " << cfgok);
+    LOGTRACE(logger, "_cfg_queryinterval_s " << _cfg_queryinterval_s);
+    LOGTRACE(logger, "_cfg_response_timeout_s " << _cfg_response_timeout_s);
+    LOGTRACE(logger, "_cfg_connection_timeout_s " << _cfg_connection_timeout_s );
+    LOGTRACE(logger, "_cfg_send_timeout_s " << _cfg_send_timeout_s );
+    LOGTRACE(logger, "_cfg_reconnectdelay_s " << _cfg_reconnectdelay_s);
+    LOGTRACE(logger, "_cfg_disable_3phase" << _cfg_disable_3phase);
+    LOGTRACE(logger, "_cfg_commadr " << _cfg_commadr);
+    LOGTRACE(logger, "_cfg_ownadr " << _cfg_ownadr);
 
-	// Check config of the communication component, if already instanciated.
-	if (connection) {
-		fail |= (true != connection->CheckConfig());
-	}
-
-	// syntax check for option to disable 3-phase commands.
-	// default: non-enabled.
-	fail |= (true != hlp.CheckConfig("disable_3phase_commands",libconfig::Setting::TypeBoolean,true));
-
-	/// syntax check for communication timeouts
-    fail |= (true != hlp.CheckConfig("response_timeout",libconfig::Setting::TypeFloat,true));
-    fail |= (true != hlp.CheckConfig("connection_timeout",libconfig::Setting::TypeFloat,true));
-    fail |= (true != hlp.CheckConfig("send_timeout",libconfig::Setting::TypeFloat,true));
-    fail |= (true != hlp.CheckConfig("reconnect_delay",libconfig::Setting::TypeFloat,true));
-
-	LOGTRACE(logger, "Check Configuration result: " << !fail);
-	return !fail;
+    return cfgok;
 }
 
 /** Calculate the telegram checksum and return it.
@@ -1019,15 +1008,19 @@ CConfigCentral* CInverterSputnikSSeries::getConfigCentralObject(void)
 {
     CConfigCentral &cfg = *IInverterBase::getConfigCentralObject();
 
+    /// needed fo CConfigCentral to "have an object". WE do not care about content.
+    static std::string dummy;
+
     // those are for config-dumping only -- they are already interpretatd
     // before creating this object.
     cfg
     (NULL, IBASE_DESCRIPTION_INTRO)
     ("name", IBASE_DESCRIPTION_NAME)
     ("manufacturer", IBASE_DESCRIPTION_MANUFACTURER)
-    ("model", IBASE_DESCRIPTION_MODEL);
+    ("model", IBASE_DESCRIPTION_MODEL)
+    ("comms", IBASE_DESCRIPTION_COMMS, dummy)
+    ;
 
-#warning  "comms" missing
     cfg
     ("NULL", DESCRIPTION_SPUTNIK_INTRO)
     ("queryinterval", DESCRIPTION_QUERYINTERVAL, _cfg_queryinterval_s, 5.0f,

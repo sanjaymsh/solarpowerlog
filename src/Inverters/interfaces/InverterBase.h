@@ -185,9 +185,7 @@
  * "WorkScheduler overview" Page.
  *
  * \todo that Workscheduler-Page is not yet written,
- *
- *
- *
+
  */
 
 #ifndef INVERTERBASE_H_
@@ -201,6 +199,7 @@
 #include <map>
 
 #include "Connections/interfaces/IConnect.h"
+#include "Connections/factories/IConnectFactory.h"
 #include "interfaces/CCapability.h"
 #include "patterns/ICommandTarget.h"
 #include "configuration/ILogger.h"
@@ -233,6 +232,13 @@ using namespace std;
 
 #define IBASE_DESCRIPTION_MODEL \
 "Specifies the model of the inverter."
+
+#define IBASE_DESCRIPTION_COMMS \
+"Specifies the communication method to be used. " \
+"Available communication methods are: " \
+COMMS_ASIOTCP_ID " "\
+COMMS_ASIOSERIAL_ID " "\
+COMMS_SHARED_ID
 
 /** Inverter Interface .... */
 // TODO: This class renamed, as it also fits for the "Filters" (Data source, data computing/enhancing, ...)

@@ -105,13 +105,79 @@ public:
         }
     }
 
-private:
+protected:
     bool _optional;
     T &_store;
     T _defvalue;
     std::string _setting;
     std::string _description;
+};
 
+/*** Single setting/configuration entry.
+ *
+ */
+template<typename T>
+class CConfigCentralEntryRangeCheck : public CConfigCentralEntry<T> {
+
+public:
+
+    /** Constructor for mandatory parameters with range check
+     *
+     * @param setting which setting
+     * @param description description for the setting
+     * @param store where to store the parsed value
+     * @param minimum allowed value (including)
+     * @param maximum allowed value (including)
+     */
+    CConfigCentralEntryRangeCheck(const char* setting, const char* description,
+        T &store, const T &minimum, const T &maximum) :
+            CConfigCentralEntry<T>(setting, description, store),
+            _min(minimum), _max(maximum)
+     { }
+
+    /** Constructor for optional parameters with range check
+     *
+     * @param setting which setting
+     * @param description description for the setting
+     * @param store where to store the parsed value
+     * @param defaultvalue which value to use when the parameter was not found
+     * @param minimum allowed value (including)
+     * @param maximum allowed value (including)
+     */
+    CConfigCentralEntryRangeCheck(const char* setting, const char* description,
+        T &store, const T &defaultvalue, const T &minimum, const T &maximum) :
+            CConfigCentralEntry<T>(setting, description, store, defaultvalue),
+            _min(minimum), _max(maximum)
+
+    { }
+
+    virtual ~CConfigCentralEntryRangeCheck() { }
+
+    virtual bool CheckAndUpdateConfig(ILogger &logger,
+        CConfigHelper &helper) const
+    {
+        bool ret;
+        T old = this->_store;
+
+        ret = CConfigCentralEntry<T>::CheckAndUpdateConfig(logger, helper);
+
+        if (!ret) {
+            this->_store = old;
+            return false;
+        }
+
+        if (this->_store > _max || this->_store < _min) {
+            LOGERROR(logger, "Setting " << this->_setting <<
+                " is out of range (allowed range: " << _min << " to " << _max);
+            this->_store = old;
+            return false;
+        }
+        return true;
+    }
+
+private:
+    T _min;
+    T _max;
 };
 
 /** Configuration Helper Class for better checking and documentating
@@ -164,7 +230,7 @@ public:
       */
     template<typename T>
     CConfigCentral& operator()(const char* parameter, const char* description,
-        T &store, T defaultvalue)
+        T &store, const T &defaultvalue)
     {
         boost::shared_ptr<IConfigCentralEntry>
         p((IConfigCentralEntry*) new CConfigCentralEntry<T>(parameter,
@@ -173,6 +239,49 @@ public:
 
         return *this;
     }
+
+    /** Add an setting describing entry (mandatory version) with range-check
+     *
+     * @param parameter setting's name
+     * @param description setting's description
+     * @param store where to store the value
+     * @param minimum range limit (including)
+     * @param maximum range limit (including
+     * @return object, so that the operator can be cascaded.
+     */
+    template<typename T>
+    CConfigCentral& operator()(const char* parameter, const char* description,
+            T &store, const T &minimum, const T &maximum)
+        {
+        boost::shared_ptr<IConfigCentralEntry> p(
+            (IConfigCentralEntry*)new CConfigCentralEntryRangeCheck<T>(
+                parameter, description, store, minimum, maximum));
+        l.push_back(p);
+        return *this;
+        }
+
+    /** Add an setting describing entry (optinal version) with range-check
+     *
+     * @param parameter setting's name
+     * @param description setting's description
+     * @param store where to store the value
+     * @param defaultvalue to use when setting has not been found
+     * @param minimum range limit (including)
+     * @param maximum range limit (including
+     * @return object, so that the operator can be cascaded.
+     */
+    template<typename T>
+    CConfigCentral& operator()(const char* parameter, const char* description,
+        T &store, const T &defaultvalue, const T &minimum, const T &maximum)
+    {
+        boost::shared_ptr<IConfigCentralEntry> p(
+            (IConfigCentralEntry*)new CConfigCentralEntryRangeCheck<T>(
+                parameter, description, store, defaultvalue, minimum, maximum));
+        l.push_back(p);
+
+        return *this;
+    }
+
 
     /** Parse the configuration and use the supplied logger to print errors.
      *

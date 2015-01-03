@@ -54,6 +54,7 @@ patterns/ICommandTarget.cpp patterns/IValue.cpp patterns/ICommand.cpp \
 patterns/IObserverObserver.cpp patterns/IObserverSubject.cpp \
 configuration/CConfigHelper.cpp ctemplate/ctemplate.c \
 interfaces/CDebugHelper.cpp \
+configuration/CConfigCentral.cpp \
 daemon.h Inverters/BasicCommands.h \
 interfaces/CCapability.h interfaces/CMutexHelper.h \
 Inverters/factories/InverterFactoryFactory.h \
@@ -97,6 +98,7 @@ patterns/ICommandTarget.h patterns/IValue.h patterns/ICommand.h \
 patterns/IObserverObserver.h patterns/IObserverSubject.h \
 configuration/CConfigHelper.h ctemplate/ctemplate.h porting.h \
 Inverters/Capabilites.h patterns/CValue.h interfaces/CDebugHelper.h \
+configuration/CConfigCentral.h \
 configuration/ILogger_hashmacro.h
 
 solarpowerlog_CPPFLAGS = $(CONFIG_CFLAGS) $(LOG4CXX_CFLAGS) $(APR_CFLAGS) \

@@ -44,29 +44,49 @@
 #include "ILogger.h"
 #include "CConfigHelper.h"
 
-#warning document me
+/** Interface class for config entries.
+ *
+ */
 class IConfigCentralEntry {
-
 public:
     virtual ~IConfigCentralEntry() { }
 
+    /** Check the config entry and if ok update the target value.
+     *
+     * @param logger where to log errors
+     * @param helper where to retrive the settings.
+     * @return true if setting ok, false if something is wrong. The reason is
+     *    logged using LOGERROR(logger,...)
+     */
     virtual bool CheckAndUpdateConfig(ILogger &logger, CConfigHelper &helper) const = 0;
-
 };
 
-
-#warning  document me
+/*** Single setting/configuration entry.
+ *
+ */
 template<typename T>
 class CConfigCentralEntry : public IConfigCentralEntry {
 
 public:
 
+    /** Constructor for mandatory parameters
+     *
+     * @param setting which setting
+     * @param description description for the setting
+     * @param store where to store the parsed value
+     */
     CConfigCentralEntry(const char* setting, const char* description, T &store) :
         _optional(false), _store(store), _setting(setting),
             _description(description)
     { }
 
-    // Constructor for optional parameters.
+    /** Constructor for optional parameters
+     *
+     * @param setting which setting
+     * @param description description for the setting
+     * @param store where to store the parsed value
+     * @param defaultvalue which value to use when the parameter was not found
+     */
     CConfigCentralEntry(const char* setting, const char* description, T &store,
         T defaultvalue) :
         _optional(true), _store(store), _defvalue(defaultvalue),
@@ -116,7 +136,13 @@ public:
 
     }
 
-    /// Add an option (mandatory option)
+    /** Add an setting describing entry (mandatory version)
+     *
+     * @param parameter setting's name
+     * @param description setting's description
+     * @param store where to store the value
+     * @return object, so that the operator can be cascaded.
+     */
     template<typename T>
     CConfigCentral& operator()(const char* parameter, const char* description,
         T &store)
@@ -128,7 +154,14 @@ public:
         return *this;
     }
 
-    /// Add an option with defaultvalue (thus optional parameter)
+    /** Add an setting describing entry (optional version with default value)
+      *
+      * @param parameter setting's name
+      * @param description setting's description
+      * @param store where to store the value
+      * @param defaultvalue to use when the setting was not found.
+      * @return object, so that the operator can be cascaded.
+      */
     template<typename T>
     CConfigCentral& operator()(const char* parameter, const char* description,
         T &store, T defaultvalue)
@@ -151,8 +184,6 @@ public:
 
 private:
     std::list<boost::shared_ptr< IConfigCentralEntry> > l;
-
-
 };
 
 #endif /* SRC_CONFIGURATION_CCONFIGCENTRAL_H_ */

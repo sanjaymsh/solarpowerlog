@@ -133,9 +133,11 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 		const string & configurationpath) :
 	IInverterBase::IInverterBase(name, configurationpath, "inverter")
 {
-    _cfg_ownadr = 0xfb;
-    _cfg_commadr = 0x01;
 
+    _cfg_ownadr = 0; //< not needed, just to make compiler happy. (initialized by cnfig check)
+    _cfg_commadr = 0; //< not needed, just to make compiler happy. (initialized by cnfig check)
+
+    _shutdown_requested = false;
 	// Add the capabilites that this inverter has
 	// Note: The "must-have" ones CAPA_CAPAS_REMOVEALL and CAPA_CAPAS_UPDATED are already instanciated by the base class constructor.
 	// Note2: You also can add capabilites as soon you know them (runtime detection)
@@ -161,22 +163,14 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	ICommand *cmd = new ICommand(CMD_INIT, this);
 	Registry::GetMainScheduler()->ScheduleWork(cmd);
 
+#warning move most stuff here outside of constructor
+#warning for example post CheckConfig
+
 	CConfigHelper cfghlp(configurationpath);
 	float interval;
 	cfghlp.GetConfig("queryinterval", interval, 5.0f);
 
 	cfghlp.GetConfig("disable_3phase_commands",_cfg_disable_3phase,(bool) false);
-
-	// Query settings needed and default all optional settings.
-	cfghlp.GetConfig("ownadr", _cfg_ownadr, 0xFBu);
-	cfghlp.GetConfig("commadr", _cfg_commadr, 0x01u);
-	cfghlp.GetConfig("response_timeout", _cfg_response_timeout_s, 3.0F);
-
-	cfghlp.GetConfig("connection_timeout",_cfg_connection_timeout_s,3.0F);
-
-	cfghlp.GetConfig("send_timeout",_cfg_send_timeout_s,3.0F);
-
-	cfghlp.GetConfig("reconnect_delay",_cfg_reconnectdelay_s,15.0F);
 
 	s = CAPA_INVERTER_QUERYINTERVAL;
 	v = CValueFactory::Factory<CAPA_INVERTER_QUERYINTERVAL_TYPE>();
@@ -189,13 +183,6 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 	((CValue<std::string>*) v)->Set(name);
 	c = new CCapability(s, v, this);
 	AddCapability(c);
-
-	LOGDEBUG(logger,"Inverter configuration:");
-	LOGDEBUG(logger,"class CInverterSputnikSSeries");
-	LOGDEBUG(logger,"Query Interval: "<< interval);
-	LOGDEBUG(logger,"Ownadr: " << _cfg_ownadr << " Commadr: " << _cfg_commadr);
-	cfghlp.GetConfig("comms", s, (string) "unset");
-	LOGDEBUG(logger,"Communication: " << s);
 
 	// Initialize vector of supported commands.
 	// Handles the "TYP" command, which will identifiy the model
@@ -398,7 +385,6 @@ CInverterSputnikSSeries::CInverterSputnikSSeries(const string &name,
 
     // Register for broadcast events
     Registry::GetMainScheduler()->RegisterBroadcasts(this);
-    _shutdown_requested = false;
 }
 
 CInverterSputnikSSeries::~CInverterSputnikSSeries()
@@ -431,7 +417,6 @@ bool CInverterSputnikSSeries::CheckConfig()
     LOGTRACE(logger, "_cfg_disable_3phase" << _cfg_disable_3phase);
     LOGTRACE(logger, "_cfg_commadr " << _cfg_commadr);
     LOGTRACE(logger, "_cfg_ownadr " << _cfg_ownadr);
-
     return cfgok;
 }
 
@@ -730,7 +715,7 @@ void CInverterSputnikSSeries::ExecuteCommand(const ICommand *Command)
 			break;
 		}
 
-		// TODO differenciate between identify query and "normal" runtime queries
+		// TODO differentiate between identify query and "normal" runtime queries
 
 		CCapability *c = GetConcreteCapability(CAPA_INVERTER_DATASTATE);
 		CValue<bool> *vb = (CValue<bool> *) c->getValue();
@@ -775,7 +760,7 @@ string CInverterSputnikSSeries::assemblequerystring()
     // - telegram len does not exceed 255 bytes in total,
     // while there are 16 header bytes and 6 trailing bytes to be considered.
     // - answer is not exceeding 255 bytes
-    // (here, we reserve a saftey of 10 bytes additionally).
+    // (here, we reserve a safety of 10 bytes additionally).
     int telegramlen = 254-22;
     int expectedanswerlen = 255-31;
     int currentport = QUERY; // At the moment only QUERY's are supported.

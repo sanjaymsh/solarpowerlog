@@ -992,7 +992,13 @@ void CInverterSputnikSSeries::tokenizer(const char *delimiters,
 
 CConfigCentral* CInverterSputnikSSeries::getConfigCentralObject(void)
 {
-    CConfigCentral &cfg = *IInverterBase::getConfigCentralObject();
+    CConfigCentral *pcfg = IInverterBase::getConfigCentralObject();
+    if (!pcfg) {
+        pcfg = new CConfigCentral;
+    }
+
+    assert(pcfg);
+    CConfigCentral &cfg = *pcfg;
 
     /// needed fo CConfigCentral to "have an object". WE do not care about content.
     static std::string dummy;

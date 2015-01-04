@@ -136,9 +136,3 @@ void IInverterBase::AddCapability(CCapability* capa)
 	CapabilityMap.insert(pair<string, CCapability*> (capa->getDescription(), capa));
 	LOGDEBUG(logger, "Added new Capability to " << name << ": " << capa->getDescription());
 }
-
-CConfigCentral* IInverterBase::getConfigCentralObject(void)
-{
-    CConfigCentral &cfg = *(new CConfigCentral);
-    return &cfg;
-}

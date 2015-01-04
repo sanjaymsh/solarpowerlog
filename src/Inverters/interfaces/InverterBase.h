@@ -307,15 +307,18 @@ public:
 		return connection;
 	}
 
-	/** Create & Get a CCOnfigCentral object for this instance.
-	 *
-	 * @return generated object. Ownwership is waived to caller.
-	 *
-	 * \note in overriden version, call the base's implementation.
-	 * The base *might* alraead have added properties to check aloing with
-	 * their descriptions.
-	 */
-	virtual CConfigCentral* getConfigCentralObject(void);
+    /** Create & Get a CCOnfigCentral object for this instance.
+     *
+     * @return generated object. Ownership is waived to caller. might return NULL.
+     *
+     * \note in overriden version, call the base's implementation.
+     * The base *might* already have added properties to check aloing with
+     * their descriptions. It also can opt to just return a NULL pointer though.
+     */
+    virtual CConfigCentral* getConfigCentralObject(void)
+    {
+        return NULL;
+    }
 
 protected:
 	/// Add a Capability for the inverter.

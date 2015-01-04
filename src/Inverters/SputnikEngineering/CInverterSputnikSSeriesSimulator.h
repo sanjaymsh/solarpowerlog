@@ -1,7 +1,7 @@
 /* ----------------------------------------------------------------------------
  solarpowerlog -- photovoltaic data logging
 
- Copyright (C) 2009-2012 Tobias Frost
+ Copyright (C) 2012-2015 Tobias Frost
 
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU Lesser General Public License as published by
@@ -19,13 +19,11 @@
  ----------------------------------------------------------------------------
  */
 
-/** \file CInverterSputnikSSeries.h
+/** \file CInverterSputnikSSeriesSimulator.h
  *
- *  Created on: May 21, 2009
+ *  Created on: June 07, 2012
  *      Author: Tobias Frost
  *
- *      Contributors:
- *      E.A.Neonakis <eaneonakis@freemail.gr>
  */
 
 #ifndef CINVERTERSPUTNIKSSERIESSIMULATOR_H_
@@ -60,8 +58,6 @@ public:
         bool killbit;
     };
 
-public:
-
     CInverterSputnikSSeriesSimulator(const string & name,
         const string & configurationpath);
     virtual ~CInverterSputnikSSeriesSimulator();
@@ -70,6 +66,9 @@ public:
 
     /** implements the ICommandTarget interface */
     virtual void ExecuteCommand(const ICommand *Command);
+
+#warning implement me!
+    virtual CConfigCentral* getConfigCentralObject(void) { return NULL; }
 
 protected:
     /** calculate the checksum for the telegram stored in str */

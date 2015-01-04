@@ -1,7 +1,7 @@
 /* ----------------------------------------------------------------------------
  solarpowerlog -- photovoltaic data logging
 
- Copyright (C) 2009-2014 Tobias Frost
+ Copyright (C) 2009-2015 Tobias Frost
 
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
  ----------------------------------------------------------------------------
-*/
+ */
 
 /** \file ILogger.cpp
  *
@@ -122,7 +122,6 @@ void ILogger::Setup(const std::string & parent,
 void ILogger::Setup(const string & name, const string & configuration,
     const string& section)
 {
-    string level;
     config_ = configuration;
 
     loggername_ = section + "." + name;
@@ -134,17 +133,27 @@ void ILogger::Setup(const string & name, const string & configuration,
     // if so, it must be from XML.
     log4cxx::LevelPtr ptr = logger->getLevel();
     if (!ptr) {
+        // no, no level set.
+        // first try to retrieve specific setting, then global setting and
+        // if both fails, just keep using the root loggers setup (which is setup
+        // in the constructor)
 
-        CConfigHelper global("application");
-        global.GetConfig("dbglevel", level, (std::string)"ERROR");
+        string level;
+        bool success;
 
         CConfigHelper hlp(configuration);
-        hlp.GetConfig("dbglevel", level);
+        success = hlp.GetConfig("dbglevel", level);
 
-        logger->setLevel(log4cxx::Level::toLevel(level));
+        if (!success) {
+            CConfigHelper global("application");
+            success = global.GetConfig("dbglevel", level, (std::string)"ERROR");
+        }
+
+        if (success) {
+            logger->setLevel(log4cxx::Level::toLevel(level));
+            currentloggerlevel_ = logger->getLevel()->toInt();
+        }
     }
-
-    currentloggerlevel_ = logger->getLevel()->toInt();
 }
 
 void ILogger::SetLoggerLevel(log4cxx::LevelPtr level)

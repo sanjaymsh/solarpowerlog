@@ -85,6 +85,7 @@
 #endif
 
 #include "configuration/ILogger.h"
+#include "configuration/ConfigCentral/CConfigCentral.h"
 
 #ifdef HAVE_CMDLINEOPTS
 #include <boost/program_options.hpp>
@@ -196,6 +197,7 @@ int main(int argc, char* argv[])
 	bool dumpconfig = false;
 	string configfile = "solarpowerlog.conf";
 	long autoterminate = 0;
+	string printsnippets;
 
 	progname = argv[0];
     dhc.Register(new CDebugObject<char*>("progname", progname));
@@ -230,7 +232,17 @@ int main(int argc, char* argv[])
 			"(only used when running as a daemon.) Default: no pid file")
 	    ("autoterminate", value<long>(&autoterminate),
 	        "terminate after performing this amount of work. "
-	        "This feature is intended for debugging, e.g valgrind runs.");
+	        "This feature is intended for debugging, e.g valgrind runs.")
+        ("printsnippet", value<string>(&printsnippets),
+            "print configuration snippets to stdout. "
+            "the parameter specifies which snippet should be generated and is "
+            "of the format <category>[::<subcategory>]::[<target>.] "
+            "category is either inverter, filter or communication. "
+            "subcategroy is for inverters specifing the manufacturer and "
+            "target is the final target to get the snippet from. Note that "
+            "this function is intended as development aod to keep snippets and code in sync. "
+            " solarpowerlog will exit after the snippet has been dumped."
+            );
 
 	variables_map vm;
 	try {
@@ -258,6 +270,66 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 #endif
+
+	if (!printsnippets.empty()) {
+	    // minimum bootstraping: Fake config and logging set to OFF.
+	    Registry::Instance().FakeConfig();
+
+	    BasicConfigurator::configure();
+        LoggerPtr l = Logger::getRootLogger();
+        l->setLevel(Level::toLevel(Level::OFF_INT));
+        Registry::Instance().GetMainLogger().SetLoggerLevel(Level::toLevel(Level::OFF_INT));
+
+	    std::string cat, subcat, target;
+	    try {
+	        size_t s = printsnippets.find("::");
+	        cat = printsnippets.substr(0,s);
+	        printsnippets = printsnippets.substr(s+2);
+
+	        if (cat == "inverter") {
+	            s = printsnippets.find("::");
+	            cat = printsnippets.substr(0,s);
+                printsnippets = printsnippets.substr(s+2);
+
+                std::auto_ptr<IInverterFactory>
+                    factory(InverterFactoryFactory::createInverterFactory(cat));
+
+                if (!factory.get()) {
+                    cerr << "printsnippet: Could not create inverter factory." << endl;
+                    return 1;
+                }
+
+                std::auto_ptr<IInverterBase>
+                    inverter(factory->Factory(printsnippets,"name","empty"));
+
+                if (!inverter.get()) {
+                    cerr << "printsnippet: Could not create inverter object." << endl;
+                    return 1;
+                }
+                std::auto_ptr<CConfigCentral> cfg(inverter->getConfigCentralObject());
+                if (!cfg.get()) {
+                    cerr << "printsnippet: Could not create inverter's configuration information." << endl;
+                    return 1;
+                }
+
+                cout << cfg->GetConfigSnippet();
+                return 0;
+
+	        } else if ( cat == "communication") {
+
+            } else if ( cat == "filter") {
+
+            } else {
+                cerr << "printsnippets: unkown category." << endl;
+                return 1;
+            }
+	    }
+	    catch (...) {
+	        cerr << "Error while handling printsnippets" << endl;
+	        return 1;
+	    }
+	    return 0;
+	}
 
 	if (!Registry::Instance().LoadConfig(configfile)) {
 		cerr << "Could not load configuration " << configfile << endl;

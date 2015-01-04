@@ -1,34 +1,41 @@
 /* ----------------------------------------------------------------------------
  solarpowerlog -- photovoltaic data logging
 
- Copyright (C) 2009-2015 Tobias Frost
+ Copyright (C) 2015 Tobias Frost
 
  This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU Lesser General Public License as published by
+ it under the terms of the GNU General Public License as published by
  the Free Software Foundation, either version 3 of the License, or
  (at your option) any later version.
 
  This program is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU Lesser General Public License for more details.
+ GNU General Public License for more details.
 
- You should have received a copy of the GNU Lesser General Public License
+ You should have received a copy of the GNU General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
  ----------------------------------------------------------------------------
  */
 
-/** \file CConfigCentral.cpp
+/*
+ * ConfigCentral_helpers.cpp
  *
- *  Created on: 02.01.2015
+ *  Created on: 04.01.2015
  *      Author: tobi
  */
 
-#include "CConfigCentral.h"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
+#include "IConfigCentralEntry.h"
+#include "ConfigCentralHelpers.h"
+#include <string>
 
-std::string _WrapForConfigSnippet(const std::string &description) {
+std::string CConfigCentralHelpers::WrapForConfigSnippet(const std::string &description)
+{
 
     std::string ret;
     std::string tmp = description;
@@ -114,107 +121,5 @@ std::string _WrapForConfigSnippet(const std::string &description) {
             column = 0;
         }
     }
-
-    return ret;
-
-}
-
-std::string CConfigCentralEntryText::GetConfigSnippet() const
-{
-   std::string ret =  _WrapForConfigSnippet(_description);
-
-   if (!_parameter.empty() && !_example.empty()) {
-       ret += "# " + _parameter + " = " + _example +";\n";
-   }
-
-   return ret;
-}
-
-
-
-bool CConfigCentral::CheckConfig(ILogger& logger, const std::string &configpath)
-{
-    bool ret = true;
-    CConfigHelper helper(configpath);
-    std::list<boost::shared_ptr<IConfigCentralEntry> >::iterator it;
-    for (it = l.begin(); it != l.end(); it++) {
-        if (!(*it)->CheckAndUpdateConfig(logger,helper)) ret = false;
-    }
-
-    return ret;
-}
-
-std::string CConfigCentral::GetConfigSnippet()
-{
-    std::string ret;
-
-    std::list<boost::shared_ptr<IConfigCentralEntry> >::iterator it;
-    for (it = l.begin(); it != l.end(); it++) {
-        ret += (*it)->GetConfigSnippet();
-        ret += '\n';
-    }
-
-    return ret;
-}
-
-template <>
-std::string CConfigCentralEntry<std::string>::GetConfigSnippet() const
-{
-    extern std::string _WrapForConfigSnippet(const std::string &description);
-
-    std::string ret;
-    // Wrap the desription
-    ret = _WrapForConfigSnippet(this->_description);
-
-    std::stringstream ss;
-    // print the optional / mandatory statement
-    if (this->_optional) ss << "This setting is optional with a default value of " << this->_defvalue;
-    else ss << "This setting is mandatory.\n";
-    ret += _WrapForConfigSnippet(ss.str());
-
-    // make a nice example
-    if (this->_optional) ret += "# ";
-    ret += this->_setting + " = ";
-    if (this->_optional) {
-        std::stringstream ss;
-        ss << '"' << this->_defvalue << '"';
-        ret += ss.str();
-    } else {
-        ret += "\"<value>\"";
-    }
-    ret += ";\n";
-    return ret;
-}
-
-template <>
-std::string CConfigCentralEntry<bool>::GetConfigSnippet() const
-{
-    extern std::string _WrapForConfigSnippet(
-        const std::string &description);
-
-    std::string ret;
-    // Wrap the desription
-    ret = _WrapForConfigSnippet(this->_description);
-    // make a nice example
-
-    std::stringstream ss;
-     // print the optional / mandatory statement
-    if (this->_optional) {
-        ss << "This setting is optional with a default value of ";
-        if (this->_defvalue) ss << "true";
-        else ss << "false";
-    }
-    else ss << "This setting is mandatory.\n";
-    ret += _WrapForConfigSnippet(ss.str());
-
-    if (_optional) ret += "# ";
-    ret += _setting + " = ";
-    if (_optional) {
-        if (_defvalue) ret += "true";
-        else ret += "false";
-    } else {
-        ret += "<true or false>";
-    }
-    ret += ";\n";
     return ret;
 }

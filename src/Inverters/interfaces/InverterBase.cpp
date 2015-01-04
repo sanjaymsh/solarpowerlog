@@ -43,7 +43,7 @@
 
 #include "Inverters/interfaces/ICapaIterator.h"
 
-#include <configuration/CConfigCentral.h>
+#include "configuration/ConfigCentral/CConfigCentral.h"
 
 using namespace std;
 

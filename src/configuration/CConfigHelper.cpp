@@ -25,6 +25,10 @@ Copyright (C) 2009-2014 Tobias Frost
  * \author Tobias Frost
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <iostream>
 
 #include "configuration/CConfigHelper.h"
@@ -34,9 +38,7 @@ using namespace std;
 using namespace libconfig;
 
 
-#warning TODO: Rework CConfigHelper-h to use also templates for *Check()
 #warning TODO Cache libconfig::settings in class and initialize in constructor
-
 
 CConfigHelper::CConfigHelper( const string& configurationpath, int index )
 {

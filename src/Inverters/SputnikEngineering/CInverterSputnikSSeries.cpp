@@ -49,7 +49,7 @@
 
 #include "configuration/Registry.h"
 #include "configuration/CConfigHelper.h"
-#include <configuration/CConfigCentral.h>
+#include "configuration/ConfigCentral/CConfigCentral.h"
 
 #include "patterns/ICommand.h"
 

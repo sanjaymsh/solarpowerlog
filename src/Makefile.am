@@ -11,95 +11,132 @@ CLEANFILES = configuration/ILogger_hashmacro.h
 
 bin_PROGRAMS = solarpowerlog
 
-solarpowerlog_SOURCES = interfaces/CCapability.cpp interfaces/CMutexHelper.cpp \
-Inverters/factories/InverterFactoryFactory.cpp \
-Inverters/factories/IInverterFactory.cpp interfaces/CWorkScheduler.cpp \
-interfaces/CTimedWork.cpp Connections/interfaces/IConnect.cpp \
-DataFilters/interfaces/factories/IDataFilterFactory.cpp \
-DataFilters/HTMLWriter/formatter/IFormater.cpp \
-DataFilters/HTMLWriter/formatter/CFormaterWebRootStrip.cpp \
-DataFilters/HTMLWriter/formatter/CFormatterSearchCSVEntry.cpp \
-DataFilters/interfaces/IDataFilter.cpp DataFilters/CDumpOutputFilter.cpp \
-DataFilters/CCSVOutputFilter.cpp DataFilters/HTMLWriter/CHTMLWriter.cpp \
-DataFilters/DBWriter/CDBWriterFilter.cpp \
-DataFilters/DBWriter/CDBWriterHelper.cpp \
-DataFilters/DBWriter/CDBWHSpecialTokens.cpp \
-DataFilters/DBWriter/CdbInfo.cpp \
-configuration/Registry.cpp configuration/ILogger.cpp \
-Connections/CAsyncCommand.cpp Connections/CConnectDummy.cpp \
-Connections/sharedconnection/CSharedConnection.cpp \
-Connections/sharedconnection/CSharedConnectionMaster.cpp \
-Connections/sharedconnection/CSharedConnectionSlave.cpp \
+solarpowerlog_SOURCES = configuration/CConfigHelper.cpp \
+configuration/CConfigHelper.h \
+configuration/ConfigCentral/CConfigCentral.cpp \
+configuration/ConfigCentral/CConfigCentralEntry.cpp \
+configuration/ConfigCentral/CConfigCentralEntry.h \
+configuration/ConfigCentral/CConfigCentral.h \
+configuration/ConfigCentral/IConfigCentralEntry.cpp \
+configuration/ConfigCentral/IConfigCentralEntry.h \
+configuration/ConfigCentral/CConfigCentralEntryRangeCheck.cpp \
+configuration/ConfigCentral/CConfigCentralEntryRangeCheck.h \
+configuration/ConfigCentral/CConfigCentralEntryText.cpp \
+configuration/ConfigCentral/CConfigCentralEntryText.h \
+configuration/ConfigCentral/ConfigCentralHelpers.cpp \
+configuration/ConfigCentral/ConfigCentralHelpers.h \
+configuration/ILogger.cpp \
+configuration/ILogger.h \
+configuration/ILogger_hashmacro.h \
+configuration/Registry.cpp \
+configuration/Registry.h \
+Connections/CAsyncCommand.cpp \
+Connections/CAsyncCommand.h \
+Connections/CConnectDummy.cpp \
+Connections/CConnectDummy.h \
 Connections/CConnectSerialAsio.cpp \
-Connections/factories/IConnectFactory.cpp Connections/CConnectTCPAsio.cpp \
-solarpowerlog.cpp daemon.cpp \
-Inverters/SputnikEngineering/CInverterFactorySputnik.cpp \
-Inverters/SputnikEngineering/CInverterSputnikSSeries.cpp \
-Inverters/SputnikEngineering/CInverterSputnikSSeriesSimulator.cpp \
-Inverters/SputnikEngineering/SputnikCommand/CSputnikCommand.cpp \
-Inverters/SputnikEngineering/SputnikCommand/ISputnikCommand.cpp \
-Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSoftwareVersion.cpp \
-Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSYS.cpp \
-Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandTYP.cpp \
-Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/ISputnikCommandBackoffStrategy.cpp \
-Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOAlways.cpp \
-Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOOnce.cpp \
-Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOIfSupported.cpp \
-Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOTimed.cpp \
-Inverters/DummyInverter/CInverterDummy.cpp  \
-Inverters/DummyInverter/CInverterFactoryDummy.cpp \
-Inverters/interfaces/CNestedCapaIterator.cpp \
-Inverters/interfaces/ICapaIterator.cpp Inverters/interfaces/InverterBase.cpp \
-patterns/ICommandTarget.cpp patterns/IValue.cpp patterns/ICommand.cpp \
-patterns/IObserverObserver.cpp patterns/IObserverSubject.cpp \
-configuration/CConfigHelper.cpp ctemplate/ctemplate.c \
-interfaces/CDebugHelper.cpp \
-configuration/CConfigCentral.cpp \
-daemon.h Inverters/BasicCommands.h \
-interfaces/CCapability.h interfaces/CMutexHelper.h \
-Inverters/factories/InverterFactoryFactory.h \
-Inverters/factories/IInverterFactory.h interfaces/CWorkScheduler.h \
-interfaces/CTimedWork.h Connections/interfaces/IConnect.h \
-DataFilters/interfaces/factories/IDataFilterFactory.h \
-DataFilters/HTMLWriter/formatter/IFormater.h \
-DataFilters/HTMLWriter/formatter/CFormaterWebRootStrip.h \
-DataFilters/HTMLWriter/formatter/CFormatterSearchCSVEntry.h \
-DataFilters/interfaces/IDataFilter.h DataFilters/CDumpOutputFilter.h \
-DataFilters/CCSVOutputFilter.h DataFilters/HTMLWriter/CHTMLWriter.h \
-DataFilters/DBWriter/CDBWriterFilter.h \
-DataFilters/DBWriter/CDBWriterHelper.h \
-DataFilters/DBWriter/CDBWHSpecialTokens.h \
-DataFilters/DBWriter/CdbInfo.h \
-configuration/Registry.h configuration/ILogger.h \
-Connections/CAsyncCommand.h Connections/CConnectDummy.h \
-Connections/sharedconnection/CSharedConnection.h \
-Connections/sharedconnection/CSharedConnectionMaster.h \
-Connections/sharedconnection/CSharedConnectionSlave.h \
 Connections/CConnectSerialAsio.h \
-Connections/factories/IConnectFactory.h Connections/CConnectTCPAsio.h \
-Inverters/SputnikEngineering/CInverterFactorySputnik.h \
-Inverters/SputnikEngineering/CInverterSputnikSSeries.h \
-Inverters/SputnikEngineering/CInverterSputnikSSeriesSimulator.h \
-Inverters/SputnikEngineering/SputnikCommand/CSputnikCommand.h \
-Inverters/SputnikEngineering/SputnikCommand/ISputnikCommand.h \
-Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSoftwareVersion.h \
-Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSYS.h \
-Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandTYP.h \
-Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/ISputnikCommandBackoffStrategy.h \
-Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOAlways.h \
-Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOOnce.h \
-Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOIfSupported.h \
-Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOTimed.h \
+Connections/CConnectTCPAsio.cpp \
+Connections/CConnectTCPAsio.h \
+Connections/factories/IConnectFactory.cpp \
+Connections/factories/IConnectFactory.h \
+Connections/interfaces/IConnect.cpp \
+Connections/interfaces/IConnect.h \
+Connections/sharedconnection/CSharedConnection.cpp \
+Connections/sharedconnection/CSharedConnection.h \
+Connections/sharedconnection/CSharedConnectionMaster.cpp \
+Connections/sharedconnection/CSharedConnectionMaster.h \
+Connections/sharedconnection/CSharedConnectionSlave.cpp \
+Connections/sharedconnection/CSharedConnectionSlave.h \
+ctemplate/ctemplate.c \
+ctemplate/ctemplate.h porting.h \
+daemon.cpp \
+daemon.h \
+DataFilters/CCSVOutputFilter.cpp \
+DataFilters/CCSVOutputFilter.h DataFilters/HTMLWriter/CHTMLWriter.h \
+DataFilters/CDumpOutputFilter.cpp \
+DataFilters/DBWriter/CdbInfo.cpp \
+DataFilters/DBWriter/CdbInfo.h \
+DataFilters/DBWriter/CDBWHSpecialTokens.cpp \
+DataFilters/DBWriter/CDBWHSpecialTokens.h \
+DataFilters/DBWriter/CDBWriterFilter.cpp \
+DataFilters/DBWriter/CDBWriterFilter.h \
+DataFilters/DBWriter/CDBWriterHelper.cpp \
+DataFilters/DBWriter/CDBWriterHelper.h \
+DataFilters/HTMLWriter/CHTMLWriter.cpp \
+DataFilters/HTMLWriter/formatter/CFormaterWebRootStrip.cpp \
+DataFilters/HTMLWriter/formatter/CFormaterWebRootStrip.h \
+DataFilters/HTMLWriter/formatter/CFormatterSearchCSVEntry.cpp \
+DataFilters/HTMLWriter/formatter/CFormatterSearchCSVEntry.h \
+DataFilters/HTMLWriter/formatter/IFormater.cpp \
+DataFilters/HTMLWriter/formatter/IFormater.h \
+DataFilters/interfaces/factories/IDataFilterFactory.cpp \
+DataFilters/interfaces/factories/IDataFilterFactory.h \
+DataFilters/interfaces/IDataFilter.cpp \
+DataFilters/interfaces/IDataFilter.h DataFilters/CDumpOutputFilter.h \
+interfaces/CCapability.cpp \
+interfaces/CCapability.h \
+interfaces/CDebugHelper.cpp \
+interfaces/CDebugHelper.h \
+interfaces/CMutexHelper.cpp \
+interfaces/CMutexHelper.h \
+interfaces/CTimedWork.cpp \
+interfaces/CTimedWork.h \
+interfaces/CWorkScheduler.cpp \
+Inverters/BasicCommands.h \
+Inverters/Capabilites.h \
+Inverters/DummyInverter/CInverterDummy.cpp  \
 Inverters/DummyInverter/CInverterDummy.h  \
+Inverters/DummyInverter/CInverterFactoryDummy.cpp \
 Inverters/DummyInverter/CInverterFactoryDummy.h \
+Inverters/factories/IInverterFactory.cpp \
+Inverters/factories/IInverterFactory.h interfaces/CWorkScheduler.h \
+Inverters/factories/InverterFactoryFactory.cpp \
+Inverters/factories/InverterFactoryFactory.h \
+Inverters/interfaces/CNestedCapaIterator.cpp \
 Inverters/interfaces/CNestedCapaIterator.h \
-Inverters/interfaces/ICapaIterator.h Inverters/interfaces/InverterBase.h \
-patterns/ICommandTarget.h patterns/IValue.h patterns/ICommand.h \
-patterns/IObserverObserver.h patterns/IObserverSubject.h \
-configuration/CConfigHelper.h ctemplate/ctemplate.h porting.h \
-Inverters/Capabilites.h patterns/CValue.h interfaces/CDebugHelper.h \
-configuration/CConfigCentral.h \
-configuration/ILogger_hashmacro.h
+Inverters/interfaces/ICapaIterator.cpp\
+Inverters/interfaces/ICapaIterator.h \
+Inverters/interfaces/InverterBase.cpp \
+Inverters/interfaces/InverterBase.h \
+Inverters/SputnikEngineering/CInverterFactorySputnik.cpp \
+Inverters/SputnikEngineering/CInverterFactorySputnik.h \
+Inverters/SputnikEngineering/CInverterSputnikSSeries.cpp \
+Inverters/SputnikEngineering/CInverterSputnikSSeries.h \
+Inverters/SputnikEngineering/CInverterSputnikSSeriesSimulator.cpp \
+Inverters/SputnikEngineering/CInverterSputnikSSeriesSimulator.h \
+Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOAlways.cpp \
+Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOAlways.h \
+Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOIfSupported.cpp \
+Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOIfSupported.h \
+Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOOnce.cpp \
+Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOOnce.h \
+Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOTimed.cpp \
+Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/CSputnikCmdBOTimed.h \
+Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/ISputnikCommandBackoffStrategy.cpp \
+Inverters/SputnikEngineering/SputnikCommand/BackoffStrategies/ISputnikCommandBackoffStrategy.h \
+Inverters/SputnikEngineering/SputnikCommand/CSputnikCommand.cpp \
+Inverters/SputnikEngineering/SputnikCommand/CSputnikCommand.h \
+Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSoftwareVersion.cpp \
+Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSoftwareVersion.h \
+Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSYS.cpp \
+Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandSYS.h \
+Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandTYP.cpp \
+Inverters/SputnikEngineering/SputnikCommand/CSputnikCommandTYP.h \
+Inverters/SputnikEngineering/SputnikCommand/ISputnikCommand.cpp \
+Inverters/SputnikEngineering/SputnikCommand/ISputnikCommand.h \
+patterns/CValue.h \
+patterns/ICommand.cpp \
+patterns/ICommand.h \
+patterns/ICommandTarget.cpp \
+patterns/ICommandTarget.h \
+patterns/IObserverObserver.cpp \
+patterns/IObserverObserver.h \
+patterns/IObserverSubject.cpp \
+patterns/IObserverSubject.h \
+patterns/IValue.cpp \
+patterns/IValue.h \
+solarpowerlog.cpp
 
 solarpowerlog_CPPFLAGS = $(CONFIG_CFLAGS) $(LOG4CXX_CFLAGS) $(APR_CFLAGS) \
 	$(APRUTIL_CFLAGS) $(CTEMPLATE_CFLAGS)

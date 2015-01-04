@@ -162,6 +162,16 @@ public:
 	 */
 	bool LoadConfig( std::string name );
 
+	 /** Fake a configuration
+	  *
+	  * (Well, this is a hack to make the snippets printing work without
+	  * mayor rework throughout the program)
+	  *
+	  * This function will initilalize an absolute minimum configuration set
+	  * tp have the libconfig objects available */
+	 void FakeConfig(void);
+
+
 	/* NOTE: This is obsolete! Use an Object of CConfigHelper to extract config!
 	 *
 	 *  Extract the settings-subset for a specific object,

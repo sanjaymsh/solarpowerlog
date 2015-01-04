@@ -85,6 +85,30 @@ bool Registry::LoadConfig( std::string name )
 	return true;
 }
 
+void Registry::FakeConfig(void)
+{
+    static const std::string defaultconfig =
+        "application: { \ndbglevel = \"OFF\"\n}\n"
+        "inverters: "
+        "{ "
+            "inverters = ("
+                "{ }"
+            ")"
+        "}"
+        "loggers: "
+        "{ "
+            "inverters = ("
+                "{ }"
+            ")"
+        "}";
+
+    if (Config)
+        delete Config;
+    Config = new libconfig::Config;
+
+    Config->readString(defaultconfig);
+}
+
 libconfig::Setting & Registry::GetSettingsForObject( std::string section,
 	std::string objname )
 {

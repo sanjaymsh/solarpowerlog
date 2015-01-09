@@ -463,8 +463,8 @@ void CCSVOutputFilter::DoCYCLICmd( const ICommand * )
 	}
 
 	if ( !compact_file ||  ss.str() != last_line) {
+        last_line = ss.str();
 		file << ss.str() << (char) 0x0d << (char) 0x0a;
-		last_line = ss.str();
 		if (flush_after_write)
 			file << flush;
 	}

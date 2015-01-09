@@ -38,3 +38,4 @@ extlibs/dbixx/missing
 documentation/doxygen/html
 INSTALL
 .dirstamp
+src/configuration/ILogger_hashmacro.h

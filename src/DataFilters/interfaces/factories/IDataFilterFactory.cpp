@@ -1,7 +1,7 @@
 /* ----------------------------------------------------------------------------
  solarpowerlog -- photovoltaic data logging
 
- Copyright (C) 2009-2014 Tobias Frost
+ Copyright (C) 2009-2015 Tobias Frost
 
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -50,6 +50,7 @@
 #include "configuration/Registry.h"
 #include "configuration/CConfigHelper.h"
 
+#include "DataFilters/interfaces/IDataFilter.h"
 
 IDataFilter *IDataFilterFactory::Factory(const string & configurationpath)
 {
@@ -61,25 +62,25 @@ IDataFilter *IDataFilterFactory::Factory(const string & configurationpath)
 	cfghlp.GetConfig("name",name);
 
 #ifdef HAVE_FILTER_DUMBDUMP
-	if (type == "DumbDumper") {
+	if (type == FILTER_DUMBDUMPER) {
 		return new CDumpOutputFilter(name, configurationpath);
 	}
 #endif
 
 #ifdef HAVE_FILTER_CSVDUMP
-	if (type == "CVSWriter") {
+	if (type == FILTER_CVSWRITER) {
 		return new CCSVOutputFilter(name, configurationpath);
 	}
 #endif
 
 #ifdef 	HAVE_FILTER_HTMLWRITER
-	if (type == "HTMLWriter") {
+	if (type == FILTER_HTMLWRITER) {
 		return new CHTMLWriter(name, configurationpath);
 	}
 #endif
 
 #ifdef HAVE_FILTER_DBWRITER
-	if ( type == "DBWriter") {
+	if ( type == FILTER_DBWRITER) {
 	    return new CDBWriterFilter(name, configurationpath);
 	}
 #endif

@@ -221,7 +221,7 @@ using namespace std;
 #define IBASE_DESCRIPTION_INTRO \
 "Inverter definition\n" \
 "These basic parameters are necessary so that solarpowerlog has knowldege " \
-"about which inverter to be configured:\n" \
+"about the inverter to be configured:\n" \
 "\"name\", \"manufacturer\" and \"model\""
 
 #define IBASE_DESCRIPTION_NAME \

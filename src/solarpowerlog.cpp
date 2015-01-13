@@ -101,6 +101,7 @@
 #include "Inverters/interfaces/InverterBase.h"
 
 #include "DataFilters/interfaces/factories/IDataFilterFactory.h"
+#include "DataFilters/interfaces/IDataFilter.h"
 #include "configuration/CConfigHelper.h"
 
 #include "interfaces/CDebugHelper.h"

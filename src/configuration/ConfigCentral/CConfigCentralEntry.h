@@ -82,10 +82,7 @@ public:
 
     std::string GetConfigSnippet() const
     {
-        extern std::string _WrapForConfigSnippet(
-            const std::string &description);
-        extern std::string _WrapForConfigSnippet(
-            const std::string &description);
+		extern std::string _WrapForConfigSnippet(const std::string &description);
 
         std::string ret;
         // Wrap the desription
@@ -118,6 +115,13 @@ protected:
     std::string _setting;
     std::string _description;
 };
+
+// Forward declarations of the template specalisations.
+template<>
+std::string CConfigCentralEntry<std::string>::GetConfigSnippet() const;
+
+template <>
+std::string CConfigCentralEntry<bool>::GetConfigSnippet() const;
 
 
 #endif /* SRC_CONFIGURATION_CONFIGCENTRAL_CCONFIGCENTRALENTRY_H_ */

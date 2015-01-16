@@ -36,7 +36,6 @@ Copyright (C) 2015 Tobias Frost
 #include "CConfigCentralEntry.h"
 #include "CConfigCentral.h"
 
-
 template <>
 std::string CConfigCentralEntry<std::string>::GetConfigSnippet() const
 {

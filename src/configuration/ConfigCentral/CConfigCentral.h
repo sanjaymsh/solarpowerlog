@@ -76,6 +76,7 @@ public:
      *
      * \param parameter parameter linked to this entry. Might be NULL.
      * \param description description, text...
+     * \param example everyone loves examples...
      */
     CConfigCentral& operator()(const char* parameter, const char *description,
         const char *example = NULL)
@@ -85,7 +86,6 @@ public:
             l.push_back(p);
             return *this;
         }
-
 
     /** Add an setting describing entry (mandatory version)
      *

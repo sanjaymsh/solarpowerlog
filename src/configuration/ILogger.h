@@ -168,7 +168,10 @@
 // Eclipse is getting very slow with the recursive macros, so I excluded to
 // index the macros.. This "hack" configures some replacement..
 // (Eclipse sets HAVE_CONIG_H to "42", while configure won't)
-#if (HAVE_CONFIG_H != 42)
+
+#ifdef __COVERITY__
+#define LOG_SA_HASH(string) (__LINE__)
+#elif (HAVE_CONFIG_H != 42)
 #include "ILogger_hashmacro.h"
 #else
 #error eclipse hack! should not compile

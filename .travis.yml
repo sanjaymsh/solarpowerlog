@@ -1,0 +1,18 @@
+# Travis CI Integration
+
+sudo: required
+
+language: c++
+compiler:
+  - gcc
+  - clang
+
+script: ./bootstrap.sh && ./configure && .make
+
+before_install:
+  - curl http://ftp-master.debian.org/keys/archive-key-8.asc | sudo apt-key add -
+  - sudo apt-add-apt-repository -y "deb http://ftp.de.debian.org/debian/ sid main contrib non-free"
+  - sudo apt-get update -qq
+  - sudo apt-get -qq build-deps solarpowerlog
+  - sudo apt-get install -qq libcppdb-dev
+

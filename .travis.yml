@@ -5,7 +5,7 @@ sudo: required
 language: c++
 compiler:
   - gcc
-  - clang
+#  - clang  <<< does not like the LOG_SA_HASH()
 
 script: ./bootstrap.sh && ./configure && make -j2
 

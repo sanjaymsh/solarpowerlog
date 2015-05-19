@@ -40,6 +40,7 @@
 
 #ifdef  HAVE_FILTER_DBWRITER
 
+#include <string.h>
 #include <ctime>
 #include "patterns/CValue.h"
 
@@ -53,6 +54,7 @@ class CValue<std::tm> : public IValue {
 public:
     CValue() : IValue(MagicNumbers::magic_number_for<std::tm>())
     {
+        memset(&value,0,sizeof(std::tm));
     }
 
     CValue(const struct tm &set) : IValue(MagicNumbers::magic_number_for<std::tm>())

@@ -76,6 +76,10 @@ CDBWriterHelper::CDBWriterHelper(IInverterBase *base, const ILogger &parent,
         _mode = CDBWriterHelper::single;
     } else if (mode == "cumulative") {
         _mode = CDBWriterHelper::cumulative;
+    } else {
+        // mode must be one of the above options. If the assertion triggers,
+        // ConfigCheck has failed.
+        assert(false);
     }
 
     if (base) {

@@ -1019,7 +1019,7 @@ std::string CInverterSputnikSSeriesSimulator::parsereceivedstring_ctrlserver(
     }
 
     size_t first = s.find_first_of(':');
-    if (s.length() > first) {
+    if (first != std::string::npos && s.length() > first) {
         first++;
     } else {
         first = std::string::npos;

@@ -354,11 +354,8 @@ bool CInverterSputnikSSeriesSimulator::CheckConfig()
                 true));
     fail |= (true != hlp.CheckConfig("commadr", libconfig::Setting::TypeInt));
 
-    // Check config of the component, if already instanciated.
-
-    if (connection) {
-        fail |= (true != connection->CheckConfig());
-    }
+    // Check config of the connection component
+    fail |= (true != connection->CheckConfig());
 
     if (!connection->CanAccept()) {
         LOGFATAL(logger,
@@ -384,7 +381,7 @@ bool CInverterSputnikSSeriesSimulator::CheckConfig()
         }
     } else {
         LOGINFO(logger,
-            "Simulator: control server disables as config not found.");
+            "Simulator: control server disabled as config not found.");
     }
 
     int type;

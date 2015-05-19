@@ -168,6 +168,7 @@
 // Eclipse is getting very slow with the recursive macros, so I excluded to
 // index the macros.. This "hack" configures some replacement..
 // (Eclipse sets HAVE_CONIG_H to "42", while configure won't)
+// Also coverity will choke on this ...
 
 #ifdef __COVERITY__
 #define LOG_SA_HASH(string) (__LINE__)
@@ -179,7 +180,7 @@
 #endif
 
 // the state-aware logging macros are only available for levels below (incl.) ERROR.
-#define LOGERROR_SA(logger, hash, message)   {\
+#define LOGERROR_SA(logger, hash, message)  do {\
         if ((logger).IsEnabled(ILogger::LL_ERROR)) { \
             std::stringstream ss;\
             ss << message;\
@@ -188,7 +189,7 @@
     } while(0)
 
 
-#define LOGWARN_SA(logger, hash, message)   {\
+#define LOGWARN_SA(logger, hash, message)   do {\
         if ((logger).IsEnabled(ILogger::LL_WARN)) { \
             std::stringstream ss;\
             ss << message;\
@@ -197,7 +198,7 @@
     } while(0)
 
 
-#define LOGINFO_SA(logger, hash, message)   {\
+#define LOGINFO_SA(logger, hash, message)   do {\
         if ((logger).IsEnabled(ILogger::LL_INFO)) { \
             std::stringstream ss;\
             ss << message;\
@@ -206,7 +207,7 @@
     } while(0)
 
 
-#define LOGDEBUG_SA(logger, hash, message)   {\
+#define LOGDEBUG_SA(logger, hash, message)  do {\
         if ((logger).IsEnabled(ILogger::LL_DEBUG)) { \
             std::stringstream ss;\
             ss << message;\
@@ -215,7 +216,7 @@
     } while(0)
 
 
-#define LOGTRACE_SA(logger, hash, message)    {\
+#define LOGTRACE_SA(logger, hash, message)  do {\
         if ((logger).IsEnabled(ILogger::LL_TRACE)) { \
             std::stringstream ss;\
             ss << message;\
@@ -224,7 +225,7 @@
     } while(0)
 
 
-#define LOGALL_SA(logger, hash, message)    {\
+#define LOGALL_SA(logger, hash, message)    do {\
         if ((logger).IsEnabled(ILogger::LL_ALL)) { \
             std::stringstream ss;\
             ss << message;\
@@ -234,8 +235,7 @@
 
 
 
-#define LOGFATAL(logger, message)  do \
-	{\
+#define LOGFATAL(logger, message)  do {\
 		if ((logger).IsEnabled(ILogger::LL_FATAL)) { \
 			std::stringstream ss;\
 			ss << message;\
@@ -243,8 +243,7 @@
 		}\
 	} while(0)
 
-#define LOGERROR(logger, message)  do \
-	{\
+#define LOGERROR(logger, message)  do {\
 		if ((logger).IsEnabled(ILogger::LL_ERROR)) { \
 			std::stringstream ss;\
 			ss << message;\
@@ -252,8 +251,7 @@
 		}\
 	} while(0)
 
-#define LOGWARN(logger, message)   do \
-	{\
+#define LOGWARN(logger, message)   do {\
 		if ((logger).IsEnabled(ILogger::LL_WARN)) { \
 			std::stringstream ss;\
 			ss << message;\
@@ -261,8 +259,7 @@
 		}\
 	} while(0)
 
-#define LOGINFO(logger, message)   do \
-	{\
+#define LOGINFO(logger, message)   do {\
 		if ((logger).IsEnabled(ILogger::LL_INFO)) { \
 			std::stringstream ss;\
 			ss << message;\
@@ -270,8 +267,7 @@
 		}\
 	} while(0)
 
-#define LOGDEBUG(logger, message)   do \
-	{\
+#define LOGDEBUG(logger, message)   do {\
 		if ((logger).IsEnabled(ILogger::LL_DEBUG)) { \
 			std::stringstream ss;\
 			ss << message;\
@@ -279,8 +275,7 @@
 		}\
 	} while(0)
 
-#define LOGTRACE(logger, message)   do \
-	{\
+#define LOGTRACE(logger, message)   do {\
 		if ((logger).IsEnabled(ILogger::LL_TRACE)) { \
 			std::stringstream ss;\
 			ss << message;\
@@ -288,8 +283,7 @@
 		}\
 	} while(0)
 
-#define LOGALL(logger, message)   do \
-	{\
+#define LOGALL(logger, message)   do {\
 		if ((logger).IsEnabled(ILogger::LL_ALL)) { \
 			std::stringstream ss;\
 			ss << message;\

@@ -118,6 +118,7 @@ CConnectTCPAsio::~CConnectTCPAsio()
     // Try a clean shutdown
     mutex.lock();
     cmds.clear();
+
     ioservice->stop();
     if (_connected) {
         boost::system::error_code ec;
@@ -133,8 +134,8 @@ CConnectTCPAsio::~CConnectTCPAsio()
     workerthread.join();
     LOGDEBUG(logger, "Joined.");
 
-    if (sockt) delete sockt;
-    if (ioservice) delete ioservice;
+    delete sockt;
+    delete ioservice;
 
     sem_destroy(&cmdsemaphore);
 }

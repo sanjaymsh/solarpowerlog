@@ -105,6 +105,12 @@ std::string CConfigCentralHelpers::WrapForConfigSnippet(const std::string &descr
         if (std::string::npos == s || s < cursor) {
             s = tmp.find_first_not_of(whitespaces, cursor);
             if (s != std::string::npos) {
+                if (s == cursor) {
+                    // The next whitespace is at the cursor.
+                    // we have to get the complete monster-word...
+                    s = tmp.find_first_of(whitespaces,cursor+1);
+                    if ( s == std::string::npos) s=tmp.length()-1;
+                }
                 ret += tmp.substr(cursor, s - cursor);
                 cursor = s;
                 continue;

@@ -318,7 +318,26 @@ int main(int argc, char* argv[])
 
 	        } else if ( cat == "communication") {
 
-            } else if ( cat == "filter") {
+            } else if ( cat == "datafilter") {
+                s = printsnippets.find("::");
+                cat = printsnippets.substr(0,s);
+                IDataFilterFactory dffactory;
+                std::auto_ptr<IDataFilter> datafilter(
+                    dffactory.FactoryByName(cat, "name", "empty"));
+
+                if (!datafilter.get()) {
+                    cerr << "printsnippet: Could not create datafilter object." << endl;
+                    return 1;
+                }
+
+                std::auto_ptr<CConfigCentral> cfg(datafilter->getConfigCentralObject(NULL));
+                if (!cfg.get()) {
+                    cerr << "printsnippet: Could not create inverter's configuration information." << endl;
+                    return 1;
+                }
+
+                cout << cfg->GetConfigSnippet();
+                return 0;
 
             } else {
                 cerr << "printsnippets: unkown category." << endl;

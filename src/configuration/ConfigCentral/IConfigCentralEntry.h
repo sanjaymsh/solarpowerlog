@@ -43,6 +43,12 @@ class ILogger;
  */
 class IConfigCentralEntry {
 public:
+    IConfigCentralEntry(const char* setting, const char* description)
+    {
+        if (setting) _setting = setting;
+        if (description) _description = description;
+    }
+
     virtual ~IConfigCentralEntry() { }
 
     /** Check the config entry and if ok update the target value.
@@ -59,9 +65,19 @@ public:
      */
     virtual std::string GetConfigSnippet() const = 0;
 
+    const std::string& getSetting() const
+    {
+        return _setting;
+    }
+
+
     /** Get the configuration options pretty-printed to suitable for help2man
      */
     // virtual std::string& GetHelp() const = 0;
+
+protected:
+    std::string _setting;
+    std::string _description;
 
 };
 

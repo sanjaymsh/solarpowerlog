@@ -99,6 +99,10 @@ std::string CConfigCentralHelpers::WrapForConfigSnippet(const std::string &descr
         // find the spot to break
         // cursor = last character parsed
         // column = horizontal position
+
+        // lets keep the followin debug aid for a moment:
+        //std::cerr << "len=" << tmp.length() <<"column=" << column << " cursor=" << cursor << " " << std::endl;
+
         s = tmp.find_last_of(whitespaces, cursor + WRAP_AT - column);
         // s == npos means that we've got a monster string without spaces.
         // also if s is smaller than the current cursor position.

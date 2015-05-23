@@ -145,7 +145,7 @@ public:
         return *this;
         }
 
-    /** Add an setting describing entry (optinal version) with range-check
+    /** Add an setting describing entry (optional version) with range-check
      *
      * @param parameter setting's name
      * @param description setting's description
@@ -177,7 +177,32 @@ public:
     bool CheckConfig(ILogger &logCConfigCentralEntryger, const std::string &configpath);
 
     /** Get a configuration snippet */
-    std::string GetConfigSnippet();
+    std::string GetConfigSnippet(void);
+
+    /** Set or replace an example */
+    template<typename T>
+    void SetExample(const char *token, T newdefault, bool is_optional= true){
+        std::list<boost::shared_ptr<IConfigCentralEntry> >::iterator it;
+        CConfigCentralEntry<T> *ptr;
+        IConfigCentralEntry *p;
+        for (it = l.begin(); it != l.end(); it++) {
+            p = (*it).get();
+            try {
+                 if ( 0 == strcmp(p->getSetting().c_str(),token)) {
+                    ptr = dynamic_cast<CConfigCentralEntry<T> *>(p);
+                    if (ptr) ptr->setDefvalue(newdefault, is_optional);
+                    return;
+                }
+            } catch(const std::bad_cast& ex) {
+                // means a bug in the code!
+               assert(false);
+            }
+        }
+
+        // bug: one tries to add an example/default for an unknown setting.
+        assert(false);
+    }
+
 
 private:
     std::list<boost::shared_ptr< IConfigCentralEntry> > l;

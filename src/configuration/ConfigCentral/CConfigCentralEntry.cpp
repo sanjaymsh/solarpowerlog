@@ -1,20 +1,20 @@
 /* ----------------------------------------------------------------------------
  solarpowerlog -- photovoltaic data logging
 
-Copyright (C) 2015 Tobias Frost
+ Copyright (C) 2015 Tobias Frost
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
  ----------------------------------------------------------------------------
  */
@@ -43,25 +43,29 @@ std::string CConfigCentralEntry<std::string>::GetConfigSnippet() const
 
     std::string ret;
     // Wrap the desription
-    ret = CConfigCentralHelpers::WrapForConfigSnippet(this->_description);
+    ret = CConfigCentralHelpers::WrapForConfigSnippet(_description);
 
     std::stringstream ss;
     // print the optional / mandatory statement
-    if (this->_optional) ss << "This setting is optional with a default value of " << this->_defvalue;
-    else ss << "This setting is mandatory.\n";
+    if (_optional) {
+        ss << "This setting is optional." << std::endl;
+    } else {
+        ss << "This setting is mandatory." << std::endl;
+    }
+
     ret += CConfigCentralHelpers::WrapForConfigSnippet(ss.str());
+    ss.str("");
 
     // make a nice example
-    if (this->_optional) ret += "# ";
-    ret += this->_setting + " = ";
-    if (this->_optional) {
-        std::stringstream ss;
-        ss << '"' << this->_defvalue << '"';
+    if (_optional) ret += "# ";
+    ret += _setting + " = ";
+    if (_have_default_set) {
+        //std::stringstream ss;
+        ss << '"' << _defvalue << '"' << std::endl;
         ret += ss.str();
     } else {
-        ret += "\"<value>\"";
+        ret += "\"<value>\"\n";
     }
-    ret += ";\n";
     return ret;
 }
 
@@ -73,22 +77,26 @@ std::string CConfigCentralEntry<bool>::GetConfigSnippet() const
 
     std::string ret;
     // Wrap the desription
-    ret = CConfigCentralHelpers::WrapForConfigSnippet(this->_description);
+    ret = CConfigCentralHelpers::WrapForConfigSnippet(_description);
+
     // make a nice example
 
     std::stringstream ss;
      // print the optional / mandatory statement
-    if (this->_optional) {
-        ss << "This setting is optional with a default value of ";
-        if (this->_defvalue) ss << "true";
-        else ss << "false";
-    }
-    else ss << "This setting is mandatory.\n";
+    if (_optional) {
+         assert(_have_default_set);
+         // optional -- default must be set
+         ss << "This setting is optional with a default value of "
+             << (_defvalue ? "true" : "false");
+     } else {
+         ss << "This setting is mandatory.\n";
+     }
+
     ret += CConfigCentralHelpers::WrapForConfigSnippet(ss.str());
 
     if (_optional) ret += "# ";
     ret += _setting + " = ";
-    if (_optional) {
+    if (_have_default_set) {
         if (_defvalue) ret += "true";
         else ret += "false";
     } else {

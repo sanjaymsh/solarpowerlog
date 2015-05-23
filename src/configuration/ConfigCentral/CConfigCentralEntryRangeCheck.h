@@ -109,16 +109,24 @@ public:
 
         std::stringstream ss;
         // print the range
-        ss << "Valid values are from " << this->_min << " to " << this->_max << ".\n";
+        ss << "Valid values are from " << _min << " to " << _max << ".\n";
         // print the optional / mandatory statement
-        if (this->_optional) ss << "This setting is optional with a default value of " << this->_defvalue;
-        else ss << "This setting is mandatory.\n";
+
+        if (this->_optional) {
+            assert(this->_have_default_set);
+            // optional -- default must be set
+            ss << "This setting is optional with a default value of "
+                << this->_defvalue;
+        } else {
+            ss << "This setting is mandatory.\n";
+        }
+
         ret += CConfigCentralHelpers::WrapForConfigSnippet(ss.str());
 
         // make a nice example
         if (this->_optional) ret += "# ";
         ret += this->_setting + " = ";
-        if (this->_optional) {
+        if (this->_have_default_set) {
             std::stringstream ss;
             ss << this->_defvalue;
             ret += ss.str();

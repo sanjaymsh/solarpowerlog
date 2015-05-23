@@ -52,6 +52,5 @@ std::string CConfigCentral::GetConfigSnippet()
         ret += (*it)->GetConfigSnippet();
         ret += '\n';
     }
-
     return ret;
 }

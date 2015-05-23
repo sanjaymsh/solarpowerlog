@@ -45,11 +45,11 @@
  */
 class CConfigCentralEntryText : public IConfigCentralEntry {
 public:
-    CConfigCentralEntryText(const char *parameter, const char *description, const char *example) {
-        if (parameter) _parameter = parameter;
+    CConfigCentralEntryText(const char *setting, const char *description,
+        const char *example) :
+        IConfigCentralEntry(setting, description)
+    {
         if (example) _example = example;
-        assert(description);
-        _description = description;
     }
 
     virtual bool CheckAndUpdateConfig(ILogger &, CConfigHelper &) const {
@@ -62,8 +62,6 @@ public:
 
 private:
     std::string _example;
-    std::string _parameter;
-    std::string _description;
 };
 
 #endif /* SRC_CONFIGURATION_CONFIGCENTRAL_CCONFIGCENTRALENTRYTEXT_H_ */

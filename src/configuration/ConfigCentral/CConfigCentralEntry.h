@@ -51,9 +51,8 @@ public:
      * @param store where to store the parsed value
      */
     CConfigCentralEntry(const char* setting, const char* description, T &store) :
-        _optional(false), _store(store), _setting(setting),
-            _description(description)
-    { }
+        IConfigCentralEntry(setting, description), _have_default_set(false),
+            _optional(false), _store(store)  {}
 
     /** Constructor for optional parameters
      *
@@ -64,15 +63,14 @@ public:
      */
     CConfigCentralEntry(const char* setting, const char* description, T &store,
         T defaultvalue) :
-        _optional(true), _store(store), _defvalue(defaultvalue),
-            _setting(setting), _description(description)
-    { }
+        IConfigCentralEntry(setting, description), _have_default_set(true),
+            _optional(true), _store(store), _defvalue(defaultvalue)   {}
 
     virtual ~CConfigCentralEntry() { }
 
     virtual bool CheckAndUpdateConfig(ILogger &logger, CConfigHelper &helper) const {
 
-        if (_optional) {
+        if (_optional && _have_default_set) {
             return helper.CheckAndGetConfig(_setting.c_str(), _store, _defvalue, &logger);
         }
         else {
@@ -86,19 +84,27 @@ public:
 
         std::string ret;
         // Wrap the desription
-        ret = CConfigCentralHelpers::WrapForConfigSnippet(this->_description);
+        ret = CConfigCentralHelpers::WrapForConfigSnippet(_description);
 
         std::stringstream ss;
         // print the optional / mandatory statement
-        if (this->_optional) ss << "This setting is optional with a default value of " << this->_defvalue;
-        else ss << "This setting is mandatory.\n";
+
+        if (_optional) {
+            assert(_have_default_set);
+            // optional -- default must be set
+            ss << "This setting is optional with a default value of "
+                << _defvalue;
+        } else {
+            ss << "This setting is mandatory.\n";
+        }
+
         ret += CConfigCentralHelpers::WrapForConfigSnippet(ss.str());
 
         // make a nice example
-        if (this->_optional) ret += "# ";
+        if (_optional) ret += "# ";
         ret += this->_setting + " = ";
-        if (this->_optional) {
-            std::stringstream ss;
+        if (_have_default_set) {
+            //std::stringstream ss;
             ss << this->_defvalue;
             ret += ss.str();
         } else {
@@ -108,12 +114,23 @@ public:
         return ret;
     }
 
+    T getDefvalue() const
+    {
+        return _defvalue;
+    }
+
+    void setDefvalue(T defvalue, bool is_optional=true)
+    {
+        _defvalue = defvalue;
+        _optional = is_optional;
+        _have_default_set = true;
+    }
+
 protected:
+    bool _have_default_set;
     bool _optional;
     T &_store;
     T _defvalue;
-    std::string _setting;
-    std::string _description;
 };
 
 // Forward declarations of the template specalisations.

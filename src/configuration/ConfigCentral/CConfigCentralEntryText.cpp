@@ -37,8 +37,8 @@ std::string CConfigCentralEntryText::GetConfigSnippet() const
 {
    std::string ret =  CConfigCentralHelpers::WrapForConfigSnippet(_description);
 
-   if (!_parameter.empty() && !_example.empty()) {
-       ret += "# " + _parameter + " = " + _example +";\n";
+   if (!_setting.empty() && !_example.empty()) {
+       ret += "# " + _setting + " = " + _example +";\n";
    }
 
    return ret;

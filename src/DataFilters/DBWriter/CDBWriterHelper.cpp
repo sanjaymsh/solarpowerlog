@@ -180,7 +180,7 @@ bool CDBWriterHelper::issane(const std::string s)
     // needle is selected from mysqli.real-escape-string
     // I added the brackets, which might be overkill...
     const char *needle = "\"\'`[]\0\r\n\x1a% ";
-    if (std::string::npos != s.find_first_of(needle, 0, sizeof(needle))) {
+    if (std::string::npos != s.find_first_of(needle, 0, sizeof(*needle))) {
         return false;
     }
     return true;
@@ -450,7 +450,7 @@ void CDBWriterHelper::ExecuteQuery(cppdb::session &session)
                 LOGWARN_SA(logger, LOG_SA_HASH("create-info1") + (long)(&info),
                     "When creating tables, $-Selector columns will be created "
                     " with the datatype \"TEXT\". "
-                    "If necessry, please correct it yourseld: Column \"" <<
+                    "If necessary, please correct it yourself: Column \"" <<
                     info.Column << "\" using Selector \"" <<
                     info.Capability.substr(1) << "\".");
                 LOGWARN_SA(logger, LOG_SA_HASH("create-info2") + (long)(&info),

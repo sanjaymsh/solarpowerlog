@@ -1,23 +1,23 @@
 /* ----------------------------------------------------------------------------
  solarpowerlog -- photovoltaic data logging
 
-Copyright (C) 2009-2014 Tobias Frost
+ Copyright (C) 2009-2015 Tobias Frost
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
  ----------------------------------------------------------------------------
-*/
+ */
 
 /** \file CCSVOutputFilter.cpp
  *
@@ -47,6 +47,7 @@ Copyright (C) 2009-2014 Tobias Frost
 
 #include "configuration/Registry.h"
 #include "configuration/CConfigHelper.h"
+#include "configuration/ConfigCentral/CConfigCentral.h"
 #include "interfaces/CWorkScheduler.h"
 
 #include "Inverters/Capabilites.h"
@@ -518,6 +519,39 @@ bool CCSVOutputFilter::search_list( const string id ) const
 			return true;
 	}
 	return false;
+}
+
+
+CConfigCentral* CCSVOutputFilter::getConfigCentralObject(CConfigCentral *parent)
+{
+    static std::string dummy_string;
+
+ //   CConfigCentral *pcfg = IDataFilter::getConfigCentralObject(parent);
+
+    if (!parent) parent = new CConfigCentral;
+
+    // TODO: code does not check for optional yet
+    // and did not look up defaults
+    (*parent)
+    (NULL, DESCRIPTION_CVSWRITER_INTRO);
+
+    parent = IDataFilter::getConfigCentralObject(parent);
+
+    (*parent)
+    ("logfile", DESCRIPTION_CVSWRITER_FILENAME, _cfg_cache_filename)
+    ("rotate", DESCRIPTION_CVSWRITER_ROTATE, _cfg_cache_rotate, false)
+    ("compact_csv", DESCRIPTION_CVSWRITER_COMPACTCSV, _cfg_cache_compactcvs, false)
+
+    ("flush_file_buffer_immediatly", DESCRIPTION_CVSWRITER_FLUSHFILEBUFFER,
+            _cfg_cache_flushfb, false)
+    ("format_timestamp", DESCRIPTION_CVSWRITER_FORMATTIMESTAMP,
+            _cfg_cache_formattimestap, std::string("%Y-%m-%d %T"))
+    ("data2log", DESCRIPTION_CVSWRITER_DATA2LOG, EXAMPLE_CVSWRITER_DATA2LOG)
+    ;
+
+    parent->SetExample("type", std::string(FILTER_CVSWRITER), false);
+
+    return parent;
 }
 
 #endif

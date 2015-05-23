@@ -315,9 +315,9 @@ public:
      * The base *might* already have added properties to check aloing with
      * their descriptions. It also can opt to just return a NULL pointer though.
      */
-    virtual CConfigCentral* getConfigCentralObject(void)
+    virtual CConfigCentral* getConfigCentralObject(CConfigCentral *parent)
     {
-        return NULL;
+        return parent;
     }
 
 protected:

@@ -61,7 +61,7 @@ public:
 	/** implements the ICommandTarget interface */
 	virtual void ExecuteCommand(const ICommand *Command);
 
-    virtual CConfigCentral* getConfigCentralObject(void);
+    virtual CConfigCentral* getConfigCentralObject(CConfigCentral *parent);
 
 protected:
 	/** calculate the checksum for the telegram stored in str */

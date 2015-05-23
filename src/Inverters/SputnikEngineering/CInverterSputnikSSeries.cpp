@@ -402,7 +402,7 @@ CInverterSputnikSSeries::~CInverterSputnikSSeries()
 bool CInverterSputnikSSeries::CheckConfig()
 {
     // new configcode...
-    std::auto_ptr<CConfigCentral> cfg(getConfigCentralObject());
+    std::auto_ptr<CConfigCentral> cfg(getConfigCentralObject(NULL));
     bool cfgok = cfg->CheckConfig(logger, configurationpath);
 
     assert(connection);
@@ -990,9 +990,9 @@ void CInverterSputnikSSeries::tokenizer(const char *delimiters,
 	}
 }
 
-CConfigCentral* CInverterSputnikSSeries::getConfigCentralObject(void)
+CConfigCentral* CInverterSputnikSSeries::getConfigCentralObject(CConfigCentral *parent)
 {
-    CConfigCentral *pcfg = IInverterBase::getConfigCentralObject();
+    CConfigCentral *pcfg = IInverterBase::getConfigCentralObject(parent);
     if (!pcfg) {
         pcfg = new CConfigCentral;
     }

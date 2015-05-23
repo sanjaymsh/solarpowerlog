@@ -241,7 +241,7 @@ int main(int argc, char* argv[])
             "category is either inverter, filter or communication. "
             "subcategroy is for inverters specifing the manufacturer and "
             "target is the final target to get the snippet from. Note that "
-            "this function is intended as development aod to keep snippets and code in sync. "
+            "this function is intended as development aid to keep snippets and code in sync. "
             " solarpowerlog will exit after the snippet has been dumped."
             );
 
@@ -307,7 +307,7 @@ int main(int argc, char* argv[])
                     cerr << "printsnippet: Could not create inverter object." << endl;
                     return 1;
                 }
-                std::auto_ptr<CConfigCentral> cfg(inverter->getConfigCentralObject());
+                std::auto_ptr<CConfigCentral> cfg(inverter->getConfigCentralObject(NULL));
                 if (!cfg.get()) {
                     cerr << "printsnippet: Could not create inverter's configuration information." << endl;
                     return 1;

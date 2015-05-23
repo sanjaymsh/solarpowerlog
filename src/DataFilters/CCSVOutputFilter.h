@@ -233,8 +233,7 @@ public:
 
 	virtual void ExecuteCommand( const ICommand *cmd );
 
-	#warning implement me!
-    virtual CConfigCentral* getConfigCentralObject(void) { return NULL; }
+    virtual CConfigCentral* getConfigCentralObject(CConfigCentral *parent);
 
 private:
 	fstream file;
@@ -279,7 +278,6 @@ private:
 	/** list of Capabilities in the CSV */
 	list<string> CSVCapas;
 
-
 	// Helpers to shrink some functions...
 	/** Check if any capas are now available which were not before
 	 * (but should be tracked)
@@ -304,6 +302,30 @@ private:
 
 	/// cache: last emitted string without timestamp
 	std::string last_line;
+
+	/** configuration cache: filename of the CVS log */
+	std::string _cfg_cache_filename;
+
+    /** configuration cache: how to format the timestamp */
+    std::string _cfg_cache_formattimestap;
+
+	/** configuration cache rotate the logfile at midnight */
+	bool _cfg_cache_rotate;
+
+	/** configuration cache: should repeated lines be suppressed? */
+	bool _cfg_cache_compactcvs;
+
+	/** configuration cache: should we "flush" after every write
+	 * TODO: Maybe change this parameter / add another to specify file buffer
+	 * length via std::streambuf::pubsetbuf */
+	bool _cfg_cache_flushfb;
+
+	/** configuration cache: is data2log="all"? */
+	bool _cfg_cache_data2log_all;
+
+	/** cache, if we created the CapasList already.*/
+	bool _cache_found_all_capas;
+
 };
 
 #endif

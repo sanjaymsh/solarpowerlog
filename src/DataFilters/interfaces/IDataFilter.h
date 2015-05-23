@@ -73,6 +73,24 @@ Copyright (C) 2009-2014 Tobias Frost
 #include "patterns/IObserverSubject.h"
 #include "Inverters/interfaces/InverterBase.h"
 #include "patterns/ICommand.h"
+#include "DataFilters/interfaces/factories/IDataFilterFactory.h"
+
+#define DESCRIPTION_DATAFILTER_NAME \
+"This parameter names the logger. The name are used internally to identify " \
+"the logger and thus needs to be unique."
+
+#define DESCRIPTION_DATAFILTER_TYPE \
+"Tells solarpowerlog the type of the logger to be created. This version of " \
+"solarpowerlog supports the following loggers (and datafilters): " \
+FILTER_DUMBDUMPER " " \
+FILTER_CVSWRITER " " \
+FILTER_HTMLWRITER " " \
+FILTER_DBWRITER " "
+
+#define DESCRIPTION_DATAFILTER_DATASOURCE \
+"This parameter needs to state the name another logger or inverter -- " \
+"the one which will supply data to this logger."
+
 
 class IDataFilter : public IObserverObserver ,
 	public IInverterBase // The inverter, though the capabilites, also provides the
@@ -115,6 +133,9 @@ public:
 	 *  */
 	virtual CCapability *GetConcreteCapability( const string &identifier );
 
+	// datasource is config from the baseclass..
+	virtual CConfigCentral* getConfigCentralObject(CConfigCentral *parent);
+
 protected:
 	/// Inverter to connect to. Can also be a another DataFilter
 	/// (as data are exchanged over the IInverterBase Interface,
@@ -123,6 +144,9 @@ protected:
 	/// If the child wants to reveive data from multiple / different sources,
 	/// it also might use its own implementation
 	IInverterBase *base;
+
+protected:
+	std::string _datasource;
 
 };
 

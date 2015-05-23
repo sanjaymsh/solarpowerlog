@@ -52,6 +52,38 @@
 
 #include "DataFilters/interfaces/IDataFilter.h"
 
+
+IDataFilter *IDataFilterFactory::FactoryByName(const std::string &type,
+    const std::string &name, const std::string &configurationpath)
+{
+
+#ifdef HAVE_FILTER_DUMBDUMP
+    if (type == FILTER_DUMBDUMPER) {
+        return new CDumpOutputFilter(name, configurationpath);
+    }
+#endif
+
+#ifdef HAVE_FILTER_CSVDUMP
+    if (type == FILTER_CVSWRITER) {
+        return new CCSVOutputFilter(name, configurationpath);
+    }
+#endif
+
+#ifdef  HAVE_FILTER_HTMLWRITER
+    if (type == FILTER_HTMLWRITER) {
+        return new CHTMLWriter(name, configurationpath);
+    }
+#endif
+
+#ifdef HAVE_FILTER_DBWRITER
+    if (type == FILTER_DBWRITER) {
+        return new CDBWriterFilter(name, configurationpath);
+    }
+#endif
+
+    return NULL;
+}
+
 IDataFilter *IDataFilterFactory::Factory(const string & configurationpath)
 {
 
@@ -61,29 +93,6 @@ IDataFilter *IDataFilterFactory::Factory(const string & configurationpath)
 	cfghlp.GetConfig("type", type);
 	cfghlp.GetConfig("name",name);
 
-#ifdef HAVE_FILTER_DUMBDUMP
-	if (type == FILTER_DUMBDUMPER) {
-		return new CDumpOutputFilter(name, configurationpath);
-	}
-#endif
+	return FactoryByName(type, name, configurationpath);
 
-#ifdef HAVE_FILTER_CSVDUMP
-	if (type == FILTER_CVSWRITER) {
-		return new CCSVOutputFilter(name, configurationpath);
-	}
-#endif
-
-#ifdef 	HAVE_FILTER_HTMLWRITER
-	if (type == FILTER_HTMLWRITER) {
-		return new CHTMLWriter(name, configurationpath);
-	}
-#endif
-
-#ifdef HAVE_FILTER_DBWRITER
-	if ( type == FILTER_DBWRITER) {
-	    return new CDBWriterFilter(name, configurationpath);
-	}
-#endif
-
-	return NULL;
 }

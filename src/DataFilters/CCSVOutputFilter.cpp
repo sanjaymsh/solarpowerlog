@@ -57,6 +57,94 @@
 
 #include "Inverters/interfaces/ICapaIterator.h"
 
+#define DESCRIPTION_CVSWRITER_INTRO \
+"Logger CVSWriter\n" \
+"The CSV Data Logger takes some or all data and writes it to a CSV " \
+"(comma-separated-values) file as specified in the RFC 4180.\n" \
+"The data to be logged can be selected, either by specifying the identifiers " \
+"or just logging \"all\" data. " \
+"However, \"log all\" will causes that the number of columns can change " \
+"during logging, violating the RFC. \n" \
+"When some data is unavailable, empty " \
+"values will be logged instead. \n" \
+"Also, a (ISO 8601)-like timestamp " \
+"will be inserted as the first column. \n" \
+"To get a CVSWriter, \"type\" below needs to " \
+"be set to " \
+FILTER_CVSWRITER \
+" (as indicated below.)"
+
+#define DESCRIPTION_CVSWRITER_FILENAME \
+"Defines the target file for this CSV file.\n This setting is dependent on " \
+"other parameters:\n" \
+"If \"rotate\" is enabled, the logger will start a new logfile at midnight. " \
+"To avoid overwriting the old logfile it will add the current date to the " \
+"filename, using by default the ISO 8601 format YYYY-MM-DD. " \
+"If the parameter contains a \"%s\", the timestamp will be inserted at this " \
+"position; if not specified, it will be appended at the end.\n" \
+"For example\n" \
+"logfile=\"Inverter_1_%s.csv\"\n" \
+"will create a logfile like \"Inverter_1_2009-07-04.csv\"\n" \
+"To set the format of the timestamp see the option format_timestamp."
+
+#define DESCRIPTION_CVSWRITER_ROTATE \
+"Rotate: Create a new logfile at midnight."
+
+#define DESCRIPTION_CVSWRITER_COMPACTCSV \
+"Tries to keep the files compact by suppressing logs when all data is " \
+"unchanged.\n" \
+"In other words: This option will eliminate lines in the CVS file which are " \
+"identical to the previous line, if everything to be logged (except date/time) " \
+"has not changed."
+
+#define DESCRIPTION_CVSWRITER_FLUSHFILEBUFFER \
+"If true, writes to the CVS file are immediate, if false, use the cache provided " \
+"by the operating system.\n" \
+"If you are \"just logging\" this might be fine to set to false, if you do " \
+"some kind of real-time data processing, use false, as it might " \
+"take some times for the data to enter the disk. " \
+"One use of this option disabled is if you log to flash memory or if " \
+"you want to avoid spinning up disks. " \
+"Note: Solarpowerlog only hints the operating system to flush the file " \
+"buffers. The operating system or hardware (harddisk) still might use some " \
+"caching.\n" \
+"Note: Up to solarpowerlog 0.21 this setting was by default set to true."
+
+#define DESCRIPTION_CVSWRITER_FORMATTIMESTAMP \
+"You can customize the timestamp format with this setting. As solarpowerlog is " \
+"using boost, please refer to this list for all valid options: " \
+"http://www.boost.org/doc/libs/1_57_0/doc/html/date_time/date_time_io.html#date_time.format_flags\n" \
+"The default set the date in the ISO 8601 format, e.g.: 2009-12-20 13:34:56."
+
+#define DESCRIPTION_CVSWRITER_DATA2LOG \
+"This parameter specifies tha data to be logged. There are two modes: " \
+"Logging everything by specifing \"all\" here or selective logging by specifing " \
+" excplictly the capabilities to be logged in an array." \
+"Hint: To retrieve all the capabilites names supported, first use \"all\" and then" \
+"examine the created CVS file to select the ones you really want.\n" \
+"This setting is mandatory."
+
+#define EXAMPLE_CVSWRITER_DATA2LOG \
+"data2log= \"all\";\n" \
+"data2log= [ \n" \
+"\t\"AC grid feeding current (A)\",\n" \
+"\t\"AC grid voltage (V)\",\n" \
+"\t\"Current Grid Feeding Power\",\n" \
+"\t\"DC current in (A)\",\n" \
+"\t\"DC voltage in (V)\",\n" \
+"\t\"Data Query Interval\",\n" \
+"\t\"Data Validity\",\n" \
+"\t\"Energy produced cumulated all time (kWh)\",\n" \
+"\t\"Energy produced this month (kWh)\",\n" \
+"\t\"Energy produced this year (kWh)\",\n" \
+"\t\"Energy produced today (kWh)\",\n" \
+"\t\"Inverter Overall Status\",\n" \
+"\t\"Inverter Power On Hours\",\n" \
+"\t\"Inverter Temperature (C)\",\n" \
+"\t\"Net frequency (Hz)\"\n" \
+"]"
+
+
 using namespace std;
 using namespace libconfig;
 using namespace boost::gregorian;
@@ -66,6 +154,8 @@ CCSVOutputFilter::CCSVOutputFilter( const string & name,
 	IDataFilter(name, configurationpath), datavalid(false), capsupdated(false)
 {
 	headerwritten = false;
+	_cfg_cache_data2log_all = false;
+	_cache_found_all_capas = false;
 
 	// Schedule the initialization and subscriptions later...
 	ICommand *cmd = new ICommand(CMD_INIT, this);
@@ -109,51 +199,39 @@ CCSVOutputFilter::~CCSVOutputFilter()
 
 bool CCSVOutputFilter::CheckConfig()
 {
-	string setting;
-	string str;
+    std::auto_ptr<CConfigCentral> cfg(getConfigCentralObject(NULL));
+	bool fail = !cfg->CheckConfig(logger,configurationpath);
 
-	bool fail = false;
-
-	CConfigHelper hlp(configurationpath);
-
-    if (!base) {
-        std::string str;
-        fail |= !hlp.CheckAndGetConfig("datasource", libconfig::Setting::TypeString, str);
-        if (fail) {
-            LOGERROR(logger, "datassource not found.");
-        } else {
-            LOGERROR(logger, "Cannot find datassource with the name " << str);
-        }
+	// check datasource: The type and existance is already checked, but
+	// we need to see if it really exists -- this is done already in the
+	// baseclass' constructor.
+    if (!fail && !base) {
+        LOGERROR(logger, "Cannot find datassource with the name "
+            << _datasource);
         fail = true;
     }
 
-	fail |= !hlp.CheckConfig("logfile", Setting::TypeString);
+	// Datatolog -- can be "all" or an array.
+    // ConfigCentral cannot check this complexity...
+    CConfigHelper hlp(configurationpath);
+    bool data2log_fail = false;
+    if (hlp.CheckConfig("data2log", Setting::TypeString, false, false)) {
+        std::string setting;
+        hlp.GetConfig("data2log", setting);
+        if (setting == "all") {
+            _cfg_cache_data2log_all = true;
+        } else {
+            data2log_fail = true;
+        }
+    } else if (!hlp.CheckConfig("data2log", Setting::TypeArray)) {
+        data2log_fail = true;
+    }
+    if (data2log_fail) {
+        LOGERROR(logger, "Configuration Error: data2log must be "
+            "\"all\" or of the type \"Array\".");
+        fail = true;
+    }
 
-	fail |= !hlp.CheckConfig("compact_csv", Setting::TypeBoolean, true);
-	fail |= !hlp.CheckConfig("flush_file_buffer_immediatly", Setting::TypeBoolean, true);
-	fail |= !hlp.CheckConfig("format_timestamp", Setting::TypeString, true);
-	fail |= !hlp.CheckConfig("rotate", Setting::TypeBoolean, true);
-
-	if (hlp.CheckConfig("data2log", Setting::TypeString, false, false)) {
-		hlp.GetConfig("data2log", setting);
-		if (setting != "all") {
-			LOGERROR(logger, "Configuration Error: data2log must be \"all\" or of the type \"Array\".");
-			fail = true;
-		}
-	} else if (!hlp.CheckConfig("data2log", Setting::TypeArray)) {
-		fail = true;
-	}
-
-	hlp.GetConfig("datasource", str);
-	IInverterBase *i = Registry::Instance().GetInverter(str);
-	if (!i) {
-		LOGERROR(logger,
-			"Setting " << setting << " in " << configurationpath
-			<< "." << name
-			<< ": Cannot find instance of Inverter with the name "
-			<< str);
-		fail = true;
-	}
 	return !fail;
 }
 
@@ -189,7 +267,6 @@ void CCSVOutputFilter::Update( const IObserverSubject *subject )
 		capsupdated = true;
 		return;
 	}
-
 }
 
 void CCSVOutputFilter::ExecuteCommand( const ICommand *cmd )
@@ -263,9 +340,7 @@ void CCSVOutputFilter::ExecuteCommand( const ICommand *cmd )
 
 void CCSVOutputFilter::DoINITCmd( const ICommand * )
 {
-	string tmp;
-	CConfigHelper cfghlp(configurationpath);
-	// Config is already checked (exists, type ok)
+	std::string filename;
 	CCapability *cap;
 
     assert(base);
@@ -286,30 +361,26 @@ void CCSVOutputFilter::DoINITCmd( const ICommand * )
 		file.close();
 	}
 
-	cfghlp.GetConfig("logfile", tmp);
-	bool rotate;
-	cfghlp.GetConfig("rotate", rotate, false);
-
-	if (rotate) {
+	if (_cfg_cache_rotate) {
 		date today(day_clock::local_day());
 		//note: the %s will be removed, so +10 is enough.
-		char buf[tmp.size() + 10];
+		char buf[_cfg_cache_filename.size() + 10];
 		int year = today.year();
 		int month = today.month();
 		int day = today.day();
 
 		snprintf(buf, sizeof(buf) - 1, "%s%04d-%02d-%02d%s",
-			tmp.substr(0, tmp.find("%s")).c_str(), year, month,
+		    _cfg_cache_filename.substr(0, _cfg_cache_filename.find("%s")).c_str(), year, month,
 			day,
-			tmp.substr(tmp.find("%s") + 2, string::npos).c_str());
+			_cfg_cache_filename.substr(_cfg_cache_filename.find("%s") + 2, string::npos).c_str());
 
-		tmp = buf;
+		filename = buf;
 	}
 
 	// Open the file. We use binary mode, as we want end the line ourself (LF+CR)
 	// leaned on RFC4180
 	file.clear(); // clear errorstates of fstream.
-	file.open(tmp.c_str(), fstream::out | fstream::in | fstream::app
+	file.open(filename.c_str(), fstream::out | fstream::in | fstream::app
 		| fstream::binary);
 
 #ifdef HAVE_WIN32_API
@@ -319,16 +390,16 @@ void CCSVOutputFilter::DoINITCmd( const ICommand * )
 	}
 #endif
 	if (file.fail()) {
-		LOGWARN(logger,"Failed to open file " << tmp <<". Logger " << name
+		LOGWARN(logger,"Failed to open file " << filename <<". Logger " << name
 			<< " will not work. " );
 		file.close();
-		tmp = "";
+		filename = "";
 	}
 
 	// Update the filename. If empty, the subsequent plugin knows that there
 	// was a problem.
     cap = this->GetConcreteCapability(CAPA_CSVDUMPER_FILENAME);
-    ((CValue<std::string> *) cap->getValue())->Set(tmp);
+    ((CValue<std::string> *) cap->getValue())->Set(filename);
 	cap->Notify();
 
 	// a new file needs a new header
@@ -358,17 +429,15 @@ void CCSVOutputFilter::DoINITCmd( const ICommand * )
 
 void CCSVOutputFilter::DoCYCLICmd( const ICommand * )
 {
-	bool compact_file, flush_after_write;
-	std::string format;
+//	bool compact_file, flush_after_write;
+//	std::string format;
 
-	CConfigHelper cfg(configurationpath);
-	cfg.GetConfig("format_timestamp", format, std::string("%Y-%m-%d %T"));
-	cfg.GetConfig("compact_csv", compact_file, false);
-	cfg.GetConfig("flush_file_buffer_immediatly", flush_after_write, false);
+//	CConfigHelper cfg(configurationpath);
+//	cfg.GetConfig("format_timestamp", format, std::string("%Y-%m-%d %T"));
+//	cfg.GetConfig("compact_csv", compact_file, false);
+//	cfg.GetConfig("flush_file_buffer_immediatly", flush_after_write, false);
 
-	std::stringstream ss;
-
-	/* Check for data validty. */
+	/* Check for data validity. */
 	if (!datavalid) {
 		return;
 	}
@@ -388,25 +457,25 @@ void CCSVOutputFilter::DoCYCLICmd( const ICommand * )
 
 	/* output CSV Header*/
 	if (!headerwritten) {
+	    std::stringstream ss_header;
 		last_line.clear();
 		bool first = true;
 		list<string>::const_iterator it;
 		for (it = CSVCapas.begin(); it != CSVCapas.end(); it++) {
 			if (!first) {
-				ss << ",";
+			    ss_header << ",";
 			} else {
-				ss << "Timestamp,";
+			    ss_header << "Timestamp,";
 			}
 			first = false;
-			ss << *(it);
+			ss_header << *(it);
 		}
 		// CSV after RFC 4180 requires CR LF
-		file << ss.str() << (char) 0x0d << (char) 0x0a;
+		file << ss_header.str() << (char) 0x0d << (char) 0x0a;
 		CCapability *cap = GetConcreteCapability(CAPA_CSVDUMPER_LOGGEDCAPABILITES);
 		assert(cap);
-		((CValue<std::string> *)cap->getValue())->Set(ss.str());
+		((CValue<std::string> *)cap->getValue())->Set(ss_header.str());
 		cap->Notify();
-		ss.str("");
 		headerwritten = true;
 	}
 
@@ -416,20 +485,16 @@ void CCSVOutputFilter::DoCYCLICmd( const ICommand * )
 	boost::posix_time::ptime n =
 		boost::posix_time::second_clock::local_time();
 
-	// assign facet only to a temporay stringstream.
+	// assign facet only to a temporary stringstream.
 	// this avoids having a persistent object.
 	/// time_facet for the formating of the string
-	boost::posix_time::time_facet *facet = new boost::posix_time::time_facet(format.c_str());
-	ss.imbue(std::locale(ss.getloc(), facet));
-	ss << n;
-	file << ss.str();
-	ss.str("");
 
 	// note: do not delete the facet. This is done by the locale.
 	// See: http://rhubbarb.wordpress.com/2009/10/17/boost-datetime-locales-and-facets/
 	// (the locale will delete the object, so there is no leak. If we would
 	// delete, this crashes.)
 
+    std::stringstream ss;
 	list<string>::const_iterator it;
 	CCapability *c;
 	IValue *v;
@@ -463,27 +528,26 @@ void CCSVOutputFilter::DoCYCLICmd( const ICommand * )
 		}
 	}
 
-	if ( !compact_file ||  ss.str() != last_line) {
+	if ( !_cfg_cache_compactcvs ||  ss.str() != last_line) {
         last_line = ss.str();
-		file << ss.str() << (char) 0x0d << (char) 0x0a;
-		if (flush_after_write)
+        std::stringstream timestamp;
+        boost::posix_time::time_facet *facet =
+            new boost::posix_time::time_facet(_cfg_cache_formattimestap.c_str());
+        timestamp.imbue(std::locale(ss.getloc(), facet));
+        timestamp << n;
+		file << timestamp.str() << ss.str() << (char) 0x0d << (char) 0x0a;
+		if (_cfg_cache_flushfb)
 			file << flush;
 	}
-
 }
 
 bool CCSVOutputFilter::CMDCyclic_CheckCapas( void )
 {
-	CConfigHelper cfghlp(configurationpath);
-	bool store_all = false;
 	bool ret = false;
-	string tmp;
 
-	if (cfghlp.GetConfig("data2log", tmp) && tmp == "all") {
-		store_all = true;
-	}
-
-	if (!store_all) {
+	if (!_cfg_cache_data2log_all && !_cache_found_all_capas ) {
+	    CConfigHelper cfghlp(configurationpath);
+	    string tmp;
 		int i = 0;
 		while (cfghlp.GetConfigArray("data2log", i++, tmp)) {
 			if (search_list(tmp)) {
@@ -492,7 +556,7 @@ bool CCSVOutputFilter::CMDCyclic_CheckCapas( void )
 			CSVCapas.push_back(tmp);
 			ret = true;
 		}
-
+		_cache_found_all_capas = true;
 		return ret;
 	}
 
@@ -510,6 +574,7 @@ bool CCSVOutputFilter::CMDCyclic_CheckCapas( void )
 	}
 	return ret;
 }
+
 
 bool CCSVOutputFilter::search_list( const string id ) const
 {

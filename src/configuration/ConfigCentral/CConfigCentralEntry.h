@@ -133,12 +133,11 @@ protected:
     T _defvalue;
 };
 
-// Forward declarations of the template specalisations.
+// Forward declarations of the template specializations.
 template<>
 std::string CConfigCentralEntry<std::string>::GetConfigSnippet() const;
 
 template <>
 std::string CConfigCentralEntry<bool>::GetConfigSnippet() const;
-
 
 #endif /* SRC_CONFIGURATION_CONFIGCENTRAL_CCONFIGCENTRALENTRY_H_ */

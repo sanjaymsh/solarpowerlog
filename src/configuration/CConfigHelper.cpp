@@ -29,8 +29,6 @@ Copyright (C) 2009-2014 Tobias Frost
 #include "config.h"
 #endif
 
-#include <iostream>
-
 #include "configuration/CConfigHelper.h"
 #include "configuration/Registry.h"
 
@@ -121,6 +119,4 @@ bool CConfigHelper::isExisting(void) const {
 
     libconfig::Config* cfg = Registry::Instance().Configuration();
     return cfg->exists(cfgpath);
-
-
 }

@@ -73,20 +73,19 @@ public:
 		CMD_CYCLIC,
 	};
 
-#warning implement me!
-    virtual CConfigCentral* getConfigCentralObject(void) { return NULL; }
+    virtual CConfigCentral* getConfigCentralObject(CConfigCentral *parent);
 
 private:
 
 	void CheckOrUnSubscribe( bool subscribe = true );
 
 	// Configuraion cache
-	float writeevery;
-	bool derivetiming;
-	bool generatetemplate;
-	std::string generatetemplatedir;
-	std::string htmlfile;
-	std::string templatefile;
+	float _cfg_writevery;
+	bool _cfg_generate_template;
+	std::string _cfg_gen_template_dir;
+	std::string _cfg_html_file;
+	std::string _cfg_template_file;
+	std::string _cfg_name;
 
 	bool updated;
 	bool datavalid;

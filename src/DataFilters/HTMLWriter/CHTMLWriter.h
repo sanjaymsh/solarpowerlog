@@ -79,7 +79,7 @@ private:
 
 	void CheckOrUnSubscribe( bool subscribe = true );
 
-	// Configuraion cache
+	// Configuration cache
 	float _cfg_writevery;
 	bool _cfg_generate_template;
 	std::string _cfg_gen_template_dir;

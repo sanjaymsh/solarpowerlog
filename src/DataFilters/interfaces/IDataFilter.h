@@ -63,10 +63,6 @@ Copyright (C) 2009-2014 Tobias Frost
  * For details describing how inverters, capabilites and datafilter work
  * together, please see \ref IInverterBase "this page".
  *
- *
- *
- *
- *
  * TODO DOCUMENT ME!
  */
 #include "patterns/IObserverObserver.h"
@@ -74,22 +70,6 @@ Copyright (C) 2009-2014 Tobias Frost
 #include "Inverters/interfaces/InverterBase.h"
 #include "patterns/ICommand.h"
 #include "DataFilters/interfaces/factories/IDataFilterFactory.h"
-
-#define DESCRIPTION_DATAFILTER_NAME \
-"This parameter names the logger. The name are used internally to identify " \
-"the logger and thus needs to be unique."
-
-#define DESCRIPTION_DATAFILTER_TYPE \
-"Tells solarpowerlog the type of the logger to be created. This version of " \
-"solarpowerlog supports the following loggers (and datafilters): " \
-FILTER_DUMBDUMPER " " \
-FILTER_CVSWRITER " " \
-FILTER_HTMLWRITER " " \
-FILTER_DBWRITER " "
-
-#define DESCRIPTION_DATAFILTER_DATASOURCE \
-"This parameter needs to state the name another logger or inverter -- " \
-"the one which will supply data to this logger."
 
 
 class IDataFilter : public IObserverObserver ,

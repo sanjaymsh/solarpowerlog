@@ -37,6 +37,21 @@
 "Like inverters, loggers and datafilters needs some basic configuration parameter:\n" \
 "\"name\", \"type\" and \"datasource\""
 
+#define DESCRIPTION_DATAFILTER_NAME \
+"This parameter names the logger. The name are used internally to identify " \
+"the logger and thus needs to be unique."
+
+#define DESCRIPTION_DATAFILTER_DATASOURCE \
+"This parameter needs to state the name another logger or inverter -- " \
+"the one which will supply data to this logger."
+
+#define DESCRIPTION_DATAFILTER_TYPE \
+"Tells solarpowerlog the type of the logger to be created. This version of " \
+"solarpowerlog supports the following loggers (and datafilters): " \
+FILTER_DUMBDUMPER " " \
+FILTER_CVSWRITER " " \
+FILTER_HTMLWRITER " " \
+FILTER_DBWRITER " "
 
 IDataFilter::IDataFilter(const string &name, const string & configurationpath) :
     IInverterBase(name, configurationpath, "datafilter"), base(0)
@@ -93,7 +108,7 @@ CConfigCentral* IDataFilter::getConfigCentralObject(CConfigCentral *parent)
 
     // Override optional setting and set a sane example.
     parent->SetExample("name", std::string("<name>"), false);
-    parent->SetExample("datasource", std::string("<source for this filter>"), false);
+    parent->SetExample("datasource", std::string("<name of the source>"), false);
     parent->SetExample("type", std::string("<DataFilter-type>"), false);
 
     return parent;

@@ -589,14 +589,9 @@ bool CCSVOutputFilter::search_list( const string id ) const
 
 CConfigCentral* CCSVOutputFilter::getConfigCentralObject(CConfigCentral *parent)
 {
-    static std::string dummy_string;
-
- //   CConfigCentral *pcfg = IDataFilter::getConfigCentralObject(parent);
 
     if (!parent) parent = new CConfigCentral;
 
-    // TODO: code does not check for optional yet
-    // and did not look up defaults
     (*parent)
     (NULL, DESCRIPTION_CVSWRITER_INTRO);
 

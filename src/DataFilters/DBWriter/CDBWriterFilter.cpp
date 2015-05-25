@@ -173,70 +173,11 @@ bool CDBWriterFilter::CheckConfig()
         fail = true;
     }
 
-    // What settings does a database writer needs?
-
-    // CPPDB Settings
-    // The library provides a connection string.
-    // However, to keep all options available, we query the components and assemble it ourself.
-    // (There will be an optional "parameters" string for special uses...)
-
-    // Database
-    // Soci needs the engine and a connection string. (engine dependent)
-    // We need also the database, the table to act on
-    // Also we'll need a list / table for all to be logged capabilities and its columns in the database
-    // write the timestamp where
-
-    // Handling
-    // How often should we write to the database. Time-based, value based?
-
-    // the db engine. e.g mysql, sqlite3, postgresql or odbc
-    // (for odbc you'll need to provide all options in db_cppdb_options yourself...)
-    // if you use "custom" here, then solarpowerlog will just use db_cppdb_options as connection string.
-
-
-    // The driver to be used.
-    //fail |= !hlp.CheckAndGetConfig("db_type", Setting::TypeString, db_type);
-
-    // the host (optional, as not every db needs it)
-    //fail |= !hlp.CheckAndGetConfig("db_host", Setting::TypeString, db_host,
-    //    true);
-
-    // for sqlite3 the mode the db should be opened. (create, readwrite)
-    // the 3rd option readonly makes no sense here
-    //fail |= !hlp.CheckAndGetConfig("db_mode", Setting::TypeString, db_mode,
-    //    true);
-
-    // port (as string), optional as not every db needs it
-    //fail |= !hlp.CheckAndGetConfig("db_port", Setting::TypeString, db_port,
-    //    true);
-
-    // (for mysql) unix-socket to be used.
-    //fail |= !hlp.CheckAndGetConfig("db_unixsocket", Setting::TypeString,
-    //    db_unixsocket, true);
-
     if (!_cfg_cache_db_port.empty() && ! _cfg_cache_db_unixsocket.empty()) {
         fail = true;
         LOGERROR(logger,
             "both db_port and db_unixsocket cannot be used at the same time.");
     }
-
-    // username optional as not every db needs it
-    //fail |= !hlp.CheckAndGetConfig("db_user", Setting::TypeString, db_user,
-    //    true);
-
-    // password (as string), optional as not every db needs it
-    //fail |= !hlp.CheckAndGetConfig("db_password", Setting::TypeString,
-    //    db_passwd, true);
-
-    // database to be used (as string), optional as not every db needs it
-    //fail |= !hlp.CheckAndGetConfig("db_database", Setting::TypeString,
-    //    db_database, true);
-
-    // option string which will be appended to the connection string.
-    // See your backend config http://cppcms.com/sql/cppdb/backendref.html
-    // and http://cppcms.com/sql/cppdb/connstr.html for cppdb options.
-    //fail |= !hlp.CheckAndGetConfig("db_cppdb_options", Setting::TypeString,
-    //    db_cppdb_options, true);
 
     if (fail) return false;
 

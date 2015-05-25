@@ -74,8 +74,7 @@ private:
 
 	void ScheduleCyclicWork(void);
 
-#warning implement me!
-    virtual CConfigCentral* getConfigCentralObject(void) { return NULL; }
+    virtual CConfigCentral* getConfigCentralObject(CConfigCentral* parent);
 
     enum Commands
     {
@@ -93,6 +92,17 @@ private:
     bool _datavalid;
 
     cppdb::session _sqlsession;
+
+    // Configuration cache
+    std::string _cfg_cache_db_type;
+    std::string _cfg_cache_db_host;
+    std::string _cfg_cache_db_port;
+    std::string _cfg_cache_db_unixsocket;
+    std::string _cfg_cache_db_mode;
+    std::string _cfg_cache_db_user;
+    std::string _cfg_cache_db_passwd;
+    std::string _cfg_cache_db_database;
+    std::string _cfg_cache_db_cppdb_options;
 
 };
 

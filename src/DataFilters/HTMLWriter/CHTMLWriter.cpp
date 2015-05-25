@@ -649,7 +649,7 @@ CConfigCentral* CHTMLWriter::getConfigCentralObject(CConfigCentral *parent)
         Description_HTMLWriter_Formatter_example)
     // and some docs for the formatter types and their parameters
     ("searchwebroot formatter", Description_HTMWriter_Frmter_searchwebroot)
-    ("searchcvsentry", Description_HTMLWriter_Frmter_searchCVSentry)
+    ("searchcvsentry", Description_HTMLWriter_Frmter_searchCVSentry);
 
     parent->SetExample("type", std::string(FILTER_HTMLWRITER), false);
 

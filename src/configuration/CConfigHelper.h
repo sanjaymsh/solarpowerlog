@@ -506,7 +506,7 @@ public:
             store = (const char *) cfg->lookup(cfgpath + "." + setting);
         } catch (libconfig::SettingNotFoundException &e) {
             if (logger) LOGINFO(*logger, "Setting " << setting <<
-                " was not found. Using default value:" << defval);
+                " was not found. Using default value: \"" << defval <<"\"");
             store = defval;
         } catch (libconfig::SettingTypeException &e) {
             if (logger) LOGERROR(*logger, "Setting " << setting <<
@@ -536,7 +536,7 @@ public:
             store = cfg->lookup(cfgpath + "." + setting);
         } catch (libconfig::SettingNotFoundException &e) {
             if (logger) LOGINFO(*logger, "Setting " << setting <<
-                " was not found. Using default value:" << defval);
+                " was not found. Using default value: \"" << defval << "\"");
             store = defval;
         } catch (libconfig::SettingTypeException &e) {
             if (logger) LOGERROR(*logger, "Setting " << setting <<

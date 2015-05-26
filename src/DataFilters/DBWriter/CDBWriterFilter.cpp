@@ -49,7 +49,9 @@ static const char *Description_DBWriter_Intro =
 "\n"
 "As this logger uses the cppdb database abstraction library, it can be configured"
 "with many SQL systems. Please note that the required parameters are "
-"much dending on the exact SQL system to be used, so the below hints may be inaccurate."
+"much depending on the exact SQL system to be used, so the below hints may be "
+"inaccurate. Especially note, that solarpowerlog will report empty default values, "
+"but this means for the database library \"use the libraries default\"."
 ;
 
 static const char *Description_DBWriter_db_type =
@@ -92,7 +94,7 @@ static const char *Description_DBWriter_db_mode =
 "The difference between \"readwrite\" and \"create\" "
 "that if the database does not exist the connection fails.\n"
 "Supported for SQLite and "
-"mandatory for SQLite.";
+"defaults for SQLite to create.";
 
 static const char *Description_DBWriter_db_user =
 "The username to be used to log on the database server.\n "
@@ -121,6 +123,19 @@ static const char *Description_DBWriter_db_cppdb_options =
 "as documented in the cppdb documentation.\n";
 
 using namespace libconfig;
+
+// small config checker helper
+static void _missing_req_parameter(ILogger &logger, std::string type, std::string parameter)
+{
+    LOGERROR(logger, "Database backend " << type << " requires parameter " << parameter);
+}
+
+static void _wrong_parameter(ILogger &logger, std::string type, std::string parameter)
+{
+    LOGERROR(logger, "Database backend " << type << " does not support parameter " << parameter);
+}
+
+
 
 CDBWriterFilter::CDBWriterFilter( const std::string & name,
 	const std::string & configurationpath ) :
@@ -168,158 +183,107 @@ bool CDBWriterFilter::CheckConfig()
 
     bool fail = !cc->CheckConfig(logger,configurationpath);
 
-    if (!base) {
-        LOGERROR(logger, "Cannot find datassource with the name " << _datasource);
-        fail = true;
-    }
-
-    if (!_cfg_cache_db_port.empty() && ! _cfg_cache_db_unixsocket.empty()) {
-        fail = true;
-        LOGERROR(logger,
-            "both db_port and db_unixsocket cannot be used at the same time.");
-    }
-
-    if (fail) return false;
-
-    bool add_semicolon = false;
-    std::string dbgstring;
-    // Generate the connection string.
+    // checking logical combinations for each backend.
+    // mysql: required: user, password, database, host or socket, not port and socket
     if (_cfg_cache_db_type == "mysql") {
-        _connectionstring = "mysql:";
-        if (!_cfg_cache_db_host.empty()) {
-            _connectionstring += "host=\'" + _cfg_cache_db_host + "\'";
-            add_semicolon = true;
+
+        if (_cfg_cache_db_user.empty()) {
+            _missing_req_parameter(logger, _cfg_cache_db_type, "db_user");
+            fail = true;
         }
-        if (!_cfg_cache_db_user.empty()) {
-            if (add_semicolon) _connectionstring += ";";
-            _connectionstring += "user=\'" + _cfg_cache_db_user + "\'";
-            add_semicolon = true;
+        if (_cfg_cache_db_passwd.empty()) {
+            _missing_req_parameter(logger, _cfg_cache_db_type, "db_passwd");
+            fail = true;
         }
-        if (!_cfg_cache_db_database.empty()) {
-            if (add_semicolon) _connectionstring += ";";
-            _connectionstring += "database=\'" + _cfg_cache_db_database + "\'";
-            add_semicolon = true;
+        if (_cfg_cache_db_database.empty()) {
+            _missing_req_parameter(logger, _cfg_cache_db_type, "db_database");
+            fail = true;
         }
-        if (!_cfg_cache_db_port.empty()) {
-            if (add_semicolon) _connectionstring += ";";
-            _connectionstring += "port=\'" + _cfg_cache_db_port + "\'";
-            add_semicolon = true;
-        }
-        if (!_cfg_cache_db_unixsocket.empty()) {
-            if (add_semicolon) _connectionstring += ";";
-            _connectionstring += "unix_socket=\'" + _cfg_cache_db_unixsocket + "\'";
-            add_semicolon = true;
-        }
-        dbgstring = _connectionstring;
-        if (!_cfg_cache_db_passwd.empty()) {
-            if (add_semicolon) _connectionstring += ";";
-            dbgstring += "password=\'***\'";
-            _connectionstring += "password=\'" + _cfg_cache_db_passwd + "\'";
-            add_semicolon = true;
-        }
-        if (!_cfg_cache_db_cppdb_options.empty()) {
-            std::string tmp;
-            if (add_semicolon) tmp = ";";
-            tmp += _cfg_cache_db_cppdb_options;
-            _connectionstring += tmp;
-            dbgstring += tmp;
-            add_semicolon = true;
-        }
+
         if (!_cfg_cache_db_mode.empty()) {
-            LOGFATAL(logger,
-                _cfg_cache_db_type << " does not support the db_mode parameter.");
+            _wrong_parameter(logger, _cfg_cache_db_type, "db_mode");
+            fail = true;
+        }
+
+        if (_cfg_cache_db_host.empty() && _cfg_cache_db_unixsocket.empty())
+        {
+            LOGERROR(logger, "Either db_host or db_unixsocket must be specified for MySQL");
+            fail = true;
+        }
+
+        if (!_cfg_cache_db_port.empty() && ! _cfg_cache_db_unixsocket.empty()) {
+             fail = true;
+             LOGERROR(logger, "both db_port and db_unixsocket cannot be used at the same time for MySQL.");
+        }
+
+   }
+    else if (_cfg_cache_db_type == "postgresql") {
+
+        if (_cfg_cache_db_host.empty()) {
+             _missing_req_parameter(logger, _cfg_cache_db_type, "db_host");
+             fail = true;
+        }
+
+        if (_cfg_cache_db_user.empty()) {
+            _missing_req_parameter(logger, _cfg_cache_db_type, "db_user");
+            fail = true;
+        }
+
+        if (_cfg_cache_db_passwd.empty()) {
+            _missing_req_parameter(logger, _cfg_cache_db_type, "db_passwd");
+            fail = true;
+        }
+        if (_cfg_cache_db_database.empty()) {
+            _missing_req_parameter(logger, _cfg_cache_db_type, "db_database");
+            fail = true;
+        }
+
+        if (!_cfg_cache_db_mode.empty()) {
+            _wrong_parameter(logger, _cfg_cache_db_type, "db_mode");
+            fail = true;
+        }
+
+        if (!_cfg_cache_db_unixsocket.empty()) {
+            _wrong_parameter(logger, _cfg_cache_db_type, "db_unixsocket");
             fail = true;
         }
     }
-    if (_cfg_cache_db_type == "postgresql") {
-        _connectionstring = "postgresql:";
+    else if (_cfg_cache_db_type == "sqlite3") {
+        // mode is optional, defaults to create when not given
+        // database is required
+        // all other not supported.
+
         if (!_cfg_cache_db_host.empty()) {
-            _connectionstring += "host=\'" + _cfg_cache_db_host + "\'";
-            add_semicolon = true;
-        }
-        if (!_cfg_cache_db_user.empty()) {
-            if (add_semicolon) _connectionstring += ";";
-            _connectionstring += "user=\'" + _cfg_cache_db_user + "\'";
-            add_semicolon = true;
-        }
-        if (!_cfg_cache_db_database.empty()) {
-            if (add_semicolon) _connectionstring += ";";
-            _connectionstring += "dbname=\'" + _cfg_cache_db_database + "\'";
-            add_semicolon = true;
-        }
-        if (!_cfg_cache_db_port.empty()) {
-            if (add_semicolon) _connectionstring += ";";
-            _connectionstring += "port=\'" + _cfg_cache_db_port + "\'";
-            add_semicolon = true;
-        }
-        if (!_cfg_cache_db_unixsocket.empty()) {
-            LOGFATAL(logger, "db_unixsocket is not supported for postgressql");
+            _wrong_parameter(logger, _cfg_cache_db_type, "db_host");
             fail = true;
         }
-        dbgstring = _connectionstring;
+
+        if (!_cfg_cache_db_port.empty()) {
+            _wrong_parameter(logger, _cfg_cache_db_type, "db_port");
+            fail = true;
+        }
+
+        if (!_cfg_cache_db_user.empty()) {
+            _wrong_parameter(logger, _cfg_cache_db_type, "db_user");
+            fail = true;
+        }
+
         if (!_cfg_cache_db_passwd.empty()) {
-            if (add_semicolon) _connectionstring += ";";
-            dbgstring = _connectionstring + "password=\'***\'";
-            _connectionstring += "password=\'" + _cfg_cache_db_passwd + "\'";
-            add_semicolon = true;
+            _wrong_parameter(logger, _cfg_cache_db_type, "db_passwd");
+            fail = true;
         }
-        if (!_cfg_cache_db_cppdb_options.empty()) {
-            std::string tmp;
-            if (add_semicolon) tmp = ";";
-            tmp += _cfg_cache_db_cppdb_options;
-            _connectionstring += tmp;
-            dbgstring += tmp;
-            add_semicolon = true;
+
+        if (_cfg_cache_db_database.empty()) {
+            _missing_req_parameter(logger, _cfg_cache_db_type, "db_database");
+            fail = true;
         }
-        if (!_cfg_cache_db_mode.empty()) {
-            LOGFATAL(logger,
-                _cfg_cache_db_type << " does not support the db_mode parameter.");
+
+        if (!_cfg_cache_db_unixsocket.empty()) {
+            _wrong_parameter(logger, _cfg_cache_db_type, "db_unixsocket");
             fail = true;
         }
     }
-    if (_cfg_cache_db_type == "sqlite3") {
-        _connectionstring = "sqlite3:";
-        if (!_cfg_cache_db_host.empty()) {
-            LOGFATAL(logger, _cfg_cache_db_type << " does not support the db_host parameter.");
-            fail = true;
-        }
-        if (!_cfg_cache_db_user.empty()) {
-            LOGFATAL(logger, _cfg_cache_db_type << " does not support the db_user parameter.");
-            fail = true;
-        }
-        if (!_cfg_cache_db_database.empty()) {
-            if (add_semicolon) _connectionstring += ";";
-            _connectionstring += "db=\'" + _cfg_cache_db_database + "\'";
-            add_semicolon = true;
-        }
-        if (!_cfg_cache_db_mode.empty()) {
-            if (add_semicolon) _connectionstring += ";";
-            _connectionstring += "mode=\'" + _cfg_cache_db_mode + "\'";
-            add_semicolon = true;
-        }
-        if (!_cfg_cache_db_port.empty()) {
-            LOGFATAL(logger, _cfg_cache_db_type << " does not support the db_port parameter.");
-            fail = true;
-        }
-        if (!_cfg_cache_db_unixsocket.empty()) {
-            LOGFATAL(logger,
-                _cfg_cache_db_type << " does not support the db_unixsocket parameter.");
-            fail = true;
-        }
-        if (!_cfg_cache_db_passwd.empty()) {
-            LOGFATAL(logger,
-                _cfg_cache_db_type << " does not support the db_password parameter.");
-            fail = true;
-        }
-        if (!_cfg_cache_db_cppdb_options.empty()) {
-            if (add_semicolon) _connectionstring += ";";
-            _connectionstring += _cfg_cache_db_cppdb_options;
-            add_semicolon = true;
-        }
-        dbgstring = _connectionstring;
-    }
-    if (_cfg_cache_db_type == "_cfg_cache_odbc" || _cfg_cache_db_type == "custom") {
-        if (_cfg_cache_db_type == "odbc") _connectionstring = "odbc:";
+    else if (_cfg_cache_db_type == "_cfg_cache_odbc" || _cfg_cache_db_type == "custom") {
         if (!_cfg_cache_db_host.empty() || !_cfg_cache_db_user.empty()
             || !_cfg_cache_db_database.empty() || !_cfg_cache_db_mode.empty()
             || !_cfg_cache_db_port.empty() || !_cfg_cache_db_unixsocket.empty()
@@ -329,11 +293,88 @@ bool CDBWriterFilter::CheckConfig()
                 _cfg_cache_db_type << " please use db_cppdb_options to specify the connection string.");
             fail = true;
         }
-        _connectionstring += _cfg_cache_db_cppdb_options;
-        dbgstring = _connectionstring;
+    } else {
+        LOGERROR(logger, "unknown database backend type " << _cfg_cache_db_type);
+        fail =  true;
     }
 
+    if (!base) {
+        LOGERROR(logger, "Cannot find datassource with the name " << _datasource);
+        fail = true;
+    }
 
+    if (fail) return false;
+
+    bool add_semicolon = false;
+    std::string dbgstring;
+
+    if (_cfg_cache_db_type != "custom") {
+        _connectionstring = _cfg_cache_db_type + ":";
+    };
+
+    // check: mysql, postgresql, (sqlite3) ok
+    if (!_cfg_cache_db_host.empty()) {
+        _connectionstring += "host=\'" + _cfg_cache_db_host + "\'";
+        add_semicolon = true;
+    }
+
+    // check: mysql, postgresql, (sqlite3) ok
+    if (!_cfg_cache_db_user.empty()) {
+        if (add_semicolon) _connectionstring += ";";
+        _connectionstring += "user=\'" + _cfg_cache_db_user + "\'";
+        add_semicolon = true;
+    }
+
+    // check: mysql, postgresql, (sqlite3) ok
+    if (!_cfg_cache_db_database.empty()) {
+        std::string db;
+        if (_cfg_cache_db_type == "sqlite3") db = "db=";
+        if (_cfg_cache_db_type == "mysql") db = "database=";
+        if (_cfg_cache_db_type == "postgresql") db = "dbname=";
+        if (add_semicolon) _connectionstring += ";";
+        _connectionstring += db + _cfg_cache_db_database + "\'";
+        add_semicolon = true;
+    }
+
+    // check: mysql, postgresql, (sqlite3) ok
+    if (!_cfg_cache_db_port.empty()) {
+        if (add_semicolon) _connectionstring += ";";
+        _connectionstring += "port=\'" + _cfg_cache_db_port + "\'";
+        add_semicolon = true;
+    }
+
+    // check: mysql, (postgresql), (sqlite3) ok
+    if (!_cfg_cache_db_unixsocket.empty()) {
+        if (add_semicolon) _connectionstring += ";";
+        _connectionstring += "unix_socket=\'" + _cfg_cache_db_unixsocket + "\'";
+        add_semicolon = true;
+    }
+
+    dbgstring = _connectionstring;
+    // check: mysql, (postgresql), (sqlite3) ok
+    if (!_cfg_cache_db_passwd.empty()) {
+        if (add_semicolon) _connectionstring += ";";
+        dbgstring += "password=\'***\'";
+        _connectionstring += "password=\'" + _cfg_cache_db_passwd + "\'";
+        add_semicolon = true;
+    }
+
+    // check: (mysql), (postgresql), sqlite3 ok
+    if (!_cfg_cache_db_mode.empty()) {
+         if (add_semicolon) _connectionstring += ";";
+         _connectionstring += "mode=\'" + _cfg_cache_db_mode + "\'";
+         add_semicolon = true;
+     }
+
+    // check: mysql, (postgresql), (sqlite3) ok
+    if (!_cfg_cache_db_cppdb_options.empty()) {
+        std::string tmp;
+        if (add_semicolon) tmp = ";";
+        tmp += _cfg_cache_db_cppdb_options;
+        _connectionstring += tmp;
+        dbgstring += tmp;
+        add_semicolon = true;
+    }
 
     LOGTRACE(logger, "DBWriter: connectionstring for CppDB is: " << dbgstring);
 

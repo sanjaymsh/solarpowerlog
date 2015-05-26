@@ -41,9 +41,9 @@
 #endif
 
 #ifdef HAVE_FILTER_CSVDUMP
-#define FILTER_CVSWRITER "CVSWriter"
+#define FILTER_CSVWRITER "CVSWriter"
 #else
-#define FILTER_CVSWRITER
+#define FILTER_CSVWRITER
 #endif
 
 #ifdef HAVE_FILTER_HTMLWRITER

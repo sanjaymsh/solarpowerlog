@@ -49,7 +49,7 @@
 "Tells solarpowerlog the type of the logger to be created. This version of " \
 "solarpowerlog supports the following loggers (and datafilters): " \
 FILTER_DUMBDUMPER " " \
-FILTER_CVSWRITER " " \
+FILTER_CSVWRITER " " \
 FILTER_HTMLWRITER " " \
 FILTER_DBWRITER " "
 

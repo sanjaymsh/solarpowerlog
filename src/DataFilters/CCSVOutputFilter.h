@@ -313,7 +313,7 @@ private:
 	bool _cfg_cache_rotate;
 
 	/** configuration cache: should repeated lines be suppressed? */
-	bool _cfg_cache_compactcvs;
+	bool _cfg_cache_compactcsv;
 
 	/** configuration cache: should we "flush" after every write
 	 * TODO: Maybe change this parameter / add another to specify file buffer

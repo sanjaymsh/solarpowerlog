@@ -57,8 +57,8 @@
 
 #include "Inverters/interfaces/ICapaIterator.h"
 
-#define DESCRIPTION_CVSWRITER_INTRO \
-"Logger CVSWriter\n" \
+#define DESCRIPTION_CSVWRITER_INTRO \
+"Logger CSVWriter\n" \
 "The CSV Data Logger takes some or all data and writes it to a CSV " \
 "(comma-separated-values) file as specified in the RFC 4180.\n" \
 "The data to be logged can be selected, either by specifying the identifiers " \
@@ -69,12 +69,12 @@
 "values will be logged instead. \n" \
 "Also, a (ISO 8601)-like timestamp " \
 "will be inserted as the first column. \n" \
-"To get a CVSWriter, \"type\" below needs to " \
+"To get a CSVWriter, \"type\" below needs to " \
 "be set to " \
-FILTER_CVSWRITER \
+FILTER_CSVWRITER \
 " (as indicated below.)"
 
-#define DESCRIPTION_CVSWRITER_FILENAME \
+#define DESCRIPTION_CSVWRITER_FILENAME \
 "Defines the target file for this CSV file.\n This setting is dependent on " \
 "other parameters:\n" \
 "If \"rotate\" is enabled, the logger will start a new logfile at midnight. " \
@@ -87,18 +87,18 @@ FILTER_CVSWRITER \
 "will create a logfile like \"Inverter_1_2009-07-04.csv\"\n" \
 "To set the format of the timestamp see the option format_timestamp."
 
-#define DESCRIPTION_CVSWRITER_ROTATE \
+#define DESCRIPTION_CSVWRITER_ROTATE \
 "Rotate: Create a new logfile at midnight."
 
-#define DESCRIPTION_CVSWRITER_COMPACTCSV \
+#define DESCRIPTION_CSVWRITER_COMPACTCSV \
 "Tries to keep the files compact by suppressing logs when all data is " \
 "unchanged.\n" \
-"In other words: This option will eliminate lines in the CVS file which are " \
+"In other words: This option will eliminate lines in the CSV file which are " \
 "identical to the previous line, if everything to be logged (except date/time) " \
 "has not changed."
 
-#define DESCRIPTION_CVSWRITER_FLUSHFILEBUFFER \
-"If true, writes to the CVS file are immediate, if false, use the cache provided " \
+#define DESCRIPTION_CSVWRITER_FLUSHFILEBUFFER \
+"If true, writes to the CSV file are immediate, if false, use the cache provided " \
 "by the operating system.\n" \
 "If you are \"just logging\" this might be fine to set to false, if you do " \
 "some kind of real-time data processing, use false, as it might " \
@@ -110,21 +110,21 @@ FILTER_CVSWRITER \
 "caching.\n" \
 "Note: Up to solarpowerlog 0.21 this setting was by default set to true."
 
-#define DESCRIPTION_CVSWRITER_FORMATTIMESTAMP \
+#define DESCRIPTION_CSVWRITER_FORMATTIMESTAMP \
 "You can customize the timestamp format with this setting. As solarpowerlog is " \
 "using boost, please refer to this list for all valid options: " \
 "http://www.boost.org/doc/libs/1_57_0/doc/html/date_time/date_time_io.html#date_time.format_flags\n" \
 "The default set the date in the ISO 8601 format, e.g.: 2009-12-20 13:34:56."
 
-#define DESCRIPTION_CVSWRITER_DATA2LOG \
+#define DESCRIPTION_CSVWRITER_DATA2LOG \
 "This parameter specifies tha data to be logged. There are two modes: " \
 "Logging everything by specifing \"all\" here or selective logging by specifing " \
 " excplictly the capabilities to be logged in an array." \
 "Hint: To retrieve all the capabilites names supported, first use \"all\" and then" \
-"examine the created CVS file to select the ones you really want.\n" \
+"examine the created CSV file to select the ones you really want.\n" \
 "This setting is mandatory."
 
-#define EXAMPLE_CVSWRITER_DATA2LOG \
+#define EXAMPLE_CSVWRITER_DATA2LOG \
 "data2log= \"all\";\n" \
 "data2log= [ \n" \
 "\t\"AC grid feeding current (A)\",\n" \
@@ -528,7 +528,7 @@ void CCSVOutputFilter::DoCYCLICmd( const ICommand * )
 		}
 	}
 
-	if ( !_cfg_cache_compactcvs ||  ss.str() != last_line) {
+	if ( !_cfg_cache_compactcsv ||  ss.str() != last_line) {
         last_line = ss.str();
         std::stringstream timestamp;
         boost::posix_time::time_facet *facet =
@@ -593,23 +593,23 @@ CConfigCentral* CCSVOutputFilter::getConfigCentralObject(CConfigCentral *parent)
     if (!parent) parent = new CConfigCentral;
 
     (*parent)
-    (NULL, DESCRIPTION_CVSWRITER_INTRO);
+    (NULL, DESCRIPTION_CSVWRITER_INTRO);
 
     parent = IDataFilter::getConfigCentralObject(parent);
 
     (*parent)
-    ("logfile", DESCRIPTION_CVSWRITER_FILENAME, _cfg_cache_filename)
-    ("rotate", DESCRIPTION_CVSWRITER_ROTATE, _cfg_cache_rotate, false)
-    ("compact_csv", DESCRIPTION_CVSWRITER_COMPACTCSV, _cfg_cache_compactcvs, false)
+    ("logfile", DESCRIPTION_CSVWRITER_FILENAME, _cfg_cache_filename)
+    ("rotate", DESCRIPTION_CSVWRITER_ROTATE, _cfg_cache_rotate, false)
+    ("compact_csv", DESCRIPTION_CSVWRITER_COMPACTCSV, _cfg_cache_compactcsv, false)
 
-    ("flush_file_buffer_immediatly", DESCRIPTION_CVSWRITER_FLUSHFILEBUFFER,
+    ("flush_file_buffer_immediatly", DESCRIPTION_CSVWRITER_FLUSHFILEBUFFER,
             _cfg_cache_flushfb, false)
-    ("format_timestamp", DESCRIPTION_CVSWRITER_FORMATTIMESTAMP,
+    ("format_timestamp", DESCRIPTION_CSVWRITER_FORMATTIMESTAMP,
             _cfg_cache_formattimestap, std::string("%Y-%m-%d %T"))
-    ("data2log", DESCRIPTION_CVSWRITER_DATA2LOG, EXAMPLE_CVSWRITER_DATA2LOG)
+    ("data2log", DESCRIPTION_CSVWRITER_DATA2LOG, EXAMPLE_CSVWRITER_DATA2LOG)
     ;
 
-    parent->SetExample("type", std::string(FILTER_CVSWRITER), false);
+    parent->SetExample("type", std::string(FILTER_CSVWRITER), false);
 
     return parent;
 }

@@ -64,7 +64,7 @@ IDataFilter *IDataFilterFactory::FactoryByName(const std::string &type,
 #endif
 
 #ifdef HAVE_FILTER_CSVDUMP
-    if (type == FILTER_CVSWRITER) {
+    if (type == FILTER_CSVWRITER) {
         return new CCSVOutputFilter(name, configurationpath);
     }
 #endif

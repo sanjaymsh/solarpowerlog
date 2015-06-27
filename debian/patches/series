@@ -1,2 +1,3 @@
 01-boost-1.54.patch
 02-dont-ovewrite-cppflags.patch
+03-gcc5-778125.patch

@@ -17,7 +17,7 @@ Build-Depends: autoconf,
                libboost-thread-dev,
                libboost-atomic-dev,
                libconfig++-dev,
-               liblog4cxx10-dev,
+               liblog4cxx-dev,
                libtool,
                pkg-config
 Standards-Version: 3.9.5

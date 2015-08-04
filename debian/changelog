@@ -2,6 +2,8 @@ solarpowerlog (0.24-6) UNRELEASED; urgency=medium
 
   * Both patches have been applied upstream in the repository, editing dep3
     header and renaming patches to have leading numbers.
+  * Change B-D from liblog4cxx10-dev to liblog4cxx-dev
+  
 
  -- Tobias Frost <tobi@coldtobi.de>  Sat, 28 Jun 2014 09:55:15 +0200
 

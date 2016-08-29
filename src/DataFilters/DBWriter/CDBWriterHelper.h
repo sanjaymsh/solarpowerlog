@@ -47,6 +47,8 @@ Copyright (C) 2009-2014 Tobias Frost
 
 #include "CdbInfo.h"
 
+class CConfigCentral;
+
 /** Handling class for one db job (one table)
  *
  *  This class maintains one table, retrieving data from the inverters,
@@ -59,7 +61,7 @@ public:
     CDBWriterHelper(IInverterBase *base, const ILogger &parent,
         const std::string &table, const std::string &mode,
         const std::string &createmode, bool logchangedonly, float logevery,
-        bool allow_sparse);
+        bool allow_sparse, std::string configurationpath ="");
 
     virtual ~CDBWriterHelper();
 
@@ -68,25 +70,29 @@ public:
 
     /// Add the tuple Capability, Column to the "should be logged information"
     /// Returns "FALSE" if the combination of Capabilty and Column is alreaedy there.
-    bool AddDataToLog(const std::string &Capability, const std::string &Column);
+    virtual bool AddDataToLog(const std::string &Capability, const std::string &Column);
 
     virtual void Update(const class IObserverSubject * subject);
 
-    const std::string &GetTable(void) {
+    virtual const std::string &GetTable(void) {
         return _table;
     }
 
     /** Getter for logevery */
-    float getLogevery() const
+    virtual float getLogevery() const
     {
         return _logevery;
     }
 
     /** Setter for logevery */
-    void setLogevery(float logevery)
+    virtual void setLogevery(float logevery)
     {
         _logevery = logevery;
     }
+
+    virtual bool CheckConfig(void);
+
+    virtual CConfigCentral* getConfigCentralObject(CConfigCentral *parent);
 
 private:
     /** Assemble a value-string from the dbinfos
@@ -200,6 +206,19 @@ private:
 
     /** Configuration cache: How often to log. */
     float _logevery;
+
+
+#warning FIXME new config cache ... currently not hooked up, needs refactoring later.
+    std::string _cfg_cache_db_table;
+    std::string _cfg_cache_db_create_table;
+    std::string _cfg_cache_db_operation_mode;
+
+    bool _cfg_cache_db_logchangedonly;
+    bool _cfg_cache_db_allowsparse;
+
+    float _cfg_cache_db_logevery;
+
+
 };
 
 #endif

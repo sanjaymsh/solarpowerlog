@@ -40,6 +40,7 @@
 #include "patterns/CValue.h"
 #include "interfaces/CMutexHelper.h"
 #include "CDBWHSpecialTokens.h"
+#include "configuration/ConfigCentral/CConfigCentral.h"
 
 #include <assert.h>
 
@@ -49,7 +50,7 @@
 CDBWriterHelper::CDBWriterHelper(IInverterBase *base, const ILogger &parent,
     const std::string &table, const std::string &mode,
     const std::string &createmode, bool logchangedonly, float logevery,
-    bool allow_sparse)
+    bool allow_sparse, std::string configurationpath)
 {
     logger.Setup(parent.getLoggername(), "CDBWriterHelper(" + table + ")");
     _table = table;
@@ -106,6 +107,35 @@ CDBWriterHelper::~CDBWriterHelper()
     }
     _dbinfo.clear();
 }
+
+
+bool CDBWriterHelper::CheckConfig(void) {
+
+}
+
+CConfigCentral* CDBWriterHelper::getConfigCentralObject(CConfigCentral *parent) {
+
+#warning FIXME CConfigCentral not completly implemented for CDBWriterHelper
+
+    if (!parent) parent = new CConfigCentral;
+
+    // array "jobs"
+    (*parent)("db_jobs", "db_jobs", "(\t{")
+    ("db_table","Description_db_table", _cfg_cache_db_table)
+    ("db_create_table","Desription_db_create_table", _cfg_cache_db_create_table,
+        std::string("no"))
+    ("db_operation_mode","Description_db_operation_mode", _cfg_cache_db_operation_mode)
+    ("db_logchangedonly", "Description_db_logchangedonly", _cfg_cache_db_logchangedonly, false)
+    ("db_allowsparse", "Description_db_allowsparse", _cfg_cache_db_allowsparse, false)
+    ("db_logevery", "Description_db_logevery", _cfg_cache_db_logevery)
+    ("db_layout", "Description_db_layout", "example db layout")
+    (NULL, "Description of special tokens etc")
+    (NULL, "closing brackets, additional jobs explained", " } /* { .. addtional jobs .. */ );")
+    ;
+
+    return parent;
+}
+
 
 /** Add the tuple Capability, Column to the "should be logged information"
  * Returns "FALSE" if the combination of Capability and Column is already there.

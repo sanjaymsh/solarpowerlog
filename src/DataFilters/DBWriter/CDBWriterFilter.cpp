@@ -44,14 +44,15 @@ Copyright (C) 2009-2014 Tobias Frost
 #include "configuration/ConfigCentral/CConfigCentral.h"
 
 static const char *Description_DBWriter_Intro =
-"This logger allows logging to a SQL database. For the moment, please see the examples "
-" for configuration hints, as this documentation is incomplete.\n"
+"This logger allows logging to a SQL database. For the moment, please see the "
+"examples for configuration hints, as this documentation is incomplete.\n"
 "\n"
-"As this logger uses the cppdb database abstraction library, it can be configured"
-"with many SQL systems. Please note that the required parameters are "
-"much depending on the exact SQL system to be used, so the below hints may be "
-"inaccurate. Especially note, that solarpowerlog will report empty default values, "
-"but this means for the database library \"use the libraries default\"."
+"As this logger uses the cppdb database abstraction library, it can be "
+"configured with many SQL systems. Please note that the required parameters "
+"are much depending on the exact SQL system to be used, see the configuration "
+"options for default.\n"
+"Note that an empty configuration entry usually means that the libraries "
+"default is used."
 ;
 
 static const char *Description_DBWriter_db_type =
@@ -461,6 +462,7 @@ bool CDBWriterFilter::CheckConfig()
         }
 
 #warning FIXME  logevery is optional and should be derived from the inverter if not specified.
+#warning THIS IS A RELEASE GOAL FOR 0.26
         if (!hlp.CheckConfig("db_logevery", Setting::TypeFloat)) {
             fail = true;
         } else {

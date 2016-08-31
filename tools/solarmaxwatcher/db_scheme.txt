@@ -1,0 +1,29 @@
+Database scheme for visualization and solarpowerlog capability mapping
+
+the types are the one used by solarpowerlog
+originally the visualization uses int(11) for everything.
+
+created timestamp  (PRIMARY KEY)
+kdy     float "Energy produced today (kWh)"
+kmt     float "Energy produced this month (kWh)"
+kyr     float "Energy produced this year (kWh)"
+kt0     float "Energy produced accumulated all time (kWh)"
+tnf     float "Net frequency (Hz)"
+tkk     float "Inverter Temperature (C)"
+pac     float "Current Grid Feeding Power"
+prl     float "relative Power (%)"
+il1     float "AC grid feeding current (A)"
+idc     float "DC current in (A)"
+ul1     float "AC grid voltage (V)"
+udc     float "DC voltage in (V)"
+sys     (no easy mapping which will work over different brands)
+
+-- above retrieved from the db-creation-script on Nov 8 2014
+
+note: scaling -- as solarmaxwatcher uses int for everything, the data must
+be scaled on the php side.
+I hope I have patched the php scripts accordingly .. if not, please file bugs
+(add patches ;-))
+
+
+coldtobi

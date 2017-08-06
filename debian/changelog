@@ -1,3 +1,9 @@
+solarpowerlog (0.24-7) unstable; urgency=medium
+
+  * New patch to fix FTBFS with GCC-7 (Closes: #853665)
+
+ -- Tobias Frost <tobi@debian.org>  Sun, 06 Aug 2017 17:19:55 -0400
+
 solarpowerlog (0.24-6) unstable; urgency=medium
 
   * Both patches have been applied upstream in the repository, editing dep3

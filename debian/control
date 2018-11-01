@@ -1,16 +1,11 @@
 Source: solarpowerlog
 Section: utils
 Priority: optional
-Maintainer: Tobias Frost <tobi@coldtobi.de>
-Vcs-Browser: http://sourceforge.net/p/solarpowerlog/code/ci/debian/tree/
-Vcs-Git: git://solarpowerlog.git.sourceforge.net/gitroot/solarpowerlog/solarpowerlog -b debian
-Build-Depends: autoconf,
-               automake,
-               autotools-dev,
-               debhelper (>= 9),
-               dh-autoreconf,
-               dpkg-dev (>=1.16.1~),
-               libboost-dev (>=1.48),
+Maintainer: Tobias Frost <tobi@debian.org>
+Vcs-Browser: https://github.com/coldtobi/solarpowerlog/tree/debian
+Vcs-Git: https://github.com/coldtobi/solarpowerlog.git -b debian
+Build-Depends: debhelper (>= 11),
+               libboost-dev,
                libboost-date-time-dev,
                libboost-program-options-dev,
                libboost-system-dev,
@@ -20,8 +15,9 @@ Build-Depends: autoconf,
                liblog4cxx-dev,
                libtool,
                pkg-config
-Standards-Version: 3.9.5
-Homepage: http://solarpowerlog.coldtobi.de
+Rules-Requires-Root: no
+Standards-Version: 4.2.1
+Homepage: https://github.com/coldtobi/solarpowerlog
 
 Package: solarpowerlog
 Architecture: any

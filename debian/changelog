@@ -1,3 +1,15 @@
+solarpowerlog (0.24-8) UNRELEASED; urgency=medium
+
+  * Make github repo the primary one and update d/control with its URL.
+  * Fix FTBFS with boost1.67", thanks Giovanni Mascellani for the patch.
+    (Closes: #911952)
+  * Update d/control -- it had still my non-debian email in it.
+  * Bump compat level to 11. This allows to remove some B-Ds and to simplify
+    d/rules a bit.
+  * Bump S-B to 4.2.1, no changes required, execpt adding Rules-Required-Root.
+
+ -- Tobias Frost <tobi@debian.org>  Thu, 01 Nov 2018 19:30:44 +0100
+
 solarpowerlog (0.24-7) unstable; urgency=medium
 
   * New patch to fix FTBFS with GCC-7 (Closes: #853665)

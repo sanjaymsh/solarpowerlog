@@ -16,7 +16,7 @@ Copyright: 2009-2011 Tobias Frost <tobi@coldtobi.de>
 License: GPL-3.0+
 
 Files: debian/*
-Copyright: 2011 Tobias Frost <tobi@coldtobi.de>
+Copyright: 2011-2018 Tobias Frost <tobi@debian.org>
 License: GPL-3.0+
 
 Files: src/ctemplate/*

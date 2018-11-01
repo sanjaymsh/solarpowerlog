@@ -1,4 +1,4 @@
-solarpowerlog (0.24-8) UNRELEASED; urgency=medium
+solarpowerlog (0.24-8) unstable; urgency=medium
 
   * Make github repo the primary one and update d/control with its URL.
   * Fix FTBFS with boost1.67", thanks Giovanni Mascellani for the patch.
@@ -8,7 +8,7 @@ solarpowerlog (0.24-8) UNRELEASED; urgency=medium
     d/rules a bit.
   * Bump S-B to 4.2.1, no changes required, execpt adding Rules-Required-Root.
 
- -- Tobias Frost <tobi@debian.org>  Thu, 01 Nov 2018 19:30:44 +0100
+ -- Tobias Frost <tobi@debian.org>  Thu, 01 Nov 2018 20:08:03 +0100
 
 solarpowerlog (0.24-7) unstable; urgency=medium
 

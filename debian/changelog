@@ -1,6 +1,7 @@
 solarpowerlog (0.24-9) UNRELEASED; urgency=medium
 
   * Use secure copyright file specification URI.
+  * Bump debhelper from old 11 to 12.
 
  -- Debian Janitor <janitor@jelmer.uk>  Tue, 05 May 2020 06:06:32 +0000
 

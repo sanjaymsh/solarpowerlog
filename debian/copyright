@@ -1,4 +1,4 @@
-Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: solarpowerlog
 Upstream-Contact: tobi@coldtobi.de
 Source: http://solarpowerlog.git.sourceforge.net/git/gitweb-index.cgi

@@ -1,5 +1,7 @@
 # Travis CI Integration
-
+arch:
+  - amd64
+  - ppc64le
 sudo: required
 
 language: c++
